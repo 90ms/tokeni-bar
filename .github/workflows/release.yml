@@ -198,6 +198,7 @@ jobs:
           gh auth setup-git
           gh repo clone 90ms/homebrew-tap "$tap"
           branch="automation/tokeni-bar-$VERSION"
+          branch_ready=false
           if git -C "$tap" ls-remote \
             --exit-code \
             --heads \
@@ -205,6 +206,7 @@ jobs:
             "refs/heads/$branch" >/dev/null
           then
             git -C "$tap" checkout -B "$branch" "origin/$branch"
+            branch_ready=true
           else
             git -C "$tap" checkout -b "$branch"
           fi
@@ -228,6 +230,12 @@ jobs:
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
               commit -m "tokeni-bar $VERSION"
             git -C "$tap" push origin "$branch"
+            branch_ready=true
+          fi
+
+          if [[ "$branch_ready" != "true" ]]; then
+            echo "Homebrew tap already contains tokeni-bar $VERSION."
+            exit 0
           fi
 
           if [[ "$(gh pr list \
