@@ -16,11 +16,13 @@ fi
 
 app_version=${APP_VERSION:-}
 build_number=${BUILD_NUMBER:-}
-if [[ -n "$app_version" && ! "$app_version" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
+app_version_pattern='^[0-9]+\.[0-9]+\.[0-9]+$'
+build_number_pattern='^[0-9]+(\.[0-9]+)*$'
+if [[ -n "$app_version" && ! "$app_version" =~ $app_version_pattern ]]; then
     print -u2 "APP_VERSION must use x.y.z format: $app_version"
     exit 2
 fi
-if [[ -n "$build_number" && ! "$build_number" =~ '^[0-9]+(\.[0-9]+)*$' ]]; then
+if [[ -n "$build_number" && ! "$build_number" =~ $build_number_pattern ]]; then
     print -u2 "BUILD_NUMBER must contain only numeric components: $build_number"
     exit 2
 fi
