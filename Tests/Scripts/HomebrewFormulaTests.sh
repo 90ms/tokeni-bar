@@ -14,6 +14,10 @@ OUTPUT="$TEST_ROOT/Formula/tokeni-bar.rb"
 grep -q "v$VERSION.tar.gz" "$OUTPUT"
 grep -q "sha256 \"$SHA256\"" "$OUTPUT"
 grep -q 'bin.install "Scripts/tokeni-bar"' "$OUTPUT"
+if grep -q 'depends_on xcode' "$OUTPUT"; then
+    echo "Formula unexpectedly requires the full Xcode application" >&2
+    exit 1
+fi
 if grep -q '__VERSION__\|__SHA256__' "$OUTPUT"; then
     echo "Formula placeholders were not fully rendered" >&2
     exit 1

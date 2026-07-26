@@ -5,7 +5,6 @@ class TokeniBar < Formula
   sha256 "__SHA256__"
   license "MIT"
 
-  depends_on xcode: ["26.0", :build]
   depends_on macos: :sonoma
 
   def install
