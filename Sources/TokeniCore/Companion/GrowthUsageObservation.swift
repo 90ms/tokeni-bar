@@ -27,7 +27,7 @@ public struct GrowthUsageObservation: Codable, Hashable, Sendable {
         self.providerID = providerID
         self.scope = scope
         self.scopeID = scopeID
-        self.totalTokens = max(totalTokens, 0)
+        self.totalTokens = totalTokens
         self.observedAt = observedAt
     }
 
