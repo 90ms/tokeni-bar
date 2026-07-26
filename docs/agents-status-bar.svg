@@ -1,125 +1,145 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1270" viewBox="0 0 900 1270">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1500" viewBox="0 0 1000 1500">
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8fc5e7"/>
-      <stop offset="1" stop-color="#d8e4ec"/>
+      <stop offset="0" stop-color="#79b8df"/>
+      <stop offset="0.42" stop-color="#b7d7e9"/>
+      <stop offset="1" stop-color="#e7edf2"/>
     </linearGradient>
     <filter id="shadow" x="-30%" y="-20%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#183549" flood-opacity="0.28"/>
+      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#183549" flood-opacity="0.24"/>
     </filter>
     <style>
-      .ui { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Helvetica, Arial, sans-serif; fill: #202124; }
-      .title { font-size: 30px; font-weight: 700; }
-      .provider { font-size: 27px; font-weight: 700; }
-      .body { font-size: 21px; }
-      .small { font-size: 18px; fill: #777b80; }
-      .tiny { font-size: 16px; fill: #969a9f; }
-      .menu { font-size: 20px; font-weight: 600; fill: #111820; }
-      .divider { stroke: #dedfe1; stroke-width: 2; }
+      .ui { font-family: "Noto Sans CJK KR", "Apple SD Gothic Neo", -apple-system, sans-serif; fill: #202124; }
+      .title { font-size: 32px; font-weight: 700; }
+      .provider { font-size: 29px; font-weight: 700; }
+      .body { font-size: 22px; }
+      .small { font-size: 19px; fill: #70747a; }
+      .tiny { font-size: 16px; fill: #92969c; }
+      .menu { font-size: 21px; font-weight: 600; fill: #101820; }
+      .divider { stroke: #dedfe2; stroke-width: 2; }
       .track { fill: #e7e8ea; }
       .bar { fill: #1687f8; }
       .bar-warning { fill: #f3a51e; }
+      .icon { fill: #24272b; }
     </style>
   </defs>
 
-  <rect width="900" height="1270" fill="url(#background)"/>
-  <rect width="900" height="48" fill="#70b4df" fill-opacity="0.72"/>
-  <g class="ui menu" transform="translate(568 12)">
-    <path d="M0 16 C4 3 8 29 12 16 C16 3 20 29 24 16" fill="none" stroke="#111820" stroke-width="3" stroke-linecap="round"/>
-    <text x="28" y="20">Codex 100%</text>
+  <rect width="1000" height="1500" fill="url(#background)"/>
+  <rect width="1000" height="52" fill="#68add7" fill-opacity="0.76"/>
+  <g class="ui menu" transform="translate(690 13)">
+    <path d="M0 17 C5 3 9 31 14 17 C19 3 23 31 28 17" fill="none" stroke="#101820" stroke-width="3.2" stroke-linecap="round"/>
+    <text x="36" y="22">에이전트 61%</text>
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="165" y="66" width="570" height="1140" rx="28" fill="#fbfbfc"/>
+    <rect x="170" y="72" width="660" height="1352" rx="32" fill="#fbfbfc"/>
   </g>
 
-  <g class="ui" transform="translate(200 105)">
-    <text class="title" x="0" y="24">Agents Status</text>
-    <g transform="translate(486 5)" fill="none" stroke="#202124" stroke-width="3" stroke-linecap="round">
-      <path d="M10 3 A15 15 0 1 1 2 15"/>
-      <path d="M9 0 L9 8 L17 8"/>
+  <g class="ui" transform="translate(210 114)">
+    <text class="title" x="0" y="31">에이전트 상태</text>
+    <g transform="translate(541 7)" fill="none" stroke="#202124" stroke-width="3.2" stroke-linecap="round">
+      <path d="M11 3 A17 17 0 1 1 2 17"/>
+      <path d="M10 0 L10 9 L19 9"/>
     </g>
 
-    <g transform="translate(0 64)">
-      <text x="0" y="25" font-size="29">‹/›</text>
-      <text class="provider" x="54" y="25">Codex</text>
-      <g transform="translate(149 5)" stroke="#27bd66" stroke-width="3" fill="none">
-        <path d="M0 14 C5 2 8 26 13 14 C18 2 21 26 26 14"/>
+    <!-- Codex -->
+    <g transform="translate(0 72)">
+      <g class="icon" transform="translate(0 0) scale(1.2)">
+        <path d="M9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523z"/>
       </g>
-      <circle cx="500" cy="14" r="13" fill="#2ac968"/>
-      <path d="M494 14 L499 19 L507 9" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text class="provider" x="48" y="28">Codex</text>
+      <g transform="translate(139 7)" stroke="#27bd66" stroke-width="3.4" fill="none">
+        <path d="M0 15 C5 2 9 28 14 15 C19 2 23 28 28 15"/>
+      </g>
+      <circle cx="580" cy="16" r="14" fill="#2ac968"/>
+      <path d="M573 16 L579 22 L588 10" fill="none" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
 
-      <text class="body" x="0" y="72">Weekly</text>
-      <text class="body" x="500" y="72" text-anchor="end">100% left  ·  in 7 days</text>
-      <rect class="track" x="0" y="84" width="500" height="10" rx="5"/>
-      <rect class="bar" x="0" y="84" width="500" height="10" rx="5"/>
+      <text class="body" x="0" y="82">주간</text>
+      <text class="body" x="580" y="82" text-anchor="end">78% 남음  ·  5일 후</text>
+      <rect class="track" x="0" y="96" width="580" height="11" rx="5.5"/>
+      <rect class="bar" x="0" y="96" width="452" height="11" rx="5.5"/>
 
-      <text class="body" x="0" y="132">GPT-5.3-Codex-Spark weekly</text>
-      <text class="body" x="500" y="132" text-anchor="end">100% left</text>
-      <rect class="track" x="0" y="144" width="500" height="10" rx="5"/>
-      <rect class="bar" x="0" y="144" width="500" height="10" rx="5"/>
+      <text class="body" x="0" y="147">GPT-5.3-Codex-Spark 주간</text>
+      <text class="body" x="580" y="147" text-anchor="end">46% 남음</text>
+      <rect class="track" x="0" y="161" width="580" height="11" rx="5.5"/>
+      <rect class="bar" x="0" y="161" width="267" height="11" rx="5.5"/>
 
-      <path d="M0 180 H17 V195 H0 Z M0 185 A5 5 0 0 0 0 190 M17 185 A5 5 0 0 1 17 190" fill="none" stroke="#555a60" stroke-width="2"/>
-      <text class="small" x="26" y="194">Limit reset credits</text>
-      <text class="small" x="500" y="194" text-anchor="end">1 available</text>
-      <text class="tiny" x="26" y="222">Full reset</text>
-      <text class="tiny" x="500" y="222" text-anchor="end">Expires Aug 13, 2026</text>
+      <path d="M1 204 H20 V222 H1 Z M1 210 A6 6 0 0 0 1 216 M20 210 A6 6 0 0 1 20 216" fill="none" stroke="#555a60" stroke-width="2.2"/>
+      <text class="small" x="31" y="220">한도 초기화 충전권</text>
+      <text class="small" x="580" y="220" text-anchor="end">1개 보유</text>
+      <text class="tiny" x="31" y="249">전체 초기화</text>
+      <text class="tiny" x="580" y="249" text-anchor="end">2026년 8월 13일 만료</text>
 
-      <text class="small" x="0" y="263">Account token activity</text>
-      <text class="small" x="0" y="296">Today</text>
-      <text class="small" x="500" y="296" text-anchor="end">1.24M tokens · ref. $3.72</text>
-      <text class="small" x="0" y="329">This month</text>
-      <text class="small" x="500" y="329" text-anchor="end">42.8M tokens · ref. $128</text>
-      <text class="small" x="0" y="362">Lifetime</text>
-      <text class="small" x="500" y="362" text-anchor="end">2.4B tokens · ref. $7,200</text>
-      <text class="tiny" x="0" y="391">API-equivalent reference · not billing</text>
-      <text class="tiny" x="0" y="420">Account API · data through Jul 21</text>
-      <text class="tiny" x="500" y="420" text-anchor="end">Updated now</text>
+      <g transform="translate(0 278)">
+        <path d="M0 13 H4 V22 H0 Z M7 7 H11 V22 H7 Z M14 2 H18 V22 H14 Z" fill="#72767b"/>
+        <text class="small" x="30" y="20">계정 토큰 사용량</text>
+
+        <text class="small" x="0" y="59">최근 일일 사용량 (2026-07-25)</text>
+        <text class="small" x="580" y="59" text-anchor="end">1.24M 토큰</text>
+        <text class="tiny" x="580" y="84" text-anchor="end">API 환산 참고 비용: $3.72</text>
+
+        <text class="small" x="0" y="119">이번 달</text>
+        <text class="small" x="580" y="119" text-anchor="end">42.8M 토큰</text>
+        <text class="tiny" x="580" y="144" text-anchor="end">API 환산 참고 비용: $128</text>
+
+        <text class="small" x="0" y="179">누적</text>
+        <text class="small" x="580" y="179" text-anchor="end">2.4B 토큰</text>
+        <text class="tiny" x="580" y="204" text-anchor="end">API 환산 참고 비용: $7,200</text>
+
+        <text class="tiny" x="0" y="241">계정 API</text>
+        <text class="tiny" x="580" y="241" text-anchor="end">업데이트 방금 전</text>
+      </g>
     </g>
 
-    <line class="divider" x1="0" y1="523" x2="500" y2="523"/>
+    <line class="divider" x1="0" y1="627" x2="580" y2="627"/>
 
-    <g transform="translate(0 545)">
-      <text x="0" y="25" font-size="27">✦</text>
-      <text class="provider" x="54" y="25">Claude Code</text>
-      <circle cx="500" cy="14" r="13" fill="#2ac968"/>
-      <path d="M494 14 L499 19 L507 9" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Claude Code -->
+    <g transform="translate(0 654)">
+      <g class="icon" transform="translate(0 0) scale(1.2)">
+        <path d="M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 01-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.668-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z"/>
+      </g>
+      <text class="provider" x="48" y="28">Claude Code</text>
+      <circle cx="580" cy="16" r="14" fill="#2ac968"/>
+      <path d="M573 16 L579 22 L588 10" fill="none" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
 
-      <text class="body" x="0" y="72">5-hour</text>
-      <text class="body" x="500" y="72" text-anchor="end">83% left  ·  in 3 hours</text>
-      <rect class="track" x="0" y="84" width="500" height="10" rx="5"/>
-      <rect class="bar" x="0" y="84" width="415" height="10" rx="5"/>
+      <text class="body" x="0" y="82">5시간</text>
+      <text class="body" x="580" y="82" text-anchor="end">83% 남음  ·  3시간 후</text>
+      <rect class="track" x="0" y="96" width="580" height="11" rx="5.5"/>
+      <rect class="bar" x="0" y="96" width="481" height="11" rx="5.5"/>
 
-      <text class="body" x="0" y="132">Weekly</text>
-      <text class="body" x="500" y="132" text-anchor="end">61% left  ·  in 4 days</text>
-      <rect class="track" x="0" y="144" width="500" height="10" rx="5"/>
-      <rect class="bar" x="0" y="144" width="305" height="10" rx="5"/>
+      <text class="body" x="0" y="147">일주일</text>
+      <text class="body" x="580" y="147" text-anchor="end">61% 남음  ·  4일 후</text>
+      <rect class="track" x="0" y="161" width="580" height="11" rx="5.5"/>
+      <rect class="bar" x="0" y="161" width="354" height="11" rx="5.5"/>
 
-      <text class="small" x="0" y="193">Today</text>
-      <text class="small" x="500" y="193" text-anchor="end">112K  tokens</text>
-      <text class="small" x="0" y="228">API cost estimate</text>
-      <text class="small" x="500" y="228" text-anchor="end">₩2,180</text>
-      <text class="tiny" x="0" y="260">Max · Claude Code OAuth</text>
-      <text class="tiny" x="0" y="290">Account API</text>
-      <text class="tiny" x="500" y="290" text-anchor="end">Updated now</text>
+      <text class="small" x="0" y="214">오늘</text>
+      <text class="small" x="580" y="214" text-anchor="end">112K 토큰</text>
+      <text class="small" x="0" y="252">API 비용 추정</text>
+      <text class="small" x="580" y="252" text-anchor="end">₩2,180</text>
+      <text class="tiny" x="0" y="288">Max · Claude Code OAuth</text>
+      <text class="tiny" x="0" y="324">계정 API</text>
+      <text class="tiny" x="580" y="324" text-anchor="end">업데이트 방금 전</text>
     </g>
 
-    <line class="divider" x1="0" y1="859" x2="500" y2="859"/>
+    <line class="divider" x1="0" y1="1007" x2="580" y2="1007"/>
 
-    <g transform="translate(0 882)">
-      <text x="0" y="25" font-size="29">◇</text>
-      <text class="provider" x="54" y="25">Gemini CLI</text>
-      <circle cx="500" cy="14" r="13" fill="#2ac968"/>
-      <path d="M494 14 L499 19 L507 9" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Gemini CLI -->
+    <g transform="translate(0 1034)">
+      <g class="icon" transform="translate(0 0) scale(1.2)">
+        <path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"/>
+      </g>
+      <text class="provider" x="48" y="28">Gemini CLI</text>
+      <circle cx="580" cy="16" r="14" fill="#2ac968"/>
+      <path d="M573 16 L579 22 L588 10" fill="none" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
 
-      <text class="small" x="0" y="75">Latest session</text>
-      <text class="small" x="500" y="75" text-anchor="end">24.6K  tokens</text>
-      <text class="tiny" x="0" y="112">Local session</text>
-      <text class="tiny" x="500" y="112" text-anchor="end">Updated 2 min ago</text>
+      <text class="small" x="0" y="85">최근 세션</text>
+      <text class="small" x="580" y="85" text-anchor="end">24.6K 토큰</text>
+      <text class="tiny" x="0" y="126">로컬 세션</text>
+      <text class="tiny" x="580" y="126" text-anchor="end">업데이트 2분 전</text>
     </g>
 
-    <line class="divider" x1="0" y1="1031" x2="500" y2="1031"/>
-    <text class="body" x="0" y="1075">Settings…</text>
-    <text class="body" x="500" y="1075" text-anchor="end">Quit</text>
+    <line class="divider" x1="0" y1="1201" x2="580" y2="1201"/>
+    <text class="body" x="0" y="1252">설정…</text>
+    <text class="body" x="580" y="1252" text-anchor="end">종료</text>
   </g>
 </svg>
