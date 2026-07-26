@@ -50,6 +50,40 @@ cp -R "$binary_dir/TokeniBar_TokeniBar.bundle" "$contents_dir/Resources/TokeniBa
 cp -R "$binary_dir/TokeniBar_TokeniBar.bundle/BrandIcons" "$contents_dir/Resources/BrandIcons"
 cp -R "$binary_dir/TokeniBar_TokeniBar.bundle/CompanionAssets" "$contents_dir/Resources/CompanionAssets"
 cp "$project_dir/packaging/Info.plist" "$contents_dir/Info.plist"
+
+icon_source="$project_dir/packaging/AppIcon.png"
+iconset_dir="$output_dir/AppIcon.iconset"
+if [[ ! -f "$icon_source" ]]; then
+    print -u2 "Missing app icon source: $icon_source"
+    exit 1
+fi
+if [[ "$iconset_dir" != "$output_dir"/* ]]; then
+    print -u2 "Unexpected iconset output path: $iconset_dir"
+    exit 1
+fi
+rm -rf "$iconset_dir"
+mkdir -p "$iconset_dir"
+for specification in \
+    "16 icon_16x16.png" \
+    "32 icon_16x16@2x.png" \
+    "32 icon_32x32.png" \
+    "64 icon_32x32@2x.png" \
+    "128 icon_128x128.png" \
+    "256 icon_128x128@2x.png" \
+    "256 icon_256x256.png" \
+    "512 icon_256x256@2x.png" \
+    "512 icon_512x512.png" \
+    "1024 icon_512x512@2x.png"
+do
+    size=${specification%% *}
+    filename=${specification#* }
+    sips -z "$size" "$size" "$icon_source" \
+        --out "$iconset_dir/$filename" >/dev/null
+done
+iconutil -c icns "$iconset_dir" \
+    -o "$contents_dir/Resources/AppIcon.icns"
+rm -rf "$iconset_dir"
+
 if [[ -n "$app_version" ]]; then
     plutil -replace CFBundleShortVersionString -string "$app_version" "$contents_dir/Info.plist"
 fi
