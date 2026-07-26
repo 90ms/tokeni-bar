@@ -37,6 +37,9 @@ final class UsageStore: ObservableObject {
     @Published private(set) var appUpdateResult: AppUpdateCheckResult?
     @Published private(set) var isCheckingForAppUpdate: Bool
     @Published private(set) var appUpdateMessage: String?
+    @Published private(set) var companionEnabled: Bool
+    @Published private(set) var companionAnimationsEnabled: Bool
+    @Published private(set) var companionState: CompanionState
 
     private let providers: [any UsageProviding]
     private var refreshLoop: Task<Void, Never>?
@@ -47,6 +50,9 @@ final class UsageStore: ObservableObject {
     private let exchangeRateClient: DailyExchangeRateClient
     private let pricingCatalogClient: PricingCatalogUpdateClient
     private let appUpdateClient: GitHubReleaseUpdateClient
+    private let companionStateStore: CompanionStateStore
+    private let companionGrowthEngine = CompanionGrowthEngine()
+    private var companionStateLoaded = false
     private static let enabledProvidersKey = "enabledProviderIDs"
     private static let legacyShowsRemainingInMenuBarKey = "showsRemainingInMenuBar"
     private static let menuBarDisplayModeKey = "menuBarDisplayMode"
@@ -64,6 +70,8 @@ final class UsageStore: ObservableObject {
     private static let monthlyBudgetAmountKey = "monthlyBudgetAmount"
     private static let monthlyBudgetCurrencyKey = "monthlyBudgetCurrency"
     private static let pricingCatalogLastCheckKey = "pricingCatalogLastCheck"
+    private static let companionEnabledKey = "companionEnabled"
+    private static let companionAnimationsEnabledKey = "companionAnimationsEnabled"
 
     init(providers: [any UsageProviding] = ProviderRegistry.defaultProviders()) {
         let knownIDs = Set(providers.map { $0.descriptor.id })
@@ -74,12 +82,14 @@ final class UsageStore: ObservableObject {
         let exchangeRateClient = DailyExchangeRateClient()
         let pricingCatalogClient = PricingCatalogUpdateClient()
         let appUpdateClient = GitHubReleaseUpdateClient()
+        let companionStateStore = CompanionStateStore()
         self.notificationController = notificationController
         self.launchAtLoginController = launchAtLoginController
         self.historyStore = historyStore
         self.exchangeRateClient = exchangeRateClient
         self.pricingCatalogClient = pricingCatalogClient
         self.appUpdateClient = appUpdateClient
+        self.companionStateStore = companionStateStore
         self.notificationsEnabled = notificationController.isEnabled
         self.notificationSettingsMessage = nil
         self.authorizingProviderIDs = []
@@ -142,6 +152,11 @@ final class UsageStore: ObservableObject {
         self.appUpdateResult = nil
         self.isCheckingForAppUpdate = false
         self.appUpdateMessage = nil
+        self.companionEnabled = UserDefaults.standard.object(
+            forKey: Self.companionEnabledKey) as? Bool ?? true
+        self.companionAnimationsEnabled = UserDefaults.standard.object(
+            forKey: Self.companionAnimationsEnabledKey) as? Bool ?? true
+        self.companionState = CompanionState()
         let enabledIDs: Set<ProviderID>
         if let stored = UserDefaults.standard.stringArray(forKey: Self.enabledProvidersKey) {
             enabledIDs = Set(stored.map { ProviderID(rawValue: $0) }).intersection(knownIDs)
@@ -159,6 +174,9 @@ final class UsageStore: ObservableObject {
             .map { .loading($0.descriptor) }
         Task { [weak self] in
             guard let self else { return }
+            self.companionState = (try? await self.companionStateStore.load())
+                ?? CompanionState()
+            self.companionStateLoaded = true
             self.historyRecords = (try? await self.historyStore.records()) ?? []
             let cachedPricing = await self.pricingCatalogClient.activateCachedCatalog()
             self.applyPricingCatalogResult(cachedPricing)
@@ -396,7 +414,7 @@ final class UsageStore: ObservableObject {
         UserDefaults.standard.set(enabled, forKey: Self.activityAnimationsEnabledKey)
         if enabled {
             self.startActivityLoopIfNeeded()
-        } else {
+        } else if !self.companionEnabled {
             self.activityLoop?.cancel()
             self.activityLoop = nil
             self.providerActivities = Dictionary(uniqueKeysWithValues: self.providers.map {
@@ -405,6 +423,30 @@ final class UsageStore: ObservableObject {
                     state: .unknown))
             })
         }
+    }
+
+    func setCompanionEnabled(_ enabled: Bool) {
+        self.companionEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.companionEnabledKey)
+        if enabled {
+            self.startActivityLoopIfNeeded()
+        } else if !self.activityAnimationsEnabled {
+            self.activityLoop?.cancel()
+            self.activityLoop = nil
+        }
+    }
+
+    func setCompanionAnimationsEnabled(_ enabled: Bool) {
+        self.companionAnimationsEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.companionAnimationsEnabledKey)
+    }
+
+    func patCompanion() {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionState
+        self.companionGrowthEngine.pat(in: &state)
+        self.companionState = state
+        self.saveCompanionState()
     }
 
     func setActivityWindowSeconds(_ seconds: Int) {
@@ -466,6 +508,43 @@ final class UsageStore: ObservableObject {
         self.providerActivities.values.contains { $0.state == .active }
     }
 
+    var showsActiveSession: Bool {
+        self.activityAnimationsEnabled && self.hasActiveSession
+    }
+
+    var companionStage: CompanionStage {
+        self.companionGrowthEngine.stage(for: self.companionState)
+    }
+
+    var companionBehavior: CompanionBehavior {
+        CompanionBehaviorResolver.resolve(
+            state: self.companionState,
+            isWorking: self.hasActiveSession,
+            lowestRemainingQuotaPercent: self.menuBarRemainingPercent)
+    }
+
+    var companionStageProgress: Double {
+        let rules = self.companionGrowthEngine.rules
+        let stage = self.companionStage
+        guard let nextXP = rules.nextStageXP(after: stage) else { return 1 }
+        let stageStartXP: Int = switch stage {
+        case .egg: 0
+        case .hatchling: rules.hatchXP
+        case .baby: rules.babyXP
+        case .adult: rules.adultXP
+        }
+        let range = max(nextXP - stageStartXP, 1)
+        return min(max(Double(self.companionState.totalXP - stageStartXP) / Double(range), 0), 1)
+    }
+
+    var companionNextStageXP: Int? {
+        self.companionGrowthEngine.rules.nextStageXP(after: self.companionStage)
+    }
+
+    var companionDailyXPCap: Int {
+        self.companionGrowthEngine.rules.dailyXPCap
+    }
+
     func isActive(_ providerID: ProviderID) -> Bool {
         self.providerActivities[providerID]?.state == .active
     }
@@ -511,7 +590,9 @@ final class UsageStore: ObservableObject {
     }
 
     private func startActivityLoopIfNeeded() {
-        guard self.activityAnimationsEnabled, self.activityLoop == nil else { return }
+        guard self.activityAnimationsEnabled || self.companionEnabled,
+              self.activityLoop == nil
+        else { return }
         self.activityLoop = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refreshActivity()
@@ -521,7 +602,7 @@ final class UsageStore: ObservableObject {
     }
 
     private func refreshActivity() async {
-        guard self.activityAnimationsEnabled else { return }
+        guard self.activityAnimationsEnabled || self.companionEnabled else { return }
         let now = Date.now
         let activeWindow = TimeInterval(self.activityWindowSeconds)
         let cutoff = now.addingTimeInterval(-activeWindow)
@@ -557,8 +638,32 @@ final class UsageStore: ObservableObject {
         self.providerActivities = Dictionary(uniqueKeysWithValues: results.map {
             ($0.providerID, $0)
         })
-        if self.hasActiveSession {
+        if self.showsActiveSession {
             self.activityAnimationPulse &+= 1
+        }
+        self.recordCompanionActivity(at: now)
+    }
+
+    private func recordCompanionActivity(at now: Date) {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        let previousState = self.companionState
+        var state = previousState
+        let event = self.companionGrowthEngine.recordActivity(
+            isActive: self.hasActiveSession,
+            at: now,
+            in: &state)
+        if case .stageChanged = event {
+            state.celebrationUntil = now.addingTimeInterval(6)
+        }
+        guard state != previousState else { return }
+        self.companionState = state
+        self.saveCompanionState()
+    }
+
+    private func saveCompanionState() {
+        let state = self.companionState
+        Task {
+            try? await self.companionStateStore.save(state)
         }
     }
 

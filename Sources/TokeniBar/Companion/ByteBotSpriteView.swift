@@ -1,8 +1,11 @@
+import Combine
 import Foundation
 import SwiftUI
 import TokeniCore
 
 struct ByteBotSpriteView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
     let stage: CompanionStage
     let behavior: CompanionBehavior
     var dimension: CGFloat = 64
@@ -11,19 +14,23 @@ struct ByteBotSpriteView: View {
     var body: some View {
         let catalog = ByteBotAssetCatalog.shared
         let animation = catalog.manifest?.animation(for: self.behavior)
+        let shouldAnimate = self.animationsEnabled
+            && !self.reduceMotion
+            && !self.lowPowerModeEnabled
         TimelineView(.animation(
             minimumInterval: self.minimumInterval(for: animation),
-            paused: !self.animationsEnabled))
+            paused: !shouldAnimate))
         { context in
             let frameIndex = self.frameIndex(
                 at: context.date,
-                animation: animation)
+                animation: animation,
+                shouldAnimate: shouldAnimate)
             if let frame = catalog.frame(
                 stage: self.stage,
                 behavior: self.behavior,
                 index: frameIndex)
             {
-                Image(decorative: frame, scale: 1)
+                Image(decorative: frame, scale: 1, orientation: .up)
                     .resizable()
                     .interpolation(.none)
                     .frame(width: self.dimension, height: self.dimension)
@@ -38,6 +45,11 @@ struct ByteBotSpriteView: View {
         }
         .frame(width: self.dimension, height: self.dimension)
         .accessibilityLabel("ByteBot")
+        .onReceive(NotificationCenter.default.publisher(
+            for: .NSProcessInfoPowerStateDidChange))
+        { _ in
+            self.lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+        }
     }
 
     private func minimumInterval(
@@ -53,9 +65,10 @@ struct ByteBotSpriteView: View {
 
     private func frameIndex(
         at date: Date,
-        animation: CompanionSpriteManifest.Animation?) -> Int
+        animation: CompanionSpriteManifest.Animation?,
+        shouldAnimate: Bool) -> Int
     {
-        guard self.animationsEnabled,
+        guard shouldAnimate,
               let animation,
               animation.frameCount > 1,
               animation.framesPerSecond > 0

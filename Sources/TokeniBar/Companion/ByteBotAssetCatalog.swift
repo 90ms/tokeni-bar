@@ -19,8 +19,8 @@ final class ByteBotAssetCatalog {
         }
 
         self.manifest = manifest
-        self.sheets = Dictionary(uniqueKeysWithValues: Set(manifest.stages.values).compactMap {
-            fileName in
+        var loadedSheets: [String: CGImage] = [:]
+        for fileName in Set(manifest.stages.values) {
             let fileURL = assetDirectory.appending(path: fileName)
             guard let image = NSImage(contentsOf: fileURL),
                   let cgImage = image.cgImage(
@@ -28,10 +28,11 @@ final class ByteBotAssetCatalog {
                       context: nil,
                       hints: nil)
             else {
-                return nil
+                continue
             }
-            return (fileName, cgImage)
-        })
+            loadedSheets[fileName] = cgImage
+        }
+        self.sheets = loadedSheets
     }
 
     func frame(
@@ -50,7 +51,7 @@ final class ByteBotAssetCatalog {
         let frameSize = manifest.assetFrameSize
         let column = min(max(index, 0), max(animation.frameCount - 1, 0))
         let x = column * frameSize
-        let y = sheet.height - ((animation.row + 1) * frameSize)
+        let y = animation.row * frameSize
         guard x >= 0,
               y >= 0,
               x + frameSize <= sheet.width,
@@ -67,7 +68,7 @@ final class ByteBotAssetCatalog {
 
     private static func assetDirectory() -> URL? {
         let relativeComponents = ["CompanionAssets", "bytebot"]
-        let roots = [Bundle.main.resourceURL, Bundle.module.resourceURL].compactMap(\.self)
+        let roots = [Bundle.main.resourceURL, Bundle.module.resourceURL].compactMap { $0 }
         for root in roots {
             let candidate = relativeComponents.reduce(root) {
                 $0.appending(path: $1, directoryHint: .isDirectory)

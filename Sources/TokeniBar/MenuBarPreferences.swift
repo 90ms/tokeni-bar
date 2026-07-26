@@ -5,6 +5,7 @@ enum MenuBarDisplayMode: String, CaseIterable, Identifiable {
     case lowestRemaining
     case monthlyCost
     case selectedProvider
+    case tokeni
 
     var id: String { self.rawValue }
 

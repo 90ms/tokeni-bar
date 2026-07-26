@@ -21,6 +21,13 @@ struct SettingsView: View {
                         systemImage: "bell")
                 }
 
+            self.companionTab
+                .tabItem {
+                    Label(
+                        AppLocalization.string("settings.tab.companion"),
+                        systemImage: "face.smiling")
+                }
+
             self.usageTab
                 .tabItem {
                     Label(
@@ -37,6 +44,59 @@ struct SettingsView: View {
         }
         .frame(width: 520, height: 470)
         .padding()
+    }
+
+    private var companionTab: some View {
+        Form {
+            Section(AppLocalization.string("settings.companion.title")) {
+                HStack {
+                    Spacer()
+                    ByteBotSpriteView(
+                        stage: self.store.companionStage,
+                        behavior: self.store.companionBehavior,
+                        dimension: 96,
+                        animationsEnabled: self.store.companionAnimationsEnabled)
+                    Spacer()
+                }
+
+                Toggle(isOn: Binding(
+                    get: { self.store.companionEnabled },
+                    set: { self.store.setCompanionEnabled($0) }))
+                {
+                    Text(AppLocalization.string("settings.companion.enabled"))
+                }
+
+                if self.store.companionEnabled {
+                    Toggle(isOn: Binding(
+                        get: { self.store.companionAnimationsEnabled },
+                        set: { self.store.setCompanionAnimationsEnabled($0) }))
+                    {
+                        Text(AppLocalization.string("settings.companion.animations"))
+                    }
+                    Text(AppLocalization.string("settings.companion.motion"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section(AppLocalization.string("settings.companion.growth")) {
+                Text(AppLocalization.string("settings.companion.rules"))
+                    .font(.callout)
+                Text(AppLocalization.format(
+                    "settings.companion.today",
+                    self.store.companionState.dailyXP,
+                    self.store.companionDailyXPCap))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section(AppLocalization.string("settings.companion.privacy.title")) {
+                Text(AppLocalization.string("settings.companion.privacy"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
     }
 
     private var generalTab: some View {

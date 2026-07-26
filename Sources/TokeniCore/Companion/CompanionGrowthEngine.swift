@@ -24,10 +24,11 @@ public struct CompanionGrowthEngine: Sendable {
         self.rollDailyCounterIfNeeded(at: now, in: &state)
         guard isActive else { return .none }
 
-        state.lastActiveAt = now
-        state.updatedAt = now
-
         let currentMinute = self.startOfMinute(for: now)
+        if state.lastActiveAt.map({ currentMinute > self.startOfMinute(for: $0) }) ?? true {
+            state.lastActiveAt = now
+            state.updatedAt = now
+        }
         guard state.lastAwardedMinute.map({ currentMinute > $0 }) ?? true,
               state.dailyXP < self.rules.dailyXPCap
         else {

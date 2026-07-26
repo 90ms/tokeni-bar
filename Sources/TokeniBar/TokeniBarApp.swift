@@ -26,6 +26,14 @@ struct TokeniBarApp: App {
                 }
                 .padding(.bottom, 8)
 
+                if self.store.companionEnabled {
+                    CompanionCard(
+                        store: self.store,
+                        compact: self.store.compactModeEnabled)
+                    Divider()
+                        .padding(.vertical, 8)
+                }
+
                 if self.store.snapshots.isEmpty {
                     ContentUnavailableView(
                         AppLocalization.string("empty.title"),
@@ -40,7 +48,8 @@ struct TokeniBarApp: App {
                             costCurrency: self.store.costDisplayCurrency,
                             exchangeRate: self.store.exchangeRateQuote,
                             compact: self.store.compactModeEnabled,
-                            isActive: self.store.isActive(snapshot.id))
+                            isActive: self.store.activityAnimationsEnabled
+                                && self.store.isActive(snapshot.id))
                     }
                 }
 
@@ -102,13 +111,13 @@ struct TokeniBarApp: App {
         case .iconOnly:
             ActivityStatusIcon(
                 systemName: "chart.bar.fill",
-                isActive: self.store.hasActiveSession,
+                isActive: self.store.showsActiveSession,
                 animationPulse: self.store.activityAnimationPulse)
         case .lowestRemaining:
             let remaining = self.store.menuBarRemainingPercent
             ActivityStatusIcon(
                 systemName: self.menuBarIcon(for: remaining),
-                isActive: self.store.hasActiveSession,
+                isActive: self.store.showsActiveSession,
                 animationPulse: self.store.activityAnimationPulse)
             if let remaining {
                 Text(AppLocalization.format("app.menuRemaining", Int(remaining.rounded())))
@@ -118,7 +127,7 @@ struct TokeniBarApp: App {
         case .monthlyCost:
             ActivityStatusIcon(
                 systemName: "dollarsign.circle.fill",
-                isActive: self.store.hasActiveSession,
+                isActive: self.store.showsActiveSession,
                 animationPulse: self.store.activityAnimationPulse)
             if let cost = self.store.menuBarMonthlyCost {
                 Text(AppLocalization.format("app.menuMonthlyCost", cost))
@@ -129,7 +138,8 @@ struct TokeniBarApp: App {
             let remaining = self.store.selectedMenuBarProviderRemainingPercent
             ActivityStatusIcon(
                 systemName: self.menuBarIcon(for: remaining),
-                isActive: self.store.isActive(self.store.selectedMenuBarProviderID),
+                isActive: self.store.activityAnimationsEnabled
+                    && self.store.isActive(self.store.selectedMenuBarProviderID),
                 animationPulse: self.store.activityAnimationPulse)
             if let provider = self.store.selectedMenuBarProvider, let remaining {
                 Text(AppLocalization.format(
@@ -139,6 +149,22 @@ struct TokeniBarApp: App {
             } else if let provider = self.store.selectedMenuBarProvider {
                 Text(AppLocalization.format("app.menuProviderUnavailable", provider.shortName))
             } else {
+                Text(AppLocalization.string("app.menuName"))
+            }
+        case .tokeni:
+            if self.store.companionEnabled {
+                ByteBotSpriteView(
+                    stage: self.store.companionStage,
+                    behavior: self.store.companionBehavior,
+                    dimension: 18,
+                    animationsEnabled: self.store.companionAnimationsEnabled)
+                Text(AppLocalization.string(
+                    "companion.behavior.short.\(self.store.companionBehavior.rawValue)"))
+            } else {
+                ActivityStatusIcon(
+                    systemName: "chart.bar.fill",
+                    isActive: self.store.showsActiveSession,
+                    animationPulse: self.store.activityAnimationPulse)
                 Text(AppLocalization.string("app.menuName"))
             }
         }
