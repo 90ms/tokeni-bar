@@ -61,14 +61,14 @@ Animation pauses automatically for Reduce Motion and Low Power Mode.
 ### Requirements
 
 - macOS 14 Sonoma or later
-- Current Xcode Command Line Tools (`xcode-select --install`)
+- Current Xcode Command Line Tools for Formula installs (`xcode-select --install`)
 - At least one installed and signed-in CLI: Codex, Claude Code, Grok, Gemini
   CLI, or OpenCode
 
 ### Homebrew
 
 ```bash
-brew install 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 tokeni-bar
 ```
@@ -106,12 +106,12 @@ format remain unavailable instead of showing guessed values.
 ```bash
 # Update
 brew update
-brew upgrade 90ms/tap/tokeni-bar
+brew upgrade --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 
 # Remove the app but keep settings and history
 tokeni-bar --uninstall-app
-brew uninstall tokeni-bar
+brew uninstall --formula tokeni-bar
 ```
 
 The app checks GitHub Releases every six hours. Formula installations can
@@ -173,7 +173,7 @@ Install with the fully qualified Formula name shown above:
 
 ```bash
 brew trust --formula 90ms/tap/tokeni-bar
-brew install tokeni-bar
+brew install --formula tokeni-bar
 ```
 
 ### Migrating from the Cask
@@ -183,8 +183,25 @@ updater. Run this one-time migration. App settings, usage history, and ByteBot
 progress are preserved.
 
 ```bash
+brew trust --cask 90ms/tap/tokeni-bar
 brew uninstall --cask tokeni-bar
-brew install 90ms/tap/tokeni-bar
+brew trust --formula 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
+```
+
+If Homebrew reports that the Cask is not installed, skip only the uninstall
+step and continue with the Formula installation.
+
+### The app exits when the menu-bar icon is selected
+
+Version 0.7.2 fixed missing packaged ByteBot and provider-icon resource bundles.
+Update an older Formula installation from Terminal:
+
+```bash
+brew update
+brew upgrade --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 tokeni-bar
 ```

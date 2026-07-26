@@ -57,13 +57,13 @@ Tokeni Bar는 기존 CLI 로그인을 재사용합니다. 프롬프트, 응답, 
 ### 요구 사항
 
 - macOS 14 Sonoma 이상
-- 최신 Xcode Command Line Tools(`xcode-select --install`)
+- Homebrew Formula 설치 시 최신 Xcode Command Line Tools(`xcode-select --install`)
 - Codex, Claude Code, Grok, Gemini CLI 또는 OpenCode 중 하나 이상 설치 및 로그인
 
 ### Homebrew
 
 ```bash
-brew install 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 tokeni-bar
 ```
@@ -100,12 +100,12 @@ Developer ID 서명을 구성하기 전까지 릴리스는 ad-hoc 서명을 사�
 ```bash
 # 업데이트
 brew update
-brew upgrade 90ms/tap/tokeni-bar
+brew upgrade --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 
 # 설정과 기록을 남기고 앱만 제거
 tokeni-bar --uninstall-app
-brew uninstall tokeni-bar
+brew uninstall --formula tokeni-bar
 ```
 
 앱은 6시간마다 GitHub Releases에서 새 안정 버전을 확인합니다. Formula 설치본은
@@ -164,7 +164,7 @@ Tokeni Bar는 Dock이 아닌 메뉴바에서 동작합니다. macOS 메뉴바 �
 
 ```bash
 brew trust --formula 90ms/tap/tokeni-bar
-brew install tokeni-bar
+brew install --formula tokeni-bar
 ```
 
 ### 기존 Cask에서 Formula로 이전
@@ -174,8 +174,25 @@ brew install tokeni-bar
 성장 정보는 제거되지 않습니다.
 
 ```bash
+brew trust --cask 90ms/tap/tokeni-bar
 brew uninstall --cask tokeni-bar
-brew install 90ms/tap/tokeni-bar
+brew trust --formula 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
+```
+
+Cask가 설치되어 있지 않다는 메시지가 나오면 제거 단계만 건너뛰고 Formula
+설치를 계속하면 됩니다.
+
+### 메뉴바 아이콘을 누르면 앱이 종료됨
+
+`v0.7.2`에서 패키징된 앱의 ByteBot 및 제공자 아이콘 리소스 번들 누락을
+수정했습니다. 이전 Formula 설치본은 터미널에서 다음과 같이 갱신하세요.
+
+```bash
+brew update
+brew upgrade --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 tokeni-bar
 ```

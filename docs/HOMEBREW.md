@@ -17,7 +17,7 @@ paths. In-app installation and restart are supported only for Formula installs.
 Install:
 
 ```bash
-brew install 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 tokeni-bar
 ```
@@ -30,14 +30,14 @@ this Formula:
 
 ```bash
 brew trust --formula 90ms/tap/tokeni-bar
-brew install tokeni-bar
+brew install --formula tokeni-bar
 ```
 
 Update:
 
 ```bash
 brew update
-brew upgrade 90ms/tap/tokeni-bar
+brew upgrade --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 ```
 
@@ -45,7 +45,7 @@ Uninstall the app while preserving settings and history:
 
 ```bash
 tokeni-bar --uninstall-app
-brew uninstall tokeni-bar
+brew uninstall --formula tokeni-bar
 ```
 
 ## In-app updates
@@ -67,14 +67,33 @@ Update checks are automatic; installation starts only after an explicit click.
 ## Migrating from the Cask
 
 ```bash
+brew trust --cask 90ms/tap/tokeni-bar
 brew uninstall --cask tokeni-bar
-brew install 90ms/tap/tokeni-bar
+brew trust --formula 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 tokeni-bar
 ```
 
 Removing the Cask deletes only its app bundle, so Application Support settings,
 usage history, and ByteBot state remain in place.
+
+If Homebrew reports that the Cask is not installed, skip that uninstall step.
+Explicit `--formula` and `--cask` flags disambiguate the two packages with the
+same token.
+
+## Recovering from an immediate exit
+
+Formula apps before `v0.7.2` could exit when opening the menu because their
+packaged SwiftPM resource bundle was missing. Since the in-app updater is not
+reachable, update in Terminal and relink the current Cellar app:
+
+```bash
+brew update
+brew upgrade --formula 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
+```
 
 ## Maintainer flow
 
@@ -85,8 +104,10 @@ Formula and compatibility Cask and opens a pull request against
 `90ms/homebrew-tap`. It never merges that pull request automatically.
 
 The token needs permission to push a branch and open a pull request in the tap
-repository. Tap CI should build the Formula on macOS, validate the app bundle,
-launcher, and code signature, then audit and uninstall it.
+repository. Tap CI builds the Formula with standalone Command Line Tools,
+validates the app bundle, launcher, and code signature, then runs tests, a
+strict audit, and uninstall. App repository CI also checks the packaged ByteBot
+and provider-icon resources.
 
 To render a Formula manually:
 

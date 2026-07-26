@@ -17,7 +17,7 @@ Command Line Tools는 필요합니다.
 설치:
 
 ```bash
-brew install 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 tokeni-bar
 ```
@@ -29,14 +29,14 @@ tokeni-bar
 
 ```bash
 brew trust --formula 90ms/tap/tokeni-bar
-brew install tokeni-bar
+brew install --formula tokeni-bar
 ```
 
 업데이트:
 
 ```bash
 brew update
-brew upgrade 90ms/tap/tokeni-bar
+brew upgrade --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 ```
 
@@ -44,7 +44,7 @@ tokeni-bar --install-app
 
 ```bash
 tokeni-bar --uninstall-app
-brew uninstall tokeni-bar
+brew uninstall --formula tokeni-bar
 ```
 
 ## 앱 내 업데이트
@@ -66,14 +66,32 @@ GitHub Releases 확인 결과 새 버전이 있으면 **설정 → 일반 → �
 ## 기존 Cask에서 이전
 
 ```bash
+brew trust --cask 90ms/tap/tokeni-bar
 brew uninstall --cask tokeni-bar
-brew install 90ms/tap/tokeni-bar
+brew trust --formula 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 tokeni-bar
 ```
 
 Cask 제거는 앱 번들만 제거하므로 `Application Support`의 설정, 사용 기록 및
 ByteBot 상태는 유지됩니다.
+
+Cask가 설치되어 있지 않다는 메시지가 나오면 해당 제거 단계만 건너뜁니다.
+`--formula`와 `--cask`를 명시해 같은 이름의 두 패키지를 혼동하지 않도록 합니다.
+
+## 실행 직후 종료 복구
+
+`v0.7.2` 이전 Formula 앱은 메뉴바 창을 열 때 누락된 SwiftPM 리소스 번들로
+종료될 수 있습니다. 앱 안의 업데이트를 사용할 수 없으므로 터미널에서
+갱신하고 Cellar 링크를 다시 연결합니다.
+
+```bash
+brew update
+brew upgrade --formula 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
+```
 
 ## 관리자 배포 흐름
 
@@ -84,8 +102,9 @@ SHA-256을 계산합니다. `HOMEBREW_TAP_TOKEN`이 설정되어 있으면 새 F
 병합하지 않습니다.
 
 토큰에는 tap 저장소에 브랜치를 push하고 PR을 만들 수 있는 권한만 필요합니다.
-Tap CI는 macOS runner에서 Formula를 소스 빌드하고 앱 번들, 런처 및 코드를
-검증한 다음 audit과 제거까지 실행해야 합니다.
+Tap CI는 standalone Command Line Tools 환경에서 Formula를 소스 빌드하고
+앱 번들, 런처 및 코드를 검증한 다음 test, strict audit과 제거를 실행합니다.
+앱 저장소 CI는 패키징된 번들 안의 ByteBot 및 제공자 아이콘 리소스도 확인합니다.
 
 Formula를 직접 렌더링하려면:
 
