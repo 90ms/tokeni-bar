@@ -323,7 +323,8 @@ struct SettingsView: View {
                     Link(
                         AppLocalization.string("settings.updates.migrationGuide"),
                         destination: URL(
-                            string: "https://github.com/90ms/tokeni-bar/blob/main/docs/HOMEBREW.ko.md#migrating-from-the-cask")
+                            string: AppLocalization.string(
+                                "settings.updates.migrationGuideURL"))
                             ?? URL(string: "https://github.com/90ms/tokeni-bar")!)
                 }
 

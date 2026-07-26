@@ -2,65 +2,99 @@
 
 [한국어](HOMEBREW.ko.md) | **English**
 
-Tokeni Bar is distributed as a binary Cask through the shared
-[`90ms/homebrew-tap`](https://github.com/90ms/homebrew-tap). The Cask downloads
-the versioned ZIP from GitHub Releases and verifies its SHA-256 checksum.
+Tokeni Bar's primary distribution path is a source-built Formula in the shared
+[`90ms/homebrew-tap`](https://github.com/90ms/homebrew-tap). The Formula
+verifies the SHA-256 of a versioned GitHub source archive and builds the app on
+the user's Mac. The result is ad-hoc signed, so installation and updates do not
+require an Apple Developer ID.
+
+The binary Cask and GitHub Release ZIP remain as transitional compatibility
+paths. In-app installation and restart are supported only for Formula installs.
 
 ## User commands
 
 Install:
 
 ```bash
-brew install --cask 90ms/tap/tokeni-bar
-open -a "Tokeni Bar"
+brew install 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
+```
+
+`--install-app` safely links the current Cellar app into
+`~/Applications/Tokeni Bar.app`.
+
+If the tap was already added and Homebrew reports a trust error, trust only
+this Formula:
+
+```bash
+brew trust --formula 90ms/tap/tokeni-bar
+brew install tokeni-bar
 ```
 
 Update:
 
 ```bash
 brew update
-brew upgrade --cask tokeni-bar
+brew upgrade 90ms/tap/tokeni-bar
+tokeni-bar --install-app
 ```
 
 Uninstall the app while preserving settings and history:
 
 ```bash
-brew uninstall --cask tokeni-bar
+tokeni-bar --uninstall-app
+brew uninstall tokeni-bar
 ```
 
-Remove the app and its local settings and history:
+## In-app updates
+
+When the GitHub Releases check finds a new version, choose **Install & Restart**
+under **Settings → General → App Updates**.
+
+1. Locate Homebrew at a known absolute path.
+2. Verify that `90ms/tap/tokeni-bar` is installed as a Formula.
+3. Run `brew update` and upgrade only that Formula.
+4. Relink `~/Applications` to the new Cellar version.
+5. Open the new app and terminate the previous process.
+
+Commands use fixed executables and arguments rather than shell command strings.
+Update checks are automatic; installation starts only after an explicit click.
+
+<a id="migrating-from-the-cask"></a>
+
+## Migrating from the Cask
 
 ```bash
-brew uninstall --cask --zap tokeni-bar
+brew uninstall --cask tokeni-bar
+brew install 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
 ```
 
-`--zap` removes both the current `TokeniBar` support directory and the
-pre-rename compatibility path.
+Removing the Cask deletes only its app bundle, so Application Support settings,
+usage history, and ByteBot state remain in place.
 
 ## Maintainer flow
 
-Before the first Tokeni Bar release, confirm that the GitHub repository is
-named `90ms/tokeni-bar`. The update client, pricing URL, badges, release
-artifacts, and Cask all use that path.
-
-The release workflow publishes `TokeniBar-<version>.zip` and its checksum
-for every stable `v<major>.<minor>.<patch>` tag. When `HOMEBREW_TAP_TOKEN` is
-configured, it renders the new Cask and opens a pull request against
-`90ms/homebrew-tap`; it never merges that pull request automatically.
+The release workflow publishes `TokeniBar-<version>.zip` and its checksum for
+every stable `v<major>.<minor>.<patch>` tag and calculates the GitHub tag source
+archive SHA-256. When `HOMEBREW_TAP_TOKEN` is configured, it renders the new
+Formula and compatibility Cask and opens a pull request against
+`90ms/homebrew-tap`. It never merges that pull request automatically.
 
 The token needs permission to push a branch and open a pull request in the tap
-repository. The tap CI installs the Cask on an Apple silicon macOS runner,
-validates the application bundle and code signature, performs a strict audit,
-and uninstalls it before the pull request is merged.
+repository. Tap CI should build the Formula on macOS, validate the app bundle,
+launcher, and code signature, then audit and uninstall it.
 
-To render a Cask manually:
+To render a Formula manually:
 
 ```bash
-./Scripts/render_homebrew_cask.sh \
+./Scripts/render_homebrew_formula.sh \
   <version> \
-  <release-zip-sha256> \
-  /path/to/homebrew-tap/Casks/tokeni-bar.rb
+  <source-tarball-sha256> \
+  /path/to/homebrew-tap/Formula/tokeni-bar.rb
 ```
 
-The in-repository `Casks/tokeni-bar.rb` remains a fixture for renderer
-tests and supports the legacy explicit-URL tap installation.
+The in-repository `Formula/tokeni-bar.rb` and `Casks/tokeni-bar.rb` are renderer
+fixtures. The Cask renderer remains during the compatibility ZIP period.

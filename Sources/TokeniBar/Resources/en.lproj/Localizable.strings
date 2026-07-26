@@ -121,6 +121,7 @@
 "settings.updates.formulaPending" = "The release exists, but its Homebrew Formula is not available yet. Try again after the tap update is merged.";
 "settings.updates.migrationRequired" = "This copy is not installed with the source-built Formula. Complete the one-time Cask migration first.";
 "settings.updates.migrationGuide" = "Open the Cask migration guide";
+"settings.updates.migrationGuideURL" = "https://github.com/90ms/tokeni-bar/blob/main/docs/HOMEBREW.md#migrating-from-the-cask";
 "settings.updates.homebrewMissing" = "Homebrew was not found in a supported location.";
 "settings.updates.installFailed" = "The update could not be installed: %@";
 "settings.updates.installUnknownFailed" = "The update could not be installed.";
