@@ -25,7 +25,7 @@ jobs:
       - name: Test
         run: ./Scripts/test.sh
       - name: Build app executable
-        run: swift build -c release --product AgentsStatusBar
+        run: swift build -c release --product TokeniBar
       - name: Package ad-hoc app for validation
         env:
           APP_VERSION: 0.0.0
@@ -36,8 +36,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          app="$RUNNER_TEMP/agents-status-package/Agents Status Bar.app"
-          test -x "$app/Contents/MacOS/AgentsStatusBar"
+          app="$RUNNER_TEMP/agents-status-package/Tokeni Bar.app"
+          test -x "$app/Contents/MacOS/TokeniBar"
           plutil -lint "$app/Contents/Info.plist"
           test "$(defaults read "$app/Contents/Info" CFBundleIdentifier)" = "dev.agentsstatusbar.app"
           test "$(defaults read "$app/Contents/Info" CFBundleShortVersionString)" = "0.0.0"

@@ -2,29 +2,32 @@
 import PackageDescription
 
 let package = Package(
-    name: "AgentsStatusBar",
+    name: "TokeniBar",
     platforms: [
         .macOS(.v14),
     ],
     products: [
-        .library(name: "AgentsStatusCore", targets: ["AgentsStatusCore"]),
-        .executable(name: "AgentsStatusBar", targets: ["AgentsStatusBar"]),
+        .library(name: "TokeniCore", targets: ["TokeniCore"]),
+        .executable(name: "TokeniBar", targets: ["TokeniBar"]),
     ],
     targets: [
         .target(
-            name: "AgentsStatusCore",
+            name: "TokeniCore",
             resources: [.copy("Resources")],
             swiftSettings: [.enableUpcomingFeature("StrictConcurrency")],
             linkerSettings: [.linkedFramework("Security", .when(platforms: [.macOS]))]),
         .executableTarget(
-            name: "AgentsStatusBar",
-            dependencies: ["AgentsStatusCore"],
+            name: "TokeniBar",
+            dependencies: ["TokeniCore"],
             exclude: ["Resources"],
-            resources: [.copy("BrandIcons")],
+            resources: [
+                .copy("BrandIcons"),
+                .copy("CompanionAssets"),
+            ],
             swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]),
         .testTarget(
-            name: "AgentsStatusCoreTests",
-            dependencies: ["AgentsStatusCore"],
+            name: "TokeniCoreTests",
+            dependencies: ["TokeniCore"],
             resources: [.copy("Fixtures")],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),

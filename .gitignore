@@ -1,7 +1,7 @@
 .DS_Store
 .build/
 .swiftpm/
-AgentsStatusBar.app/
+TokeniBar.app/
 dist/
 *.xcarchive
 *.dSYM

@@ -27,10 +27,10 @@ if [[ -n "$build_number" && ! "$build_number" =~ $build_number_pattern ]]; then
     exit 2
 fi
 
-app_dir="$output_dir/Agents Status Bar.app"
+app_dir="$output_dir/Tokeni Bar.app"
 contents_dir="$app_dir/Contents"
 
-swift build --package-path "$project_dir" -c release --product AgentsStatusBar
+swift build --package-path "$project_dir" -c release --product TokeniBar
 binary_dir=$(swift build --package-path "$project_dir" -c release --show-bin-path)
 
 if [[ "$app_dir" != "$output_dir"/* ]]; then
@@ -40,9 +40,10 @@ fi
 
 rm -rf "$app_dir"
 mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources"
-cp "$binary_dir/AgentsStatusBar" "$contents_dir/MacOS/AgentsStatusBar"
-cp -R "$binary_dir/AgentsStatusBar_AgentsStatusCore.bundle" "$contents_dir/Resources/AgentsStatusBar_AgentsStatusCore.bundle"
-cp -R "$binary_dir/AgentsStatusBar_AgentsStatusBar.bundle/BrandIcons" "$contents_dir/Resources/BrandIcons"
+cp "$binary_dir/TokeniBar" "$contents_dir/MacOS/TokeniBar"
+cp -R "$binary_dir/TokeniBar_TokeniCore.bundle" "$contents_dir/Resources/TokeniBar_TokeniCore.bundle"
+cp -R "$binary_dir/TokeniBar_TokeniBar.bundle/BrandIcons" "$contents_dir/Resources/BrandIcons"
+cp -R "$binary_dir/TokeniBar_TokeniBar.bundle/CompanionAssets" "$contents_dir/Resources/CompanionAssets"
 cp "$project_dir/packaging/Info.plist" "$contents_dir/Info.plist"
 if [[ -n "$app_version" ]]; then
     plutil -replace CFBundleShortVersionString -string "$app_version" "$contents_dir/Info.plist"
@@ -50,8 +51,8 @@ fi
 if [[ -n "$build_number" ]]; then
     plutil -replace CFBundleVersion -string "$build_number" "$contents_dir/Info.plist"
 fi
-cp -R "$project_dir/Sources/AgentsStatusBar/Resources/en.lproj" "$contents_dir/Resources/en.lproj"
-cp -R "$project_dir/Sources/AgentsStatusBar/Resources/ko.lproj" "$contents_dir/Resources/ko.lproj"
+cp -R "$project_dir/Sources/TokeniBar/Resources/en.lproj" "$contents_dir/Resources/en.lproj"
+cp -R "$project_dir/Sources/TokeniBar/Resources/ko.lproj" "$contents_dir/Resources/ko.lproj"
 
 signing_identity=${APP_SIGN_IDENTITY:--}
 signing_arguments=(--force --options runtime --sign "$signing_identity")
