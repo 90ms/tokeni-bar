@@ -196,8 +196,8 @@ jobs:
             "$release_sha" \
             "$tap/Casks/tokeni-bar.rb"
 
-          if ! git -C "$tap" diff --quiet -- Casks/tokeni-bar.rb; then
-            git -C "$tap" add Casks/tokeni-bar.rb
+          git -C "$tap" add Casks/tokeni-bar.rb
+          if ! git -C "$tap" diff --cached --quiet -- Casks/tokeni-bar.rb; then
             git -C "$tap" \
               -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
