@@ -242,6 +242,31 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     {
         "\(speciesID).\(stage.rawValue).\(rarity.rawValue)"
     }
+
+    public func isValid(rules: CompanionGameRules = .standard) -> Bool {
+        guard self.schemaVersion == Self.currentSchemaVersion,
+              !self.speciesID.isEmpty,
+              self.generationNumber >= 1,
+              self.growthEnergy >= 0,
+              self.bondEnergy >= 0,
+              self.stage == rules.stage(for: self.growthEnergy),
+              Set(self.appliedGrowthAwardIDs).count == self.appliedGrowthAwardIDs.count,
+              self.collection.forms.count <= 13
+        else { return false }
+
+        let formIDs = self.collection.forms.map(\.formID)
+        guard Set(formIDs).count == formIDs.count else { return false }
+        return self.collection.forms.allSatisfy { form in
+            form.formID == Self.formID(
+                speciesID: self.speciesID,
+                stage: form.stage,
+                rarity: form.rarity)
+                && form.encounterCount >= 0
+                && (form.unlockKind == .encountered
+                    ? form.encounterCount > 0 && form.lastEncounteredAt != nil
+                    : form.encounterCount == 0)
+        }
+    }
 }
 
 public enum CompanionGameEvent: Hashable, Sendable {

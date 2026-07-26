@@ -237,4 +237,59 @@ struct CompanionGameEngineTests {
             lowestRemainingQuotaPercent: 50,
             at: now) == .sleep)
     }
+
+    @Test("Rejects inconsistent or duplicated saved game state")
+    func rejectsInvalidState() {
+        var wrongStage = CompanionGameState(
+            stage: .adult,
+            growthEnergy: 0)
+        #expect(!wrongStage.isValid())
+
+        wrongStage = CompanionGameState()
+        wrongStage.appliedGrowthAwardIDs = [UUID(), UUID()]
+        wrongStage.appliedGrowthAwardIDs[1] = wrongStage.appliedGrowthAwardIDs[0]
+        #expect(!wrongStage.isValid())
+    }
+
+    @Test("Published rarity transitions produce the expected adult distribution")
+    func finalRarityDistribution() {
+        let engine = CompanionGameEngine()
+        var generator = SplitMix64(state: 0x746f_6b65_6e69)
+        var counts = [CompanionRarity: Int]()
+        let samples = 200_000
+
+        for _ in 0..<samples {
+            var rarity = CompanionRarity.normal
+            for _ in 0..<3 {
+                rarity = engine.rollRarity(
+                    from: rarity,
+                    unitValue: generator.nextUnit())
+            }
+            counts[rarity, default: 0] += 1
+        }
+
+        let expected: [CompanionRarity: Double] = [
+            .normal: 0.42188,
+            .rare: 0.40889,
+            .epic: 0.15521,
+            .legendary: 0.01403,
+        ]
+        for (rarity, probability) in expected {
+            let actual = Double(counts[rarity, default: 0]) / Double(samples)
+            #expect(abs(actual - probability) < 0.006)
+        }
+    }
+}
+
+private struct SplitMix64 {
+    var state: UInt64
+
+    mutating func nextUnit() -> Double {
+        self.state &+= 0x9E37_79B9_7F4A_7C15
+        var value = self.state
+        value = (value ^ (value >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        value = (value ^ (value >> 27)) &* 0x94D0_49BB_1331_11EB
+        value ^= value >> 31
+        return Double(value >> 11) / Double(1 << 53)
+    }
 }

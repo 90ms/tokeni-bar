@@ -16,7 +16,7 @@ public actor CompanionGameStateStore {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         guard let state = try? decoder.decode(CompanionGameState.self, from: data),
-              state.schemaVersion == CompanionGameState.currentSchemaVersion
+              state.isValid()
         else {
             try FileManager.default.removeItem(at: self.fileURL)
             return CompanionGameState()
