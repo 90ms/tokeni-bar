@@ -1,5 +1,7 @@
 # Homebrew distribution
 
+[한국어](HOMEBREW.ko.md) | **English**
+
 Agents Status Bar is distributed as a binary Cask through the shared
 [`90ms/homebrew-tap`](https://github.com/90ms/homebrew-tap). The Cask downloads
 the versioned ZIP from GitHub Releases and verifies its SHA-256 checksum.
@@ -40,15 +42,16 @@ configured, it renders the new Cask and opens a pull request against
 `90ms/homebrew-tap`; it never merges that pull request automatically.
 
 The token needs permission to push a branch and open a pull request in the tap
-repository. The tap CI should install the Cask, run its test, and perform a
-strict audit before the pull request is merged.
+repository. The tap CI installs the Cask on an Apple silicon macOS runner,
+validates the application bundle and code signature, performs a strict audit,
+and uninstalls it before the pull request is merged.
 
 To render a Cask manually:
 
 ```bash
 ./Scripts/render_homebrew_cask.sh \
-  0.5.1 \
-  968d7845bef67db6d185822ffe588c7cede5c4049f61d076fc308f72e2ee5032 \
+  <version> \
+  <release-zip-sha256> \
   /path/to/homebrew-tap/Casks/agents-status-bar.rb
 ```
 
