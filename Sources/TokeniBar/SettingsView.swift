@@ -273,11 +273,18 @@ struct SettingsView: View {
                         .controlSize(.small)
                 } else if let result = self.store.appUpdateResult {
                     if result.isUpdateAvailable {
-                        Link(
-                            AppLocalization.format(
-                                "settings.updates.available",
-                                result.latestRelease.version.description),
-                            destination: result.latestRelease.pageURL)
+                        HStack {
+                            Link(
+                                AppLocalization.format(
+                                    "settings.updates.available",
+                                    result.latestRelease.version.description),
+                                destination: result.latestRelease.pageURL)
+                            Spacer()
+                            Button(AppLocalization.string("settings.updates.install")) {
+                                self.store.installAppUpdate()
+                            }
+                            .disabled(self.store.isInstallingAppUpdate)
+                        }
                     } else {
                         Text(AppLocalization.string("settings.updates.latest"))
                             .foregroundStyle(.secondary)
@@ -293,12 +300,43 @@ struct SettingsView: View {
                         .foregroundStyle(.orange)
                 }
 
+                if self.store.isInstallingAppUpdate,
+                   let operation = self.store.appUpdateInstallationOperation
+                {
+                    HStack {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text(self.updateOperationText(operation))
+                            .font(.caption)
+                        Spacer()
+                        Button(AppLocalization.string("settings.updates.cancel")) {
+                            self.store.cancelAppUpdateInstallation()
+                        }
+                    }
+                } else if let message = self.store.appUpdateInstallationMessage {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+
+                if self.store.appUpdateRequiresFormulaMigration {
+                    Link(
+                        AppLocalization.string("settings.updates.migrationGuide"),
+                        destination: URL(
+                            string: "https://github.com/90ms/tokeni-bar/blob/main/docs/HOMEBREW.ko.md#migrating-from-the-cask")
+                            ?? URL(string: "https://github.com/90ms/tokeni-bar")!)
+                }
+
                 Text(AppLocalization.string("settings.updates.manual"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
+    }
+
+    private func updateOperationText(_ operation: HomebrewUpdateOperation) -> String {
+        AppLocalization.string("settings.updates.operation.\(operation.rawValue)")
     }
 
     private var notificationsTab: some View {
