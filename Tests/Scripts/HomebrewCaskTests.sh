@@ -7,18 +7,18 @@ trap 'rm -rf "$TEST_ROOT"' EXIT
 
 VERSION="0.5.1"
 SHA256="968d7845bef67db6d185822ffe588c7cede5c4049f61d076fc308f72e2ee5032"
-OUTPUT="$TEST_ROOT/Casks/agents-status-bar.rb"
+OUTPUT="$TEST_ROOT/Casks/tokeni-bar.rb"
 
 "$ROOT/Scripts/render_homebrew_cask.sh" "$VERSION" "$SHA256" "$OUTPUT"
 
 grep -q "version \"$VERSION\"" "$OUTPUT"
 grep -q "sha256 \"$SHA256\"" "$OUTPUT"
-grep -q "releases/download/v#{version}/AgentsStatusBar-#{version}.zip" "$OUTPUT"
+grep -q "releases/download/v#{version}/TokeniBar-#{version}.zip" "$OUTPUT"
 if grep -q '__VERSION__\|__SHA256__' "$OUTPUT"; then
     echo "Cask placeholders were not fully rendered" >&2
     exit 1
 fi
-diff -u "$ROOT/Casks/agents-status-bar.rb" "$OUTPUT"
+diff -u "$ROOT/Casks/tokeni-bar.rb" "$OUTPUT"
 
 if "$ROOT/Scripts/render_homebrew_cask.sh" "not-a-version" "$SHA256" "$OUTPUT"; then
     echo "Invalid version unexpectedly succeeded" >&2

@@ -1,24 +1,24 @@
-# Agents Status Bar
+# Tokeni Bar
 
 **한국어** | [English](README.en.md)
 
-[![CI](https://github.com/90ms/agents-status-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/90ms/agents-status-bar/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/90ms/agents-status-bar)](https://github.com/90ms/agents-status-bar/releases/latest)
+[![CI](https://github.com/90ms/tokeni-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/90ms/tokeni-bar/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/90ms/tokeni-bar)](https://github.com/90ms/tokeni-bar/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<img src="docs/agents-status-bar-icon.png" alt="Agents Status Bar 아이콘" width="128">
+<img src="docs/tokeni-bar-icon.png" alt="Tokeni Bar 아이콘" width="128">
 
 AI 코딩 에이전트의 쿼터, 토큰 활동 및 API 환산 참고 비용을 한곳에서 확인하는
 개인정보 보호 중심의 macOS 메뉴바 앱입니다.
 
 <p align="center">
-  <img src="docs/agents-status-bar.png" width="500" alt="Codex, Claude Code 및 Gemini CLI 사용량을 보여주는 Agents Status Bar" />
+  <img src="docs/tokeni-bar.png" width="500" alt="Codex, Claude Code 및 Gemini CLI 사용량을 보여주는 Tokeni Bar" />
 </p>
 
 > 현재 `main` UI를 기준으로 샘플 값만 사용한 이미지이며 실제 계정정보는
 > 포함하지 않습니다.
 
-Agents Status Bar는 기존 CLI 로그인을 재사용합니다. 프롬프트, 응답, 액세스 토큰,
+Tokeni Bar는 기존 CLI 로그인을 재사용합니다. 프롬프트, 응답, 액세스 토큰,
 리프레시 토큰 또는 쿠키를 저장하지 않습니다. 쿼터 비율은 항상 **남은 비율**이며,
 비용은 구독 청구액이 아닌 참고값입니다.
 
@@ -43,8 +43,8 @@ Agents Status Bar는 기존 CLI 로그인을 재사용합니다. 프롬프트, �
 ### Homebrew
 
 ```bash
-brew install --cask 90ms/tap/agents-status-bar
-open -a "Agents Status Bar"
+brew install --cask 90ms/tap/tokeni-bar
+open -a "Tokeni Bar"
 ```
 
 완전한 이름으로 설치하면 `90ms/tap` 저장소가 자동으로 추가됩니다. Tap 신뢰가
@@ -52,8 +52,8 @@ open -a "Agents Status Bar"
 
 ### 직접 다운로드
 
-[최신 GitHub Release](https://github.com/90ms/agents-status-bar/releases/latest)에서
-ZIP을 내려받아 압축을 풀고 `Agents Status Bar.app`을 `/Applications`로 옮깁니다.
+[최신 GitHub Release](https://github.com/90ms/tokeni-bar/releases/latest)에서
+ZIP을 내려받아 압축을 풀고 `Tokeni Bar.app`을 `/Applications`로 옮깁니다.
 
 Developer ID 서명을 구성하기 전까지 릴리스는 ad-hoc 서명을 사용합니다. macOS가
 첫 실행을 차단하면 **시스템 설정 → 개인정보 보호 및 보안**에서 앱 실행을
@@ -62,7 +62,7 @@ Developer ID 서명을 구성하기 전까지 릴리스는 ad-hoc 서명을 사�
 ## 첫 실행
 
 1. 모니터링할 CLI를 터미널에서 한 번 실행해 로그인합니다.
-2. Agents Status Bar를 열고 메뉴바 오른쪽의 차트 아이콘을 선택합니다.
+2. Tokeni Bar를 열고 메뉴바 오른쪽의 차트 아이콘을 선택합니다.
 3. **설정 → 일반**에서 사용할 제공자를 켜고 메뉴바 표시 방식을 선택합니다.
 4. Claude Code 계정 쿼터를 사용하려면 **제공자 연결**에서 **연결**을 선택하고
    키체인 요청을 승인합니다.
@@ -75,13 +75,13 @@ Developer ID 서명을 구성하기 전까지 릴리스는 ad-hoc 서명을 사�
 ```bash
 # 업데이트
 brew update
-brew upgrade --cask agents-status-bar
+brew upgrade --cask tokeni-bar
 
 # 설정과 기록을 남기고 앱만 제거
-brew uninstall --cask agents-status-bar
+brew uninstall --cask tokeni-bar
 
 # 앱, 설정 및 로컬 집계 기록을 모두 제거
-brew uninstall --cask --zap agents-status-bar
+brew uninstall --cask --zap tokeni-bar
 ```
 
 앱은 6시간마다 GitHub Releases에서 새 안정 버전을 확인하고 링크를 표시합니다.
@@ -127,7 +127,7 @@ Claude Code의 OAuth 인증정보가 macOS 키체인에 있으면 사용자가 �
 
 ### 앱은 실행 중이지만 창이 보이지 않음
 
-Agents Status Bar는 Dock이 아닌 메뉴바에서 동작합니다. macOS 메뉴바 오른쪽의
+Tokeni Bar는 Dock이 아닌 메뉴바에서 동작합니다. macOS 메뉴바 오른쪽의
 차트 아이콘을 확인하세요.
 
 ### Homebrew에서 신뢰하지 않는 tap 오류가 발생함
@@ -135,8 +135,8 @@ Agents Status Bar는 Dock이 아닌 메뉴바에서 동작합니다. macOS 메�
 위의 완전한 이름으로 설치하세요. 이미 추가한 tap의 Cask만 직접 신뢰하려면:
 
 ```bash
-brew trust --cask 90ms/tap/agents-status-bar
-brew install --cask agents-status-bar
+brew trust --cask 90ms/tap/tokeni-bar
+brew install --cask tokeni-bar
 ```
 
 ### 비용이 구독 청구액과 다름
@@ -148,12 +148,12 @@ API 환산 참고값입니다. API 청구서나 Codex, ChatGPT, Claude 또는 Gr
 ## 소스에서 빌드
 
 ```bash
-git clone https://github.com/90ms/agents-status-bar.git
-cd agents-status-bar
+git clone https://github.com/90ms/tokeni-bar.git
+cd tokeni-bar
 ./Scripts/test.sh
 swift build
 ./Scripts/package_app.sh
-open "dist/Agents Status Bar.app"
+open "dist/Tokeni Bar.app"
 ```
 
 `Scripts/package_app.sh`는 기본적으로 ad-hoc 서명을 사용합니다. 다른 로컬 서명

@@ -1,10 +1,10 @@
-# Agents Status Bar contributor guide
+# Tokeni Bar contributor guide
 
 ## Project shape
 
-- `Sources/AgentsStatusCore`: provider-neutral models, scanners, and provider adapters.
-- `Sources/AgentsStatusBar`: macOS menu-bar UI and app state.
-- `Tests/AgentsStatusCoreTests`: parser tests backed by sanitized fixtures.
+- `Sources/TokeniCore`: provider-neutral models, scanners, and provider adapters.
+- `Sources/TokeniBar`: macOS menu-bar UI and app state.
+- `Tests/TokeniCoreTests`: parser tests backed by sanitized fixtures.
 - `packaging`: app-bundle and Homebrew templates.
 
 ## Conventions

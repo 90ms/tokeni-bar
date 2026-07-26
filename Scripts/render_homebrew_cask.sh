@@ -10,7 +10,7 @@ VERSION="$1"
 SHA256="$2"
 OUTPUT_FILE="$3"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TEMPLATE="$ROOT/packaging/homebrew/agents-status-bar.rb.template"
+TEMPLATE="$ROOT/packaging/homebrew/tokeni-bar.rb.template"
 
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo "Invalid semantic version: $VERSION" >&2

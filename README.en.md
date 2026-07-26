@@ -1,24 +1,24 @@
-# Agents Status Bar
+# Tokeni Bar
 
 [한국어](README.md) | **English**
 
-[![CI](https://github.com/90ms/agents-status-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/90ms/agents-status-bar/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/90ms/agents-status-bar)](https://github.com/90ms/agents-status-bar/releases/latest)
+[![CI](https://github.com/90ms/tokeni-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/90ms/tokeni-bar/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/90ms/tokeni-bar)](https://github.com/90ms/tokeni-bar/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<img src="docs/agents-status-bar-icon.png" alt="Agents Status Bar icon" width="128">
+<img src="docs/tokeni-bar-icon.png" alt="Tokeni Bar icon" width="128">
 
 A privacy-conscious macOS menu-bar app that keeps AI coding-agent quotas,
 token activity, and API-equivalent cost estimates in one place.
 
 <p align="center">
-  <img src="docs/agents-status-bar.png" width="500" alt="Agents Status Bar showing Codex, Claude Code, and Gemini CLI usage" />
+  <img src="docs/tokeni-bar.png" width="500" alt="Tokeni Bar showing Codex, Claude Code, and Gemini CLI usage" />
 </p>
 
 > The screenshot follows the current `main` UI and contains sample values only.
 > It does not contain real account data.
 
-Agents Status Bar reuses your existing CLI sign-ins. It does not store prompts,
+Tokeni Bar reuses your existing CLI sign-ins. It does not store prompts,
 responses, access tokens, refresh tokens, or cookies. Quota percentages always
 mean **percent left**, and cost values are references—not subscription bills.
 
@@ -46,8 +46,8 @@ mean **percent left**, and cost values are references—not subscription bills.
 ### Homebrew
 
 ```bash
-brew install --cask 90ms/tap/agents-status-bar
-open -a "Agents Status Bar"
+brew install --cask 90ms/tap/tokeni-bar
+open -a "Tokeni Bar"
 ```
 
 The fully qualified install command adds the `90ms/tap` repository and trusts
@@ -55,8 +55,8 @@ only this Cask on Homebrew versions that require tap trust.
 
 ### Direct download
 
-Download the ZIP from the [latest GitHub Release](https://github.com/90ms/agents-status-bar/releases/latest),
-unzip it, and move `Agents Status Bar.app` to `/Applications`.
+Download the ZIP from the [latest GitHub Release](https://github.com/90ms/tokeni-bar/releases/latest),
+unzip it, and move `Tokeni Bar.app` to `/Applications`.
 
 Releases are ad-hoc signed until Developer ID signing is configured. If macOS
 blocks the first launch, approve the app in **System Settings → Privacy &
@@ -65,7 +65,7 @@ Security**. Do not disable Gatekeeper globally.
 ## First launch
 
 1. Sign in through each CLI you want to monitor by running it once in Terminal.
-2. Open Agents Status Bar and select its chart icon on the right side of the
+2. Open Tokeni Bar and select its chart icon on the right side of the
    menu bar.
 3. Open **Settings → General**, enable the providers you use, and choose the
    menu-bar display.
@@ -80,13 +80,13 @@ format remain unavailable instead of showing guessed values.
 ```bash
 # Update
 brew update
-brew upgrade --cask agents-status-bar
+brew upgrade --cask tokeni-bar
 
 # Remove the app but keep settings and history
-brew uninstall --cask agents-status-bar
+brew uninstall --cask tokeni-bar
 
 # Remove the app, settings, and local aggregate history
-brew uninstall --cask --zap agents-status-bar
+brew uninstall --cask --zap tokeni-bar
 ```
 
 The app checks GitHub Releases every six hours and links to a newer stable
@@ -136,7 +136,7 @@ Keychain approval dialog.
 
 ### The app is running but no window is visible
 
-Agents Status Bar is a menu-bar app and does not appear in the Dock. Look for
+Tokeni Bar is a menu-bar app and does not appear in the Dock. Look for
 the chart icon on the right side of the macOS menu bar.
 
 ### Homebrew reports an untrusted tap
@@ -145,8 +145,8 @@ Install with the fully qualified name shown above. To trust an already tapped
 Cask explicitly:
 
 ```bash
-brew trust --cask 90ms/tap/agents-status-bar
-brew install --cask agents-status-bar
+brew trust --cask 90ms/tap/tokeni-bar
+brew install --cask tokeni-bar
 ```
 
 ### Cost does not match a subscription bill
@@ -158,12 +158,12 @@ ChatGPT, Claude, or Grok subscription charge.
 ## Build from source
 
 ```bash
-git clone https://github.com/90ms/agents-status-bar.git
-cd agents-status-bar
+git clone https://github.com/90ms/tokeni-bar.git
+cd tokeni-bar
 ./Scripts/test.sh
 swift build
 ./Scripts/package_app.sh
-open "dist/Agents Status Bar.app"
+open "dist/Tokeni Bar.app"
 ```
 
 `Scripts/package_app.sh` uses ad-hoc signing by default. Set
