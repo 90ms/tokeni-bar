@@ -44,7 +44,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var appUpdateRequiresFormulaMigration: Bool
     @Published private(set) var companionEnabled: Bool
     @Published private(set) var companionAnimationsEnabled: Bool
-    @Published private(set) var companionState: CompanionState
+    @Published private(set) var companionState: CompanionGameState
 
     private let providers: [any UsageProviding]
     private var refreshLoop: Task<Void, Never>?
@@ -56,8 +56,11 @@ final class UsageStore: ObservableObject {
     private let pricingCatalogClient: PricingCatalogUpdateClient
     private let appUpdateClient: GitHubReleaseUpdateClient
     private let homebrewUpdateService: HomebrewUpdateService
-    private let companionStateStore: CompanionStateStore
-    private let companionGrowthEngine = CompanionGrowthEngine()
+    private let companionStateStore: CompanionGameStateStore
+    private let tokenGrowthLedgerStore: TokenGrowthLedgerStore
+    private let companionGameEngine = CompanionGameEngine()
+    private let tokenGrowthLedgerEngine = TokenGrowthLedgerEngine()
+    private var tokenGrowthLedgerState: TokenGrowthLedgerState
     private var companionStateLoaded = false
     private var appUpdateInstallationTask: Task<Void, Never>?
     private static let enabledProvidersKey = "enabledProviderIDs"
@@ -90,7 +93,8 @@ final class UsageStore: ObservableObject {
         let pricingCatalogClient = PricingCatalogUpdateClient()
         let appUpdateClient = GitHubReleaseUpdateClient()
         let homebrewUpdateService = HomebrewUpdateService()
-        let companionStateStore = CompanionStateStore()
+        let companionStateStore = CompanionGameStateStore()
+        let tokenGrowthLedgerStore = TokenGrowthLedgerStore()
         self.notificationController = notificationController
         self.launchAtLoginController = launchAtLoginController
         self.historyStore = historyStore
@@ -99,6 +103,8 @@ final class UsageStore: ObservableObject {
         self.appUpdateClient = appUpdateClient
         self.homebrewUpdateService = homebrewUpdateService
         self.companionStateStore = companionStateStore
+        self.tokenGrowthLedgerStore = tokenGrowthLedgerStore
+        self.tokenGrowthLedgerState = TokenGrowthLedgerState()
         self.notificationsEnabled = notificationController.isEnabled
         self.notificationSettingsMessage = nil
         self.authorizingProviderIDs = []
@@ -169,7 +175,7 @@ final class UsageStore: ObservableObject {
             forKey: Self.companionEnabledKey) as? Bool ?? true
         self.companionAnimationsEnabled = UserDefaults.standard.object(
             forKey: Self.companionAnimationsEnabledKey) as? Bool ?? true
-        self.companionState = CompanionState()
+        self.companionState = CompanionGameState()
         let enabledIDs: Set<ProviderID>
         if let stored = UserDefaults.standard.stringArray(forKey: Self.enabledProvidersKey) {
             enabledIDs = Set(stored.map { ProviderID(rawValue: $0) }).intersection(knownIDs)
@@ -188,8 +194,11 @@ final class UsageStore: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             self.companionState = (try? await self.companionStateStore.load())
-                ?? CompanionState()
+                ?? CompanionGameState()
+            self.tokenGrowthLedgerState = (try? await self.tokenGrowthLedgerStore.load())
+                ?? TokenGrowthLedgerState()
             self.companionStateLoaded = true
+            await self.applyPendingCompanionGrowthAwards()
             self.historyRecords = (try? await self.historyStore.records()) ?? []
             let cachedPricing = await self.pricingCatalogClient.activateCachedCatalog()
             self.applyPricingCatalogResult(cachedPricing)
@@ -256,6 +265,7 @@ final class UsageStore: ObservableObject {
         } catch {
             // History is an optional local enhancement and must not fail provider refreshes.
         }
+        await self.processCompanionGrowth(at: self.lastRefresh ?? .now)
         await self.refreshExchangeRate()
         await self.refreshPricingCatalogIfNeeded()
         self.processBudgetAlert()
@@ -474,7 +484,28 @@ final class UsageStore: ObservableObject {
     func patCompanion() {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionState
-        self.companionGrowthEngine.pat(in: &state)
+        self.companionGameEngine.pat(in: &state)
+        self.companionState = state
+        self.saveCompanionState()
+    }
+
+    func completeCompanionGeneration() {
+        guard self.companionEnabled,
+              self.companionStateLoaded,
+              self.companionState.stage == .adult
+        else { return }
+        var state = self.companionState
+        guard (try? self.companionGameEngine.completeGeneration(in: &state)) != nil else {
+            return
+        }
+        self.companionState = state
+        self.saveCompanionState()
+    }
+
+    func abandonCompanionForNewEgg() {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionState
+        _ = self.companionGameEngine.abandonForNewEgg(in: &state)
         self.companionState = state
         self.saveCompanionState()
     }
@@ -542,8 +573,8 @@ final class UsageStore: ObservableObject {
         self.activityAnimationsEnabled && self.hasActiveSession
     }
 
-    var companionStage: CompanionStage {
-        self.companionGrowthEngine.stage(for: self.companionState)
+    var companionStage: CompanionGameStage {
+        self.companionState.stage
     }
 
     var companionBehavior: CompanionBehavior {
@@ -554,25 +585,39 @@ final class UsageStore: ObservableObject {
     }
 
     var companionStageProgress: Double {
-        let rules = self.companionGrowthEngine.rules
+        let rules = self.companionGameEngine.rules
         let stage = self.companionStage
-        guard let nextXP = rules.nextStageXP(after: stage) else { return 1 }
-        let stageStartXP: Int = switch stage {
-        case .egg: 0
-        case .hatchling: rules.hatchXP
-        case .baby: rules.babyXP
-        case .adult: rules.adultXP
-        }
-        let range = max(nextXP - stageStartXP, 1)
-        return min(max(Double(self.companionState.totalXP - stageStartXP) / Double(range), 0), 1)
+        guard let nextEnergy = rules.nextThreshold(after: stage) else { return 1 }
+        let stageStartEnergy = rules.threshold(for: stage)
+        let range = max(nextEnergy - stageStartEnergy, 1)
+        return min(max(
+            Double(self.companionState.growthEnergy - stageStartEnergy) / Double(range),
+            0), 1)
     }
 
-    var companionNextStageXP: Int? {
-        self.companionGrowthEngine.rules.nextStageXP(after: self.companionStage)
+    var companionNextStageEnergy: Int? {
+        self.companionGameEngine.rules.nextThreshold(after: self.companionStage)
     }
 
-    var companionDailyXPCap: Int {
-        self.companionGrowthEngine.rules.dailyXPCap
+    var companionTodayEnergy: Int {
+        let dateKey = GrowthLocalDate.key(for: .now)
+        return self.tokenGrowthLedgerState.dayCredits
+            .first { $0.dateKey == dateKey }?
+            .awardedEnergy ?? 0
+    }
+
+    var companionTodayTokens: Int64 {
+        let dateKey = GrowthLocalDate.key(for: .now)
+        return self.tokenGrowthLedgerState.dayCredits
+            .first { $0.dateKey == dateKey }?
+            .aggregateTokens ?? 0
+    }
+
+    var companionGrowthProviderStatus: (available: Int, total: Int) {
+        let enabled = self.snapshots.filter { $0.availability == .available }
+        return (
+            enabled.filter { $0.growthUsageObservation != nil }.count,
+            enabled.count)
     }
 
     func isActive(_ providerID: ProviderID) -> Bool {
@@ -678,16 +723,66 @@ final class UsageStore: ObservableObject {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         let previousState = self.companionState
         var state = previousState
-        let event = self.companionGrowthEngine.recordActivity(
+        self.companionGameEngine.recordActivity(
             isActive: self.hasActiveSession,
             at: now,
             in: &state)
-        if case .stageChanged = event {
-            state.celebrationUntil = now.addingTimeInterval(6)
-        }
         guard state != previousState else { return }
         self.companionState = state
         self.saveCompanionState()
+    }
+
+    private func processCompanionGrowth(at now: Date) async {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var ledger = self.tokenGrowthLedgerState
+        _ = self.tokenGrowthLedgerEngine.process(
+            observations: self.snapshots.compactMap(\.growthUsageObservation),
+            at: now,
+            in: &ledger)
+        do {
+            try await self.tokenGrowthLedgerStore.save(ledger)
+            self.tokenGrowthLedgerState = ledger
+        } catch {
+            return
+        }
+        await self.applyPendingCompanionGrowthAwards()
+    }
+
+    private func applyPendingCompanionGrowthAwards() async {
+        guard self.companionStateLoaded else { return }
+        for award in self.tokenGrowthLedgerState.pendingAwards {
+            var companion = self.companionState
+            var generator = SystemRandomNumberGenerator()
+            let randomValues = (0..<3).map { _ in
+                Double.random(in: 0..<1, using: &generator)
+            }
+            let events: [CompanionGameEvent]
+            do {
+                events = try self.companionGameEngine.apply(
+                    award: award,
+                    randomValues: randomValues,
+                    to: &companion)
+                if events.contains(where: {
+                    if case .evolved = $0 { return true }
+                    return false
+                }) {
+                    companion.celebrationUntil = Date.now.addingTimeInterval(6)
+                }
+                try await self.companionStateStore.save(companion)
+            } catch {
+                return
+            }
+            self.companionState = companion
+
+            var ledger = self.tokenGrowthLedgerState
+            self.tokenGrowthLedgerEngine.markApplied(award.id, in: &ledger)
+            do {
+                try await self.tokenGrowthLedgerStore.save(ledger)
+                self.tokenGrowthLedgerState = ledger
+            } catch {
+                return
+            }
+        }
     }
 
     private func saveCompanionState() {

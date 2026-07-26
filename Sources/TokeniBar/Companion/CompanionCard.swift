@@ -20,6 +20,10 @@ struct CompanionCard: View {
                         "companion.stage.\(self.store.companionStage.rawValue)"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    Text(AppLocalization.string(
+                        "companion.rarity.\(self.store.companionState.rarity.rawValue)"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Spacer()
                 }
 
@@ -28,19 +32,19 @@ struct CompanionCard: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if let nextXP = self.store.companionNextStageXP {
+                if let nextEnergy = self.store.companionNextStageEnergy {
                     ProgressView(value: self.store.companionStageProgress)
                     Text(AppLocalization.format(
                         "companion.progress",
-                        self.store.companionState.totalXP,
-                        nextXP))
+                        self.store.companionState.growthEnergy,
+                        nextEnergy))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 } else {
                     Text(AppLocalization.format(
                         "companion.progress.max",
-                        self.store.companionState.totalXP))
+                        self.store.companionState.bondEnergy))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .monospacedDigit()

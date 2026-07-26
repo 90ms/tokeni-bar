@@ -20,8 +20,11 @@ struct CompanionSpriteManifest: Decodable {
     let stages: [String: String]
     let animations: [String: Animation]
 
-    func sheetName(for stage: CompanionStage) -> String? {
-        self.stages[stage.rawValue]
+    func sheetName(for stage: CompanionGameStage) -> String? {
+        if let sheet = self.stages[stage.rawValue] {
+            return sheet
+        }
+        return stage == .junior ? self.stages["baby"] : nil
     }
 
     func animation(for behavior: CompanionBehavior) -> Animation? {

@@ -181,4 +181,57 @@ struct CompanionGameEngineTests {
         #expect(state.growthEnergy == 0)
         #expect(!FileManager.default.fileExists(atPath: file.path))
     }
+
+    @Test("New game state round-trips without provider or token totals")
+    func stateRoundTrip() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let file = directory.appending(path: "companion-state.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var expected = CompanionGameState(
+            stage: .junior,
+            rarity: .epic,
+            growthEnergy: 420,
+            bondEnergy: 17)
+        expected.lastActiveAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let store = CompanionGameStateStore(fileURL: file)
+
+        try await store.save(expected)
+        let loaded = try await store.load()
+        let encoded = try String(contentsOf: file, encoding: .utf8)
+
+        #expect(loaded == expected)
+        #expect(!encoded.contains("provider"))
+        #expect(!encoded.contains("token"))
+    }
+
+    @Test("Behavior priority remains celebration warning work sleep idle")
+    func behaviorPriority() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        var state = CompanionGameState(
+            lastActiveAt: now.addingTimeInterval(-700),
+            celebrationUntil: now.addingTimeInterval(4))
+
+        #expect(CompanionBehaviorResolver.resolve(
+            state: state,
+            isWorking: true,
+            lowestRemainingQuotaPercent: 2,
+            at: now) == .celebrate)
+        state.celebrationUntil = nil
+        #expect(CompanionBehaviorResolver.resolve(
+            state: state,
+            isWorking: true,
+            lowestRemainingQuotaPercent: 2,
+            at: now) == .warning)
+        #expect(CompanionBehaviorResolver.resolve(
+            state: state,
+            isWorking: true,
+            lowestRemainingQuotaPercent: 50,
+            at: now) == .working)
+        #expect(CompanionBehaviorResolver.resolve(
+            state: state,
+            isWorking: false,
+            lowestRemainingQuotaPercent: 50,
+            at: now) == .sleep)
+    }
 }

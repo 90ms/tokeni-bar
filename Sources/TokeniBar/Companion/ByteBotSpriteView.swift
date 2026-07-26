@@ -6,7 +6,7 @@ import TokeniCore
 struct ByteBotSpriteView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
-    let stage: CompanionStage
+    let stage: CompanionGameStage
     let behavior: CompanionBehavior
     var dimension: CGFloat = 64
     var animationsEnabled = true

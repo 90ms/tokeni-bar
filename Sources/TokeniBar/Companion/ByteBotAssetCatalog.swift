@@ -36,7 +36,7 @@ final class ByteBotAssetCatalog {
     }
 
     func frame(
-        stage: CompanionStage,
+        stage: CompanionGameStage,
         behavior: CompanionBehavior,
         index: Int) -> CGImage?
     {

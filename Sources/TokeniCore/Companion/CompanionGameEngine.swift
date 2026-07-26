@@ -111,6 +111,16 @@ public struct CompanionGameEngine: Sendable {
         state.updatedAt = now
     }
 
+    public func recordActivity(
+        isActive: Bool,
+        at now: Date = .now,
+        in state: inout CompanionGameState)
+    {
+        guard isActive else { return }
+        state.lastActiveAt = now
+        state.updatedAt = now
+    }
+
     public func rollRarity(
         from rarity: CompanionRarity,
         unitValue requestedValue: Double) -> CompanionRarity

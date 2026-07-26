@@ -84,8 +84,8 @@ struct SettingsView: View {
                     .font(.callout)
                 Text(AppLocalization.format(
                     "settings.companion.today",
-                    self.store.companionState.dailyXP,
-                    self.store.companionDailyXPCap))
+                    self.store.companionTodayTokens,
+                    self.store.companionTodayEnergy))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

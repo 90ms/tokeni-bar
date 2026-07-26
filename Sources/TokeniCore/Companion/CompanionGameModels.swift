@@ -161,7 +161,7 @@ public struct CompanionGameRules: Hashable, Sendable {
     }
 
     public func nextThreshold(after stage: CompanionGameStage) -> Int? {
-        self.nextStage(after: stage).map(self.threshold(for:))
+        self.nextStage(after: stage).map { self.threshold(for: $0) }
     }
 }
 
@@ -179,6 +179,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var collection: CompanionCollection
     public var pity: CompanionPityState
     public var appliedGrowthAwardIDs: [UUID]
+    public var lastActiveAt: Date?
     public var lastPattedAt: Date?
     public var celebrationUntil: Date?
     public var generationCreatedAt: Date
@@ -196,6 +197,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         collection: CompanionCollection? = nil,
         pity: CompanionPityState = CompanionPityState(),
         appliedGrowthAwardIDs: [UUID] = [],
+        lastActiveAt: Date? = nil,
         lastPattedAt: Date? = nil,
         celebrationUntil: Date? = nil,
         generationCreatedAt: Date = .now,
@@ -212,6 +214,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.collection = collection ?? CompanionCollection()
         self.pity = pity
         self.appliedGrowthAwardIDs = Array(appliedGrowthAwardIDs.suffix(256))
+        self.lastActiveAt = lastActiveAt
         self.lastPattedAt = lastPattedAt
         self.celebrationUntil = celebrationUntil
         self.generationCreatedAt = generationCreatedAt
