@@ -195,6 +195,7 @@ jobs:
           release_sha="$(awk '{print $1}' "dist/TokeniBar-$VERSION.zip.sha256")"
           source_sha="$(awk '{print $1}' "dist/tokeni-bar-$VERSION-source.tar.gz.sha256")"
           tap="$RUNNER_TEMP/homebrew-tap"
+          gh auth setup-git
           gh repo clone 90ms/homebrew-tap "$tap"
           branch="automation/tokeni-bar-$VERSION"
           if git -C "$tap" ls-remote \
