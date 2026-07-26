@@ -155,6 +155,7 @@ struct TokeniBarApp: App {
             if self.store.companionEnabled {
                 ByteBotSpriteView(
                     stage: self.store.companionStage,
+                    rarity: self.store.companionState.rarity,
                     behavior: self.store.companionBehavior,
                     dimension: 18,
                     animationsEnabled: self.store.companionAnimationsEnabled)

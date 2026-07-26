@@ -7,6 +7,7 @@ struct ByteBotSpriteView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
     let stage: CompanionGameStage
+    let rarity: CompanionRarity
     let behavior: CompanionBehavior
     var dimension: CGFloat = 64
     var animationsEnabled = true
@@ -27,6 +28,7 @@ struct ByteBotSpriteView: View {
                 shouldAnimate: shouldAnimate)
             if let frame = catalog.frame(
                 stage: self.stage,
+                rarity: self.rarity,
                 behavior: self.behavior,
                 index: frameIndex)
             {

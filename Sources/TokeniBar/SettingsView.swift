@@ -53,6 +53,7 @@ struct SettingsView: View {
                     Spacer()
                     ByteBotSpriteView(
                         stage: self.store.companionStage,
+                        rarity: self.store.companionState.rarity,
                         behavior: self.store.companionBehavior,
                         dimension: 96,
                         animationsEnabled: self.store.companionAnimationsEnabled)

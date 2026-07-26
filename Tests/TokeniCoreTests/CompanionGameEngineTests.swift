@@ -188,12 +188,15 @@ struct CompanionGameEngineTests {
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         let file = directory.appending(path: "companion-state.json")
         defer { try? FileManager.default.removeItem(at: directory) }
+        let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
         var expected = CompanionGameState(
             stage: .junior,
             rarity: .epic,
             growthEnergy: 420,
-            bondEnergy: 17)
-        expected.lastActiveAt = Date(timeIntervalSince1970: 1_800_000_000)
+            bondEnergy: 17,
+            generationCreatedAt: timestamp,
+            updatedAt: timestamp)
+        expected.lastActiveAt = timestamp
         let store = CompanionGameStateStore(fileURL: file)
 
         try await store.save(expected)

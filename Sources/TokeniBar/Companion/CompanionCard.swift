@@ -8,6 +8,7 @@ struct CompanionCard: View {
         HStack(spacing: 12) {
             ByteBotSpriteView(
                 stage: self.store.companionStage,
+                rarity: self.store.companionState.rarity,
                 behavior: self.store.companionBehavior,
                 dimension: self.compact ? 58 : 72,
                 animationsEnabled: self.store.companionAnimationsEnabled)
