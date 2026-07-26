@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "bytebot",
+  "displayName": "ByteBot",
+  "logicalFrameSize": 32,
+  "assetFrameSize": 64,
+  "columns": 8,
+  "rows": 6,
+  "palette": [
+    "#071B35",
+    "#0B3A63",
+    "#086B82",
+    "#08A9AE",
+    "#42D6CE",
+    "#FFF0B3",
+    "#FF7163"
+  ],
+  "stages": {
+    "egg": "egg.png",
+    "hatchling": "baby.png",
+    "baby": "baby.png",
+    "adult": "adult.png"
+  },
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frameCount": 4,
+      "framesPerSecond": 2,
+      "loops": true
+    },
+    "working": {
+      "row": 1,
+      "frameCount": 6,
+      "framesPerSecond": 6,
+      "loops": true
+    },
+    "waiting": {
+      "row": 2,
+      "frameCount": 4,
+      "framesPerSecond": 2,
+      "loops": true
+    },
+    "warning": {
+      "row": 3,
+      "frameCount": 4,
+      "framesPerSecond": 8,
+      "loops": true
+    },
+    "celebrate": {
+      "row": 4,
+      "frameCount": 6,
+      "framesPerSecond": 8,
+      "loops": true
+    },
+    "sleep": {
+      "row": 5,
+      "frameCount": 4,
+      "framesPerSecond": 1,
+      "loops": true
+    }
+  }
+}

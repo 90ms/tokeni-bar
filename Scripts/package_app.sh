@@ -43,6 +43,7 @@ mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources"
 cp "$binary_dir/TokeniBar" "$contents_dir/MacOS/TokeniBar"
 cp -R "$binary_dir/TokeniBar_TokeniCore.bundle" "$contents_dir/Resources/TokeniBar_TokeniCore.bundle"
 cp -R "$binary_dir/TokeniBar_TokeniBar.bundle/BrandIcons" "$contents_dir/Resources/BrandIcons"
+cp -R "$binary_dir/TokeniBar_TokeniBar.bundle/CompanionAssets" "$contents_dir/Resources/CompanionAssets"
 cp "$project_dir/packaging/Info.plist" "$contents_dir/Info.plist"
 if [[ -n "$app_version" ]]; then
     plutil -replace CFBundleShortVersionString -string "$app_version" "$contents_dir/Info.plist"

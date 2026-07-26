@@ -1,0 +1,6 @@
+ByteBot pixel art assets
+
+Copyright (c) 2026 Tokeni Bar contributors
+
+These original assets are distributed under the same MIT License as Tokeni Bar.
+See the repository's root LICENSE file for the complete license text.

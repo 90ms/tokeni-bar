@@ -20,7 +20,10 @@ let package = Package(
             name: "TokeniBar",
             dependencies: ["TokeniCore"],
             exclude: ["Resources"],
-            resources: [.copy("BrandIcons")],
+            resources: [
+                .copy("BrandIcons"),
+                .copy("CompanionAssets"),
+            ],
             swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]),
         .testTarget(
             name: "TokeniCoreTests",
