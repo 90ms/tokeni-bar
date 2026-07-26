@@ -32,3 +32,24 @@ Choose **Selected provider remaining** and select **Claude Code** under
 Fable is the default for existing behavior. The selection is stored locally. If
 the selected window is not present in the current account response, the menu bar
 shows Claude as unavailable instead of substituting a different quota.
+
+## Cost estimates, exchange rates, and history
+
+Cost is a reference estimate of what the available account or local token total
+might cost at published API prices. It is not an API invoice or a Codex,
+ChatGPT, Claude, or Grok subscription charge.
+
+Codex account activity supplies aggregate token totals without the historical
+model, input/output, cache, or reasoning-token split needed for exact API
+pricing. Its daily, month, and lifetime costs use a versioned reference profile
+based on the validated `gpt-5-codex` catalog price and an assumed 80% uncached
+input / 20% output mix. Token totals are the authoritative value.
+
+- USD/KRW is checked once per Seoul calendar day through
+  [Frankfurter](https://frankfurter.dev/) using its ECB provider.
+- The versioned model-price catalog is checked once per day. Invalid schemas,
+  unsafe prices, untrusted sources, and downgrades are rejected.
+- Aggregate quota, token, and estimated-cost samples are stored locally every
+  15 minutes and retained for 30 days.
+- Unknown models remain without a cost instead of being mapped to a guessed
+  price.
