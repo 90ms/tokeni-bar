@@ -77,6 +77,10 @@ struct SettingsView: View {
                     Text(AppLocalization.string("settings.companion.motion"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    Button(AppLocalization.string("companion.collection.open")) {
+                        self.openWindow(id: "companion-collection")
+                    }
                 }
             }
 
@@ -87,6 +91,12 @@ struct SettingsView: View {
                     "settings.companion.today",
                     self.store.companionTodayTokens,
                     self.store.companionTodayEnergy))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(AppLocalization.format(
+                    "settings.companion.providers",
+                    self.store.companionGrowthProviderStatus.available,
+                    self.store.companionGrowthProviderStatus.total))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

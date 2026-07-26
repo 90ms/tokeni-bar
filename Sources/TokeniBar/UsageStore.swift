@@ -614,7 +614,10 @@ final class UsageStore: ObservableObject {
     }
 
     var companionGrowthProviderStatus: (available: Int, total: Int) {
-        let enabled = self.snapshots.filter { $0.availability == .available }
+        let enabled = self.snapshots.filter {
+            $0.availability == .available
+                && $0.descriptor.capabilities.supportsTokenUsage
+        }
         return (
             enabled.filter { $0.growthUsageObservation != nil }.count,
             enabled.count)

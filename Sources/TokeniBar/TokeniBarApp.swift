@@ -103,6 +103,11 @@ struct TokeniBarApp: App {
             DiagnosticsView(store: self.store)
         }
         .defaultSize(width: 680, height: 480)
+
+        Window(AppLocalization.string("companion.collection.window"), id: "companion-collection") {
+            CompanionCollectionView(store: self.store)
+        }
+        .defaultSize(width: 620, height: 720)
     }
 
     @ViewBuilder

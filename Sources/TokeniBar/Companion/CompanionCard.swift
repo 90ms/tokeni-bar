@@ -2,6 +2,8 @@ import SwiftUI
 
 struct CompanionCard: View {
     @ObservedObject var store: UsageStore
+    @Environment(\.openWindow) private var openWindow
+    @State private var confirmsCompletion = false
     var compact = false
 
     var body: some View {
@@ -50,6 +52,11 @@ struct CompanionCard: View {
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
+                Text(AppLocalization.format(
+                    "companion.today.short",
+                    self.store.companionTodayEnergy))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
 
             Button {
@@ -60,8 +67,38 @@ struct CompanionCard: View {
             .buttonStyle(.borderless)
             .help(AppLocalization.string("companion.pat"))
             .accessibilityLabel(AppLocalization.string("companion.pat"))
+
+            Button {
+                self.openWindow(id: "companion-collection")
+            } label: {
+                Image(systemName: "square.grid.3x3.fill")
+            }
+            .buttonStyle(.borderless)
+            .help(AppLocalization.string("companion.collection.open"))
+
+            if self.store.companionStage == .adult {
+                Button {
+                    self.confirmsCompletion = true
+                } label: {
+                    Image(systemName: "archivebox.fill")
+                }
+                .buttonStyle(.borderless)
+                .help(AppLocalization.string("companion.complete.action"))
+            }
         }
         .padding(8)
         .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: 10))
+        .confirmationDialog(
+            AppLocalization.string("companion.complete.confirm.title"),
+            isPresented: self.$confirmsCompletion,
+            titleVisibility: .visible)
+        {
+            Button(AppLocalization.string("companion.complete.confirm.action")) {
+                self.store.completeCompanionGeneration()
+            }
+            Button(AppLocalization.string("action.cancel"), role: .cancel) {}
+        } message: {
+            Text(AppLocalization.string("companion.complete.confirm.message"))
+        }
     }
 }
