@@ -33,10 +33,17 @@ struct ProviderIcon: View {
             forResource: name,
             withExtension: "svg",
             subdirectory: "BrandIcons")
-        let developmentURL = Bundle.module.url(
-            forResource: name,
-            withExtension: "svg",
-            subdirectory: "BrandIcons")
+        let developmentURL: URL?
+        if packagedURL == nil,
+           Bundle.main.bundleURL.pathExtension.lowercased() != "app"
+        {
+            developmentURL = Bundle.module.url(
+                forResource: name,
+                withExtension: "svg",
+                subdirectory: "BrandIcons")
+        } else {
+            developmentURL = nil
+        }
 
         guard let url = packagedURL ?? developmentURL,
               let image = NSImage(contentsOf: url)

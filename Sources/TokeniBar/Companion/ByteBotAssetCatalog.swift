@@ -68,14 +68,26 @@ final class ByteBotAssetCatalog {
 
     private static func assetDirectory() -> URL? {
         let relativeComponents = ["CompanionAssets", "bytebot"]
-        let roots = [Bundle.main.resourceURL, Bundle.module.resourceURL].compactMap { $0 }
-        for root in roots {
+        if let root = Bundle.main.resourceURL {
             let candidate = relativeComponents.reduce(root) {
                 $0.appending(path: $1, directoryHint: .isDirectory)
             }
             if FileManager.default.fileExists(atPath: candidate.path) {
                 return candidate
             }
+        }
+
+        // SwiftPM's generated Bundle.module accessor terminates the process when
+        // its resource bundle is absent. Packaged apps must fail soft and show the
+        // fallback icon; development builds can use SwiftPM's resource bundle.
+        guard Bundle.main.bundleURL.pathExtension.lowercased() != "app",
+              let root = Bundle.module.resourceURL
+        else { return nil }
+        let candidate = relativeComponents.reduce(root) {
+            $0.appending(path: $1, directoryHint: .isDirectory)
+        }
+        if FileManager.default.fileExists(atPath: candidate.path) {
+            return candidate
         }
         return nil
     }
