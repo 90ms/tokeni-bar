@@ -8,7 +8,7 @@ cask "agents-status-bar" do
   homepage "https://github.com/90ms/agents-status-bar"
 
   depends_on arch: :arm64
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "Agents Status Bar.app"
 
