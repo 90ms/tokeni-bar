@@ -61,7 +61,7 @@ Animation pauses automatically for Reduce Motion and Low Power Mode.
 ### Requirements
 
 - macOS 14 Sonoma or later
-- Xcode 26 or newer (required for the Formula's local source build)
+- Current Xcode Command Line Tools (`xcode-select --install`)
 - At least one installed and signed-in CLI: Codex, Claude Code, Grok, Gemini
   CLI, or OpenCode
 
@@ -76,7 +76,7 @@ tokeni-bar
 The fully qualified Formula name adds the `90ms/tap` repository. The Formula
 builds and ad-hoc signs the app on your Mac, then creates a managed link at
 `~/Applications/Tokeni Bar.app`. This path does not require an Apple Developer
-ID.
+ID or the full Xcode application.
 
 ### Direct download
 

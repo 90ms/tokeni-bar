@@ -6,7 +6,8 @@ Tokeni Bar's primary distribution path is a source-built Formula in the shared
 [`90ms/homebrew-tap`](https://github.com/90ms/homebrew-tap). The Formula
 verifies the SHA-256 of a versioned GitHub source archive and builds the app on
 the user's Mac. The result is ad-hoc signed, so installation and updates do not
-require an Apple Developer ID.
+require an Apple Developer ID or the full Xcode application. Current Xcode
+Command Line Tools are required.
 
 The binary Cask and GitHub Release ZIP remain as transitional compatibility
 paths. In-app installation and restart are supported only for Formula installs.

@@ -57,7 +57,7 @@ Tokeni Bar는 기존 CLI 로그인을 재사용합니다. 프롬프트, 응답, 
 ### 요구 사항
 
 - macOS 14 Sonoma 이상
-- Xcode 26 이상(Homebrew Formula의 로컬 소스 빌드에 필요)
+- 최신 Xcode Command Line Tools(`xcode-select --install`)
 - Codex, Claude Code, Grok, Gemini CLI 또는 OpenCode 중 하나 이상 설치 및 로그인
 
 ### Homebrew
@@ -72,7 +72,7 @@ tokeni-bar
 필요한 Homebrew 버전에서는 전체 저장소가 아니라 이 Formula만 신뢰합니다.
 Formula는 사용자 Mac에서 소스를 빌드하고 ad-hoc 서명한 뒤
 `~/Applications/Tokeni Bar.app`에 관리되는 링크를 만듭니다. 이 설치 경로에는
-Apple Developer ID가 필요하지 않습니다.
+Apple Developer ID나 전체 Xcode 앱이 필요하지 않습니다.
 
 ### 직접 다운로드
 

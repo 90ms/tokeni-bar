@@ -6,7 +6,8 @@ Tokeni Bar의 기본 배포 경로는 공용
 [`90ms/homebrew-tap`](https://github.com/90ms/homebrew-tap)의 소스 빌드
 Formula입니다. Formula는 버전이 고정된 GitHub 소스 아카이브의 SHA-256을
 검증하고 사용자 Mac에서 앱을 빌드합니다. 빌드 결과는 ad-hoc 서명하므로 Apple
-Developer ID 없이 설치하고 업데이트할 수 있습니다.
+Developer ID나 전체 Xcode 앱 없이 설치하고 업데이트할 수 있습니다. 최신 Xcode
+Command Line Tools는 필요합니다.
 
 기존 binary Cask와 GitHub Release ZIP은 이전 기간의 호환 설치 경로로
 유지하지만 앱 내 설치·재실행 기능은 Formula 설치본만 지원합니다.
