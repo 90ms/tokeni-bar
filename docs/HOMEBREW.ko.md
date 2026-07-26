@@ -74,8 +74,9 @@ tokeni-bar --install-app
 tokeni-bar
 ```
 
-Cask 제거는 앱 번들만 제거하므로 `Application Support`의 설정, 사용 기록 및
-ByteBot 상태는 유지됩니다.
+Cask 제거는 앱 번들만 제거하므로 `Application Support`의 설정과 사용 기록은
+유지됩니다. `v0.8.0`은 이전 활동 시간 기반 ByteBot 상태를 변환하지 않고 새
+토큰 기반 알로 시작합니다.
 
 Cask가 설치되어 있지 않다는 메시지가 나오면 해당 제거 단계만 건너뜁니다.
 `--formula`와 `--cask`를 명시해 같은 이름의 두 패키지를 혼동하지 않도록 합니다.
