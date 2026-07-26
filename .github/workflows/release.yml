@@ -146,6 +146,22 @@ jobs:
           shasum -a 256 "TokeniBar-$VERSION.zip" \
             > "TokeniBar-$VERSION.zip.sha256"
 
+      - name: Download Formula source archive
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          curl \
+            --fail \
+            --location \
+            --retry 4 \
+            --retry-all-errors \
+            --output "dist/tokeni-bar-$VERSION-source.tar.gz" \
+            "https://github.com/90ms/tokeni-bar/archive/refs/tags/v$VERSION.tar.gz"
+          shasum -a 256 "dist/tokeni-bar-$VERSION-source.tar.gz" \
+            > "dist/tokeni-bar-$VERSION-source.tar.gz.sha256"
+
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -164,7 +180,7 @@ jobs:
             --notes "$security_note" \
             --verify-tag
 
-      - name: Open Homebrew Cask update pull request
+      - name: Open Homebrew distribution update pull request
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
@@ -177,6 +193,7 @@ jobs:
           fi
 
           release_sha="$(awk '{print $1}' "dist/TokeniBar-$VERSION.zip.sha256")"
+          source_sha="$(awk '{print $1}' "dist/tokeni-bar-$VERSION-source.tar.gz.sha256")"
           tap="$RUNNER_TEMP/homebrew-tap"
           gh repo clone 90ms/homebrew-tap "$tap"
           branch="automation/tokeni-bar-$VERSION"
@@ -195,9 +212,16 @@ jobs:
             "$VERSION" \
             "$release_sha" \
             "$tap/Casks/tokeni-bar.rb"
+          ./Scripts/render_homebrew_formula.sh \
+            "$VERSION" \
+            "$source_sha" \
+            "$tap/Formula/tokeni-bar.rb"
 
-          git -C "$tap" add Casks/tokeni-bar.rb
-          if ! git -C "$tap" diff --cached --quiet -- Casks/tokeni-bar.rb; then
+          git -C "$tap" add Casks/tokeni-bar.rb Formula/tokeni-bar.rb
+          if ! git -C "$tap" diff --cached --quiet -- \
+            Casks/tokeni-bar.rb \
+            Formula/tokeni-bar.rb
+          then
             git -C "$tap" \
               -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
@@ -218,5 +242,5 @@ jobs:
               --head "$branch" \
               --base main \
               --title "tokeni-bar $VERSION" \
-              --body "Automated Cask update for 90ms/tokeni-bar@$GITHUB_REF_NAME. Merge only after tap CI and the release checklist pass."
+              --body "Automated Formula and compatibility Cask update for 90ms/tokeni-bar@$GITHUB_REF_NAME. Merge only after tap CI and the release checklist pass."
           fi
