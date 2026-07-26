@@ -40,6 +40,25 @@ jobs:
           test -x "$app/Contents/MacOS/TokeniBar"
           test -d "$app/Contents/Resources/TokeniBar_TokeniBar.bundle/CompanionAssets/bytebot"
           test -d "$app/Contents/Resources/TokeniBar_TokeniBar.bundle/BrandIcons"
+          companion="$app/Contents/Resources/TokeniBar_TokeniBar.bundle/CompanionAssets/bytebot"
+          test "$(plutil -extract schemaVersion raw "$companion/manifest.json")" = "2"
+          for asset in \
+            egg.png \
+            baby.png \
+            hatchling-rare.png \
+            hatchling-epic.png \
+            hatchling-legendary.png \
+            junior-normal.png \
+            junior-rare.png \
+            junior-epic.png \
+            junior-legendary.png \
+            adult.png \
+            adult-rare.png \
+            adult-epic.png \
+            adult-legendary.png
+          do
+            test -f "$companion/$asset"
+          done
           plutil -lint "$app/Contents/Info.plist"
           test "$(defaults read "$app/Contents/Info" CFBundleIdentifier)" = "dev.agentsstatusbar.app"
           test "$(defaults read "$app/Contents/Info" CFBundleShortVersionString)" = "0.0.0"

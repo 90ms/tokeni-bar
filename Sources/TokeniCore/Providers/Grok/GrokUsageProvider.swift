@@ -33,6 +33,10 @@ public struct GrokUsageProvider: UsageProviding, UsageActivityProviding {
         }
 
         let contextUsed = signals.contextTokensUsed ?? 0
+        let totalBeforeCompaction = max(signals.totalTokensBeforeCompaction ?? 0, 0)
+        let growthTotal = totalBeforeCompaction.addingReportingOverflow(max(contextUsed, 0))
+        let observedAt = (try? file.resourceValues(
+            forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .now
         let contextPercent = signals.contextWindowUsage ?? {
             guard let window = signals.contextWindowTokens, window > 0 else { return 0 }
             return Double(contextUsed) / Double(window) * 100
@@ -52,6 +56,12 @@ public struct GrokUsageProvider: UsageProviding, UsageActivityProviding {
             tokenUsage: TokenUsage(
                 label: "Current context",
                 totalTokens: contextUsed),
+            growthUsageObservation: GrowthUsageObservation(
+                providerID: .grok,
+                scope: .session,
+                scopeID: file.deletingLastPathComponent().lastPathComponent,
+                totalTokens: growthTotal.overflow ? .max : growthTotal.partialValue,
+                observedAt: observedAt),
             detail: signals.primaryModelID.map { "Latest local session · \($0)" } ?? "Latest local Grok session")
     }
 

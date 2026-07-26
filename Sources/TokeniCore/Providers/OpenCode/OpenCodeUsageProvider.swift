@@ -37,6 +37,8 @@ public struct OpenCodeUsageProvider: UsageProviding, UsageActivityProviding {
         }
 
         let usage = aggregate.tokenUsage
+        let observedAt = (try? databaseURL.resourceValues(
+            forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .now
         return .init(
             descriptor: self.descriptor,
             availability: .available,
@@ -46,6 +48,12 @@ public struct OpenCodeUsageProvider: UsageProviding, UsageActivityProviding {
                 label: usage.label,
                 amountUSD: max(aggregate.costUSD, 0),
                 modelIDs: []),
+            growthUsageObservation: GrowthUsageObservation(
+                providerID: .openCode,
+                scope: .lifetime,
+                scopeID: databaseURL.lastPathComponent,
+                totalTokens: usage.totalTokens,
+                observedAt: observedAt),
             detail: "All-time local sessions · \(aggregate.sessionCount) sessions")
     }
 

@@ -103,6 +103,11 @@ struct TokeniBarApp: App {
             DiagnosticsView(store: self.store)
         }
         .defaultSize(width: 680, height: 480)
+
+        Window(AppLocalization.string("companion.collection.window"), id: "companion-collection") {
+            CompanionCollectionView(store: self.store)
+        }
+        .defaultSize(width: 620, height: 720)
     }
 
     @ViewBuilder
@@ -155,6 +160,7 @@ struct TokeniBarApp: App {
             if self.store.companionEnabled {
                 ByteBotSpriteView(
                     stage: self.store.companionStage,
+                    rarity: self.store.companionState.rarity,
                     behavior: self.store.companionBehavior,
                     dimension: 18,
                     animationsEnabled: self.store.companionAnimationsEnabled)

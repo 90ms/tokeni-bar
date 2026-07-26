@@ -1,6 +1,6 @@
 import Foundation
 
-public actor CompanionStateStore {
+public actor CompanionGameStateStore {
     private let fileURL: URL
 
     public init(fileURL: URL? = nil) {
@@ -8,18 +8,23 @@ public actor CompanionStateStore {
             .appending(path: "companion-state.json")
     }
 
-    public func load() throws -> CompanionState {
+    public func load() throws -> CompanionGameState {
         guard FileManager.default.fileExists(atPath: self.fileURL.path) else {
-            return CompanionState()
+            return CompanionGameState()
         }
+        let data = try Data(contentsOf: self.fileURL)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(
-            CompanionState.self,
-            from: Data(contentsOf: self.fileURL))
+        guard let state = try? decoder.decode(CompanionGameState.self, from: data),
+              state.isValid()
+        else {
+            try FileManager.default.removeItem(at: self.fileURL)
+            return CompanionGameState()
+        }
+        return state
     }
 
-    public func save(_ state: CompanionState) throws {
+    public func save(_ state: CompanionGameState) throws {
         try FileManager.default.createDirectory(
             at: self.fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true)

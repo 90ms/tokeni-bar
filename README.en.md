@@ -8,62 +8,26 @@
 
 <img src="docs/tokeni-bar-icon.png" alt="Tokeni Bar icon" width="128">
 
-A privacy-conscious macOS menu-bar app that shows AI coding-agent token status
-and grows the pixel companion ByteBot from active work time.
+A macOS menu-bar app for seeing AI coding-agent token and quota status at a
+glance—and raising the pixel companion **ByteBot** with real token usage.
 
 <p align="center">
   <img src="docs/bytebot.png" width="160" alt="Tokeni Bar pixel companion ByteBot" />
 </p>
 
 <p align="center">
-  <img src="docs/tokeni-bar.png" width="500" alt="Tokeni Bar showing Codex, Claude Code, and Gemini CLI usage" />
+  <img src="docs/tokeni-bar.png" width="500" alt="Tokeni Bar showing multiple AI coding-agent usage sources" />
 </p>
 
-> This sample of the usage area contains no real account data.
-
-Tokeni Bar reuses your existing CLI sign-ins. It does not store prompts,
-responses, access tokens, refresh tokens, or cookies. Quota percentages always
-mean **percent left**, and cost values are references—not subscription bills.
-
-## What it does
-
-- Grows the original pixel companion **ByteBot** from active agent minutes.
-- Animates egg, hatchling, baby, and adult stages while working, warning,
-  celebrating, or sleeping.
-- Shows Codex and Claude quota windows, reset times, and account status.
-- Combines available account activity with local token and cost records.
-- Displays the lowest remaining quota, a selected provider, or monthly cost in
-  the menu bar.
-- Detects active local sessions from file modification times without reading
-  prompt or response content.
-- Keeps 24-hour, 7-day, and 30-day aggregate history locally.
-- Sends configurable low-quota and monthly budget alerts.
-- Supports English and Korean, USD and KRW, compact mode, and launch at login.
-
-## How ByteBot grows
-
-- One minute with at least one active agent earns 1 XP.
-- Concurrent providers still earn only 1 XP for that minute, with a daily cap
-  of 90 XP.
-- Time while the app is closed is not backfilled. Token consumption and quota
-  depletion do not grant rewards.
-- ByteBot hatches at 15 total XP, reaches the baby stage at 120 XP, and becomes
-  an adult at 360 XP.
-- **Pat ByteBot** triggers a short celebration but does not grant XP.
-- ByteBot reacts to quota warnings, active work, and longer idle periods.
-
-Turn ByteBot and its animation on or off independently under
-**Settings → Tokeni**, or select **ByteBot status** as the menu-bar display.
-Animation pauses automatically for Reduce Motion and Low Power Mode.
+> The sample screen contains no real account data.
 
 ## Install
 
 ### Requirements
 
 - macOS 14 Sonoma or later
-- Current Xcode Command Line Tools for Formula installs (`xcode-select --install`)
-- At least one installed and signed-in CLI: Codex, Claude Code, Grok, Gemini
-  CLI, or OpenCode
+- Current Xcode Command Line Tools (`xcode-select --install`)
+- At least one of Codex, Claude Code, Grok, Gemini CLI, or OpenCode
 
 ### Homebrew
 
@@ -73,33 +37,88 @@ tokeni-bar --install-app
 tokeni-bar
 ```
 
-The fully qualified Formula name adds the `90ms/tap` repository. The Formula
-builds and ad-hoc signs the app on your Mac, then creates a managed link at
-`~/Applications/Tokeni Bar.app`. This path does not require an Apple Developer
-ID or the full Xcode application.
+The Formula builds and ad-hoc signs the app on your Mac, then links it at
+`~/Applications/Tokeni Bar.app`. It does not require an Apple Developer ID or
+the full Xcode app.
 
-### Direct download
+If Homebrew requires tap trust, trust only the Formula:
 
-Download the ZIP from the [latest GitHub Release](https://github.com/90ms/tokeni-bar/releases/latest),
-unzip it, and move `Tokeni Bar.app` to `/Applications`.
+```bash
+brew trust --formula 90ms/tap/tokeni-bar
+brew install --formula tokeni-bar
+```
 
-Releases are ad-hoc signed until Developer ID signing is configured. If macOS
-blocks the first launch, approve the app in **System Settings → Privacy &
-Security**. Do not disable Gatekeeper globally.
+### GitHub Release
 
-## First launch
+You may instead unzip the [latest release](https://github.com/90ms/tokeni-bar/releases/latest)
+and move `Tokeni Bar.app` to `/Applications`. Releases are currently ad-hoc
+signed. If macOS blocks the first launch, approve it under
+**System Settings → Privacy & Security**.
 
-1. Sign in through each CLI you want to monitor by running it once in Terminal.
-2. Open Tokeni Bar and select its chart icon on the right side of the
-   menu bar.
-3. Open **Settings → General**, enable the providers you use, and choose the
-   menu-bar display.
-4. Open **Settings → Tokeni** to see ByteBot's stage and today's XP.
-5. For Claude Code account quotas, select **Connect** under
+## First use
+
+1. Run each CLI you want to monitor once in Terminal and sign in.
+2. Start Tokeni Bar and open its chart icon on the right side of the menu bar.
+3. Choose providers and the menu-bar display under **Settings → General**.
+4. For Claude account quotas, select **Connect** under
    **Provider Connections** and approve the Keychain request.
+5. Use an agent; verified token increases become ByteBot growth energy.
 
-Providers that are not installed, signed in, or supported by the current CLI
-format remain unavailable instead of showing guessed values.
+Unsupported or unverifiable values remain unavailable or stale instead of
+being estimated.
+
+## Highlights
+
+- Codex and Claude account quota windows and reset times
+- Local token and cost records from supported CLIs
+- Lowest quota, selected provider, monthly cost, or ByteBot status in the menu bar
+- Local 24-hour, 7-day, and 30-day history plus quota and budget alerts
+- Token-powered ByteBot with four life stages and four rarity tiers
+- A 13-form collection, guaranteed evolutions, and best bond records
+- English and Korean, USD and KRW, compact mode, and launch at login
+
+## Raising ByteBot
+
+ByteBot gains more growth energy as today's verified token total rises. There
+is no daily hard cap, though gains become more gradual at very high usage.
+
+| Tokens today | Growth energy |
+|---:|---:|
+| 10,000 | 15 |
+| 25,000 | 32 |
+| 100,000 | 74 |
+| 500,000 | 140 |
+| 1,000,000 | 171 |
+
+It hatches at `80` energy, becomes a Junior at `280`, and an Adult at `800`.
+Each evolution may raise rarity through
+`Normal → Rare → Epic → Legendary`; rarity never drops. Completing Adults
+advances visible guarantees for Rare, Epic, and Legendary evolutions.
+
+Keep an Adult and build bond, or finish its journey to receive a new egg. You
+may restart before Adult, but current energy is lost and guarantees do not
+advance. Collection unlocks and existing guarantees remain.
+
+Open the grid button in the menu or
+**Settings → Tokeni → Open ByteBot Collection** to see forms, completed
+generations, best rarity, bond, and evolution guarantees.
+
+See [ByteBot growth and collection](docs/bytebot.md) for the formula, rarity
+odds, and accounting rules.
+
+## Provider support
+
+| Provider | Account quota | Token and cost display | ByteBot growth source |
+|---|---|---|---|
+| Codex | Weekly and model-scoped limits; reset credits | Latest daily, month, and lifetime account tokens; API-equivalent reference | Confirmed daily total, or current-session increases as fallback |
+| Claude Code | 5-hour, weekly, and model-scoped limits | Deduplicated local daily tokens; cache-aware estimate | Confirmed daily total |
+| Grok | Not available | Current local session context | Session increases after the first observation |
+| Gemini CLI | Not available | Latest local session tokens | Session increases after the first observation |
+| OpenCode | Not available | Local aggregate tokens and recorded cost | Aggregate increases after the first observation |
+
+Session and lifetime counters establish a baseline first so existing usage is
+not mistaken for new growth. See the [usage display guide](docs/usage.md) for
+details.
 
 ## Update and uninstall
 
@@ -109,95 +128,49 @@ brew update
 brew upgrade --formula 90ms/tap/tokeni-bar
 tokeni-bar --install-app
 
-# Remove the app but keep settings and history
+# Remove the app but retain settings and history
 tokeni-bar --uninstall-app
 brew uninstall --formula tokeni-bar
 ```
 
-The app checks GitHub Releases every six hours. Formula installations can
-choose **Install & Restart** under **Settings → General → App Updates** to
-refresh Homebrew, build the source, replace the app link, and restart.
-Installation never starts without an explicit click.
+The app checks for a stable release every six hours. Formula installations can
+choose **Settings → General → App Updates → Install & Restart** to refresh
+Homebrew, rebuild, replace the app, and restart. Installation never starts
+before an explicit click.
 
-## Provider support
-
-| Provider | Account quota | Token and cost data |
-|---|---|---|
-| Codex | Weekly and model-specific limits; available limit-reset credits | Latest daily, current-month, and lifetime account tokens through the experimental Codex app-server; rough API-equivalent reference |
-| Claude Code | 5-hour, weekly, and model-scoped limits | Deduplicated local daily tokens with a cache-aware estimate |
-| Grok | Not currently available | Current local session context; no cost estimate |
-| Gemini CLI | Not currently available | Latest local session tokens; no cost estimate |
-| OpenCode | Not currently available | Aggregate local tokens and recorded cost |
-
-Codex and Claude account endpoints and local CLI file formats are not public
-compatibility contracts and may change. When verified data cannot be loaded,
-the app shows a stale or unavailable state rather than inventing a value.
-
-See the [usage display guide](docs/usage.md) for Codex bucket behavior, Claude
-menu-bar quota selection, and cost-estimation details.
+See [Homebrew distribution](docs/HOMEBREW.md#migrating-from-the-cask) to migrate
+from the previous Cask.
 
 ## Privacy
 
 - Prompts and model responses are never displayed or retained.
 - Authentication tokens, refresh tokens, and cookies are never logged or
   written to app storage.
-- Claude credentials obtained after explicit approval stay in memory only until
-  expiry or app exit.
-- Activity detection reads file metadata, not prompt or response content.
-- History stores only aggregate percentages, token totals, and estimated cost
+- History stores only aggregate quota, token, and estimated-cost values locally
   for 30 days.
-- ByteBot state stores only XP, growth timestamps, and pat timestamps—never
-  provider names, token totals, or content.
-- Copyable diagnostics exclude credentials, provider details, and file paths.
-- There is no analytics or telemetry.
+- ByteBot state and token checkpoints are separate; neither contains prompt or
+  response content.
+- There is no analytics or server telemetry.
+
+Tokeni Bar reuses existing CLI sign-ins. Quota percentages always mean
+**percent left**, and costs are API-equivalent references—not subscription
+bills.
 
 ## Troubleshooting
 
-### A provider shows unavailable
-
-Run its CLI once and confirm that it is installed and signed in. Disable
-providers you do not use under **Settings → General**.
-
-Claude Code may require an explicit **Connect** action because its OAuth
-credential can be stored in macOS Keychain. Background refreshes never open a
-Keychain approval dialog.
-
 ### The app is running but no window is visible
 
-Tokeni Bar is a menu-bar app and does not appear in the Dock. Look for
-the chart icon on the right side of the macOS menu bar.
+It runs in the menu bar, not the Dock. Look for the chart icon on the right side
+of the macOS menu bar.
 
-### Homebrew reports an untrusted tap
+### A provider shows unavailable
 
-Install with the fully qualified Formula name shown above:
+Run its CLI once and confirm that it is installed and signed in. Disable unused
+providers under **Settings → General**.
 
-```bash
-brew trust --formula 90ms/tap/tokeni-bar
-brew install --formula tokeni-bar
-```
+### Selecting the menu exits the app
 
-### Migrating from the Cask
-
-A copy installed with `brew install --cask` cannot use the in-app Formula
-updater. Run this one-time migration. App settings, usage history, and ByteBot
-progress are preserved.
-
-```bash
-brew trust --cask 90ms/tap/tokeni-bar
-brew uninstall --cask tokeni-bar
-brew trust --formula 90ms/tap/tokeni-bar
-brew install --formula 90ms/tap/tokeni-bar
-tokeni-bar --install-app
-tokeni-bar
-```
-
-If Homebrew reports that the Cask is not installed, skip only the uninstall
-step and continue with the Formula installation.
-
-### The app exits when the menu-bar icon is selected
-
-Version 0.7.2 fixed missing packaged ByteBot and provider-icon resource bundles.
-Update an older Formula installation from Terminal:
+Installations before `v0.7.2` had a resource-packaging issue. Update in Terminal:
 
 ```bash
 brew update
@@ -206,13 +179,13 @@ tokeni-bar --install-app
 tokeni-bar
 ```
 
-### Cost does not match a subscription bill
+### Previous ByteBot progress disappeared
 
-Cost is a rough API-price-equivalent reference calculated from the token detail
-that each provider makes available. It is not an API invoice or a Codex,
-ChatGPT, Claude, or Grok subscription charge.
+Version `v0.8.0` replaces the active-time prototype with the token-powered game.
+The old pet state is intentionally not converted, so ByteBot starts from a new
+egg. Settings and usage history remain.
 
-## Build from source
+## Development
 
 ```bash
 git clone https://github.com/90ms/tokeni-bar.git
@@ -223,30 +196,8 @@ swift build
 open "dist/Tokeni Bar.app"
 ```
 
-`Scripts/package_app.sh` and the Homebrew Formula use ad-hoc signing by default.
-Set `APP_SIGN_IDENTITY` to another local signing identity.
-
-Regenerating the ByteBot sheets is the only build task that requires `ffmpeg`.
-To recreate the reviewed 512×384 RGBA sheets from the checked-in source:
-
-```bash
-./Scripts/generate_bytebot_assets.sh
-```
-
-See
-[`Sources/TokeniBar/CompanionAssets/bytebot`](Sources/TokeniBar/CompanionAssets/bytebot)
-for the asset contract and license.
-
-## Upgrading an existing installation
-
-The bundle identifier stays unchanged to preserve preferences and login-item
-compatibility. On first launch, existing
-`~/Library/Application Support/AgentsStatusBar` data is moved to
-`~/Library/Application Support/TokeniBar`. If the move cannot be completed,
-the app safely continues using the legacy directory.
-
-See the [Homebrew distribution guide](docs/HOMEBREW.md) and
-[contributor guide](AGENTS.md) for maintenance details.
+See [AGENTS.md](AGENTS.md) for project structure and contribution rules, and
+[Homebrew distribution](docs/HOMEBREW.md) for the release flow.
 
 ## License
 

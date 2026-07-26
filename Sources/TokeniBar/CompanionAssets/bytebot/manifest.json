@@ -1,9 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "bytebot",
   "displayName": "ByteBot",
   "logicalFrameSize": 32,
-  "assetFrameSize": 64,
   "columns": 8,
   "rows": 6,
   "palette": [
@@ -15,11 +14,20 @@
     "#FFF0B3",
     "#FF7163"
   ],
-  "stages": {
-    "egg": "egg.png",
-    "hatchling": "baby.png",
-    "baby": "baby.png",
-    "adult": "adult.png"
+  "forms": {
+    "egg.normal": "egg.png",
+    "hatchling.normal": "baby.png",
+    "hatchling.rare": "hatchling-rare.png",
+    "hatchling.epic": "hatchling-epic.png",
+    "hatchling.legendary": "hatchling-legendary.png",
+    "junior.normal": "junior-normal.png",
+    "junior.rare": "junior-rare.png",
+    "junior.epic": "junior-epic.png",
+    "junior.legendary": "junior-legendary.png",
+    "adult.normal": "adult.png",
+    "adult.rare": "adult-rare.png",
+    "adult.epic": "adult-epic.png",
+    "adult.legendary": "adult-legendary.png"
   },
   "animations": {
     "idle": {

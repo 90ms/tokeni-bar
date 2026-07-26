@@ -43,6 +43,14 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
         let localTokenUsage = usage.totalTokens > 0
             ? usage
             : files.isEmpty ? nil : TokenUsage(label: "Today", totalTokens: 0)
+        let observedAt = Date.now
+        let growthObservation = localTokenUsage.map {
+            GrowthUsageObservation.daily(
+                providerID: .claude,
+                dateKey: GrowthLocalDate.key(for: observedAt, calendar: self.calendar),
+                totalTokens: $0.totalTokens,
+                observedAt: observedAt)
+        }
 
         do {
             let credentials = try await self.credentials(interactive: false)
@@ -60,13 +68,18 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
                 quotaWindows: oauthUsage.quotaWindows(),
                 tokenUsage: localTokenUsage,
                 costEstimate: localTokenUsage == nil ? nil : aggregate.costEstimate,
+                growthUsageObservation: growthObservation,
                 detail: detail.isEmpty ? "Claude Code OAuth" : detail,
                 updatedAt: result.fetchedAt)
         } catch {
             if case ClaudeOAuthUsageError.unauthorized = error {
                 await self.credentialCache.invalidate()
             }
-            return self.localFallback(files: files, aggregate: aggregate, oauthError: error)
+            return self.localFallback(
+                files: files,
+                aggregate: aggregate,
+                growthObservation: growthObservation,
+                oauthError: error)
         }
     }
 
@@ -98,6 +111,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
     private func localFallback(
         files: [URL],
         aggregate: ClaudeAggregatedUsage,
+        growthObservation: GrowthUsageObservation?,
         oauthError: Error) -> ProviderSnapshot
     {
         let usage = aggregate.tokenUsage
@@ -116,6 +130,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
                 availability: .available,
                 source: .localSessionLog,
                 tokenUsage: TokenUsage(label: "Today", totalTokens: 0),
+                growthUsageObservation: growthObservation,
                 detail: errorMessage.map { "Connected · \($0)" }
                     ?? "Connected · no token usage record in today's session yet")
         }
@@ -126,6 +141,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
             source: .localSessionLog,
             tokenUsage: usage,
             costEstimate: aggregate.costEstimate,
+            growthUsageObservation: growthObservation,
             detail: errorMessage.map { "Local usage fallback · \($0)" }
                 ?? "Today across local Claude Code sessions")
     }

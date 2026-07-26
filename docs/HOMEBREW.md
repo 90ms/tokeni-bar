@@ -75,8 +75,9 @@ tokeni-bar --install-app
 tokeni-bar
 ```
 
-Removing the Cask deletes only its app bundle, so Application Support settings,
-usage history, and ByteBot state remain in place.
+Removing the Cask deletes only its app bundle, so Application Support settings
+and usage history remain in place. Version `v0.8.0` does not convert the old
+active-time ByteBot state and starts the new token-powered egg.
 
 If Homebrew reports that the Cask is not installed, skip that uninstall step.
 Explicit `--formula` and `--cask` flags disambiguate the two packages with the

@@ -1,70 +1,84 @@
-# Usage display guide
+# Usage display and growth accounting
 
-## Tokeni growth accounting
+[한국어](usage.ko.md) | **English**
 
-Tokeni growth uses local activity detection, not provider token totals. A
-calendar minute with one or more active sessions is recorded once, so
-simultaneous Codex and Claude activity still earns 1 XP.
+## ByteBot token-growth accounting
 
-- Only active minutes observed while the app is running count; offline time is
-  never backfilled.
-- Growth is capped at 90 XP per day. Stages are egg at 0–14, hatchling at
-  15–119, baby at 120–359, and adult at 360 XP or more.
-- Activity detection checks usage-file modification times and does not read
-  prompt or response bodies.
-- `companion-state.json` contains only the companion ID, XP, dates, and
-  interaction timestamps.
+ByteBot growth uses only **verified increases** in token counters reported by
+providers. Usage-file modification times drive working and sleeping animation
+only; they never create growth energy.
+
+For verified daily token increases `T` across providers, after preventing
+replayed counters from paying twice, energy is
+`floor(32 × log2(1 + T / 25,000))`. There is no hard cap, and refreshing the
+same cumulative value never pays twice.
+
+Counter scope differs by provider:
+
+- **Daily counters:** confirmed dated Codex and Claude totals credit that date.
+- **Session counters:** Gemini and Grok establish a baseline on first
+  observation and credit only later increases in that session.
+- **Lifetime counters:** OpenCode establishes a baseline first and credits only
+  later increases.
+- Codex uses current-session increases the same way when a daily total is
+  unavailable.
+
+A counter drop or reset never removes awarded energy. Session and lifetime
+increases are not guessed across a date boundary while the app was closed.
+An implausibly large increase must be confirmed by a later observation before
+it credits. Complete daily totals that arrive late may credit up to three
+recent days.
+
+Deduplication checkpoints live separately in `usage-growth-ledger.json`. The
+app saves a pending award, applies it to ByteBot state, and then marks it
+complete, preventing double payment if the app exits between writes.
+
+See [ByteBot growth and collection](bytebot.md) for life stages and rarity.
 
 ## Codex account token activity
 
 Codex account activity comes from the experimental `codex app-server`
-`account/usage/read` method. The response contains dated daily buckets and a
-lifetime total. Daily buckets can arrive after their calendar day has ended.
+`account/usage/read` method. Its response contains dated daily buckets and a
+lifetime total. A daily bucket may arrive after its calendar day ends.
 
-The popover therefore shows:
+The popover shows:
 
-- **Latest daily (`yyyy-MM-dd`)**: the sum of all valid buckets for the newest
-  date returned by the account service. It stays visible when the local date
-  changes.
-- **This month**: the sum of valid returned buckets in the current local
-  calendar month.
-- **Lifetime**: the account-service lifetime total.
+- **Latest daily (`yyyy-MM-dd`)**: valid bucket totals for the newest date
+- **This month**: valid returned buckets in the current local calendar month
+- **Lifetime**: the account-service lifetime total
 
-Invalid, negative, and future-dated buckets are discarded. If no valid daily
-bucket exists, the latest-daily value remains unavailable rather than being
-fabricated. API-equivalent costs are rough references based on aggregate token
-totals, not actual subscription charges.
+Negative, future-dated, and otherwise invalid values are discarded. If there
+is no valid daily bucket, the app leaves it unavailable instead of inventing a
+value.
 
 ## Claude menu-bar quota
 
-Choose **Selected provider remaining** and select **Claude Code** under
-**Settings → General → Menu Bar**. A **Claude quota** picker then offers:
+Choose **Selected provider remaining** and **Claude Code** under
+**Settings → General → Menu Bar** to show the **Claude quota** picker:
 
-- **5-hour**: the `five-hour` session window.
-- **Weekly**: the `seven-day` account window.
-- **Fable**: the model-scoped `scoped-weekly-fable` window.
+- **5-hour:** the `five-hour` session window
+- **Weekly:** the `seven-day` account window
+- **Fable:** the model-scoped `scoped-weekly-fable` window
 
-Fable is the default for existing behavior. The selection is stored locally. If
-the selected window is not present in the current account response, the menu bar
-shows Claude as unavailable instead of substituting a different quota.
+Fable is the default and the selection is stored locally. If the selected
+window is absent from the account response, Claude remains unavailable instead
+of silently substituting another quota.
 
 ## Cost estimates, exchange rates, and history
 
-Cost is a reference estimate of what the available account or local token total
-might cost at published API prices. It is not an API invoice or a Codex,
-ChatGPT, Claude, or Grok subscription charge.
+Cost is an API-price-equivalent reference for the available token data. It is
+not an API invoice or a subscription bill.
 
-Codex account activity supplies aggregate token totals without the historical
-model, input/output, cache, or reasoning-token split needed for exact API
-pricing. Its daily, month, and lifetime costs use a versioned reference profile
-based on the validated `gpt-5-codex` catalog price and an assumed 80% uncached
-input / 20% output mix. Token totals are the authoritative value.
+Codex account activity does not include the historical model, input/output,
+cache, or reasoning-token split needed for exact API pricing. Daily, monthly,
+and lifetime estimates therefore use a versioned reference profile based on
+the validated `gpt-5-codex` price and an assumed 80% uncached input / 20%
+output mix. Token totals remain authoritative.
 
 - USD/KRW is checked once per Seoul calendar day through
   [Frankfurter](https://frankfurter.dev/) using its ECB provider.
-- The versioned model-price catalog is checked once per day. Invalid schemas,
-  unsafe prices, untrusted sources, and downgrades are rejected.
+- The model-price catalog is checked daily. Invalid schemas, unsafe prices,
+  untrusted sources, and downgrades are rejected.
 - Aggregate quota, token, and estimated-cost samples are stored locally every
   15 minutes and retained for 30 days.
-- Unknown models remain without a cost instead of being mapped to a guessed
-  price.
+- Unknown models remain without a cost instead of receiving a guessed price.
