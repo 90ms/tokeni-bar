@@ -57,18 +57,22 @@ Tokeni Bar는 기존 CLI 로그인을 재사용합니다. 프롬프트, 응답, 
 ### 요구 사항
 
 - macOS 14 Sonoma 이상
-- Apple Silicon
+- Xcode 26 이상(Homebrew Formula의 로컬 소스 빌드에 필요)
 - Codex, Claude Code, Grok, Gemini CLI 또는 OpenCode 중 하나 이상 설치 및 로그인
 
 ### Homebrew
 
 ```bash
-brew install --cask 90ms/tap/tokeni-bar
-open -a "Tokeni Bar"
+brew install 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
 ```
 
 완전한 이름으로 설치하면 `90ms/tap` 저장소가 자동으로 추가됩니다. Tap 신뢰가
-필요한 Homebrew 버전에서는 전체 저장소가 아니라 이 Cask만 신뢰합니다.
+필요한 Homebrew 버전에서는 전체 저장소가 아니라 이 Formula만 신뢰합니다.
+Formula는 사용자 Mac에서 소스를 빌드하고 ad-hoc 서명한 뒤
+`~/Applications/Tokeni Bar.app`에 관리되는 링크를 만듭니다. 이 설치 경로에는
+Apple Developer ID가 필요하지 않습니다.
 
 ### 직접 다운로드
 
@@ -96,17 +100,18 @@ Developer ID 서명을 구성하기 전까지 릴리스는 ad-hoc 서명을 사�
 ```bash
 # 업데이트
 brew update
-brew upgrade --cask tokeni-bar
+brew upgrade 90ms/tap/tokeni-bar
+tokeni-bar --install-app
 
 # 설정과 기록을 남기고 앱만 제거
-brew uninstall --cask tokeni-bar
-
-# 앱, 설정 및 로컬 집계 기록을 모두 제거
-brew uninstall --cask --zap tokeni-bar
+tokeni-bar --uninstall-app
+brew uninstall tokeni-bar
 ```
 
-앱은 6시간마다 GitHub Releases에서 새 안정 버전을 확인하고 링크를 표시합니다.
-Homebrew 설치본의 다운로드와 설치는 Homebrew가 담당합니다.
+앱은 6시간마다 GitHub Releases에서 새 안정 버전을 확인합니다. Formula 설치본은
+**설정 → 일반 → 앱 업데이트**에서 **설치 후 재실행**을 선택하면 Homebrew 정의
+갱신, 소스 빌드, 앱 링크 교체 및 재실행까지 진행합니다. 설치는 사용자 동작 없이
+자동으로 시작하지 않습니다.
 
 ## 제공자 지원
 
@@ -155,11 +160,24 @@ Tokeni Bar는 Dock이 아닌 메뉴바에서 동작합니다. macOS 메뉴바 �
 
 ### Homebrew에서 신뢰하지 않는 tap 오류가 발생함
 
-위의 완전한 이름으로 설치하세요. 이미 추가한 tap의 Cask만 직접 신뢰하려면:
+위의 완전한 이름으로 설치하세요. 이미 추가한 tap의 Formula만 직접 신뢰하려면:
 
 ```bash
-brew trust --cask 90ms/tap/tokeni-bar
-brew install --cask tokeni-bar
+brew trust --formula 90ms/tap/tokeni-bar
+brew install tokeni-bar
+```
+
+### 기존 Cask에서 Formula로 이전
+
+`brew install --cask`로 설치한 버전은 앱 안에서 Formula 업데이트를 실행할 수
+없습니다. 한 번만 다음 명령으로 이전하세요. 앱 설정, 사용 기록 및 ByteBot
+성장 정보는 제거되지 않습니다.
+
+```bash
+brew uninstall --cask tokeni-bar
+brew install 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
 ```
 
 ### 비용이 구독 청구액과 다름
@@ -179,8 +197,8 @@ swift build
 open "dist/Tokeni Bar.app"
 ```
 
-`Scripts/package_app.sh`는 기본적으로 ad-hoc 서명을 사용합니다. 다른 로컬 서명
-인증서를 사용하려면 `APP_SIGN_IDENTITY`를 설정하세요.
+`Scripts/package_app.sh`와 Homebrew Formula는 기본적으로 ad-hoc 서명을
+사용합니다. 다른 로컬 서명 인증서를 사용하려면 `APP_SIGN_IDENTITY`를 설정하세요.
 
 ByteBot 시트를 다시 만들 때만 `ffmpeg`가 필요합니다. 검수된 원본에서
 512×384 RGBA 시트를 재생성하려면 다음을 실행합니다.

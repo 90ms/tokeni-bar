@@ -30,8 +30,12 @@ fi
 app_dir="$output_dir/Tokeni Bar.app"
 contents_dir="$app_dir/Contents"
 
-swift build --package-path "$project_dir" -c release --product TokeniBar
-binary_dir=$(swift build --package-path "$project_dir" -c release --show-bin-path)
+swift_build_arguments=(--package-path "$project_dir" -c release)
+if [[ "${SWIFT_BUILD_DISABLE_SANDBOX:-0}" == "1" ]]; then
+    swift_build_arguments+=(--disable-sandbox)
+fi
+swift build "${swift_build_arguments[@]}" --product TokeniBar
+binary_dir=$(swift build "${swift_build_arguments[@]}" --show-bin-path)
 
 if [[ "$app_dir" != "$output_dir"/* ]]; then
     print -u2 "Unexpected app output path: $app_dir"

@@ -61,19 +61,22 @@ Animation pauses automatically for Reduce Motion and Low Power Mode.
 ### Requirements
 
 - macOS 14 Sonoma or later
-- Apple silicon
+- Xcode 26 or newer (required for the Formula's local source build)
 - At least one installed and signed-in CLI: Codex, Claude Code, Grok, Gemini
   CLI, or OpenCode
 
 ### Homebrew
 
 ```bash
-brew install --cask 90ms/tap/tokeni-bar
-open -a "Tokeni Bar"
+brew install 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
 ```
 
-The fully qualified install command adds the `90ms/tap` repository and trusts
-only this Cask on Homebrew versions that require tap trust.
+The fully qualified Formula name adds the `90ms/tap` repository. The Formula
+builds and ad-hoc signs the app on your Mac, then creates a managed link at
+`~/Applications/Tokeni Bar.app`. This path does not require an Apple Developer
+ID.
 
 ### Direct download
 
@@ -103,18 +106,18 @@ format remain unavailable instead of showing guessed values.
 ```bash
 # Update
 brew update
-brew upgrade --cask tokeni-bar
+brew upgrade 90ms/tap/tokeni-bar
+tokeni-bar --install-app
 
 # Remove the app but keep settings and history
-brew uninstall --cask tokeni-bar
-
-# Remove the app, settings, and local aggregate history
-brew uninstall --cask --zap tokeni-bar
+tokeni-bar --uninstall-app
+brew uninstall tokeni-bar
 ```
 
-The app checks GitHub Releases every six hours and links to a newer stable
-release. Homebrew remains responsible for downloading and installing Homebrew
-updates.
+The app checks GitHub Releases every six hours. Formula installations can
+choose **Install & Restart** under **Settings → General → App Updates** to
+refresh Homebrew, build the source, replace the app link, and restart.
+Installation never starts without an explicit click.
 
 ## Provider support
 
@@ -166,12 +169,24 @@ the chart icon on the right side of the macOS menu bar.
 
 ### Homebrew reports an untrusted tap
 
-Install with the fully qualified name shown above. To trust an already tapped
-Cask explicitly:
+Install with the fully qualified Formula name shown above:
 
 ```bash
-brew trust --cask 90ms/tap/tokeni-bar
-brew install --cask tokeni-bar
+brew trust --formula 90ms/tap/tokeni-bar
+brew install tokeni-bar
+```
+
+### Migrating from the Cask
+
+A copy installed with `brew install --cask` cannot use the in-app Formula
+updater. Run this one-time migration. App settings, usage history, and ByteBot
+progress are preserved.
+
+```bash
+brew uninstall --cask tokeni-bar
+brew install 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
 ```
 
 ### Cost does not match a subscription bill
@@ -191,8 +206,8 @@ swift build
 open "dist/Tokeni Bar.app"
 ```
 
-`Scripts/package_app.sh` uses ad-hoc signing by default. Set
-`APP_SIGN_IDENTITY` to another local signing identity.
+`Scripts/package_app.sh` and the Homebrew Formula use ad-hoc signing by default.
+Set `APP_SIGN_IDENTITY` to another local signing identity.
 
 Regenerating the ByteBot sheets is the only build task that requires `ffmpeg`.
 To recreate the reviewed 512×384 RGBA sheets from the checked-in source:

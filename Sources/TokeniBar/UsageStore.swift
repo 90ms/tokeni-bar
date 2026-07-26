@@ -1,4 +1,5 @@
 import TokeniCore
+import AppKit
 import Foundation
 
 @MainActor
@@ -37,6 +38,10 @@ final class UsageStore: ObservableObject {
     @Published private(set) var appUpdateResult: AppUpdateCheckResult?
     @Published private(set) var isCheckingForAppUpdate: Bool
     @Published private(set) var appUpdateMessage: String?
+    @Published private(set) var isInstallingAppUpdate: Bool
+    @Published private(set) var appUpdateInstallationOperation: HomebrewUpdateOperation?
+    @Published private(set) var appUpdateInstallationMessage: String?
+    @Published private(set) var appUpdateRequiresFormulaMigration: Bool
     @Published private(set) var companionEnabled: Bool
     @Published private(set) var companionAnimationsEnabled: Bool
     @Published private(set) var companionState: CompanionState
@@ -50,9 +55,11 @@ final class UsageStore: ObservableObject {
     private let exchangeRateClient: DailyExchangeRateClient
     private let pricingCatalogClient: PricingCatalogUpdateClient
     private let appUpdateClient: GitHubReleaseUpdateClient
+    private let homebrewUpdateService: HomebrewUpdateService
     private let companionStateStore: CompanionStateStore
     private let companionGrowthEngine = CompanionGrowthEngine()
     private var companionStateLoaded = false
+    private var appUpdateInstallationTask: Task<Void, Never>?
     private static let enabledProvidersKey = "enabledProviderIDs"
     private static let legacyShowsRemainingInMenuBarKey = "showsRemainingInMenuBar"
     private static let menuBarDisplayModeKey = "menuBarDisplayMode"
@@ -82,6 +89,7 @@ final class UsageStore: ObservableObject {
         let exchangeRateClient = DailyExchangeRateClient()
         let pricingCatalogClient = PricingCatalogUpdateClient()
         let appUpdateClient = GitHubReleaseUpdateClient()
+        let homebrewUpdateService = HomebrewUpdateService()
         let companionStateStore = CompanionStateStore()
         self.notificationController = notificationController
         self.launchAtLoginController = launchAtLoginController
@@ -89,6 +97,7 @@ final class UsageStore: ObservableObject {
         self.exchangeRateClient = exchangeRateClient
         self.pricingCatalogClient = pricingCatalogClient
         self.appUpdateClient = appUpdateClient
+        self.homebrewUpdateService = homebrewUpdateService
         self.companionStateStore = companionStateStore
         self.notificationsEnabled = notificationController.isEnabled
         self.notificationSettingsMessage = nil
@@ -152,6 +161,10 @@ final class UsageStore: ObservableObject {
         self.appUpdateResult = nil
         self.isCheckingForAppUpdate = false
         self.appUpdateMessage = nil
+        self.isInstallingAppUpdate = false
+        self.appUpdateInstallationOperation = nil
+        self.appUpdateInstallationMessage = nil
+        self.appUpdateRequiresFormulaMigration = false
         self.companionEnabled = UserDefaults.standard.object(
             forKey: Self.companionEnabledKey) as? Bool ?? true
         self.companionAnimationsEnabled = UserDefaults.standard.object(
@@ -190,6 +203,7 @@ final class UsageStore: ObservableObject {
     deinit {
         self.refreshLoop?.cancel()
         self.activityLoop?.cancel()
+        self.appUpdateInstallationTask?.cancel()
     }
 
     func start() {
@@ -386,6 +400,22 @@ final class UsageStore: ObservableObject {
 
     func refreshAppUpdate() {
         Task { await self.checkForAppUpdate(force: true) }
+    }
+
+    func installAppUpdate() {
+        guard !self.isInstallingAppUpdate,
+              self.appUpdateResult?.isUpdateAvailable == true
+        else { return }
+        self.isInstallingAppUpdate = true
+        self.appUpdateInstallationMessage = nil
+        self.appUpdateRequiresFormulaMigration = false
+        self.appUpdateInstallationTask = Task { [weak self] in
+            await self?.performAppUpdateInstallation()
+        }
+    }
+
+    func cancelAppUpdateInstallation() {
+        self.appUpdateInstallationTask?.cancel()
     }
 
     func setMenuBarDisplayMode(_ mode: MenuBarDisplayMode) {
@@ -696,6 +726,60 @@ final class UsageStore: ObservableObject {
             self.appUpdateMessage = nil
         } catch {
             self.appUpdateMessage = AppLocalization.string("settings.updates.failed")
+        }
+    }
+
+    private func performAppUpdateInstallation() async {
+        defer {
+            self.isInstallingAppUpdate = false
+            self.appUpdateInstallationOperation = nil
+            self.appUpdateInstallationTask = nil
+        }
+        do {
+            self.appUpdateInstallationOperation = .readInstallation
+            guard let brew = HomebrewUpdateService.locateBrew() else {
+                throw HomebrewUpdateError.homebrewNotFound
+            }
+            _ = try await self.homebrewUpdateService.readFormulaInfo(brew: brew)
+
+            self.appUpdateInstallationOperation = .refreshDefinitions
+            try await self.homebrewUpdateService.refreshDefinitions(brew: brew)
+
+            self.appUpdateInstallationOperation = .readInstallation
+            let formula = try await self.homebrewUpdateService.readFormulaInfo(brew: brew)
+            guard formula.isUpdateAvailable else {
+                self.appUpdateInstallationMessage = AppLocalization.string(
+                    "settings.updates.formulaPending")
+                return
+            }
+
+            self.appUpdateInstallationOperation = .upgradeFormula
+            try await self.homebrewUpdateService.upgradeFormula(brew: brew)
+
+            self.appUpdateInstallationOperation = .relinkApplication
+            try await self.homebrewUpdateService.relinkApplication(brew: brew)
+
+            self.appUpdateInstallationOperation = .restartApplication
+            try await self.homebrewUpdateService.restartApplication(
+                homeDirectory: FileManager.default.homeDirectoryForCurrentUser.path)
+            NSApplication.shared.terminate(nil)
+        } catch is CancellationError {
+            self.appUpdateInstallationMessage = AppLocalization.string(
+                "settings.updates.cancelled")
+        } catch HomebrewUpdateError.formulaNotInstalled {
+            self.appUpdateRequiresFormulaMigration = true
+            self.appUpdateInstallationMessage = AppLocalization.string(
+                "settings.updates.migrationRequired")
+        } catch HomebrewUpdateError.homebrewNotFound {
+            self.appUpdateInstallationMessage = AppLocalization.string(
+                "settings.updates.homebrewMissing")
+        } catch let HomebrewUpdateError.commandFailed(_, message) {
+            self.appUpdateInstallationMessage = AppLocalization.format(
+                "settings.updates.installFailed",
+                message)
+        } catch {
+            self.appUpdateInstallationMessage = AppLocalization.string(
+                "settings.updates.installUnknownFailed")
         }
     }
 
