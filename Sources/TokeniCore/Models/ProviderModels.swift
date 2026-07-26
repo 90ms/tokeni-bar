@@ -220,6 +220,7 @@ public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
     public let accountTokenUsage: AccountTokenUsageSummary?
     public let credits: CreditBalance?
     public let quotaResetCredits: QuotaResetCreditSummary?
+    public let growthUsageObservation: GrowthUsageObservation?
     public let detail: String?
     public let updatedAt: Date
 
@@ -235,6 +236,7 @@ public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
         accountTokenUsage: AccountTokenUsageSummary? = nil,
         credits: CreditBalance? = nil,
         quotaResetCredits: QuotaResetCreditSummary? = nil,
+        growthUsageObservation: GrowthUsageObservation? = nil,
         detail: String? = nil,
         updatedAt: Date = .now)
     {
@@ -247,6 +249,7 @@ public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
         self.accountTokenUsage = accountTokenUsage
         self.credits = credits
         self.quotaResetCredits = quotaResetCredits
+        self.growthUsageObservation = growthUsageObservation
         self.detail = detail
         self.updatedAt = updatedAt
     }

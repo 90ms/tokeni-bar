@@ -38,6 +38,10 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             let accountTokenUsageResult = await accountTokenUsageFetch
             let resetCredits = resetCreditsResult?.response.summary()
             let accountTokenUsage = self.accountTokenUsage(from: accountTokenUsageResult)
+            let growthObservation = self.growthObservation(
+                accountUsage: accountTokenUsage,
+                accountObservedAt: accountTokenUsageResult?.fetchedAt,
+                localUsage: localUsage)
             let referenceCost = self.referenceCost(for: accountTokenUsage)
             let accountUsage = result.response
             let plan = accountUsage.planType?
@@ -59,6 +63,7 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
                 accountTokenUsage: accountTokenUsage,
                 credits: accountUsage.creditBalance,
                 quotaResetCredits: resetCredits,
+                growthUsageObservation: growthObservation,
                 detail: detail,
                 updatedAt: max(result.fetchedAt, accountTokenUsageResult?.fetchedAt ?? .distantPast))
         } catch {
@@ -104,6 +109,10 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
     {
         let errorMessage = (accountError as? LocalizedError)?.errorDescription
         let accountTokenUsage = self.accountTokenUsage(from: accountTokenUsageResult)
+        let growthObservation = self.growthObservation(
+            accountUsage: accountTokenUsage,
+            accountObservedAt: accountTokenUsageResult?.fetchedAt,
+            localUsage: localUsage)
         let referenceCost = self.referenceCost(for: accountTokenUsage)
         if localUsage != nil || accountTokenUsage != nil {
             return .init(
@@ -117,6 +126,7 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
                 costEstimate: referenceCost,
                 accountTokenUsage: accountTokenUsage,
                 credits: localUsage?.credits,
+                growthUsageObservation: growthObservation,
                 detail: errorMessage.map { "Partial Codex data · \($0)" }
                     ?? "Partial Codex data",
                 updatedAt: max(
@@ -156,9 +166,33 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             amountUSD: estimator.estimate(tokenCount: usage.currentMonthTokens).amountUSD,
             modelIDs: [estimator.assumption.referenceModelID])
     }
+
+    private func growthObservation(
+        accountUsage: AccountTokenUsageSummary?,
+        accountObservedAt: Date?,
+        localUsage: CodexParsedUsage?) -> GrowthUsageObservation?
+    {
+        if let accountUsage,
+           let todayTokens = accountUsage.todayTokens
+        {
+            return .daily(
+                providerID: .codex,
+                dateKey: accountUsage.localDate,
+                totalTokens: todayTokens,
+                observedAt: accountObservedAt ?? .now)
+        }
+        guard let localUsage else { return nil }
+        return GrowthUsageObservation(
+            providerID: .codex,
+            scope: .session,
+            scopeID: localUsage.sessionID,
+            totalTokens: localUsage.tokenUsage.totalTokens,
+            observedAt: localUsage.timestamp ?? .now)
+    }
 }
 
 struct CodexParsedUsage {
+    let sessionID: String
     let timestamp: Date?
     let quotaWindows: [QuotaWindow]
     let tokenUsage: TokenUsage
@@ -200,6 +234,7 @@ enum CodexLogParser {
                 reasoningTokens: usage.reasoningOutputTokens,
                 totalTokens: usage.totalTokens)
             return CodexParsedUsage(
+                sessionID: file.deletingPathExtension().lastPathComponent,
                 timestamp: TimestampParser.parse(event.timestamp),
                 quotaWindows: windows,
                 tokenUsage: tokenUsage,

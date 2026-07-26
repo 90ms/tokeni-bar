@@ -19,6 +19,7 @@ struct ProviderParserTests {
         #expect(parsed.tokenUsage.cachedInputTokens == 500)
         #expect(parsed.tokenUsage.outputTokens == 200)
         #expect(parsed.tokenUsage.reasoningTokens == 50)
+        #expect(parsed.sessionID == "codex-token-count")
         #expect(parsed.quotaWindows.count == 2)
         #expect(parsed.quotaWindows[0].usedPercent == 32)
         #expect(parsed.credits?.balance == "12.50")
@@ -255,6 +256,8 @@ struct ProviderParserTests {
 
         #expect(snapshot.availability == .available)
         #expect(snapshot.tokenUsage?.totalTokens == 0)
+        #expect(snapshot.growthUsageObservation?.scope == .daily)
+        #expect(snapshot.growthUsageObservation?.totalTokens == 0)
     }
 
     @Test

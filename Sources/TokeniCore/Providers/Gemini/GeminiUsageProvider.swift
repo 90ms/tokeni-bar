@@ -28,6 +28,12 @@ public struct GeminiUsageProvider: UsageProviding, UsageActivityProviding {
                 availability: .available,
                 source: .localSessionLog,
                 tokenUsage: usage.tokenUsage,
+                growthUsageObservation: GrowthUsageObservation(
+                    providerID: .gemini,
+                    scope: .session,
+                    scopeID: file.deletingPathExtension().lastPathComponent,
+                    totalTokens: usage.tokenUsage.totalTokens,
+                    observedAt: usage.timestamp ?? .now),
                 detail: detail,
                 updatedAt: usage.timestamp ?? .now)
         }

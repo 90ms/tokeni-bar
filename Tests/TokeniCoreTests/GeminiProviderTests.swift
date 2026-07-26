@@ -45,6 +45,9 @@ struct GeminiProviderTests {
         #expect(snapshot.availability == .available)
         #expect(snapshot.source == .localSessionLog)
         #expect(snapshot.tokenUsage?.totalTokens == 2810)
+        #expect(snapshot.growthUsageObservation?.scope == .session)
+        #expect(snapshot.growthUsageObservation?.scopeID == "session-sanitized")
+        #expect(snapshot.growthUsageObservation?.totalTokens == 2810)
         #expect(snapshot.quotaWindows.isEmpty)
         #expect(snapshot.costEstimate == nil)
     }

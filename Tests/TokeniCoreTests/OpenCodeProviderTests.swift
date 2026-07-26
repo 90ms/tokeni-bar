@@ -53,6 +53,9 @@ struct OpenCodeProviderTests {
 
         #expect(snapshot.availability == .available)
         #expect(snapshot.tokenUsage?.totalTokens == 2450)
+        #expect(snapshot.growthUsageObservation?.scope == .lifetime)
+        #expect(snapshot.growthUsageObservation?.scopeID == "opencode.db")
+        #expect(snapshot.growthUsageObservation?.totalTokens == 2450)
         #expect(abs((snapshot.costEstimate?.amountUSD ?? 0) - 0.0425) < 0.000_000_1)
         #expect(snapshot.detail == "All-time local sessions · 3 sessions")
     }
