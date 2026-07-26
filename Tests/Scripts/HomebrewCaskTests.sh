@@ -5,8 +5,8 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/agents-status-cask-tests.XXXXXX")"
 trap 'rm -rf "$TEST_ROOT"' EXIT
 
-VERSION="0.5.1"
-SHA256="968d7845bef67db6d185822ffe588c7cede5c4049f61d076fc308f72e2ee5032"
+VERSION="0.6.0"
+SHA256="f6cb26f8eb9e6a66c57572a1c7095932011872a5ab552524104800ac3d1b12eb"
 OUTPUT="$TEST_ROOT/Casks/tokeni-bar.rb"
 
 "$ROOT/Scripts/render_homebrew_cask.sh" "$VERSION" "$SHA256" "$OUTPUT"
