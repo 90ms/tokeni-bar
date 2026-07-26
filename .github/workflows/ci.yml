@@ -5,11 +5,21 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
+    name: Build, test, and validate app bundle
     runs-on: macos-26
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - name: Check out repository
+        uses: actions/checkout@v7
       - name: Swift version
         run: swift --version
       - name: Test
@@ -17,4 +27,18 @@ jobs:
       - name: Build app executable
         run: swift build -c release --product AgentsStatusBar
       - name: Package ad-hoc app for validation
+        env:
+          APP_VERSION: 0.0.0
+          BUILD_NUMBER: ${{ github.run_number }}
+          OUTPUT_DIR: ${{ runner.temp }}/agents-status-package
         run: ./Scripts/package_app.sh
+      - name: Validate app bundle metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/agents-status-package/Agents Status Bar.app"
+          test -x "$app/Contents/MacOS/AgentsStatusBar"
+          plutil -lint "$app/Contents/Info.plist"
+          test "$(defaults read "$app/Contents/Info" CFBundleIdentifier)" = "dev.agentsstatusbar.app"
+          test "$(defaults read "$app/Contents/Info" CFBundleShortVersionString)" = "0.0.0"
+          test "$(defaults read "$app/Contents/Info" CFBundleVersion)" = "$GITHUB_RUN_NUMBER"

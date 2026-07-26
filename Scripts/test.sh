@@ -1,6 +1,10 @@
 #!/bin/zsh
 set -euo pipefail
 
+script_dir=${0:A:h}
+project_dir=${script_dir:h}
+"$project_dir/Tests/Scripts/HomebrewCaskTests.sh"
+
 args=(--enable-swift-testing --disable-xctest)
 developer_dir=$(xcode-select -p 2>/dev/null || true)
 

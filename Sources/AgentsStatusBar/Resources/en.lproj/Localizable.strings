@@ -80,7 +80,7 @@
 "settings.updates.latest" = "You're using the latest stable version.";
 "settings.updates.stale" = "GitHub could not be reached. This result is from the last validated check.";
 "settings.updates.failed" = "Could not check GitHub Releases for an update.";
-"settings.updates.manual" = "The app checks GitHub Releases in the background. Download and installation remain manual.";
+"settings.updates.manual" = "The app checks GitHub Releases in the background. Homebrew installations can be updated with brew upgrade --cask agents-status-bar.";
 "updates.menuAvailable" = "Version %@ available";
 "settings.cost.title" = "Cost Estimate";
 "settings.cost.currency" = "Display currency";

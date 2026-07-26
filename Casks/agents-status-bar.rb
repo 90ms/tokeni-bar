@@ -12,10 +12,13 @@ cask "agents-status-bar" do
 
   app "Agents Status Bar.app"
 
-  zap trash: "~/Library/Preferences/dev.agentsstatusbar.app.plist"
+  zap trash: [
+    "~/Library/Application Support/AgentsStatusBar",
+    "~/Library/Preferences/dev.agentsstatusbar.app.plist",
+  ]
 
   caveats <<~EOS
-    This preview is ad-hoc signed. On first launch, macOS may require approval in
-    System Settings > Privacy & Security.
+    If macOS blocks the first launch of an ad-hoc signed release, approve
+    Agents Status Bar in System Settings > Privacy & Security.
   EOS
 end

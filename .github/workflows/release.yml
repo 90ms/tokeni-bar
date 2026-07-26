@@ -1,0 +1,222 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish macOS release
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must use v<major>.<minor>.<patch>, got: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Determine distribution mode
+        id: distribution
+        shell: bash
+        env:
+          CERTIFICATE_P12_BASE64: ${{ secrets.CERTIFICATE_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          values=(
+            "$CERTIFICATE_P12_BASE64"
+            "$CERTIFICATE_PASSWORD"
+            "$KEYCHAIN_PASSWORD"
+            "$DEVELOPER_ID_APPLICATION"
+            "$APPLE_ID"
+            "$APPLE_TEAM_ID"
+            "$APPLE_APP_PASSWORD"
+          )
+          configured=0
+          for value in "${values[@]}"; do
+            if [[ -n "$value" ]]; then
+              configured=$((configured + 1))
+            fi
+          done
+          if [[ "$configured" -eq 0 ]]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "Building an ad-hoc signed release."
+          elif [[ "$configured" -eq "${#values[@]}" ]]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "Building a Developer ID signed and notarized release."
+          else
+            echo "Signing configuration is incomplete ($configured/${#values[@]} secrets)." >&2
+            exit 1
+          fi
+
+      - name: Import Developer ID certificate
+        if: ${{ steps.distribution.outputs.signed == 'true' }}
+        shell: bash
+        env:
+          CERTIFICATE_P12_BASE64: ${{ secrets.CERTIFICATE_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          certificate="$RUNNER_TEMP/developer-id.p12"
+          keychain="$RUNNER_TEMP/release.keychain-db"
+          printf '%s' "$CERTIFICATE_P12_BASE64" | base64 --decode > "$certificate"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain"
+          security import "$certificate" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$keychain"
+          security list-keychain -d user -s "$keychain"
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$keychain"
+
+      - name: Build application
+        env:
+          APP_VERSION: ${{ steps.version.outputs.value }}
+          APP_SIGN_IDENTITY: ${{ steps.distribution.outputs.signed == 'true' && secrets.DEVELOPER_ID_APPLICATION || '-' }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: ./Scripts/package_app.sh
+
+      - name: Create release archive
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          ditto -c -k --keepParent \
+            "dist/Agents Status Bar.app" \
+            "dist/AgentsStatusBar-$VERSION.zip"
+
+      - name: Notarize and staple
+        if: ${{ steps.distribution.outputs.signed == 'true' }}
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          archive="dist/AgentsStatusBar-$VERSION.zip"
+          xcrun notarytool submit "$archive" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --wait
+          xcrun stapler staple "dist/Agents Status Bar.app"
+          rm "$archive"
+          ditto -c -k --keepParent \
+            "dist/Agents Status Bar.app" \
+            "$archive"
+
+      - name: Generate checksum
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          cd dist
+          shasum -a 256 "AgentsStatusBar-$VERSION.zip" \
+            > "AgentsStatusBar-$VERSION.zip.sha256"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNED: ${{ steps.distribution.outputs.signed }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          if [[ "$SIGNED" == "true" ]]; then
+            security_note="Developer ID signed and Apple-notarized build."
+          else
+            security_note="Ad-hoc signed build. macOS may require explicit approval in Privacy & Security."
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/AgentsStatusBar-$VERSION.zip" \
+            "dist/AgentsStatusBar-$VERSION.zip.sha256" \
+            --generate-notes \
+            --notes "$security_note" \
+            --verify-tag
+
+      - name: Open Homebrew Cask update pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::notice::HOMEBREW_TAP_TOKEN is not configured; skipping the tap pull request."
+            exit 0
+          fi
+
+          release_sha="$(awk '{print $1}' "dist/AgentsStatusBar-$VERSION.zip.sha256")"
+          tap="$RUNNER_TEMP/homebrew-tap"
+          gh repo clone 90ms/homebrew-tap "$tap"
+          branch="automation/agents-status-bar-$VERSION"
+          if git -C "$tap" ls-remote \
+            --exit-code \
+            --heads \
+            origin \
+            "refs/heads/$branch" >/dev/null
+          then
+            git -C "$tap" checkout -B "$branch" "origin/$branch"
+          else
+            git -C "$tap" checkout -b "$branch"
+          fi
+
+          ./Scripts/render_homebrew_cask.sh \
+            "$VERSION" \
+            "$release_sha" \
+            "$tap/Casks/agents-status-bar.rb"
+
+          if ! git -C "$tap" diff --quiet -- Casks/agents-status-bar.rb; then
+            git -C "$tap" add Casks/agents-status-bar.rb
+            git -C "$tap" \
+              -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "agents-status-bar $VERSION"
+            git -C "$tap" push origin "$branch"
+          fi
+
+          if [[ "$(gh pr list \
+            --repo 90ms/homebrew-tap \
+            --head "$branch" \
+            --json number \
+            --jq length)" != "0" ]]
+          then
+            echo "Tap pull request already exists for $branch."
+          else
+            gh pr create \
+              --repo 90ms/homebrew-tap \
+              --head "$branch" \
+              --base main \
+              --title "agents-status-bar $VERSION" \
+              --body "Automated Cask update for 90ms/agents-status-bar@$GITHUB_REF_NAME. Merge only after tap CI and the release checklist pass."
+          fi
