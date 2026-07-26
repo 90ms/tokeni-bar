@@ -1,17 +1,24 @@
 cask "agents-status-bar" do
-  version "VERSION"
-  sha256 "SHA256"
+  version "__VERSION__"
+  sha256 "__SHA256__"
 
-  url "https://github.com/GITHUB_OWNER/agents-status-bar/releases/download/v#{version}/AgentsStatusBar-#{version}.zip"
+  url "https://github.com/90ms/agents-status-bar/releases/download/v#{version}/AgentsStatusBar-#{version}.zip"
   name "Agents Status Bar"
-  desc "Menu bar usage monitor for local AI coding agents"
-  homepage "https://github.com/GITHUB_OWNER/agents-status-bar"
+  desc "Menu bar usage monitor for AI coding agents"
+  homepage "https://github.com/90ms/agents-status-bar"
 
+  depends_on arch: :arm64
   depends_on macos: ">= :sonoma"
 
   app "Agents Status Bar.app"
 
   zap trash: [
+    "~/Library/Application Support/AgentsStatusBar",
     "~/Library/Preferences/dev.agentsstatusbar.app.plist",
   ]
+
+  caveats <<~EOS
+    If macOS blocks the first launch of an ad-hoc signed release, approve
+    Agents Status Bar in System Settings > Privacy & Security.
+  EOS
 end

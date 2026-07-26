@@ -163,3 +163,60 @@ jobs:
             --generate-notes \
             --notes "$security_note" \
             --verify-tag
+
+      - name: Open Homebrew Cask update pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::notice::HOMEBREW_TAP_TOKEN is not configured; skipping the tap pull request."
+            exit 0
+          fi
+
+          release_sha="$(awk '{print $1}' "dist/AgentsStatusBar-$VERSION.zip.sha256")"
+          tap="$RUNNER_TEMP/homebrew-tap"
+          gh repo clone 90ms/homebrew-tap "$tap"
+          branch="automation/agents-status-bar-$VERSION"
+          if git -C "$tap" ls-remote \
+            --exit-code \
+            --heads \
+            origin \
+            "refs/heads/$branch" >/dev/null
+          then
+            git -C "$tap" checkout -B "$branch" "origin/$branch"
+          else
+            git -C "$tap" checkout -b "$branch"
+          fi
+
+          ./Scripts/render_homebrew_cask.sh \
+            "$VERSION" \
+            "$release_sha" \
+            "$tap/Casks/agents-status-bar.rb"
+
+          if ! git -C "$tap" diff --quiet -- Casks/agents-status-bar.rb; then
+            git -C "$tap" add Casks/agents-status-bar.rb
+            git -C "$tap" \
+              -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "agents-status-bar $VERSION"
+            git -C "$tap" push origin "$branch"
+          fi
+
+          if [[ "$(gh pr list \
+            --repo 90ms/homebrew-tap \
+            --head "$branch" \
+            --json number \
+            --jq length)" != "0" ]]
+          then
+            echo "Tap pull request already exists for $branch."
+          else
+            gh pr create \
+              --repo 90ms/homebrew-tap \
+              --head "$branch" \
+              --base main \
+              --title "agents-status-bar $VERSION" \
+              --body "Automated Cask update for 90ms/agents-status-bar@$GITHUB_REF_NAME. Merge only after tap CI and the release checklist pass."
+          fi
