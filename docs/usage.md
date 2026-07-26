@@ -1,5 +1,20 @@
 # Usage display guide
 
+## Tokeni growth accounting
+
+Tokeni growth uses local activity detection, not provider token totals. A
+calendar minute with one or more active sessions is recorded once, so
+simultaneous Codex and Claude activity still earns 1 XP.
+
+- Only active minutes observed while the app is running count; offline time is
+  never backfilled.
+- Growth is capped at 90 XP per day. Stages are egg at 0–14, hatchling at
+  15–119, baby at 120–359, and adult at 360 XP or more.
+- Activity detection checks usage-file modification times and does not read
+  prompt or response bodies.
+- `companion-state.json` contains only the companion ID, XP, dates, and
+  interaction timestamps.
+
 ## Codex account token activity
 
 Codex account activity comes from the experimental `codex app-server`

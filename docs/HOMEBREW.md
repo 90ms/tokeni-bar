@@ -34,7 +34,14 @@ Remove the app and its local settings and history:
 brew uninstall --cask --zap tokeni-bar
 ```
 
+`--zap` removes both the current `TokeniBar` support directory and the
+pre-rename compatibility path.
+
 ## Maintainer flow
+
+Before the first Tokeni Bar release, confirm that the GitHub repository is
+named `90ms/tokeni-bar`. The update client, pricing URL, badges, release
+artifacts, and Cask all use that path.
 
 The release workflow publishes `TokeniBar-<version>.zip` and its checksum
 for every stable `v<major>.<minor>.<patch>` tag. When `HOMEBREW_TAP_TOKEN` is

@@ -8,15 +8,18 @@
 
 <img src="docs/tokeni-bar-icon.png" alt="Tokeni Bar icon" width="128">
 
-A privacy-conscious macOS menu-bar app that keeps AI coding-agent quotas,
-token activity, and API-equivalent cost estimates in one place.
+A privacy-conscious macOS menu-bar app that shows AI coding-agent token status
+and grows the pixel companion ByteBot from active work time.
+
+<p align="center">
+  <img src="docs/bytebot.png" width="160" alt="Tokeni Bar pixel companion ByteBot" />
+</p>
 
 <p align="center">
   <img src="docs/tokeni-bar.png" width="500" alt="Tokeni Bar showing Codex, Claude Code, and Gemini CLI usage" />
 </p>
 
-> The screenshot follows the current `main` UI and contains sample values only.
-> It does not contain real account data.
+> This sample of the usage area contains no real account data.
 
 Tokeni Bar reuses your existing CLI sign-ins. It does not store prompts,
 responses, access tokens, refresh tokens, or cookies. Quota percentages always
@@ -24,6 +27,9 @@ mean **percent left**, and cost values are references—not subscription bills.
 
 ## What it does
 
+- Grows the original pixel companion **ByteBot** from active agent minutes.
+- Animates egg, hatchling, baby, and adult stages while working, warning,
+  celebrating, or sleeping.
 - Shows Codex and Claude quota windows, reset times, and account status.
 - Combines available account activity with local token and cost records.
 - Displays the lowest remaining quota, a selected provider, or monthly cost in
@@ -33,6 +39,22 @@ mean **percent left**, and cost values are references—not subscription bills.
 - Keeps 24-hour, 7-day, and 30-day aggregate history locally.
 - Sends configurable low-quota and monthly budget alerts.
 - Supports English and Korean, USD and KRW, compact mode, and launch at login.
+
+## How ByteBot grows
+
+- One minute with at least one active agent earns 1 XP.
+- Concurrent providers still earn only 1 XP for that minute, with a daily cap
+  of 90 XP.
+- Time while the app is closed is not backfilled. Token consumption and quota
+  depletion do not grant rewards.
+- ByteBot hatches at 15 total XP, reaches the baby stage at 120 XP, and becomes
+  an adult at 360 XP.
+- **Pat ByteBot** triggers a short celebration but does not grant XP.
+- ByteBot reacts to quota warnings, active work, and longer idle periods.
+
+Turn ByteBot and its animation on or off independently under
+**Settings → Tokeni**, or select **ByteBot status** as the menu-bar display.
+Animation pauses automatically for Reduce Motion and Low Power Mode.
 
 ## Install
 
@@ -69,7 +91,8 @@ Security**. Do not disable Gatekeeper globally.
    menu bar.
 3. Open **Settings → General**, enable the providers you use, and choose the
    menu-bar display.
-4. For Claude Code account quotas, select **Connect** under
+4. Open **Settings → Tokeni** to see ByteBot's stage and today's XP.
+5. For Claude Code account quotas, select **Connect** under
    **Provider Connections** and approve the Keychain request.
 
 Providers that are not installed, signed in, or supported by the current CLI
@@ -120,6 +143,8 @@ menu-bar quota selection, and cost-estimation details.
 - Activity detection reads file metadata, not prompt or response content.
 - History stores only aggregate percentages, token totals, and estimated cost
   for 30 days.
+- ByteBot state stores only XP, growth timestamps, and pat timestamps—never
+  provider names, token totals, or content.
 - Copyable diagnostics exclude credentials, provider details, and file paths.
 - There is no analytics or telemetry.
 
@@ -168,6 +193,25 @@ open "dist/Tokeni Bar.app"
 
 `Scripts/package_app.sh` uses ad-hoc signing by default. Set
 `APP_SIGN_IDENTITY` to another local signing identity.
+
+Regenerating the ByteBot sheets is the only build task that requires `ffmpeg`.
+To recreate the reviewed 512×384 RGBA sheets from the checked-in source:
+
+```bash
+./Scripts/generate_bytebot_assets.sh
+```
+
+See
+[`Sources/TokeniBar/CompanionAssets/bytebot`](Sources/TokeniBar/CompanionAssets/bytebot)
+for the asset contract and license.
+
+## Upgrading an existing installation
+
+The bundle identifier stays unchanged to preserve preferences and login-item
+compatibility. On first launch, existing
+`~/Library/Application Support/AgentsStatusBar` data is moved to
+`~/Library/Application Support/TokeniBar`. If the move cannot be completed,
+the app safely continues using the legacy directory.
 
 See the [Homebrew distribution guide](docs/HOMEBREW.md) and
 [contributor guide](AGENTS.md) for maintenance details.

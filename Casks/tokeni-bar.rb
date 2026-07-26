@@ -4,7 +4,7 @@ cask "tokeni-bar" do
 
   url "https://github.com/90ms/tokeni-bar/releases/download/v#{version}/TokeniBar-#{version}.zip"
   name "Tokeni Bar"
-  desc "Menu bar usage monitor for AI coding agents"
+  desc "AI agent token status bar with a growing pixel companion"
   homepage "https://github.com/90ms/tokeni-bar"
 
   depends_on arch: :arm64

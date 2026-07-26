@@ -35,7 +35,14 @@ brew uninstall --cask tokeni-bar
 brew uninstall --cask --zap tokeni-bar
 ```
 
+`--zap`은 현재 `TokeniBar` 저장 경로와 이름 변경 전의 호환 경로를 모두
+제거합니다.
+
 ## 관리자 배포 흐름
+
+첫 Tokeni Bar 릴리스 전 GitHub 저장소 이름이 `90ms/tokeni-bar`인지 확인해야
+합니다. 앱의 업데이트 확인, 가격표 URL, 배지, Release 산출물 및 Cask가 이
+경로를 사용합니다.
 
 안정 버전 태그 `v<major>.<minor>.<patch>`를 push하면 Release workflow가
 `TokeniBar-<version>.zip`과 체크섬을 게시합니다.
