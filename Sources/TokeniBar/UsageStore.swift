@@ -499,7 +499,8 @@ final class UsageStore: ObservableObject {
         else { return }
         var state = self.companionState
         guard (try? self.companionGameEngine.hatch(
-            unitValue: Double.random(in: 0..<1),
+            speciesUnitValue: Double.random(in: 0..<1),
+            rarityUnitValue: Double.random(in: 0..<1),
             in: &state)) != nil
         else { return }
         self.companionState = state

@@ -58,7 +58,8 @@ struct CompanionGameEngineTests {
             growthDateKey: "2027-01-15")
 
         let events = try engine.hatch(
-            unitValue: 0.80,
+            speciesUnitValue: 0,
+            rarityUnitValue: 0.80,
             at: now,
             in: &state)
 
@@ -67,7 +68,12 @@ struct CompanionGameEngineTests {
         #expect(state.growthEnergy == 20)
         #expect(state.growthSpentToday == 60)
         #expect(events.contains {
-            if case .hatched(rarity: .rare, unlockedFormIDs: _) = $0 {
+            if case .hatched(
+                speciesID: .bytebot,
+                rarity: .rare,
+                isNewSpecies: true,
+                unlockedFormIDs: _) = $0
+            {
                 return true
             }
             return false
@@ -75,6 +81,58 @@ struct CompanionGameEngineTests {
         #expect(state.collection.forms.contains {
             $0.formID == "bytebot.hatchling.rare"
                 && $0.unlockKind == .encountered
+        })
+    }
+
+    @Test("Every species occupies an equal hatch interval")
+    func equalSpeciesIntervals() {
+        let engine = CompanionGameEngine(calendar: self.calendar)
+
+        #expect(engine.rollSpecies(unitValue: 0) == .bytebot)
+        #expect(engine.rollSpecies(unitValue: 0.20) == .cachecat)
+        #expect(engine.rollSpecies(unitValue: 0.40) == .stackfox)
+        #expect(engine.rollSpecies(unitValue: 0.60) == .promptpup)
+        #expect(engine.rollSpecies(unitValue: 0.80) == .nullslime)
+        #expect(engine.rollSpecies(unitValue: 1) == .nullslime)
+    }
+
+    @Test("Five duplicate hatches guarantee a missing species next")
+    func missingSpeciesPity() throws {
+        let engine = CompanionGameEngine(calendar: self.calendar)
+        let encounteredByteBot = CompanionFormRecord(
+            formID: "bytebot.hatchling.normal",
+            speciesID: .bytebot,
+            stage: .hatchling,
+            rarity: .normal,
+            unlockKind: .encountered,
+            firstUnlockedAt: .now,
+            lastEncounteredAt: .now,
+            encounterCount: 6)
+        var state = CompanionGameState(
+            growthEnergy: 60,
+            growthDateKey: GrowthLocalDate.key(
+                for: .now,
+                calendar: self.calendar),
+            collection: CompanionCollection(forms: [encounteredByteBot]),
+            consecutiveDuplicateHatches: 5)
+
+        let events = try engine.hatch(
+            speciesUnitValue: 0,
+            rarityUnitValue: 0,
+            in: &state)
+
+        #expect(state.speciesID == .cachecat)
+        #expect(state.consecutiveDuplicateHatches == 0)
+        #expect(events.contains {
+            if case .hatched(
+                speciesID: .cachecat,
+                rarity: .normal,
+                isNewSpecies: true,
+                unlockedFormIDs: _) = $0
+            {
+                return true
+            }
+            return false
         })
     }
 
@@ -91,11 +149,13 @@ struct CompanionGameEngineTests {
 
         _ = try engine.evolve(unitValue: 0.10, at: now, in: &state)
         #expect(state.stage == .junior)
+        #expect(state.speciesID == .bytebot)
         #expect(state.rarity == .rare)
         #expect(state.growthEnergy == 160)
 
         _ = try engine.evolve(unitValue: 0.90, at: now, in: &state)
         #expect(state.stage == .adult)
+        #expect(state.speciesID == .bytebot)
         #expect(state.rarity == .epic)
         #expect(state.growthEnergy == 0)
         #expect(state.growthSpentToday == 260)
@@ -115,7 +175,10 @@ struct CompanionGameEngineTests {
             required: 60,
             available: 59))
         {
-            try engine.hatch(unitValue: 0, in: &state)
+            try engine.hatch(
+                speciesUnitValue: 0,
+                rarityUnitValue: 0,
+                in: &state)
         }
         #expect(state == original)
     }

@@ -395,7 +395,9 @@ public enum CompanionGameEvent: Hashable, Sendable {
     case energyApplied(Int)
     case energySpent(Int)
     case hatched(
+        speciesID: CompanionSpeciesID,
         rarity: CompanionRarity,
+        isNewSpecies: Bool,
         unlockedFormIDs: [String])
     case evolved(
         fromStage: CompanionGameStage,

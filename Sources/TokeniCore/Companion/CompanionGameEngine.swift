@@ -42,7 +42,8 @@ public struct CompanionGameEngine: Sendable {
     }
 
     public func hatch(
-        unitValue: Double,
+        speciesUnitValue: Double,
+        rarityUnitValue: Double,
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
     {
@@ -50,10 +51,26 @@ public struct CompanionGameEngine: Sendable {
         guard state.stage == .egg else { throw CompanionGameError.eggRequired }
         try self.spend(self.rules.hatchCost, in: &state)
 
-        let rarity = self.rollRarity(from: .normal, unitValue: unitValue)
-        state.speciesID = .bytebot
+        let discoveredSpecies = state.collection.discoveredSpeciesIDs
+        let missingSpecies = CompanionSpeciesID.allCases.filter {
+            !discoveredSpecies.contains($0)
+        }
+        let pityApplies = !missingSpecies.isEmpty
+            && state.consecutiveDuplicateHatches
+                >= self.rules.duplicateSpeciesPityHatches
+        let speciesID = self.rollSpecies(
+            from: pityApplies ? missingSpecies : CompanionSpeciesID.allCases,
+            unitValue: speciesUnitValue)
+        let isNewSpecies = !discoveredSpecies.contains(speciesID)
+        let rarity = self.rollRarity(
+            from: .normal,
+            unitValue: rarityUnitValue)
+        state.speciesID = speciesID
         state.stage = .hatchling
         state.rarity = rarity
+        state.consecutiveDuplicateHatches = isNewSpecies
+            ? 0
+            : Self.saturatedAdd(state.consecutiveDuplicateHatches, 1)
         state.updatedAt = now
         let unlocked = self.recordHatch(
             rarity: rarity,
@@ -62,7 +79,11 @@ public struct CompanionGameEngine: Sendable {
         state.celebrationUntil = now.addingTimeInterval(6)
         return [
             .energySpent(self.rules.hatchCost),
-            .hatched(rarity: rarity, unlockedFormIDs: unlocked),
+            .hatched(
+                speciesID: speciesID,
+                rarity: rarity,
+                isNewSpecies: isNewSpecies,
+                unlockedFormIDs: unlocked),
         ]
     }
 
@@ -235,6 +256,18 @@ public struct CompanionGameEngine: Sendable {
         case .legendary:
             return .legendary
         }
+    }
+
+    public func rollSpecies(
+        from candidates: [CompanionSpeciesID] = CompanionSpeciesID.allCases,
+        unitValue requestedValue: Double) -> CompanionSpeciesID
+    {
+        let available = candidates.isEmpty
+            ? CompanionSpeciesID.allCases
+            : candidates
+        let value = min(max(requestedValue, 0), 0.999_999_999_999)
+        let index = min(Int(floor(value * Double(available.count))), available.count - 1)
+        return available[index]
     }
 
     private func spend(
