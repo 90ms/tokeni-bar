@@ -11,7 +11,7 @@
 </p>
 
 A macOS menu-bar app for tracking AI coding-agent **tokens and quotas** while
-raising the pixel companion **ByteBot** with real token usage.
+discovering and raising five pixel-pet species with real token usage.
 
 ## Quick install
 
@@ -41,18 +41,18 @@ brew install --formula tokeni-bar
 
 | Area | Information |
 |---|---|
-| Menu bar | Lowest quota, selected provider, monthly cost, or ByteBot status |
+| Menu bar | Lowest quota, selected provider, monthly cost, or pet status |
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Low remaining quota and monthly budget |
-| ByteBot | Life stage, rarity, today's energy, bond, and behavior |
-| Collection | 12 forms, completed generations, records, and guarantees |
+| Tokeni pets | Life stage, species, rarity, today's energy, bond, and behavior |
+| Collection | 5 species, 60 forms, discovery records, and guarantees |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
 references—not subscription bills.
 
-## How ByteBot grows
+## How Tokeni pets grow
 
 ### 1. Tokens become growth energy
 
@@ -82,7 +82,7 @@ balance carries over when the date changes.
 
 | Action | Energy spent | Result |
 |---|---:|---|
-| Hatch egg | 60 | Reveal the first rarity and become a Hatchling |
+| Hatch egg | 60 | Reveal the species and first rarity, then become a Hatchling |
 | Evolve to Junior | 100 | Keep or raise rarity and become a Junior |
 | Evolve to Adult | 160 | Keep or raise rarity and become an Adult |
 | Receive a new egg | 40 | Start the next generation as an ungraded egg |
@@ -91,8 +91,13 @@ Having enough energy never hatches or evolves automatically. The user must
 click the action. Energy earned as an Adult fills action energy and also records
 bond.
 
-Working, low quota, patting, and long inactivity change ByteBot's behavior but
+Working, low quota, patting, and long inactivity change the pet's behavior but
 never add growth energy.
+
+Every species shares the same mystery egg. Hatching reveals ByteBot, CacheCat,
+StackFox, PromptPup, or NullSlime at equal 20% base odds. While any species is
+still missing, five duplicate hatches guarantee an undiscovered species from
+the next egg.
 
 ### 3. Rarity may rise at evolution
 
@@ -131,17 +136,18 @@ Adult keeps the existing guarantees but does not move them closer.
 | Finish an Adult journey | Archive rarity and bond, then start a new egg | Collection and guarantees |
 | Leave before Adult | Spend 40 energy and start a new egg | Collection and existing guarantees |
 
-The collection has 12 forms: four rarities for Hatchling, Junior, and Adult.
+The collection has 60 forms: five species, four rarities, and three visible
+life stages.
 When a high rarity first appears late, its earlier forms also unlock as
 **Lineage**.
 
 Open the grid button in the menu or choose
-**Settings → Tokeni → Open ByteBot Collection**. See
-[ByteBot growth and collection](docs/bytebot.md) for the complete rules.
+**Settings → Tokeni → Open Pet Collection**. See
+[Tokeni pet growth and collection](docs/bytebot.md) for the complete rules.
 
 ## Provider support
 
-| Provider | Account quota | Token and cost display | ByteBot growth source |
+| Provider | Account quota | Token and cost display | Pet growth source |
 |---|---|---|---|
 | Codex | Weekly and model-scoped limits; reset credits | Daily, month, and lifetime tokens; reference cost | Confirmed daily total or session increases |
 | Claude Code | 5-hour, weekly, and model-scoped limits | Local daily tokens; cache-aware reference cost | Confirmed daily total |
@@ -161,7 +167,7 @@ not awarded as new growth. See
 | 2 | Start Tokeni Bar and open the chart icon in the menu bar |
 | 3 | Choose providers and the menu-bar display under **Settings → General** |
 | 4 | For Claude account quotas, choose **Provider Connections → Connect** |
-| 5 | Use an agent and watch ByteBot grow |
+| 5 | Use an agent and watch the pet grow |
 
 ## Update and uninstall
 
@@ -188,10 +194,10 @@ blocks the first launch, approve it under
 | Stored locally | Never stored |
 |---|---|
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
-| ByteBot stage, rarity, collection, and guarantees | Access tokens, refresh tokens, and cookies |
+| Pet species, stage, rarity, collection, and guarantees | Access tokens, refresh tokens, and cookies |
 | Deduplication checkpoints | Account secrets and server telemetry |
 
-Usage history stays on the Mac for 30 days. ByteBot state and token checkpoints
+Usage history stays on the Mac for 30 days. Pet state and token checkpoints
 are separate, and there is no analytics or remote game server.
 
 ## Troubleshooting
@@ -201,7 +207,7 @@ are separate, and there is no analytics or remote game server.
 | No app window | Look for the chart icon on the right side of the menu bar, not the Dock |
 | Provider unavailable | Confirm the CLI is installed and signed in, then run it once |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
-| Previous ByteBot progress is absent | Version 0.8.0 starts the token-powered game with a new egg; settings and usage history remain |
+| Previous pet progress is absent | Version 0.8.0 starts the token-powered game with a new egg; settings and usage history remain |
 
 ## Development
 

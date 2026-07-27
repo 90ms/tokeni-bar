@@ -1,9 +1,9 @@
-# ByteBot growth and collection
+# Tokeni pet growth and collection
 
 [한국어](bytebot.ko.md) | **English**
 
-ByteBot is a local pixel companion powered by verified AI-agent token usage.
-There is no game account or server; growth, rarity, collection, and pity are
+Tokeni pets are local pixel companions powered by verified AI-agent token usage.
+There is no game account or server; species, growth, rarity, collection, and pity are
 stored on your Mac.
 
 ## Growth energy
@@ -45,14 +45,29 @@ days, the 20% carry is applied once for every elapsed day.
 
 Every generation starts as an ungraded egg. Having enough energy never changes
 the stage automatically: the user must click Hatch or Evolve. Energy earned as
-an Adult fills action energy and that ByteBot's **bond energy**.
+an Adult fills action energy and that pet's **bond energy**.
 
 Working, quota warning, patting, and longer inactivity change the animation.
 Activity detection drives behavior only and never fabricates growth energy.
 
 ## Rarity and evolution
 
-The first rarity is revealed when the user hatches the egg. Later evolution
+Every species shares an unidentified mystery egg. Hatching independently
+reveals the first rarity and one of five species:
+
+| Species | Personality | Base odds |
+|---|---|---:|
+| ByteBot | Diligent little robot | 20% |
+| CacheCat | Curious data cat | 20% |
+| StackFox | Clever code fox | 20% |
+| PromptPup | Optimistic prompt dog | 20% |
+| NullSlime | Laid-back digital slime | 20% |
+
+The revealed species stays the same through Junior and Adult. While any species
+is missing, five consecutive duplicate hatches guarantee that the next egg
+reveals an undiscovered species.
+
+Later evolution
 keeps or raises rarity through `Normal → Rare → Epic → Legendary` and never
 drops it.
 
@@ -77,24 +92,26 @@ early keeps existing pity but does not advance it.
 
 ## Collection
 
-The collection has 12 forms: four rarities for Hatchling, Junior, and Adult.
+The collection has 60 forms: five species, four rarities, and Hatchling,
+Junior, and Adult.
 The ungraded egg is not counted as a collectible form.
 
 A form shown during evolution is marked **Met**. If a rarity first appears at a
 later stage, its earlier-stage art unlocks as **Lineage**. A Legendary first
 found as an Adult therefore also unlocks Legendary Hatchling and Junior art.
 
-Open the grid button in the menu or choose **Settings → Tokeni → Open ByteBot
+Open the grid button in the menu or choose **Settings → Tokeni → Open Pet
 Collection** to see:
 
-- all 12 form unlocks;
+- discovery and hatch-encounter counts for all five species;
+- all 60 form unlocks;
 - Met versus Lineage unlocks;
 - completed generations, best rarity, and best bond;
 - maximum generations remaining for every guarantee.
 
 ## New eggs and completed journeys
 
-At Adult, keep the current ByteBot and grow bond, or spend 40 energy to finish
+At Adult, keep the current pet and grow bond, or spend 40 energy to finish
 its journey and receive a new ungraded egg. Completion archives final rarity
 and bond and updates pity.
 
@@ -122,7 +139,7 @@ See the [usage display guide](usage.md) for detailed accounting and cost rules.
 
 ## Storage and privacy
 
-- `companion-state.json`: stage, rarity, energy, bond, collection, pity, and interactions
+- `companion-state.json`: species, stage, rarity, energy, bond, collection, pity, and interactions
 - `usage-growth-ledger.json`: scoped token checkpoints and daily credited energy
 - `usage-history.json`: 30 days of aggregate usage, quota, and cost history
 
