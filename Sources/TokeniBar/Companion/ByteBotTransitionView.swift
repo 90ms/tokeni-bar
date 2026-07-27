@@ -160,9 +160,9 @@ struct ByteBotTransitionView: View {
             "companion.rarity.\(effect.rarity.rawValue)")
         switch effect.kind {
         case .hatch:
-            AppLocalization.format("companion.animation.hatched", rarity)
+            return AppLocalization.format("companion.animation.hatched", rarity)
         case .rarityUp:
-            AppLocalization.format("companion.animation.rarityUp", rarity)
+            return AppLocalization.format("companion.animation.rarityUp", rarity)
         }
     }
 }
