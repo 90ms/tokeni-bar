@@ -2,92 +2,136 @@ import Foundation
 
 public struct CompanionGameEngine: Sendable {
     public let rules: CompanionGameRules
+    private var calendar: Calendar
 
-    public init(rules: CompanionGameRules = .standard) {
+    public init(
+        rules: CompanionGameRules = .standard,
+        calendar: Calendar = .current)
+    {
         self.rules = rules
+        self.calendar = calendar
     }
 
     public func apply(
         award: GrowthEnergyAward,
-        randomValues: [Double],
-        to state: inout CompanionGameState) throws -> [CompanionGameEvent]
+        to state: inout CompanionGameState) -> [CompanionGameEvent]
     {
         guard !state.appliedGrowthAwardIDs.contains(award.id) else { return [] }
-        let rollCount = self.requiredRollCount(
-            adding: award.energy,
-            to: state)
-        guard randomValues.count >= rollCount else {
-            throw CompanionGameError.insufficientRandomValues
-        }
-
+        self.rollOverEnergyIfNeeded(at: award.createdAt, in: &state)
         state.appliedGrowthAwardIDs.append(award.id)
         state.appliedGrowthAwardIDs = Array(state.appliedGrowthAwardIDs.suffix(256))
         state.updatedAt = award.createdAt
         guard award.energy > 0 else { return [] }
 
+        let availableRoom = max(self.rules.maximumEnergyBalance - state.growthEnergy, 0)
+        let credited = min(award.energy, availableRoom)
+        state.growthEnergy = Self.saturatedAdd(state.growthEnergy, credited)
+        state.growthEarnedToday = Self.saturatedAdd(
+            state.growthEarnedToday,
+            credited)
+
+        var events: [CompanionGameEvent] = []
+        if credited > 0 {
+            events.append(.energyApplied(credited))
+        }
         if state.stage == .adult {
             state.bondEnergy = Self.saturatedAdd(state.bondEnergy, award.energy)
-            return [.bondIncreased(award.energy)]
+            events.append(.bondIncreased(award.energy))
+        }
+        return events
+    }
+
+    public func hatch(
+        unitValue: Double,
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws -> [CompanionGameEvent]
+    {
+        self.rollOverEnergyIfNeeded(at: now, in: &state)
+        guard state.stage == .egg else { throw CompanionGameError.eggRequired }
+        try self.spend(self.rules.hatchCost, in: &state)
+
+        let rarity = self.rollRarity(from: .normal, unitValue: unitValue)
+        state.stage = .hatchling
+        state.rarity = rarity
+        state.updatedAt = now
+        let unlocked = self.recordHatch(
+            rarity: rarity,
+            at: now,
+            in: &state)
+        state.celebrationUntil = now.addingTimeInterval(6)
+        return [
+            .energySpent(self.rules.hatchCost),
+            .hatched(rarity: rarity, unlockedFormIDs: unlocked),
+        ]
+    }
+
+    public func evolve(
+        unitValue: Double,
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws -> [CompanionGameEvent]
+    {
+        self.rollOverEnergyIfNeeded(at: now, in: &state)
+        guard state.stage == .hatchling || state.stage == .junior,
+              let nextStage = self.rules.nextStage(after: state.stage)
+        else { throw CompanionGameError.evolutionUnavailable }
+        guard let fromRarity = state.rarity else {
+            throw CompanionGameError.rarityMissing
         }
 
-        let combinedEnergy = Self.saturatedAdd(state.growthEnergy, award.energy)
-        let growthTarget = min(combinedEnergy, self.rules.adultEnergy)
-        let overflow = max(combinedEnergy - self.rules.adultEnergy, 0)
-        state.growthEnergy = growthTarget
-        var events: [CompanionGameEvent] = [.energyApplied(award.energy - overflow)]
-        var rollIndex = 0
+        let cost = self.rules.actionCost(to: nextStage)
+        try self.spend(cost, in: &state)
+        var nextRarity = self.rollRarity(
+            from: fromRarity,
+            unitValue: unitValue)
+        if nextStage == .adult {
+            nextRarity = CompanionRarity.max(
+                nextRarity,
+                state.pity.nextAdultMinimumRarity)
+        }
 
-        while let nextStage = self.rules.nextStage(after: state.stage),
-              state.growthEnergy >= self.rules.threshold(for: nextStage)
-        {
-            let fromStage = state.stage
-            let fromRarity = state.rarity
-            var nextRarity = self.rollRarity(
-                from: state.rarity,
-                unitValue: randomValues[rollIndex])
-            rollIndex += 1
-            if nextStage == .adult {
-                nextRarity = CompanionRarity.max(
-                    nextRarity,
-                    state.pity.nextAdultMinimumRarity)
-            }
-            state.stage = nextStage
-            state.rarity = nextRarity
-            let unlocked = self.recordEvolution(
-                stage: nextStage,
-                previousRarity: fromRarity,
-                rarity: nextRarity,
-                at: award.createdAt,
-                in: &state)
-            events.append(.evolved(
+        let fromStage = state.stage
+        state.stage = nextStage
+        state.rarity = nextRarity
+        state.updatedAt = now
+        state.celebrationUntil = now.addingTimeInterval(6)
+        let unlocked = self.recordEvolution(
+            stage: nextStage,
+            previousRarity: fromRarity,
+            rarity: nextRarity,
+            at: now,
+            in: &state)
+        return [
+            .energySpent(cost),
+            .evolved(
                 fromStage: fromStage,
                 toStage: nextStage,
                 fromRarity: fromRarity,
                 toRarity: nextRarity,
-                unlockedFormIDs: unlocked))
-        }
-
-        if overflow > 0 {
-            state.bondEnergy = Self.saturatedAdd(state.bondEnergy, overflow)
-            events.append(.bondIncreased(overflow))
-        }
-        return events
+                unlockedFormIDs: unlocked),
+        ]
     }
 
     public func completeGeneration(
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
     {
+        self.rollOverEnergyIfNeeded(at: now, in: &state)
         guard state.stage == .adult else { throw CompanionGameError.adultRequired }
+        guard let rarity = state.rarity else {
+            throw CompanionGameError.rarityMissing
+        }
+        try self.spend(self.rules.newEggCost, in: &state)
+
         let completion = CompletedCompanionGeneration(
             generationID: state.generationID,
             generationNumber: state.generationNumber,
-            finalRarity: state.rarity,
+            finalRarity: rarity,
             bondEnergy: state.bondEnergy,
             completedAt: now)
         self.recordCompletion(completion, in: &state)
         self.startNewEgg(at: now, in: &state)
         return [
+            .energySpent(self.rules.newEggCost),
             .generationCompleted(completion),
             .newEgg(generationNumber: state.generationNumber),
         ]
@@ -95,10 +139,56 @@ public struct CompanionGameEngine: Sendable {
 
     public func abandonForNewEgg(
         at now: Date = .now,
-        in state: inout CompanionGameState) -> CompanionGameEvent
+        in state: inout CompanionGameState) throws -> [CompanionGameEvent]
     {
+        self.rollOverEnergyIfNeeded(at: now, in: &state)
+        guard state.stage != .egg else { throw CompanionGameError.eggRequired }
+        try self.spend(self.rules.newEggCost, in: &state)
         self.startNewEgg(at: now, in: &state)
-        return .newEgg(generationNumber: state.generationNumber)
+        return [
+            .energySpent(self.rules.newEggCost),
+            .newEgg(generationNumber: state.generationNumber),
+        ]
+    }
+
+    public func rollOverEnergyIfNeeded(
+        at now: Date = .now,
+        in state: inout CompanionGameState)
+    {
+        let currentKey = GrowthLocalDate.key(for: now, calendar: self.calendar)
+        guard state.growthDateKey < currentKey else { return }
+
+        let elapsedDays = max(
+            self.dayDistance(from: state.growthDateKey, to: currentKey),
+            1)
+        var carried = min(state.growthEnergy, self.rules.maximumEnergyBalance)
+        for _ in 0..<elapsedDays {
+            carried = Int(
+                floor(Double(carried) * self.rules.dailyCarryoverRate))
+        }
+        state.growthEnergy = min(carried, self.rules.maximumEnergyBalance)
+        state.growthDateKey = currentKey
+        state.growthCarriedToday = state.growthEnergy
+        state.growthEarnedToday = 0
+        state.growthSpentToday = 0
+        state.updatedAt = now
+    }
+
+    public func actionCost(for stage: CompanionGameStage) -> Int? {
+        switch stage {
+        case .egg:
+            self.rules.hatchCost
+        case .hatchling, .junior:
+            self.rules.nextActionCost(after: stage)
+        case .adult:
+            self.rules.newEggCost
+        }
+    }
+
+    public func canPerformAction(for state: CompanionGameState) -> Bool {
+        self.actionCost(for: state.stage).map {
+            state.growthEnergy >= $0
+        } ?? false
     }
 
     public func pat(
@@ -143,23 +233,37 @@ public struct CompanionGameEngine: Sendable {
         }
     }
 
-    private func requiredRollCount(
-        adding energy: Int,
-        to state: CompanionGameState) -> Int
+    private func spend(
+        _ amount: Int,
+        in state: inout CompanionGameState) throws
     {
-        guard state.stage != .adult else { return 0 }
-        let target = min(
-            Self.saturatedAdd(state.growthEnergy, max(energy, 0)),
-            self.rules.adultEnergy)
-        var stage = state.stage
-        var count = 0
-        while let next = self.rules.nextStage(after: stage),
-              target >= self.rules.threshold(for: next)
-        {
-            count += 1
-            stage = next
+        guard state.growthEnergy >= amount else {
+            throw CompanionGameError.insufficientEnergy(
+                required: amount,
+                available: state.growthEnergy)
         }
-        return count
+        state.growthEnergy -= amount
+        state.growthSpentToday = Self.saturatedAdd(
+            state.growthSpentToday,
+            amount)
+    }
+
+    private func recordHatch(
+        rarity: CompanionRarity,
+        at date: Date,
+        in state: inout CompanionGameState) -> [String]
+    {
+        guard self.unlock(
+            stage: .hatchling,
+            rarity: rarity,
+            kind: .encountered,
+            at: date,
+            in: &state)
+        else { return [] }
+        return [CompanionGameState.formID(
+            speciesID: state.speciesID,
+            stage: .hatchling,
+            rarity: rarity)]
     }
 
     private func recordEvolution(
@@ -171,10 +275,8 @@ public struct CompanionGameEngine: Sendable {
     {
         var unlocked: [String] = []
         if rarity.rank > previousRarity.rank {
-            for lineageStage in CompanionGameStage.allCases
-                where lineageStage != .egg
-                    && self.rules.threshold(for: lineageStage)
-                        <= self.rules.threshold(for: stage)
+            for lineageStage in [CompanionGameStage.hatchling, .junior, .adult]
+                where self.stageRank(lineageStage) <= self.stageRank(stage)
             {
                 if self.unlock(
                     stage: lineageStage,
@@ -271,19 +373,44 @@ public struct CompanionGameEngine: Sendable {
         state.generationID = UUID()
         state.generationNumber += 1
         state.stage = .egg
-        state.rarity = .normal
-        state.growthEnergy = 0
+        state.rarity = nil
         state.bondEnergy = 0
         state.lastPattedAt = nil
         state.celebrationUntil = nil
         state.generationCreatedAt = now
         state.updatedAt = now
-        _ = self.unlock(
-            stage: .egg,
-            rarity: .normal,
-            kind: .encountered,
-            at: now,
-            in: &state)
+    }
+
+    private func dayDistance(from startKey: String, to endKey: String) -> Int {
+        guard let start = self.date(from: startKey),
+              let end = self.date(from: endKey)
+        else { return 1 }
+        return self.calendar.dateComponents([.day], from: start, to: end).day ?? 1
+    }
+
+    private func date(from key: String) -> Date? {
+        let parts = key.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 3,
+              let year = Int(parts[0]),
+              let month = Int(parts[1]),
+              let day = Int(parts[2])
+        else { return nil }
+        var components = DateComponents()
+        components.calendar = self.calendar
+        components.timeZone = self.calendar.timeZone
+        components.year = year
+        components.month = month
+        components.day = day
+        return self.calendar.date(from: components)
+    }
+
+    private func stageRank(_ stage: CompanionGameStage) -> Int {
+        switch stage {
+        case .egg: 0
+        case .hatchling: 1
+        case .junior: 2
+        case .adult: 3
+        }
     }
 
     private static func saturatedAdd(_ lhs: Int, _ rhs: Int) -> Int {

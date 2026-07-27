@@ -46,7 +46,7 @@ brew install --formula tokeni-bar
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Low remaining quota and monthly budget |
 | ByteBot | Life stage, rarity, today's energy, bond, and behavior |
-| Collection | 13 forms, completed generations, records, and guarantees |
+| Collection | 12 forms, completed generations, records, and guarantees |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -73,19 +73,23 @@ T > 0  → floor(32 × log2(1 + T / 25,000))
 | 500,000 | 140 |
 | 1,000,000 | 171 |
 
-There is no daily hard cap. More tokens always continue growth, although gains
-become more gradual at high usage. Refreshing the same cumulative value never
-pays twice.
+More tokens continue raising the daily energy target, although gains become
+more gradual at high usage. The action-energy balance is capped at 320.
+Refreshing the same cumulative value never pays twice, and 20% of the remaining
+balance carries over when the date changes.
 
 ### 2. Four life stages
 
-| Stage | Total energy required | What happens |
+| Action | Energy spent | Result |
 |---|---:|---|
-| Egg | 0 | Starts at Normal rarity |
-| Hatchling | 80 | First rarity evolution roll |
-| Junior | 280 | Second rarity evolution roll |
-| Adult | 800 | Final rarity evolution roll |
-| After Adult | Energy beyond 800 | Recorded as bond energy |
+| Hatch egg | 60 | Reveal the first rarity and become a Hatchling |
+| Evolve to Junior | 100 | Keep or raise rarity and become a Junior |
+| Evolve to Adult | 160 | Keep or raise rarity and become an Adult |
+| Receive a new egg | 40 | Start the next generation as an ungraded egg |
+
+Having enough energy never hatches or evolves automatically. The user must
+click the action. Energy earned as an Adult fills action energy and also records
+bond.
 
 Working, low quota, patting, and long inactivity change ByteBot's behavior but
 never add growth energy.
@@ -101,7 +105,7 @@ Rarity advances through `Normal → Rare → Epic → Legendary` and never drops
 | Epic | 97.0% | - | - | 3.0% |
 | Legendary | 100% | - | - | - |
 
-An Adult that started from a Normal egg has this final distribution without
+An Adult hatched from an ungraded egg has this final distribution without
 guarantees:
 
 | Normal | Rare | Epic | Legendary |
@@ -125,11 +129,11 @@ Adult keeps the existing guarantees but does not move them closer.
 |---|---|---|
 | Stay with an Adult | New energy becomes bond | Current form and all records |
 | Finish an Adult journey | Archive rarity and bond, then start a new egg | Collection and guarantees |
-| Leave before Adult | Lose current growth energy and start a new egg | Collection and existing guarantees |
+| Leave before Adult | Spend 40 energy and start a new egg | Collection and existing guarantees |
 
-The collection has 13 forms: one shared Egg plus four rarities for Hatchling,
-Junior, and Adult. When a high rarity first appears late, its earlier forms
-also unlock as **Lineage**.
+The collection has 12 forms: four rarities for Hatchling, Junior, and Adult.
+When a high rarity first appears late, its earlier forms also unlock as
+**Lineage**.
 
 Open the grid button in the menu or choose
 **Settings → Tokeni → Open ByteBot Collection**. See

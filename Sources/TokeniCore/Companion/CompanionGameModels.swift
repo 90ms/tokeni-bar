@@ -113,41 +113,42 @@ public struct CompanionPityState: Codable, Hashable, Sendable {
 
 public struct CompanionGameRules: Hashable, Sendable {
     public static let standard = CompanionGameRules(
-        hatchlingEnergy: 80,
-        juniorEnergy: 280,
-        adultEnergy: 800)
+        newEggCost: 40,
+        hatchCost: 60,
+        juniorEvolutionCost: 100,
+        adultEvolutionCost: 160,
+        dailyCarryoverRate: 0.20,
+        maximumEnergyBalance: 320)
 
-    public let hatchlingEnergy: Int
-    public let juniorEnergy: Int
-    public let adultEnergy: Int
+    public let newEggCost: Int
+    public let hatchCost: Int
+    public let juniorEvolutionCost: Int
+    public let adultEvolutionCost: Int
+    public let dailyCarryoverRate: Double
+    public let maximumEnergyBalance: Int
 
     public init(
-        hatchlingEnergy: Int,
-        juniorEnergy: Int,
-        adultEnergy: Int)
+        newEggCost: Int,
+        hatchCost: Int,
+        juniorEvolutionCost: Int,
+        adultEvolutionCost: Int,
+        dailyCarryoverRate: Double,
+        maximumEnergyBalance: Int)
     {
-        let hatchling = max(hatchlingEnergy, 0)
-        let junior = max(juniorEnergy, hatchling)
-        self.hatchlingEnergy = hatchling
-        self.juniorEnergy = junior
-        self.adultEnergy = max(adultEnergy, junior)
+        self.newEggCost = max(newEggCost, 0)
+        self.hatchCost = max(hatchCost, 0)
+        self.juniorEvolutionCost = max(juniorEvolutionCost, 0)
+        self.adultEvolutionCost = max(adultEvolutionCost, 0)
+        self.dailyCarryoverRate = min(max(dailyCarryoverRate, 0), 1)
+        self.maximumEnergyBalance = max(maximumEnergyBalance, 0)
     }
 
-    public func stage(for growthEnergy: Int) -> CompanionGameStage {
-        switch max(growthEnergy, 0) {
-        case self.adultEnergy...: .adult
-        case self.juniorEnergy...: .junior
-        case self.hatchlingEnergy...: .hatchling
-        default: .egg
-        }
-    }
-
-    public func threshold(for stage: CompanionGameStage) -> Int {
+    public func actionCost(to stage: CompanionGameStage) -> Int {
         switch stage {
-        case .egg: 0
-        case .hatchling: self.hatchlingEnergy
-        case .junior: self.juniorEnergy
-        case .adult: self.adultEnergy
+        case .egg: self.newEggCost
+        case .hatchling: self.hatchCost
+        case .junior: self.juniorEvolutionCost
+        case .adult: self.adultEvolutionCost
         }
     }
 
@@ -160,21 +161,25 @@ public struct CompanionGameRules: Hashable, Sendable {
         }
     }
 
-    public func nextThreshold(after stage: CompanionGameStage) -> Int? {
-        self.nextStage(after: stage).map { self.threshold(for: $0) }
+    public func nextActionCost(after stage: CompanionGameStage) -> Int? {
+        self.nextStage(after: stage).map { self.actionCost(to: $0) }
     }
 }
 
 public struct CompanionGameState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
 
     public var schemaVersion: Int
     public var speciesID: String
     public var generationID: UUID
     public var generationNumber: Int
     public var stage: CompanionGameStage
-    public var rarity: CompanionRarity
+    public var rarity: CompanionRarity?
     public var growthEnergy: Int
+    public var growthDateKey: String
+    public var growthEarnedToday: Int
+    public var growthCarriedToday: Int
+    public var growthSpentToday: Int
     public var bondEnergy: Int
     public var collection: CompanionCollection
     public var pity: CompanionPityState
@@ -191,8 +196,12 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         generationID: UUID = UUID(),
         generationNumber: Int = 1,
         stage: CompanionGameStage = .egg,
-        rarity: CompanionRarity = .normal,
+        rarity: CompanionRarity? = nil,
         growthEnergy: Int = 0,
+        growthDateKey: String? = nil,
+        growthEarnedToday: Int = 0,
+        growthCarriedToday: Int = 0,
+        growthSpentToday: Int = 0,
         bondEnergy: Int = 0,
         collection: CompanionCollection? = nil,
         pity: CompanionPityState = CompanionPityState(),
@@ -210,6 +219,11 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.stage = stage
         self.rarity = rarity
         self.growthEnergy = max(growthEnergy, 0)
+        self.growthDateKey = growthDateKey
+            ?? GrowthLocalDate.key(for: generationCreatedAt)
+        self.growthEarnedToday = max(growthEarnedToday, 0)
+        self.growthCarriedToday = max(growthCarriedToday, 0)
+        self.growthSpentToday = max(growthSpentToday, 0)
         self.bondEnergy = max(bondEnergy, 0)
         self.collection = collection ?? CompanionCollection()
         self.pity = pity
@@ -219,20 +233,6 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.celebrationUntil = celebrationUntil
         self.generationCreatedAt = generationCreatedAt
         self.updatedAt = updatedAt
-
-        if self.collection.forms.isEmpty {
-            self.collection.forms.append(CompanionFormRecord(
-                formID: Self.formID(
-                    speciesID: speciesID,
-                    stage: .egg,
-                    rarity: .normal),
-                stage: .egg,
-                rarity: .normal,
-                unlockKind: .encountered,
-                firstUnlockedAt: generationCreatedAt,
-                lastEncounteredAt: generationCreatedAt,
-                encounterCount: 1))
-        }
     }
 
     public static func formID(
@@ -248,16 +248,22 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
               !self.speciesID.isEmpty,
               self.generationNumber >= 1,
               self.growthEnergy >= 0,
+              self.growthEnergy <= rules.maximumEnergyBalance,
+              !self.growthDateKey.isEmpty,
+              self.growthEarnedToday >= 0,
+              self.growthCarriedToday >= 0,
+              self.growthSpentToday >= 0,
               self.bondEnergy >= 0,
-              self.stage == rules.stage(for: self.growthEnergy),
+              (self.stage == .egg ? self.rarity == nil : self.rarity != nil),
               Set(self.appliedGrowthAwardIDs).count == self.appliedGrowthAwardIDs.count,
-              self.collection.forms.count <= 13
+              self.collection.forms.count <= 12
         else { return false }
 
         let formIDs = self.collection.forms.map(\.formID)
         guard Set(formIDs).count == formIDs.count else { return false }
         return self.collection.forms.allSatisfy { form in
-            form.formID == Self.formID(
+            form.stage != .egg
+                && form.formID == Self.formID(
                 speciesID: self.speciesID,
                 stage: form.stage,
                 rarity: form.rarity)
@@ -271,6 +277,10 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
 
 public enum CompanionGameEvent: Hashable, Sendable {
     case energyApplied(Int)
+    case energySpent(Int)
+    case hatched(
+        rarity: CompanionRarity,
+        unlockedFormIDs: [String])
     case evolved(
         fromStage: CompanionGameStage,
         toStage: CompanionGameStage,
@@ -283,6 +293,9 @@ public enum CompanionGameEvent: Hashable, Sendable {
 }
 
 public enum CompanionGameError: Error, Equatable {
-    case insufficientRandomValues
+    case insufficientEnergy(required: Int, available: Int)
+    case eggRequired
+    case evolutionUnavailable
+    case rarityMissing
     case adultRequired
 }

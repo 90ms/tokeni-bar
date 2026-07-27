@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct CompanionCard: View {
@@ -8,7 +9,7 @@ struct CompanionCard: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ByteBotSpriteView(
+            ByteBotTransitionView(
                 stage: self.store.companionStage,
                 rarity: self.store.companionState.rarity,
                 behavior: self.store.companionBehavior,
@@ -23,10 +24,12 @@ struct CompanionCard: View {
                         "companion.stage.\(self.store.companionStage.rawValue)"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(AppLocalization.string(
-                        "companion.rarity.\(self.store.companionState.rarity.rawValue)"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let rarity = self.store.companionState.rarity {
+                        Text(AppLocalization.string(
+                            "companion.rarity.\(rarity.rawValue)"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
                 }
 
@@ -35,19 +38,20 @@ struct CompanionCard: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if let nextEnergy = self.store.companionNextStageEnergy {
+                if self.store.companionStage == .adult {
+                    Text(AppLocalization.format(
+                        "companion.progress.adult",
+                        self.store.companionState.bondEnergy,
+                        self.store.companionState.growthEnergy))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                } else if let nextEnergy = self.store.companionNextStageEnergy {
                     ProgressView(value: self.store.companionStageProgress)
                     Text(AppLocalization.format(
                         "companion.progress",
                         self.store.companionState.growthEnergy,
                         nextEnergy))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                } else {
-                    Text(AppLocalization.format(
-                        "companion.progress.max",
-                        self.store.companionState.bondEnergy))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
@@ -70,19 +74,43 @@ struct CompanionCard: View {
 
             Button {
                 self.openWindow(id: "companion-collection")
+                Task { @MainActor in
+                    await Task.yield()
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
             } label: {
                 Image(systemName: "square.grid.3x3.fill")
             }
             .buttonStyle(.borderless)
             .help(AppLocalization.string("companion.collection.open"))
 
-            if self.store.companionStage == .adult {
+            switch self.store.companionStage {
+            case .egg:
+                Button {
+                    self.store.hatchCompanion()
+                } label: {
+                    Image(systemName: "sparkles")
+                }
+                .buttonStyle(.borderless)
+                .disabled(!self.store.canPerformCompanionAction)
+                .help(AppLocalization.string("companion.hatch.action"))
+            case .hatchling, .junior:
+                Button {
+                    self.store.evolveCompanion()
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                }
+                .buttonStyle(.borderless)
+                .disabled(!self.store.canPerformCompanionAction)
+                .help(AppLocalization.string("companion.evolve.action"))
+            case .adult:
                 Button {
                     self.confirmsCompletion = true
                 } label: {
                     Image(systemName: "archivebox.fill")
                 }
                 .buttonStyle(.borderless)
+                .disabled(!self.store.canPerformCompanionAction)
                 .help(AppLocalization.string("companion.complete.action"))
             }
         }

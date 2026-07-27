@@ -16,8 +16,9 @@ T = 0  → 0
 T > 0  → floor(32 × log2(1 + T / 25,000))
 ```
 
-There is no daily hard cap. More tokens continue to increase energy, while each
-additional energy point costs more tokens at very high usage.
+More tokens continue to increase the daily target, while each additional energy
+point costs more tokens at very high usage. The actual action-energy balance is
+capped at 320.
 
 | Tokens today | Energy today |
 |---:|---:|
@@ -29,30 +30,31 @@ additional energy point costs more tokens at very high usage.
 | 500,000 | 140 |
 | 1,000,000 | 171 |
 
-Refreshing the same cumulative value never pays twice. If a provider counter
-drops or resets, earned energy and pet progress are never taken away.
+Refreshing the same cumulative value never pays twice. On each date change,
+20% of the remaining balance carries over. If the app stays closed for multiple
+days, the 20% carry is applied once for every elapsed day.
 
 ## Life stages
 
-| Stage | Total energy required |
+| Action | Energy spent |
 |---|---:|
-| Egg | 0 |
-| Hatchling | 80 |
-| Junior | 280 |
-| Adult | 800 |
+| Hatch egg | 60 |
+| Evolve to Junior | 100 |
+| Evolve to Adult | 160 |
+| Receive a new egg or restart | 40 |
 
-Energy earned after Adult becomes that ByteBot's **bond energy**. Bond does not
-improve rarity odds; it remains as a personal collection record when the
-journey is completed.
+Every generation starts as an ungraded egg. Having enough energy never changes
+the stage automatically: the user must click Hatch or Evolve. Energy earned as
+an Adult fills action energy and that ByteBot's **bond energy**.
 
 Working, quota warning, patting, and longer inactivity change the animation.
 Activity detection drives behavior only and never fabricates growth energy.
 
 ## Rarity and evolution
 
-Rarity rises through `Normal → Rare → Epic → Legendary` and never drops.
-Hatching, Junior evolution, and Adult evolution each roll at or above the
-current rarity.
+The first rarity is revealed when the user hatches the egg. Later evolution
+keeps or raises rarity through `Normal → Rare → Epic → Legendary` and never
+drops it.
 
 | Current | Stay | Rare | Epic | Legendary |
 |---|---:|---:|---:|---:|
@@ -61,7 +63,7 @@ current rarity.
 | Epic | 97.0% | - | - | 3.0% |
 | Legendary | 100% | - | - | - |
 
-Without pity, an Adult starting from a Normal egg ends Normal 42.2%, Rare
+Without pity, an Adult hatched from an ungraded egg ends Normal 42.2%, Rare
 40.9%, Epic 15.5%, and Legendary 1.4%.
 
 Completed Adults provide visible guarantees:
@@ -75,10 +77,8 @@ early keeps existing pity but does not advance it.
 
 ## Collection
 
-The first collection has 13 forms:
-
-- one shared egg;
-- four rarities for Hatchling, Junior, and Adult.
+The collection has 12 forms: four rarities for Hatchling, Junior, and Adult.
+The ungraded egg is not counted as a collectible form.
 
 A form shown during evolution is marked **Met**. If a rarity first appears at a
 later stage, its earlier-stage art unlocks as **Lineage**. A Legendary first
@@ -87,21 +87,21 @@ found as an Adult therefore also unlocks Legendary Hatchling and Junior art.
 Open the grid button in the menu or choose **Settings → Tokeni → Open ByteBot
 Collection** to see:
 
-- all 13 form unlocks;
+- all 12 form unlocks;
 - Met versus Lineage unlocks;
 - completed generations, best rarity, and best bond;
 - maximum generations remaining for every guarantee.
 
 ## New eggs and completed journeys
 
-At Adult, keep the current ByteBot and grow bond, or finish its journey and
-receive a new Normal egg. Completion archives final rarity and bond and updates
-pity.
+At Adult, keep the current ByteBot and grow bond, or spend 40 energy to finish
+its journey and receive a new ungraded egg. Completion archives final rarity
+and bond and updates pity.
 
-Before Adult, you may part ways and restart:
+Before Adult, you may spend 40 energy to part ways and restart:
 
 - unlocked forms and existing pity remain;
-- current growth energy is lost;
+- unspent action energy remains;
 - an early restart does not count as a completed generation;
 - energy already assigned that day cannot be reused by the new egg.
 

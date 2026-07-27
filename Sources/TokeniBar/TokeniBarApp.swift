@@ -91,7 +91,7 @@ struct TokeniBarApp: App {
 
         Settings {
             SettingsView(store: self.store)
-                .background(SettingsWindowFocusView())
+                .background(WindowFocusView())
         }
 
         Window(AppLocalization.string("history.title"), id: "usage-history") {
@@ -106,6 +106,7 @@ struct TokeniBarApp: App {
 
         Window(AppLocalization.string("companion.collection.window"), id: "companion-collection") {
             CompanionCollectionView(store: self.store)
+                .background(WindowFocusView())
         }
         .defaultSize(width: 620, height: 720)
     }
@@ -160,10 +161,12 @@ struct TokeniBarApp: App {
             if self.store.companionEnabled {
                 ByteBotSpriteView(
                     stage: self.store.companionStage,
-                    rarity: self.store.companionState.rarity,
+                    rarity: self.store.companionDisplayRarity,
                     behavior: self.store.companionBehavior,
                     dimension: 18,
-                    animationsEnabled: self.store.companionAnimationsEnabled)
+                    // Continuously invalidating a MenuBarExtra label can block the
+                    // status item while AppKit is opening its window.
+                    animationsEnabled: false)
                 Text(AppLocalization.string(
                     "companion.behavior.short.\(self.store.companionBehavior.rawValue)"))
             } else {
@@ -182,15 +185,15 @@ struct TokeniBarApp: App {
     }
 }
 
-private struct SettingsWindowFocusView: NSViewRepresentable {
-    func makeNSView(context: Context) -> SettingsWindowFocusNSView {
-        SettingsWindowFocusNSView()
+private struct WindowFocusView: NSViewRepresentable {
+    func makeNSView(context: Context) -> WindowFocusNSView {
+        WindowFocusNSView()
     }
 
-    func updateNSView(_ nsView: SettingsWindowFocusNSView, context: Context) {}
+    func updateNSView(_ nsView: WindowFocusNSView, context: Context) {}
 }
 
-private final class SettingsWindowFocusNSView: NSView {
+private final class WindowFocusNSView: NSView {
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         guard let window else { return }

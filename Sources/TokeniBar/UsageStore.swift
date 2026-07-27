@@ -195,9 +195,12 @@ final class UsageStore: ObservableObject {
             guard let self else { return }
             self.companionState = (try? await self.companionStateStore.load())
                 ?? CompanionGameState()
+            self.companionGameEngine.rollOverEnergyIfNeeded(
+                in: &self.companionState)
             self.tokenGrowthLedgerState = (try? await self.tokenGrowthLedgerStore.load())
                 ?? TokenGrowthLedgerState()
             self.companionStateLoaded = true
+            self.saveCompanionState()
             await self.applyPendingCompanionGrowthAwards()
             self.historyRecords = (try? await self.historyStore.records()) ?? []
             let cachedPricing = await self.pricingCatalogClient.activateCachedCatalog()
@@ -489,6 +492,35 @@ final class UsageStore: ObservableObject {
         self.saveCompanionState()
     }
 
+    func hatchCompanion() {
+        guard self.companionEnabled,
+              self.companionStateLoaded,
+              self.companionState.stage == .egg
+        else { return }
+        var state = self.companionState
+        guard (try? self.companionGameEngine.hatch(
+            unitValue: Double.random(in: 0..<1),
+            in: &state)) != nil
+        else { return }
+        self.companionState = state
+        self.saveCompanionState()
+    }
+
+    func evolveCompanion() {
+        guard self.companionEnabled,
+              self.companionStateLoaded,
+              self.companionState.stage == .hatchling
+                || self.companionState.stage == .junior
+        else { return }
+        var state = self.companionState
+        guard (try? self.companionGameEngine.evolve(
+            unitValue: Double.random(in: 0..<1),
+            in: &state)) != nil
+        else { return }
+        self.companionState = state
+        self.saveCompanionState()
+    }
+
     func completeCompanionGeneration() {
         guard self.companionEnabled,
               self.companionStateLoaded,
@@ -505,7 +537,9 @@ final class UsageStore: ObservableObject {
     func abandonCompanionForNewEgg() {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionState
-        _ = self.companionGameEngine.abandonForNewEgg(in: &state)
+        guard (try? self.companionGameEngine.abandonForNewEgg(in: &state)) != nil else {
+            return
+        }
         self.companionState = state
         self.saveCompanionState()
     }
@@ -577,6 +611,10 @@ final class UsageStore: ObservableObject {
         self.companionState.stage
     }
 
+    var companionDisplayRarity: CompanionRarity {
+        self.companionState.rarity ?? .normal
+    }
+
     var companionBehavior: CompanionBehavior {
         CompanionBehaviorResolver.resolve(
             state: self.companionState,
@@ -585,25 +623,30 @@ final class UsageStore: ObservableObject {
     }
 
     var companionStageProgress: Double {
-        let rules = self.companionGameEngine.rules
-        let stage = self.companionStage
-        guard let nextEnergy = rules.nextThreshold(after: stage) else { return 1 }
-        let stageStartEnergy = rules.threshold(for: stage)
-        let range = max(nextEnergy - stageStartEnergy, 1)
-        return min(max(
-            Double(self.companionState.growthEnergy - stageStartEnergy) / Double(range),
-            0), 1)
+        guard let cost = self.companionActionCost, cost > 0 else { return 1 }
+        return min(
+            Double(self.companionState.growthEnergy) / Double(cost),
+            1)
     }
 
     var companionNextStageEnergy: Int? {
-        self.companionGameEngine.rules.nextThreshold(after: self.companionStage)
+        self.companionActionCost
+    }
+
+    var companionActionCost: Int? {
+        self.companionGameEngine.actionCost(for: self.companionStage)
+    }
+
+    var companionNewEggCost: Int {
+        self.companionGameEngine.rules.newEggCost
+    }
+
+    var canPerformCompanionAction: Bool {
+        self.companionGameEngine.canPerformAction(for: self.companionState)
     }
 
     var companionTodayEnergy: Int {
-        let dateKey = GrowthLocalDate.key(for: .now)
-        return self.tokenGrowthLedgerState.dayCredits
-            .first { $0.dateKey == dateKey }?
-            .awardedEnergy ?? 0
+        self.companionState.growthEarnedToday
     }
 
     var companionTodayTokens: Int64 {
@@ -726,6 +769,9 @@ final class UsageStore: ObservableObject {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         let previousState = self.companionState
         var state = previousState
+        self.companionGameEngine.rollOverEnergyIfNeeded(
+            at: now,
+            in: &state)
         self.companionGameEngine.recordActivity(
             isActive: self.hasActiveSession,
             at: now,
@@ -755,22 +801,10 @@ final class UsageStore: ObservableObject {
         guard self.companionStateLoaded else { return }
         for award in self.tokenGrowthLedgerState.pendingAwards {
             var companion = self.companionState
-            var generator = SystemRandomNumberGenerator()
-            let randomValues = (0..<3).map { _ in
-                Double.random(in: 0..<1, using: &generator)
-            }
-            let events: [CompanionGameEvent]
             do {
-                events = try self.companionGameEngine.apply(
+                _ = self.companionGameEngine.apply(
                     award: award,
-                    randomValues: randomValues,
                     to: &companion)
-                if events.contains(where: {
-                    if case .evolved = $0 { return true }
-                    return false
-                }) {
-                    companion.celebrationUntil = Date.now.addingTimeInterval(6)
-                }
                 try await self.companionStateStore.save(companion)
             } catch {
                 return

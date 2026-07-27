@@ -1,3 +1,4 @@
+import AppKit
 import TokeniCore
 import SwiftUI
 
@@ -51,7 +52,7 @@ struct SettingsView: View {
             Section(AppLocalization.string("settings.companion.title")) {
                 HStack {
                     Spacer()
-                    ByteBotSpriteView(
+                    ByteBotTransitionView(
                         stage: self.store.companionStage,
                         rarity: self.store.companionState.rarity,
                         behavior: self.store.companionBehavior,
@@ -80,6 +81,10 @@ struct SettingsView: View {
 
                     Button(AppLocalization.string("companion.collection.open")) {
                         self.openWindow(id: "companion-collection")
+                        Task { @MainActor in
+                            await Task.yield()
+                            NSApplication.shared.activate(ignoringOtherApps: true)
+                        }
                     }
                 }
             }
@@ -91,6 +96,12 @@ struct SettingsView: View {
                     "settings.companion.today",
                     self.store.companionTodayTokens,
                     self.store.companionTodayEnergy))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(AppLocalization.format(
+                    "settings.companion.wallet",
+                    self.store.companionState.growthEnergy,
+                    self.store.companionState.growthCarriedToday))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(AppLocalization.format(
