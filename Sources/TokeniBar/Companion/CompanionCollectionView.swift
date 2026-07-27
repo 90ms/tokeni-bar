@@ -195,7 +195,7 @@ struct CompanionCollectionView: View {
         rarity: CompanionRarity) -> some View
     {
         let formID = CompanionGameState.formID(
-            speciesID: self.store.companionState.speciesID,
+            speciesID: self.store.companionState.speciesID ?? .bytebot,
             stage: stage,
             rarity: rarity)
         let record = self.store.companionState.collection.forms.first {

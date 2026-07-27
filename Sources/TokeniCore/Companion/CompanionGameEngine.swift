@@ -51,6 +51,7 @@ public struct CompanionGameEngine: Sendable {
         try self.spend(self.rules.hatchCost, in: &state)
 
         let rarity = self.rollRarity(from: .normal, unitValue: unitValue)
+        state.speciesID = .bytebot
         state.stage = .hatchling
         state.rarity = rarity
         state.updatedAt = now
@@ -117,7 +118,9 @@ public struct CompanionGameEngine: Sendable {
     {
         self.rollOverEnergyIfNeeded(at: now, in: &state)
         guard state.stage == .adult else { throw CompanionGameError.adultRequired }
-        guard let rarity = state.rarity else {
+        guard let rarity = state.rarity,
+              let speciesID = state.speciesID
+        else {
             throw CompanionGameError.rarityMissing
         }
         try self.spend(self.rules.newEggCost, in: &state)
@@ -125,6 +128,7 @@ public struct CompanionGameEngine: Sendable {
         let completion = CompletedCompanionGeneration(
             generationID: state.generationID,
             generationNumber: state.generationNumber,
+            speciesID: speciesID,
             finalRarity: rarity,
             bondEnergy: state.bondEnergy,
             completedAt: now)
@@ -253,6 +257,7 @@ public struct CompanionGameEngine: Sendable {
         at date: Date,
         in state: inout CompanionGameState) -> [String]
     {
+        guard let speciesID = state.speciesID else { return [] }
         guard self.unlock(
             stage: .hatchling,
             rarity: rarity,
@@ -261,7 +266,7 @@ public struct CompanionGameEngine: Sendable {
             in: &state)
         else { return [] }
         return [CompanionGameState.formID(
-            speciesID: state.speciesID,
+            speciesID: speciesID,
             stage: .hatchling,
             rarity: rarity)]
     }
@@ -273,6 +278,7 @@ public struct CompanionGameEngine: Sendable {
         at date: Date,
         in state: inout CompanionGameState) -> [String]
     {
+        guard let speciesID = state.speciesID else { return [] }
         var unlocked: [String] = []
         if rarity.rank > previousRarity.rank {
             for lineageStage in [CompanionGameStage.hatchling, .junior, .adult]
@@ -286,7 +292,7 @@ public struct CompanionGameEngine: Sendable {
                     in: &state)
                 {
                     unlocked.append(CompanionGameState.formID(
-                        speciesID: state.speciesID,
+                        speciesID: speciesID,
                         stage: lineageStage,
                         rarity: rarity))
                 }
@@ -299,7 +305,7 @@ public struct CompanionGameEngine: Sendable {
             in: &state)
         {
             unlocked.append(CompanionGameState.formID(
-                speciesID: state.speciesID,
+                speciesID: speciesID,
                 stage: stage,
                 rarity: rarity))
         }
@@ -314,8 +320,9 @@ public struct CompanionGameEngine: Sendable {
         at date: Date,
         in state: inout CompanionGameState) -> Bool
     {
+        guard let speciesID = state.speciesID else { return false }
         let formID = CompanionGameState.formID(
-            speciesID: state.speciesID,
+            speciesID: speciesID,
             stage: stage,
             rarity: rarity)
         if let index = state.collection.forms.firstIndex(where: {
@@ -330,6 +337,7 @@ public struct CompanionGameEngine: Sendable {
         }
         state.collection.forms.append(CompanionFormRecord(
             formID: formID,
+            speciesID: speciesID,
             stage: stage,
             rarity: rarity,
             unlockKind: kind,
@@ -372,6 +380,7 @@ public struct CompanionGameEngine: Sendable {
     {
         state.generationID = UUID()
         state.generationNumber += 1
+        state.speciesID = nil
         state.stage = .egg
         state.rarity = nil
         state.bondEnergy = 0

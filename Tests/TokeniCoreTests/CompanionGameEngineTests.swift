@@ -83,6 +83,7 @@ struct CompanionGameEngineTests {
         let now = try #require(self.date("2027-01-15T12:00:00Z"))
         let engine = CompanionGameEngine(calendar: self.calendar)
         var state = CompanionGameState(
+            speciesID: .bytebot,
             stage: .hatchling,
             rarity: .rare,
             growthEnergy: 260,
@@ -169,6 +170,7 @@ struct CompanionGameEngineTests {
             (CompanionPityState(adultsWithoutLegendary: 15), CompanionRarity.legendary),
         ] {
             var state = CompanionGameState(
+                speciesID: .bytebot,
                 stage: .junior,
                 rarity: .normal,
                 growthEnergy: 160,
@@ -184,6 +186,7 @@ struct CompanionGameEngineTests {
         let engine = CompanionGameEngine(calendar: self.calendar)
         let dateKey = GrowthLocalDate.key(for: .now, calendar: self.calendar)
         var state = CompanionGameState(
+            speciesID: .bytebot,
             stage: .adult,
             rarity: .normal,
             growthEnergy: 40,
@@ -212,6 +215,7 @@ struct CompanionGameEngineTests {
             lastEncounteredAt: .now,
             encounterCount: 1)
         var state = CompanionGameState(
+            speciesID: .bytebot,
             stage: .junior,
             rarity: .rare,
             growthEnergy: 75,
@@ -233,6 +237,7 @@ struct CompanionGameEngineTests {
         let now = try #require(self.date("2027-01-15T12:00:00Z"))
         let engine = CompanionGameEngine(calendar: self.calendar)
         var state = CompanionGameState(
+            speciesID: .bytebot,
             stage: .adult,
             rarity: .rare,
             growthDateKey: "2027-01-15")
@@ -248,8 +253,8 @@ struct CompanionGameEngineTests {
         #expect(state.growthEnergy == 120)
     }
 
-    @Test("Version two state migrates without discarding the companion")
-    func migratesVersionTwoState() async throws {
+    @Test("Version three state migrates without discarding the companion")
+    func migratesVersionThreeState() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         let file = directory.appending(path: "companion-state.json")
@@ -257,6 +262,7 @@ struct CompanionGameEngineTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
         let current = CompanionGameState(
+            speciesID: .bytebot,
             stage: .junior,
             rarity: .epic,
             growthEnergy: 320,
@@ -266,17 +272,18 @@ struct CompanionGameEngineTests {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let encoded = try encoder.encode(current)
-        let versionTwo = try #require(
+        let versionThree = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":3"#,
-                    with: #""schemaVersion":2"#)
+                    of: #""schemaVersion":4"#,
+                    with: #""schemaVersion":3"#)
                 .data(using: .utf8))
-        try versionTwo.write(to: file)
+        try versionThree.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 3)
+        #expect(state.schemaVersion == 4)
+        #expect(state.speciesID == .bytebot)
         #expect(state.stage == .junior)
         #expect(state.rarity == .epic)
         #expect(state.growthEnergy == 320)
@@ -295,8 +302,9 @@ struct CompanionGameEngineTests {
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 3)
+        #expect(state.schemaVersion == 4)
         #expect(state.stage == .egg)
+        #expect(state.speciesID == nil)
         #expect(state.rarity == nil)
         #expect(!FileManager.default.fileExists(atPath: file.path))
     }
@@ -309,6 +317,7 @@ struct CompanionGameEngineTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
         var expected = CompanionGameState(
+            speciesID: .bytebot,
             stage: .junior,
             rarity: .epic,
             growthEnergy: 120,
