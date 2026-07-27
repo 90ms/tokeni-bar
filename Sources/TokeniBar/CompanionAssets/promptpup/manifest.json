@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 2,
+  "id": "promptpup",
+  "displayName": "PromptPup",
+  "logicalFrameSize": 32,
+  "columns": 8,
+  "rows": 6,
+  "palette": [
+    "#073B42", "#218C78", "#7CDBA7", "#F4F3C1"
+  ],
+  "forms": {
+    "hatchling.normal": "hatchling-normal.png",
+    "hatchling.rare": "hatchling-rare.png",
+    "hatchling.epic": "hatchling-epic.png",
+    "hatchling.legendary": "hatchling-legendary.png",
+    "junior.normal": "junior-normal.png",
+    "junior.rare": "junior-rare.png",
+    "junior.epic": "junior-epic.png",
+    "junior.legendary": "junior-legendary.png",
+    "adult.normal": "adult-normal.png",
+    "adult.rare": "adult-rare.png",
+    "adult.epic": "adult-epic.png",
+    "adult.legendary": "adult-legendary.png"
+  },
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frameCount": 4,
+      "framesPerSecond": 2,
+      "loops": true
+    },
+    "working": {
+      "row": 1,
+      "frameCount": 6,
+      "framesPerSecond": 6,
+      "loops": true
+    },
+    "waiting": {
+      "row": 2,
+      "frameCount": 4,
+      "framesPerSecond": 2,
+      "loops": true
+    },
+    "warning": {
+      "row": 3,
+      "frameCount": 4,
+      "framesPerSecond": 8,
+      "loops": true
+    },
+    "celebrate": {
+      "row": 4,
+      "frameCount": 6,
+      "framesPerSecond": 8,
+      "loops": true
+    },
+    "sleep": {
+      "row": 5,
+      "frameCount": 4,
+      "framesPerSecond": 1,
+      "loops": true
+    }
+  }
+}
