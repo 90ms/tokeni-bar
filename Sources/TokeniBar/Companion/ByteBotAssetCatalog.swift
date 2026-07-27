@@ -3,47 +3,58 @@ import Foundation
 import TokeniCore
 
 @MainActor
-final class ByteBotAssetCatalog {
-    static let shared = ByteBotAssetCatalog()
+final class CompanionAssetCatalog {
+    static let shared = CompanionAssetCatalog()
 
-    let manifest: CompanionSpriteManifest?
-    private let sheets: [String: CGImage]
+    private let manifests: [CompanionSpeciesID: CompanionSpriteManifest]
+    private let sheets: [CompanionSpeciesID: [String: CGImage]]
 
     private init() {
-        guard let assetDirectory = Self.assetDirectory(),
-              let manifest = Self.loadManifest(from: assetDirectory)
-        else {
-            self.manifest = nil
-            self.sheets = [:]
-            return
-        }
+        var loadedManifests: [CompanionSpeciesID: CompanionSpriteManifest] = [:]
+        var loadedSheets: [CompanionSpeciesID: [String: CGImage]] = [:]
+        for speciesID in CompanionSpeciesID.allCases {
+            guard let assetDirectory = Self.assetDirectory(for: speciesID),
+                  let manifest = Self.loadManifest(from: assetDirectory)
+            else { continue }
 
-        self.manifest = manifest
-        var loadedSheets: [String: CGImage] = [:]
-        for fileName in Set(manifest.forms.values) {
-            let fileURL = assetDirectory.appending(path: fileName)
-            guard let image = NSImage(contentsOf: fileURL),
-                  let cgImage = image.cgImage(
-                      forProposedRect: nil,
-                      context: nil,
-                      hints: nil)
-            else {
-                continue
+            loadedManifests[speciesID] = manifest
+            var speciesSheets: [String: CGImage] = [:]
+            for fileName in Set(manifest.forms.values) {
+                let fileURL = assetDirectory.appending(path: fileName)
+                guard let image = NSImage(contentsOf: fileURL),
+                      let cgImage = image.cgImage(
+                          forProposedRect: nil,
+                          context: nil,
+                          hints: nil)
+                else { continue }
+                speciesSheets[fileName] = cgImage
             }
-            loadedSheets[fileName] = cgImage
+            loadedSheets[speciesID] = speciesSheets
         }
+        self.manifests = loadedManifests
         self.sheets = loadedSheets
     }
 
+    func animation(
+        for speciesID: CompanionSpeciesID?,
+        behavior: CompanionBehavior) -> CompanionSpriteManifest.Animation?
+    {
+        self.manifest(for: speciesID)?.animation(for: behavior)
+    }
+
     func frame(
+        speciesID requestedSpeciesID: CompanionSpeciesID?,
         stage: CompanionGameStage,
         rarity: CompanionRarity,
         behavior: CompanionBehavior,
         index: Int) -> CGImage?
     {
-        guard let manifest,
+        let speciesID = stage == .egg
+            ? CompanionSpeciesID.bytebot
+            : requestedSpeciesID ?? .bytebot
+        guard let manifest = self.manifests[speciesID],
               let sheetName = manifest.sheetName(for: stage, rarity: rarity),
-              let sheet = self.sheets[sheetName],
+              let sheet = self.sheets[speciesID]?[sheetName],
               let animation = manifest.animation(for: behavior)
         else {
             return nil
@@ -69,8 +80,14 @@ final class ByteBotAssetCatalog {
             height: frameHeight))
     }
 
-    private static func assetDirectory() -> URL? {
-        let relativeComponents = ["CompanionAssets", "bytebot"]
+    private func manifest(
+        for speciesID: CompanionSpeciesID?) -> CompanionSpriteManifest?
+    {
+        self.manifests[speciesID ?? .bytebot]
+    }
+
+    private static func assetDirectory(for speciesID: CompanionSpeciesID) -> URL? {
+        let relativeComponents = ["CompanionAssets", speciesID.rawValue]
         if let root = Bundle.main.resourceURL {
             let candidate = relativeComponents.reduce(root) {
                 $0.appending(path: $1, directoryHint: .isDirectory)

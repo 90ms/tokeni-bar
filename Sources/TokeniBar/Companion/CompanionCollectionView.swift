@@ -5,6 +5,7 @@ struct CompanionCollectionView: View {
     @ObservedObject var store: UsageStore
     @State private var confirmsNewEgg = false
     @State private var confirmsCompletion = false
+    @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
 
     private let stages: [CompanionGameStage] = [.hatchling, .junior, .adult]
 
@@ -49,6 +50,28 @@ struct CompanionCollectionView: View {
         } message: {
             Text(AppLocalization.string("companion.complete.confirm.message"))
         }
+        .sheet(item: Binding(
+            get: { self.store.companionReveal },
+            set: { reveal in
+                if reveal == nil {
+                    self.store.dismissCompanionReveal()
+                }
+            }))
+        { reveal in
+            CompanionHatchRevealView(
+                reveal: reveal,
+                animationsEnabled: self.store.companionAnimationsEnabled,
+                dismiss: self.store.dismissCompanionReveal)
+        }
+        .onAppear {
+            if let current = self.store.companionState.speciesID {
+                self.selectedSpeciesID = current
+            } else if let discovered = CompanionSpeciesID.allCases.first(where: {
+                self.store.companionState.collection.discoveredSpeciesIDs.contains($0)
+            }) {
+                self.selectedSpeciesID = discovered
+            }
+        }
     }
 
     private var energyWallet: some View {
@@ -78,6 +101,7 @@ struct CompanionCollectionView: View {
     private var currentCompanion: some View {
         HStack(spacing: 18) {
             ByteBotTransitionView(
+                speciesID: self.store.companionState.speciesID,
                 stage: self.store.companionStage,
                 rarity: self.store.companionState.rarity,
                 behavior: self.store.companionBehavior,
@@ -87,7 +111,8 @@ struct CompanionCollectionView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(AppLocalization.format(
                     "companion.collection.generation",
-                    self.store.companionState.generationNumber))
+                    self.store.companionState.generationNumber,
+                    self.currentCompanionName))
                     .font(.title2.weight(.semibold))
                 HStack {
                     Text(AppLocalization.string(
@@ -124,11 +149,11 @@ struct CompanionCollectionView: View {
             HStack {
                 self.metric(
                     AppLocalization.string("companion.collection.unlocked"),
-                    value: "\(self.store.companionState.collection.unlockedFormCount) / 12")
+                    value: "\(self.store.companionState.collection.unlockedFormCount) / 60")
                 Divider()
                 self.metric(
-                    AppLocalization.string("companion.collection.completed"),
-                    value: "\(self.store.companionState.collection.totalCompletedGenerations)")
+                    AppLocalization.string("companion.collection.species"),
+                    value: "\(self.store.companionState.collection.discoveredSpeciesIDs.count) / 5")
                 Divider()
                 self.metric(
                     AppLocalization.string("companion.collection.bestRarity"),
@@ -156,6 +181,15 @@ struct CompanionCollectionView: View {
                 Text(AppLocalization.format(
                     "companion.pity.legendary",
                     max(16 - self.store.companionState.pity.adultsWithoutLegendary, 1)))
+                if self.store.companionState.collection.discoveredSpeciesIDs.count
+                    < CompanionSpeciesID.allCases.count
+                {
+                    Text(AppLocalization.format(
+                        "companion.pity.species",
+                        max(
+                            6 - self.store.companionState.consecutiveDuplicateHatches,
+                            1)))
+                }
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -166,21 +200,50 @@ struct CompanionCollectionView: View {
 
     private var collectionGrid: some View {
         GroupBox(AppLocalization.string("companion.collection.title")) {
-            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-                GridRow {
-                    Text("")
-                    ForEach(CompanionRarity.allCases, id: \.self) { rarity in
-                        CompanionRarityBadge(rarity: rarity)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    ForEach(CompanionSpeciesID.allCases, id: \.self) { speciesID in
+                        self.speciesButton(speciesID)
                     }
                 }
-                ForEach(self.stages, id: \.self) { stage in
-                    GridRow {
+
+                HStack {
+                    Text(self.selectedSpeciesName)
+                        .font(.headline)
+                    if self.isSelectedSpeciesDiscovered {
                         Text(AppLocalization.string(
-                            "companion.stage.\(stage.rawValue)"))
-                            .font(.caption.weight(.semibold))
-                            .frame(width: 72, alignment: .leading)
+                            "companion.species.\(self.selectedSpeciesID.rawValue).personality"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(AppLocalization.format(
+                            "companion.collection.encounters",
+                            self.store.companionState.collection.encounterCount(
+                                for: self.selectedSpeciesID)))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                    GridRow {
+                        Text("")
                         ForEach(CompanionRarity.allCases, id: \.self) { rarity in
-                            self.formCell(stage: stage, rarity: rarity)
+                            CompanionRarityBadge(rarity: rarity)
+                        }
+                    }
+                    ForEach(self.stages, id: \.self) { stage in
+                        GridRow {
+                            Text(AppLocalization.string(
+                                "companion.stage.\(stage.rawValue)"))
+                                .font(.caption.weight(.semibold))
+                                .frame(width: 72, alignment: .leading)
+                            ForEach(CompanionRarity.allCases, id: \.self) { rarity in
+                                self.formCell(
+                                    speciesID: self.selectedSpeciesID,
+                                    stage: stage,
+                                    rarity: rarity)
+                            }
                         }
                     }
                 }
@@ -191,11 +254,12 @@ struct CompanionCollectionView: View {
 
     @ViewBuilder
     private func formCell(
+        speciesID: CompanionSpeciesID,
         stage: CompanionGameStage,
         rarity: CompanionRarity) -> some View
     {
         let formID = CompanionGameState.formID(
-            speciesID: self.store.companionState.speciesID ?? .bytebot,
+            speciesID: speciesID,
             stage: stage,
             rarity: rarity)
         let record = self.store.companionState.collection.forms.first {
@@ -204,6 +268,7 @@ struct CompanionCollectionView: View {
         VStack(spacing: 2) {
             if let record {
                 ByteBotSpriteView(
+                    speciesID: record.speciesID,
                     stage: stage,
                     rarity: rarity,
                     behavior: .idle,
@@ -228,6 +293,62 @@ struct CompanionCollectionView: View {
         .frame(width: 76, height: 82)
         .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
+    }
+
+    private func speciesButton(_ speciesID: CompanionSpeciesID) -> some View {
+        let discovered = self.store.companionState.collection.discoveredSpeciesIDs
+            .contains(speciesID)
+        return Button {
+            self.selectedSpeciesID = speciesID
+        } label: {
+            VStack(spacing: 3) {
+                if discovered {
+                    ByteBotSpriteView(
+                        speciesID: speciesID,
+                        stage: .hatchling,
+                        rarity: .normal,
+                        behavior: .idle,
+                        dimension: 46,
+                        animationsEnabled: false)
+                } else {
+                    Image(systemName: "questionmark")
+                        .font(.title3.bold())
+                        .frame(width: 46, height: 46)
+                        .foregroundStyle(.tertiary)
+                }
+                Text(discovered
+                    ? AppLocalization.string(
+                        "companion.species.\(speciesID.rawValue).name")
+                    : "???")
+                    .font(.caption2)
+            }
+            .frame(width: 74, height: 70)
+            .background(
+                self.selectedSpeciesID == speciesID
+                    ? Color.accentColor.opacity(0.16)
+                    : Color.clear,
+                in: RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var currentCompanionName: String {
+        guard let speciesID = self.store.companionState.speciesID else {
+            return AppLocalization.string("companion.species.mystery.name")
+        }
+        return AppLocalization.string(
+            "companion.species.\(speciesID.rawValue).name")
+    }
+
+    private var isSelectedSpeciesDiscovered: Bool {
+        self.store.companionState.collection.discoveredSpeciesIDs
+            .contains(self.selectedSpeciesID)
+    }
+
+    private var selectedSpeciesName: String {
+        guard self.isSelectedSpeciesDiscovered else { return "???" }
+        return AppLocalization.string(
+            "companion.species.\(self.selectedSpeciesID.rawValue).name")
     }
 
     @ViewBuilder

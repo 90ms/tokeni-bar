@@ -6,6 +6,7 @@ import TokeniCore
 struct ByteBotSpriteView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+    let speciesID: CompanionSpeciesID?
     let stage: CompanionGameStage
     let rarity: CompanionRarity
     let behavior: CompanionBehavior
@@ -13,8 +14,10 @@ struct ByteBotSpriteView: View {
     var animationsEnabled = true
 
     var body: some View {
-        let catalog = ByteBotAssetCatalog.shared
-        let animation = catalog.manifest?.animation(for: self.behavior)
+        let catalog = CompanionAssetCatalog.shared
+        let animation = catalog.animation(
+            for: self.speciesID,
+            behavior: self.behavior)
         let shouldAnimate = self.animationsEnabled
             && !self.reduceMotion
             && !self.lowPowerModeEnabled
@@ -27,6 +30,7 @@ struct ByteBotSpriteView: View {
                 animation: animation,
                 shouldAnimate: shouldAnimate)
             if let frame = catalog.frame(
+                speciesID: self.speciesID,
                 stage: self.stage,
                 rarity: self.rarity,
                 behavior: self.behavior,
@@ -46,12 +50,20 @@ struct ByteBotSpriteView: View {
             }
         }
         .frame(width: self.dimension, height: self.dimension)
-        .accessibilityLabel("ByteBot")
+        .accessibilityLabel(self.accessibilityName)
         .onReceive(NotificationCenter.default.publisher(
             for: .NSProcessInfoPowerStateDidChange))
         { _ in
             self.lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
         }
+    }
+
+    private var accessibilityName: String {
+        guard let speciesID else {
+            return AppLocalization.string("companion.species.mystery.name")
+        }
+        return AppLocalization.string(
+            "companion.species.\(speciesID.rawValue).name")
     }
 
     private func minimumInterval(

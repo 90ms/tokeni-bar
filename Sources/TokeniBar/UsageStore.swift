@@ -45,6 +45,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionEnabled: Bool
     @Published private(set) var companionAnimationsEnabled: Bool
     @Published private(set) var companionState: CompanionGameState
+    @Published private(set) var companionReveal: CompanionHatchReveal?
 
     private let providers: [any UsageProviding]
     private var refreshLoop: Task<Void, Never>?
@@ -176,6 +177,7 @@ final class UsageStore: ObservableObject {
         self.companionAnimationsEnabled = UserDefaults.standard.object(
             forKey: Self.companionAnimationsEnabledKey) as? Bool ?? true
         self.companionState = CompanionGameState()
+        self.companionReveal = nil
         let enabledIDs: Set<ProviderID>
         if let stored = UserDefaults.standard.stringArray(forKey: Self.enabledProvidersKey) {
             enabledIDs = Set(stored.map { ProviderID(rawValue: $0) }).intersection(knownIDs)
@@ -498,13 +500,25 @@ final class UsageStore: ObservableObject {
               self.companionState.stage == .egg
         else { return }
         var state = self.companionState
-        guard (try? self.companionGameEngine.hatch(
+        guard let events = try? self.companionGameEngine.hatch(
             speciesUnitValue: Double.random(in: 0..<1),
             rarityUnitValue: Double.random(in: 0..<1),
-            in: &state)) != nil
+            in: &state)
         else { return }
         self.companionState = state
+        for event in events {
+            if case let .hatched(speciesID, rarity, isNewSpecies, _) = event {
+                self.companionReveal = CompanionHatchReveal(
+                    speciesID: speciesID,
+                    rarity: rarity,
+                    isNewSpecies: isNewSpecies)
+            }
+        }
         self.saveCompanionState()
+    }
+
+    func dismissCompanionReveal() {
+        self.companionReveal = nil
     }
 
     func evolveCompanion() {

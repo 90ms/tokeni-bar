@@ -160,6 +160,7 @@ struct TokeniBarApp: App {
         case .tokeni:
             if self.store.companionEnabled {
                 ByteBotSpriteView(
+                    speciesID: self.store.companionState.speciesID,
                     stage: self.store.companionStage,
                     rarity: self.store.companionDisplayRarity,
                     behavior: self.store.companionBehavior,

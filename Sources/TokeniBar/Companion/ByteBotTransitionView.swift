@@ -6,6 +6,7 @@ import TokeniCore
 struct ByteBotTransitionView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    let speciesID: CompanionSpeciesID?
     let stage: CompanionGameStage
     let rarity: CompanionRarity?
     let behavior: CompanionBehavior
@@ -24,6 +25,7 @@ struct ByteBotTransitionView: View {
             }
 
             ByteBotSpriteView(
+                speciesID: self.speciesID,
                 stage: self.stage,
                 rarity: self.rarity ?? .normal,
                 behavior: self.behavior,
@@ -96,7 +98,10 @@ struct ByteBotTransitionView: View {
     }
 
     private var transitionKey: TransitionKey {
-        TransitionKey(stage: self.stage, rarity: self.rarity)
+        TransitionKey(
+            speciesID: self.speciesID,
+            stage: self.stage,
+            rarity: self.rarity)
     }
 
     private func handleTransition(
@@ -163,6 +168,7 @@ struct ByteBotTransitionView: View {
 }
 
 private struct TransitionKey: Equatable {
+    let speciesID: CompanionSpeciesID?
     let stage: CompanionGameStage
     let rarity: CompanionRarity?
 }

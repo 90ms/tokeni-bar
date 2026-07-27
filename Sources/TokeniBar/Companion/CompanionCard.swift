@@ -10,6 +10,7 @@ struct CompanionCard: View {
     var body: some View {
         HStack(spacing: 12) {
             ByteBotTransitionView(
+                speciesID: self.store.companionState.speciesID,
                 stage: self.store.companionStage,
                 rarity: self.store.companionState.rarity,
                 behavior: self.store.companionBehavior,
@@ -18,7 +19,7 @@ struct CompanionCard: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
-                    Text(AppLocalization.string("companion.name"))
+                    Text(self.companionName)
                         .font(.headline)
                     Text(AppLocalization.string(
                         "companion.stage.\(self.store.companionStage.rawValue)"))
@@ -33,8 +34,7 @@ struct CompanionCard: View {
                     Spacer()
                 }
 
-                Text(AppLocalization.string(
-                    "companion.behavior.\(self.store.companionBehavior.rawValue)"))
+                Text(self.companionSubtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -128,5 +128,38 @@ struct CompanionCard: View {
         } message: {
             Text(AppLocalization.string("companion.complete.confirm.message"))
         }
+        .sheet(item: Binding(
+            get: { self.store.companionReveal },
+            set: { reveal in
+                if reveal == nil {
+                    self.store.dismissCompanionReveal()
+                }
+            }))
+        { reveal in
+            CompanionHatchRevealView(
+                reveal: reveal,
+                animationsEnabled: self.store.companionAnimationsEnabled,
+                dismiss: self.store.dismissCompanionReveal)
+        }
+    }
+
+    private var companionName: String {
+        guard let speciesID = self.store.companionState.speciesID else {
+            return AppLocalization.string("companion.species.mystery.name")
+        }
+        return AppLocalization.string(
+            "companion.species.\(speciesID.rawValue).name")
+    }
+
+    private var companionSubtitle: String {
+        guard let speciesID = self.store.companionState.speciesID else {
+            return AppLocalization.string("companion.species.mystery.personality")
+        }
+        if self.store.companionBehavior == .idle {
+            return AppLocalization.string(
+                "companion.species.\(speciesID.rawValue).personality")
+        }
+        return AppLocalization.string(
+            "companion.behavior.\(self.store.companionBehavior.rawValue)")
     }
 }
