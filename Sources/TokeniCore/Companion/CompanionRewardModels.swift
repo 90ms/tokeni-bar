@@ -36,7 +36,7 @@ public struct CompanionAttendanceRecord: Codable, Hashable, Sendable {
 }
 
 public struct CompanionRewardState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
 
     public var schemaVersion: Int
     public var starShards: Int
@@ -45,6 +45,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
     public var rewardedSpeciesIDs: Set<CompanionSpeciesID>
     public var rewardedJourneyCount: Int
     public var rewardedFormMilestones: Set<Int>
+    public var rewardedRarities: Set<CompanionRarity>
+    public var rewardedGrowthDateKeys: [String]
+    public var latestRewardedAppVersion: String?
     public var latestObservedDateKey: String?
     public var unlockedCosmeticIDs: Set<CompanionCosmeticID>
     public var selectedCosmeticID: CompanionCosmeticID?
@@ -58,6 +61,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         rewardedSpeciesIDs: Set<CompanionSpeciesID> = [],
         rewardedJourneyCount: Int = 0,
         rewardedFormMilestones: Set<Int> = [],
+        rewardedRarities: Set<CompanionRarity> = [],
+        rewardedGrowthDateKeys: [String] = [],
+        latestRewardedAppVersion: String? = nil,
         latestObservedDateKey: String? = nil,
         unlockedCosmeticIDs: Set<CompanionCosmeticID> = [],
         selectedCosmeticID: CompanionCosmeticID? = nil,
@@ -70,6 +76,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         self.rewardedSpeciesIDs = rewardedSpeciesIDs
         self.rewardedJourneyCount = max(rewardedJourneyCount, 0)
         self.rewardedFormMilestones = rewardedFormMilestones
+        self.rewardedRarities = rewardedRarities
+        self.rewardedGrowthDateKeys = Array(rewardedGrowthDateKeys.suffix(400))
+        self.latestRewardedAppVersion = latestRewardedAppVersion
         self.latestObservedDateKey = latestObservedDateKey
         self.unlockedCosmeticIDs = unlockedCosmeticIDs
         self.selectedCosmeticID = selectedCosmeticID
@@ -91,6 +100,12 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             }
             && self.rewardedJourneyCount >= 0
             && self.rewardedFormMilestones.allSatisfy { $0 > 0 }
+            && Set(self.rewardedGrowthDateKeys).count
+                == self.rewardedGrowthDateKeys.count
+            && self.rewardedGrowthDateKeys.allSatisfy { !$0.isEmpty }
+            && self.latestRewardedAppVersion.map {
+                SemanticVersion($0) != nil
+            } != false
             && self.selectedCosmeticID.map {
                 self.unlockedCosmeticIDs.contains($0)
             } != false
@@ -104,6 +119,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         case rewardedSpeciesIDs
         case rewardedJourneyCount
         case rewardedFormMilestones
+        case rewardedRarities
+        case rewardedGrowthDateKeys
+        case latestRewardedAppVersion
         case latestObservedDateKey
         case unlockedCosmeticIDs
         case selectedCosmeticID
@@ -140,6 +158,15 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             rewardedFormMilestones: try container.decodeIfPresent(
                 Set<Int>.self,
                 forKey: .rewardedFormMilestones) ?? [],
+            rewardedRarities: try container.decodeIfPresent(
+                Set<CompanionRarity>.self,
+                forKey: .rewardedRarities) ?? [],
+            rewardedGrowthDateKeys: try container.decodeIfPresent(
+                [String].self,
+                forKey: .rewardedGrowthDateKeys) ?? [],
+            latestRewardedAppVersion: try container.decodeIfPresent(
+                String.self,
+                forKey: .latestRewardedAppVersion),
             latestObservedDateKey: try container.decodeIfPresent(
                 String.self,
                 forKey: .latestObservedDateKey),
@@ -160,8 +187,11 @@ public enum CompanionRewardReason: Hashable, Sendable {
     case weeklyAttendance(days: Int)
     case monthlyAttendance(days: Int)
     case speciesDiscovered(CompanionSpeciesID)
+    case rarityDiscovered(CompanionRarity)
     case journeysCompleted(Int)
     case collectionForms(Int)
+    case verifiedGrowth(dateKey: String)
+    case releaseGift(version: String)
 }
 
 public struct CompanionRewardGrant: Hashable, Sendable {

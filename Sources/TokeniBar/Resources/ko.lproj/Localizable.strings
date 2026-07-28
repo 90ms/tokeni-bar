@@ -172,9 +172,10 @@
 "companion.energy.delayedSettlement" = "이전 날짜의 확정 사용량이 오늘 획득 에너지에 정산되었습니다.";
 "companion.energy.settledToday" = "오늘 정산";
 "companion.energy.todayPending" = "오늘 집계 대기";
-"companion.rewards.title" = "별조각과 출석";
+"companion.rewards.title" = "별조각 보상";
 "companion.rewards.balance" = "별조각 %d개";
-"companion.rewards.description" = "출석, 새로운 펫 발견, 여정 완료와 도감 달성으로 별조각을 얻어 꾸미기를 해금할 수 있습니다.";
+"companion.rewards.description" = "출석, 검증된 성장, 새로운 펫·등급 발견, 여정 완료와 도감 달성으로 별조각을 얻습니다.";
+"companion.rewards.sources" = "새 안정 버전의 첫 실행에도 릴리스 선물이 한 번 지급됩니다.";
 "companion.rewards.received" = "별조각 %d개를 받았습니다!";
 "companion.cosmetic.shop" = "별조각 꾸미기";
 "companion.cosmetic.description" = "구매한 꾸미기는 영구 보관되며 펫의 성장이나 등급에는 영향을 주지 않습니다.";

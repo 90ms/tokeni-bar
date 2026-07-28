@@ -172,9 +172,10 @@
 "companion.energy.delayedSettlement" = "Confirmed usage from an earlier date was credited to today's earned energy.";
 "companion.energy.settledToday" = "Settled today";
 "companion.energy.todayPending" = "Today pending";
-"companion.rewards.title" = "Star Shards and Attendance";
+"companion.rewards.title" = "Star Shard Rewards";
 "companion.rewards.balance" = "%d Star Shards";
-"companion.rewards.description" = "Earn Star Shards from attendance, discoveries, journeys, and collection milestones, then spend them on cosmetics.";
+"companion.rewards.description" = "Earn Star Shards from attendance, verified growth, new pet and rarity discoveries, journeys, and collection milestones.";
+"companion.rewards.sources" = "Each stable release also includes a one-time gift on first launch.";
 "companion.rewards.received" = "Received %d Star Shards!";
 "companion.cosmetic.shop" = "Star Shard cosmetics";
 "companion.cosmetic.description" = "Purchased cosmetics are permanent and never affect growth or rarity.";

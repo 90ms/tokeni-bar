@@ -104,12 +104,55 @@ struct CompanionRewardEngineTests {
             at: now,
             in: &state)
 
-        #expect(first.reduce(0) { $0 + $1.amount } == 110)
-        #expect(state.starShards == 110)
+        #expect(first.reduce(0) { $0 + $1.amount } == 120)
+        #expect(state.starShards == 120)
         #expect(state.rewardedSpeciesIDs == [.bytebot, .cachecat])
         #expect(state.rewardedJourneyCount == 2)
         #expect(state.rewardedFormMilestones == [10])
         #expect(repeated.isEmpty)
+    }
+
+    @Test("Verified growth and stable release gifts are awarded once")
+    func recurringRewards() throws {
+        let engine = CompanionRewardEngine(calendar: self.calendar)
+        let firstDay = try #require(self.date("2027-01-04T12:00:00Z"))
+        let secondDay = try #require(self.date("2027-01-05T12:00:00Z"))
+        var state = CompanionRewardState()
+
+        #expect(engine.rewardVerifiedGrowth(
+            energy: 1,
+            at: firstDay,
+            in: &state)?.amount == 5)
+        #expect(engine.rewardVerifiedGrowth(
+            energy: 100,
+            at: firstDay,
+            in: &state) == nil)
+        #expect(engine.rewardVerifiedGrowth(
+            energy: 1,
+            at: secondDay,
+            in: &state)?.amount == 5)
+
+        #expect(engine.claimReleaseGift(
+            appVersion: "1.2.0",
+            at: firstDay,
+            in: &state)?.amount == 20)
+        #expect(engine.claimReleaseGift(
+            appVersion: "1.2.0",
+            at: secondDay,
+            in: &state) == nil)
+        #expect(engine.claimReleaseGift(
+            appVersion: "1.1.0",
+            at: secondDay,
+            in: &state) == nil)
+        #expect(engine.claimReleaseGift(
+            appVersion: "1.3.0-beta.1",
+            at: secondDay,
+            in: &state) == nil)
+        #expect(engine.claimReleaseGift(
+            appVersion: "1.3.0",
+            at: secondDay,
+            in: &state)?.amount == 20)
+        #expect(state.starShards == 50)
     }
 
     @Test("Cosmetics spend shards once and can be equipped")
@@ -151,6 +194,9 @@ struct CompanionRewardEngineTests {
         #expect(state.starShards == 59)
         #expect(state.unlockedCosmeticIDs.isEmpty)
         #expect(state.selectedCosmeticID == nil)
+        #expect(state.rewardedRarities.isEmpty)
+        #expect(state.rewardedGrowthDateKeys.isEmpty)
+        #expect(state.latestRewardedAppVersion == nil)
     }
 
     @Test("Reward state persists without companion or provider data")

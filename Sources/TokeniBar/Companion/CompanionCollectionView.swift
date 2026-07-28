@@ -282,6 +282,10 @@ struct CompanionCollectionView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Text(AppLocalization.string("companion.rewards.sources"))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+
                 Divider()
 
                 VStack(alignment: .leading, spacing: 4) {

@@ -1107,9 +1107,21 @@ final class UsageStore: ObservableObject {
 
     private func reconcileCompanionRewards() {
         var state = self.companionRewardState
-        let grants = self.companionRewardEngine.reconcile(
+        var grants = self.companionRewardEngine.reconcile(
             collection: self.companionState.collection,
             in: &state)
+        if let grant = self.companionRewardEngine.rewardVerifiedGrowth(
+            energy: self.companionState.growthEarnedToday,
+            in: &state)
+        {
+            grants.append(grant)
+        }
+        if let grant = self.companionRewardEngine.claimReleaseGift(
+            appVersion: self.currentAppVersion,
+            in: &state)
+        {
+            grants.append(grant)
+        }
         guard !grants.isEmpty else { return }
         self.companionRewardState = state
         self.companionRewardNoticeAmount = grants.reduce(0) { $0 + $1.amount }
