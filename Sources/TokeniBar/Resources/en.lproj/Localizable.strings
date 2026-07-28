@@ -71,6 +71,11 @@
 "settings.menuBar.compact.description" = "Show quota essentials and hide token, cost, detail, and source rows.";
 "settings.companion.overlay" = "Show pet on screen";
 "settings.companion.overlay.description" = "Keep the pet above other apps on every desktop. Drag the pet to reposition it.";
+"settings.companion.overlay.size" = "Pet size";
+"settings.companion.overlay.size.small" = "Small";
+"settings.companion.overlay.size.medium" = "Medium";
+"settings.companion.overlay.size.large" = "Large";
+"settings.companion.overlay.positionLocked" = "Lock pet position";
 "settings.activity.enabled" = "Animate active sessions";
 "settings.activity.window" = "Activity window";
 "settings.activity.seconds" = "%d seconds";
@@ -79,6 +84,7 @@
 "companion.pat" = "Pat companion";
 "companion.action.ready" = "Companion is ready to hatch or evolve";
 "companion.overlay.drag" = "Drag to move companion";
+"companion.overlay.locked" = "Unlock the pet position in Settings to move it";
 "companion.species.mystery.name" = "Mystery Egg";
 "companion.species.mystery.personality" = "You won't know which friend is inside until it hatches.";
 "companion.species.bytebot.name" = "ByteBot";

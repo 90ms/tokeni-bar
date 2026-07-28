@@ -93,6 +93,12 @@ struct TokeniBarApp: App {
                 .onChange(of: self.store.showsCompanionOverlay) { _, visible in
                     self.companionOverlayController.setVisible(visible)
                 }
+                .onChange(of: self.store.companionOverlaySize) { _, size in
+                    self.companionOverlayController.setSize(size)
+                }
+                .onChange(of: self.store.companionOverlayPositionLocked) { _, locked in
+                    self.companionOverlayController.setPositionLocked(locked)
+                }
         }
         .menuBarExtraStyle(.window)
 

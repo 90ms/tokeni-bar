@@ -45,6 +45,8 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionEnabled: Bool
     @Published private(set) var companionAnimationsEnabled: Bool
     @Published private(set) var companionOverlayEnabled: Bool
+    @Published private(set) var companionOverlaySize: CompanionOverlaySize
+    @Published private(set) var companionOverlayPositionLocked: Bool
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
     @Published private(set) var companionRewardState: CompanionRewardState
@@ -90,6 +92,9 @@ final class UsageStore: ObservableObject {
     private static let companionEnabledKey = "companionEnabled"
     private static let companionAnimationsEnabledKey = "companionAnimationsEnabled"
     private static let companionOverlayEnabledKey = "companionOverlayEnabled"
+    private static let companionOverlaySizeKey = "companionOverlaySize"
+    private static let companionOverlayPositionLockedKey =
+        "companionOverlayPositionLocked"
 
     init(providers: [any UsageProviding] = ProviderRegistry.defaultProviders()) {
         let knownIDs = Set(providers.map { $0.descriptor.id })
@@ -187,6 +192,11 @@ final class UsageStore: ObservableObject {
             forKey: Self.companionAnimationsEnabledKey) as? Bool ?? true
         self.companionOverlayEnabled = UserDefaults.standard.bool(
             forKey: Self.companionOverlayEnabledKey)
+        self.companionOverlaySize = UserDefaults.standard.string(
+            forKey: Self.companionOverlaySizeKey)
+            .flatMap(CompanionOverlaySize.init(rawValue:)) ?? .medium
+        self.companionOverlayPositionLocked = UserDefaults.standard.bool(
+            forKey: Self.companionOverlayPositionLockedKey)
         self.companionState = CompanionGameState()
         self.companionReveal = nil
         self.companionRewardState = CompanionRewardState()
@@ -507,6 +517,18 @@ final class UsageStore: ObservableObject {
     func setCompanionOverlayEnabled(_ enabled: Bool) {
         self.companionOverlayEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: Self.companionOverlayEnabledKey)
+    }
+
+    func setCompanionOverlaySize(_ size: CompanionOverlaySize) {
+        self.companionOverlaySize = size
+        UserDefaults.standard.set(size.rawValue, forKey: Self.companionOverlaySizeKey)
+    }
+
+    func setCompanionOverlayPositionLocked(_ locked: Bool) {
+        self.companionOverlayPositionLocked = locked
+        UserDefaults.standard.set(
+            locked,
+            forKey: Self.companionOverlayPositionLockedKey)
     }
 
     func patCompanion() {

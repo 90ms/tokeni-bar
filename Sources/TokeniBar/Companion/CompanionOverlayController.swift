@@ -4,7 +4,6 @@ import SwiftUI
 @MainActor
 final class CompanionOverlayController: ObservableObject {
     private static let frameOriginKey = "companionOverlayFrameOrigin"
-    private static let panelSize = NSSize(width: 112, height: 112)
 
     private var panel: CompanionOverlayPanel?
 
@@ -12,6 +11,8 @@ final class CompanionOverlayController: ObservableObject {
         if self.panel == nil {
             self.panel = self.makePanel(store: store)
         }
+        self.setSize(store.companionOverlaySize)
+        self.setPositionLocked(store.companionOverlayPositionLocked)
         self.setVisible(store.showsCompanionOverlay)
     }
 
@@ -24,10 +25,37 @@ final class CompanionOverlayController: ObservableObject {
         }
     }
 
-    private func makePanel(store: UsageStore) -> CompanionOverlayPanel {
+    func setSize(_ size: CompanionOverlaySize) {
+        guard let panel else { return }
+        let panelSize = NSSize(
+            width: size.panelDimension,
+            height: size.panelDimension)
+        guard panel.frame.size != panelSize else { return }
+        let currentCenter = NSPoint(
+            x: panel.frame.midX,
+            y: panel.frame.midY)
+        let requestedOrigin = NSPoint(
+            x: currentCenter.x - panelSize.width / 2,
+            y: currentCenter.y - panelSize.height / 2)
         let frame = NSRect(
-            origin: self.restoredOrigin(),
-            size: Self.panelSize)
+            origin: self.constrainedOrigin(
+                requestedOrigin,
+                panelSize: panelSize),
+            size: panelSize)
+        panel.setFrame(frame, display: true, animate: false)
+    }
+
+    func setPositionLocked(_ locked: Bool) {
+        self.panel?.isMovableByWindowBackground = !locked
+    }
+
+    private func makePanel(store: UsageStore) -> CompanionOverlayPanel {
+        let panelSize = NSSize(
+            width: store.companionOverlaySize.panelDimension,
+            height: store.companionOverlaySize.panelDimension)
+        let frame = NSRect(
+            origin: self.restoredOrigin(panelSize: panelSize),
+            size: panelSize)
         let panel = CompanionOverlayPanel(
             contentRect: frame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -38,7 +66,7 @@ final class CompanionOverlayController: ObservableObject {
         panel.hasShadow = false
         panel.level = .floating
         panel.hidesOnDeactivate = false
-        panel.isMovableByWindowBackground = true
+        panel.isMovableByWindowBackground = !store.companionOverlayPositionLocked
         panel.isReleasedWhenClosed = false
         panel.ignoresMouseEvents = false
         panel.collectionBehavior = [
@@ -50,27 +78,32 @@ final class CompanionOverlayController: ObservableObject {
         panel.contentView = NSHostingView(
             rootView: CompanionOverlayView(store: store))
         panel.delegate = self
-        panel.setFrameOrigin(self.constrainedOrigin(frame.origin))
+        panel.setFrameOrigin(self.constrainedOrigin(
+            frame.origin,
+            panelSize: panelSize))
         return panel
     }
 
-    private func restoredOrigin() -> NSPoint {
+    private func restoredOrigin(panelSize: NSSize) -> NSPoint {
         guard let stored = UserDefaults.standard.string(forKey: Self.frameOriginKey)
         else {
-            return self.defaultOrigin()
+            return self.defaultOrigin(panelSize: panelSize)
         }
         return NSPointFromString(stored)
     }
 
-    private func defaultOrigin() -> NSPoint {
+    private func defaultOrigin(panelSize: NSSize) -> NSPoint {
         guard let visibleFrame = NSScreen.main?.visibleFrame else { return .zero }
         return NSPoint(
-            x: visibleFrame.maxX - Self.panelSize.width - 24,
-            y: visibleFrame.maxY - Self.panelSize.height - 24)
+            x: visibleFrame.maxX - panelSize.width - 24,
+            y: visibleFrame.maxY - panelSize.height - 24)
     }
 
-    private func constrainedOrigin(_ requestedOrigin: NSPoint) -> NSPoint {
-        let requestedFrame = NSRect(origin: requestedOrigin, size: Self.panelSize)
+    private func constrainedOrigin(
+        _ requestedOrigin: NSPoint,
+        panelSize: NSSize) -> NSPoint
+    {
+        let requestedFrame = NSRect(origin: requestedOrigin, size: panelSize)
         let screen = NSScreen.screens.first(where: {
             $0.visibleFrame.intersects(requestedFrame)
         }) ?? NSScreen.main
@@ -78,10 +111,10 @@ final class CompanionOverlayController: ObservableObject {
         return NSPoint(
             x: min(
                 max(requestedOrigin.x, visibleFrame.minX),
-                visibleFrame.maxX - Self.panelSize.width),
+                visibleFrame.maxX - panelSize.width),
             y: min(
                 max(requestedOrigin.y, visibleFrame.minY),
-                visibleFrame.maxY - Self.panelSize.height))
+                visibleFrame.maxY - panelSize.height))
     }
 }
 
@@ -108,10 +141,13 @@ private struct CompanionOverlayView: View {
             stage: self.store.companionStage,
             rarity: self.store.companionState.rarity,
             behavior: self.store.companionBehavior,
-            dimension: 96,
+            dimension: self.store.companionOverlaySize.spriteDimension,
             animationsEnabled: self.store.companionAnimationsEnabled)
             .padding(8)
             .contentShape(Rectangle())
-            .help(AppLocalization.string("companion.overlay.drag"))
+            .help(AppLocalization.string(
+                self.store.companionOverlayPositionLocked
+                    ? "companion.overlay.locked"
+                    : "companion.overlay.drag"))
     }
 }

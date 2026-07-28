@@ -90,6 +90,27 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
+                    if self.store.companionOverlayEnabled {
+                        Picker(
+                            AppLocalization.string("settings.companion.overlay.size"),
+                            selection: Binding(
+                                get: { self.store.companionOverlaySize },
+                                set: { self.store.setCompanionOverlaySize($0) }))
+                        {
+                            ForEach(CompanionOverlaySize.allCases) { size in
+                                Text(size.localizedName).tag(size)
+                            }
+                        }
+
+                        Toggle(isOn: Binding(
+                            get: { self.store.companionOverlayPositionLocked },
+                            set: { self.store.setCompanionOverlayPositionLocked($0) }))
+                        {
+                            Text(AppLocalization.string(
+                                "settings.companion.overlay.positionLocked"))
+                        }
+                    }
+
                     Button(AppLocalization.string("companion.collection.open")) {
                         self.openWindow(id: "companion-collection")
                         Task { @MainActor in
