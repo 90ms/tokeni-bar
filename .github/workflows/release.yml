@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -16,7 +18,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Resolve version
         id: version
@@ -145,6 +147,11 @@ jobs:
           cd dist
           shasum -a 256 "TokeniBar-$VERSION.zip" \
             > "TokeniBar-$VERSION.zip.sha256"
+
+      - name: Generate artifact attestation
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: dist/TokeniBar-${{ steps.version.outputs.value }}.zip
 
       - name: Download Formula source archive
         shell: bash

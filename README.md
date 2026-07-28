@@ -251,6 +251,13 @@ GitHub ZIP으로 직접 설치하려면
 있습니다. 첫 실행이 차단되면 **시스템 설정 → 개인정보 보호 및 보안**에서
 허용하세요.
 
+직접 받은 릴리스 ZIP의 빌드 출처와 체크섬은 다음과 같이 확인할 수 있습니다.
+
+```bash
+gh attestation verify TokeniBar-<version>.zip --repo 90ms/tokeni-bar
+shasum -a 256 -c TokeniBar-<version>.zip.sha256
+```
+
 ## 개인정보 보호
 
 | 저장하는 정보 | 저장하지 않는 정보 |

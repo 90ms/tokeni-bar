@@ -258,6 +258,13 @@ For a direct installation, download the ZIP from the
 blocks the first launch, approve it under
 **System Settings → Privacy & Security**.
 
+Verify the build provenance and checksum of a directly downloaded release ZIP:
+
+```bash
+gh attestation verify TokeniBar-<version>.zip --repo 90ms/tokeni-bar
+shasum -a 256 -c TokeniBar-<version>.zip.sha256
+```
+
 ## Privacy
 
 | Stored locally | Never stored |
