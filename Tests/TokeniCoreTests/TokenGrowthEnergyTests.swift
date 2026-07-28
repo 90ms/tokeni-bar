@@ -34,6 +34,33 @@ struct TokenGrowthEnergyTests {
             > formula.energy(forDailyTokens: 1_000_000))
     }
 
+    @Test("Finds the exact next energy boundary")
+    func nextEnergyBoundary() throws {
+        let formula = TokenGrowthEnergyFormula.standard
+
+        for tokens: Int64 in [0, 10_000, 25_000, 100_000, 2_000_000] {
+            let currentEnergy = formula.energy(forDailyTokens: tokens)
+            let additional = try #require(
+                formula.additionalTokensForNextEnergy(afterDailyTokens: tokens))
+            let threshold = tokens + additional
+
+            #expect(additional > 0)
+            #expect(formula.energy(forDailyTokens: threshold) == currentEnergy + 1)
+            #expect(formula.energy(forDailyTokens: threshold - 1) == currentEnergy)
+            #expect(formula.minimumDailyTokens(forEnergy: currentEnergy + 1) == threshold)
+        }
+    }
+
+    @Test("Reports unreachable targets without overflowing")
+    func unreachableTarget() {
+        let disabled = TokenGrowthEnergyFormula(scale: 0, tokenUnit: 25_000)
+
+        #expect(disabled.minimumDailyTokens(forEnergy: 1) == nil)
+        #expect(disabled.additionalTokensForNextEnergy(afterDailyTokens: 100_000) == nil)
+        #expect(TokenGrowthEnergyFormula.standard.minimumDailyTokens(forEnergy: 0) == 0)
+        #expect(TokenGrowthEnergyFormula.standard.minimumDailyTokens(forEnergy: -1) == 0)
+    }
+
     @Test("Local date keys honor the supplied time zone")
     func localDateKey() throws {
         let date = try #require(ISO8601DateFormatter().date(
