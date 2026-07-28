@@ -105,8 +105,10 @@ click the action. Energy earned as an Adult fills action energy and also records
 bond. Evolution shows the previous form entering a glow before the new stage
 appears; Reduce Motion and Low Power Mode use a short transition.
 
-Working, low quota, patting, and long inactivity change the pet's behavior but
-never add growth energy.
+Working, a short waiting period after recent activity, low quota, patting, and
+long inactivity change the pet's behavior. The pet briefly sparkles when
+verified tokens credit growth energy and occasionally shifts while idle. These
+visual reactions never add growth energy.
 
 Every species shares the same mystery egg. Hatching reveals ByteBot, CacheCat,
 StackFox, PromptPup, or NullSlime at equal 20% base odds. While any species is
@@ -211,10 +213,11 @@ Enable **Settings → Tokeni → Show pet on screen** to keep a transparent pet
 panel above other apps.
 
 - Choose a Small, Medium, or Large display size.
+- Click the pet to trigger its existing happy frames and a side-to-side hop.
 - Drag the pet to a position that is restored on the next launch.
 - Lock the position to prevent accidental movement.
-- Click-through sends pointer input to the app beneath the pet. Turn it off
-  before moving the pet.
+- Click-through sends pointer input to the app beneath the pet. Patting and
+  moving the pet are unavailable until click-through is turned off.
 - Reset position returns the pet to the upper-right of the current screen.
 - The panel joins every desktop Space and supported full-screen apps.
 

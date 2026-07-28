@@ -64,8 +64,16 @@ During evolution, the previous form shrinks into a glow before the new stage
 appears. Another evolution cannot start during the transition. Reduce Motion
 and Low Power Mode use an immediate or short transition.
 
-Working, quota warning, patting, and longer inactivity change the animation.
-Activity detection drives behavior only and never fabricates growth energy.
+Working uses the work animation. The existing waiting animation runs for two
+minutes after recent activity ends, then the pet returns to idle with an
+occasional subtle shift and sleeps after ten inactive minutes. Quota warnings
+and patting use higher-priority animations. Waiting is an inference from recent
+activity, not a claim that a network response is pending.
+
+When verified tokens actually credit growth energy, the pet briefly grows and
+sparkles. Activity detection and every visual reaction are cosmetic and never
+create growth energy. Reduce Motion, the app's animation toggle, and Low Power
+Mode disable the additional movement.
 
 ## Rarity and evolution
 
@@ -205,6 +213,9 @@ transparent floating panel. Size, position lock, and click-through behavior are
 configurable, and the dragged position is stored in local preferences. If the
 pet is off-screen or the display arrangement changes, **Reset pet position**
 returns it to the upper-right of the current screen.
+With click-through off, clicking the pet triggers its happy animation and a
+side-to-side hop. With click-through on, the underlying app receives input, so
+patting and dragging the pet are unavailable.
 
 ## When tokens cannot be counted
 
