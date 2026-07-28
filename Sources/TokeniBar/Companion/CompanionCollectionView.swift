@@ -412,7 +412,8 @@ struct CompanionCollectionView: View {
                 behavior: self.store.companionBehavior,
                 cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                 dimension: 104,
-                animationsEnabled: self.store.companionAnimationsEnabled)
+                animationsEnabled: self.store.companionAnimationsEnabled,
+                interactionPulse: self.store.companionInteractionPulse)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(self.currentCompanionTitle)

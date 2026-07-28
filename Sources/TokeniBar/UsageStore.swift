@@ -60,6 +60,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionOverlayPositionLocked: Bool
     @Published private(set) var companionOverlayClickThroughEnabled: Bool
     @Published private(set) var companionOverlayPositionResetPulse: Int
+    @Published private(set) var companionInteractionPulse: Int
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
     @Published private(set) var isCompanionEvolving: Bool
@@ -219,6 +220,7 @@ final class UsageStore: ObservableObject {
         self.companionOverlayClickThroughEnabled = UserDefaults.standard.bool(
             forKey: Self.companionOverlayClickThroughEnabledKey)
         self.companionOverlayPositionResetPulse = 0
+        self.companionInteractionPulse = 0
         self.companionState = CompanionGameState()
         self.companionReveal = nil
         self.isCompanionEvolving = false
@@ -570,6 +572,7 @@ final class UsageStore: ObservableObject {
         var state = self.companionState
         self.companionGameEngine.pat(in: &state)
         self.companionState = state
+        self.companionInteractionPulse &+= 1
         self.saveCompanionState()
     }
 

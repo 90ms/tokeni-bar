@@ -174,9 +174,16 @@ private struct CompanionOverlayView: View {
             behavior: self.store.companionBehavior,
             cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
             dimension: self.store.companionOverlaySize.spriteDimension,
-            animationsEnabled: self.store.companionAnimationsEnabled)
+            animationsEnabled: self.store.companionAnimationsEnabled,
+            interactionPulse: self.store.companionInteractionPulse)
             .padding(8)
             .contentShape(Rectangle())
+            .onTapGesture {
+                self.store.patCompanion()
+            }
+            .accessibilityAction {
+                self.store.patCompanion()
+            }
             .help(AppLocalization.string(
                 self.store.companionOverlayPositionLocked
                     ? "companion.overlay.locked"

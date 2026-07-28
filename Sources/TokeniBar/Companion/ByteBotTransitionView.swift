@@ -13,11 +13,14 @@ struct ByteBotTransitionView: View {
     var cosmeticIDs: Set<CompanionCosmeticID> = []
     var dimension: CGFloat = 64
     var animationsEnabled = true
+    var interactionPulse = 0
 
     @State private var effect: Effect?
     @State private var expanded = false
     @State private var presentedKey: TransitionKey?
     @State private var effectTask: Task<Void, Never>?
+    @State private var interactionOffset: CGSize = .zero
+    @State private var interactionTask: Task<Void, Never>?
     @State private var lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
 
     var body: some View {
@@ -65,18 +68,25 @@ struct ByteBotTransitionView: View {
             }
         }
         .frame(width: self.dimension, height: self.dimension)
+        .offset(self.interactionOffset)
         .onChange(of: self.transitionKey) { oldValue, newValue in
             self.handleTransition(from: oldValue, to: newValue)
+        }
+        .onChange(of: self.interactionPulse) { _, newValue in
+            self.handleInteraction(pulse: newValue)
         }
         .onChange(of: self.animationsEnabled) { _, enabled in
             if !enabled {
                 self.effectTask?.cancel()
+                self.interactionTask?.cancel()
                 self.effect = nil
                 self.presentedKey = nil
+                self.interactionOffset = .zero
             }
         }
         .onDisappear {
             self.effectTask?.cancel()
+            self.interactionTask?.cancel()
         }
         .onReceive(NotificationCenter.default.publisher(
             for: .NSProcessInfoPowerStateDidChange))
@@ -84,8 +94,10 @@ struct ByteBotTransitionView: View {
             self.lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
             if self.lowPowerModeEnabled {
                 self.effectTask?.cancel()
+                self.interactionTask?.cancel()
                 self.effect = nil
                 self.presentedKey = nil
+                self.interactionOffset = .zero
             }
         }
     }
@@ -195,6 +207,29 @@ struct ByteBotTransitionView: View {
             withAnimation(.easeOut(duration: 0.2)) {
                 self.effect = nil
                 self.presentedKey = nil
+            }
+        }
+    }
+
+    private func handleInteraction(pulse: Int) {
+        guard pulse > 0,
+              self.animationsEnabled,
+              !self.reduceMotion,
+              !self.lowPowerModeEnabled
+        else { return }
+
+        self.interactionTask?.cancel()
+        let direction: CGFloat = pulse.isMultiple(of: 2) ? -1 : 1
+        self.interactionTask = Task { @MainActor in
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.58)) {
+                self.interactionOffset = CGSize(
+                    width: direction * self.dimension * 0.18,
+                    height: -self.dimension * 0.16)
+            }
+            try? await Task.sleep(for: .milliseconds(240))
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.62)) {
+                self.interactionOffset = .zero
             }
         }
     }
