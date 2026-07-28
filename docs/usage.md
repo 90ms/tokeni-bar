@@ -13,9 +13,9 @@ providers or expanded details need more room.
 **Usage History** in the footer opens the 30-day local aggregate window
 directly; settings and quit remain available as right-side icon actions.
 
-## ByteBot token-growth accounting
+## Tokeni token-growth accounting
 
-ByteBot growth uses only **verified increases** in token counters reported by
+Tokeni growth uses only **verified increases** in token counters reported by
 providers. Usage-file modification times drive working and sleeping animation
 only; they never create growth energy.
 
@@ -47,19 +47,17 @@ token total. When an earlier daily bucket is first confirmed today, it says
 provider without a trustworthy value remains **Waiting for data** rather than
 becoming a misleading zero.
 
-Deduplication checkpoints live separately in `usage-growth-ledger.json`. The
-app saves a pending award, applies it to ByteBot state, and then marks it
-complete, preventing double payment if the app exits between writes.
+The app uses local progress-validation data to keep the same usage from being
+credited again. If a write is interrupted or part of the data is damaged,
+retained recovery copies are checked first.
 
-See [ByteBot growth and collection](bytebot.md) for life stages and rarity.
+See [Tokeni pet growth and collection](bytebot.md) for life stages and rarity.
 
 ## Codex account token activity
 
-Codex account activity comes from the experimental `codex app-server`
-`account/usage/read` method. Its response contains dated daily buckets and a
-lifetime total. A daily bucket may arrive after its calendar day ends.
-`/usage daily` reads the same account service, so the current date may still be
-absent; OpenAI does not guarantee a settlement delay or boundary time.
+Codex account activity reuses the existing sign-in from the installed Codex
+CLI. A dated total may arrive after its calendar day ends, and its settlement
+delay and boundary time are not guaranteed.
 
 The popover shows:
 
@@ -77,18 +75,11 @@ is no valid daily bucket, the app leaves it unavailable instead of inventing a
 zero. Missing CLI, sign-in required, unsupported CLI, and query failure are
 reported separately.
 
-### Codex CLI discovery and launch
+### Checking the Codex CLI connection
 
 A menu-bar app may run with a more limited `PATH` than an interactive shell.
-In addition to `PATH` and common Homebrew locations, Tokeni Bar searches these
-user-managed installations:
-
-- `~/.local/bin`, Volta, asdf, Bun, and mise
-- Node version directories managed by nvm and fnm
-
-For installations such as nvm or fnm where Codex and `node` share a version
-directory, Tokeni Bar also adds that directory to the launch environment. If
-**Codex CLI not found** or **Account token query failed** still appears, run
+Tokeni Bar also checks common package-manager and user installation locations.
+If **Codex CLI not found** or **Account token query failed** still appears, run
 `codex` once in Terminal to verify sign-in and update the CLI, then restart
 Tokeni Bar. Tokeni Bar never copies or separately stores Codex credentials or
 tokens.
@@ -98,9 +89,9 @@ tokens.
 Choose **Selected provider remaining** and **Claude Code** under
 **Settings → General → Menu Bar** to show the **Claude quota** picker:
 
-- **5-hour:** the `five-hour` session window
-- **Weekly:** the `seven-day` account window
-- **Fable:** the model-scoped `scoped-weekly-fable` window
+- **5-hour:** session quota
+- **Weekly:** account weekly quota
+- **Fable:** model-scoped weekly quota
 
 Fable is the default and the selection is stored locally. If the selected
 window is absent from the account response, Claude remains unavailable instead
@@ -134,9 +125,8 @@ not an API invoice or a subscription bill.
 
 Codex account activity does not include the historical model, input/output,
 cache, or reasoning-token split needed for exact API pricing. Daily, monthly,
-and lifetime estimates therefore use a versioned reference profile based on
-the validated `gpt-5-codex` price and an assumed 80% uncached input / 20%
-output mix. Token totals remain authoritative.
+and lifetime estimates therefore use a versioned reference profile bundled
+with the app. Token totals remain authoritative.
 
 - USD/KRW is checked once per Seoul calendar day through
   [Frankfurter](https://frankfurter.dev/) using its ECB provider.
@@ -145,3 +135,10 @@ output mix. Token totals remain authoritative.
 - Aggregate quota, token, and estimated-cost samples are stored locally every
   15 minutes and retained for 30 days.
 - Unknown models remain without a cost instead of receiving a guessed price.
+
+## Diagnostics
+
+Open **Settings → Privacy → Provider Diagnostics** to review a report before
+copying it. Token totals and model identifiers are excluded by default and
+appear only when explicitly enabled. Prompts, responses, credentials, cookies,
+and file paths are always excluded.

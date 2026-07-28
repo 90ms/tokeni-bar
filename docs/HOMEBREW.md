@@ -9,8 +9,7 @@ the user's Mac. The result is ad-hoc signed, so installation and updates do not
 require an Apple Developer ID or the full Xcode application. Current Xcode
 Command Line Tools are required.
 
-The binary Cask and GitHub Release ZIP remain as transitional compatibility
-paths. In-app installation and restart are supported only for Formula installs.
+In-app installation and restart are supported for Formula installs.
 
 ## User commands
 
@@ -53,71 +52,28 @@ brew uninstall --formula tokeni-bar
 When the GitHub Releases check finds a new version, choose **Install & Restart**
 under **Settings → General → App Updates**.
 
-1. Locate Homebrew at a known absolute path.
-2. Verify that `90ms/tap/tokeni-bar` is installed as a Formula.
-3. Run `brew update` and upgrade only that Formula.
-4. Relink `~/Applications` to the new Cellar version.
-5. Open the new app and terminate the previous process.
-
-Commands use fixed executables and arguments rather than shell command strings.
 Update checks are automatic; installation starts only after an explicit click.
+After a manual Terminal update, run `tokeni-bar --install-app` again so the app
+link points at the current version.
 
-<a id="migrating-from-the-cask"></a>
-
-## Migrating from the Cask
-
-```bash
-brew trust --cask 90ms/tap/tokeni-bar
-brew uninstall --cask tokeni-bar
-brew trust --formula 90ms/tap/tokeni-bar
-brew install --formula 90ms/tap/tokeni-bar
-tokeni-bar --install-app
-tokeni-bar
-```
-
-Removing the Cask deletes only its app bundle, so Application Support settings
-and usage history remain in place. Version `v0.8.0` does not convert the old
-active-time ByteBot state and starts the new token-powered egg.
-
-If Homebrew reports that the Cask is not installed, skip that uninstall step.
-Explicit `--formula` and `--cask` flags disambiguate the two packages with the
-same token.
-
-## Recovering from an immediate exit
-
-Formula apps before `v0.7.2` could exit when opening the menu because their
-packaged SwiftPM resource bundle was missing. Since the in-app updater is not
-reachable, update in Terminal and relink the current Cellar app:
+## Direct installation from GitHub Releases
 
 ```bash
-brew update
-brew upgrade --formula 90ms/tap/tokeni-bar
-tokeni-bar --install-app
-tokeni-bar
+gh attestation verify TokeniBar-<version>.zip --repo 90ms/tokeni-bar
+shasum -a 256 -c TokeniBar-<version>.zip.sha256
 ```
 
-## Maintainer flow
+Download the ZIP and checksum from the
+[latest GitHub release](https://github.com/90ms/tokeni-bar/releases/latest).
+Use the commands above to verify build provenance and file integrity before
+launching it. If macOS blocks the first launch, approve it under **System
+Settings → Privacy & Security**.
 
-The release workflow publishes `TokeniBar-<version>.zip` and its checksum for
-every stable `v<major>.<minor>.<patch>` tag and calculates the GitHub tag source
-archive SHA-256. When `HOMEBREW_TAP_TOKEN` is configured, it renders the new
-Formula and compatibility Cask and opens a pull request against
-`90ms/homebrew-tap`. It never merges that pull request automatically.
+## Troubleshooting
 
-The token needs permission to push a branch and open a pull request in the tap
-repository. Tap CI builds the Formula with standalone Command Line Tools,
-validates the app bundle, launcher, and code signature, then runs tests, a
-strict audit, and uninstall. App repository CI also checks the packaged ByteBot
-and provider-icon resources.
-
-To render a Formula manually:
-
-```bash
-./Scripts/render_homebrew_formula.sh \
-  <version> \
-  <source-tarball-sha256> \
-  /path/to/homebrew-tap/Formula/tokeni-bar.rb
-```
-
-The in-repository `Formula/tokeni-bar.rb` and `Casks/tokeni-bar.rb` are renderer
-fixtures. The Cask renderer remains during the compatibility ZIP period.
+- For a trust error, confirm that only the `tokeni-bar` Formula—not the entire
+  tap—was trusted.
+- If an older version opens after an update, run
+  `tokeni-bar --install-app` again.
+- If the app exits immediately, update the Formula in Terminal and recreate
+  the app link.

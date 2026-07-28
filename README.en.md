@@ -46,7 +46,7 @@ brew install --formula tokeni-bar
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Low remaining quota and monthly budget |
 | Tokeni pets | Life stage, species, rarity, provider growth tokens, bond, behavior, and an optional desktop overlay |
-| Collection and rewards | Five generation-1 species, 60 forms, attendance, Star Shard cosmetics, and guarantees |
+| Collection and rewards | Five species, 60 forms, attendance, Star Shard cosmetics, and guarantees |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -153,9 +153,6 @@ The collection has 60 forms: five species, four rarities, and three visible
 life stages.
 When a high rarity first appears late, its earlier forms also unlock as
 **Lineage**.
-All five current species belong to **asset generation 1**. Repeating journeys
-does not increase a pet's generation. Future species will show generation 2,
-3, and so on when those asset sets are added.
 
 ### 6. Attendance and collection activity award Star Shards
 
@@ -249,9 +246,8 @@ not awarded as new growth. See
 | Remove the Formula | `brew uninstall --formula tokeni-bar` |
 
 The app checks for a stable release every six hours but never installs before
-an explicit click. See
-[Homebrew migration](docs/HOMEBREW.md#migrating-from-the-cask) for a previous
-Cask installation.
+an explicit click. See [Homebrew installation](docs/HOMEBREW.md) for
+installation-specific details.
 
 For a direct installation, download the ZIP from the
 [latest release](https://github.com/90ms/tokeni-bar/releases/latest). If macOS
@@ -273,11 +269,13 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 | Pet species, stage, rarity, collection, and guarantees | Access tokens, refresh tokens, and cookies |
 | Star Shards, attendance dates, purchased cosmetics, and awarded milestone IDs | Account secrets and server telemetry |
 | On-screen pet preferences and last position | Screen captures and input content |
-| Deduplication checkpoints | Remote game accounts and analytics telemetry |
+| Local progress-validation data | Remote game accounts and analytics telemetry |
 
-Usage history stays on the Mac for 30 days. Pet state, reward records, and
-token checkpoints are separate, and there is no analytics or remote game
-server.
+Usage history stays on the Mac for 30 days. If progress data is damaged, the
+app attempts recovery from retained local copies. Copied diagnostics exclude
+token totals and model identifiers by default; prompts, responses,
+credentials, cookies, and file paths are always excluded. There is no
+analytics or remote game server.
 
 ## Troubleshooting
 
@@ -289,7 +287,7 @@ server.
 | Provider unavailable | Confirm the CLI is installed and signed in, then run it once |
 | Claude password prompt repeats after unlock | Update the app and connect once under **Settings → General → Provider Connections**. Background refreshes never open authentication UI |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
-| Previous pet progress is absent | Version 0.8.0 starts the token-powered game with a new egg; settings and usage history remain |
+| Pet progress cannot be read | Restart the app to retry local recovery, then review diagnostics if the issue continues |
 
 ## Development
 
@@ -303,7 +301,7 @@ open "dist/Tokeni Bar.app"
 ```
 
 See [AGENTS.md](AGENTS.md) for contribution rules and
-[Homebrew distribution](docs/HOMEBREW.md) for the release flow.
+[Homebrew installation](docs/HOMEBREW.md) for install and update guidance.
 
 ## License
 

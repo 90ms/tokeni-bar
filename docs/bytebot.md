@@ -122,11 +122,6 @@ Collection** to see:
 - completed journeys, best rarity, and best bond;
 - maximum completed journeys remaining for every guarantee.
 
-ByteBot, CacheCat, StackFox, PromptPup, and NullSlime all belong to **asset
-generation 1**. Finishing journeys or receiving new eggs never changes this
-asset generation. Future sprite sets can assign their species to generation 2,
-3, and later. An unidentified egg does not display a generation.
-
 ## New eggs and completed journeys
 
 At Adult, keep the current pet and grow bond, or spend 100 energy to finish its
@@ -210,12 +205,16 @@ See the [usage display guide](usage.md) for detailed accounting and cost rules.
 
 ## Storage and privacy
 
-- `companion-state.json`: species, stage, rarity, energy, bond, collection, pity, and interactions
-- `companion-rewards.json`: Star Shards, attendance dates, awarded milestones, and unlocked/equipped cosmetics
-- `usage-growth-ledger.json`: scoped token checkpoints and daily credited energy
-- `usage-history.json`: 30 days of aggregate usage, quota, and cost history
-- user preferences: on-screen pet visibility, size, lock, click-through, and last position
+Species, stage, rarity, energy, bond, collection, rewards, and on-screen pet
+preferences stay on the Mac. Aggregate usage history is retained for 30 days.
+If progress data is damaged, the app attempts recovery from retained local
+copies.
 
-Companion and reward state contain no provider names or raw token totals. No
-prompt, response, authentication token, cookie, or account secret is stored in
-the growth ledger. There is no analytics or server telemetry.
+Pet state contains no provider names or raw token totals. Prompts, responses,
+authentication tokens, cookies, and account secrets are not stored. There is
+no analytics or server telemetry.
+
+Because this is a local app without a game server or account, progress data is
+not a strong anti-cheat boundary. Consistency checks and recovery protect
+against accidental damage and duplicate credit; they cannot guarantee that the
+device owner will not intentionally modify local data.
