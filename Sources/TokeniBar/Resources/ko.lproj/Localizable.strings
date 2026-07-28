@@ -311,4 +311,5 @@
 "diagnostics.report" = "민감정보가 제거된 진단 보고서";
 "diagnostics.copy" = "진단 정보 복사";
 "diagnostics.copied" = "복사됨";
-"diagnostics.privacy" = "프롬프트, 응답, 인증정보, 쿠키, 제공자 상세 내용과 파일 경로는 제외됩니다.";
+"diagnostics.includeTokenDetails" = "토큰 합계와 모델 ID 포함";
+"diagnostics.privacy" = "토큰 합계와 모델 ID는 기본적으로 제외됩니다. 프롬프트, 응답, 인증정보, 쿠키와 파일 경로는 항상 제외됩니다.";

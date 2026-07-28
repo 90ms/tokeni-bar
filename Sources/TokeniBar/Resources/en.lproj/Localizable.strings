@@ -311,4 +311,5 @@
 "diagnostics.report" = "Sanitized diagnostics report";
 "diagnostics.copy" = "Copy Diagnostics";
 "diagnostics.copied" = "Copied";
-"diagnostics.privacy" = "Prompts, responses, credentials, cookies, provider details, and file paths are excluded.";
+"diagnostics.includeTokenDetails" = "Include token totals and model IDs";
+"diagnostics.privacy" = "Token totals and model IDs are excluded by default. Prompts, responses, credentials, cookies, and file paths are always excluded.";

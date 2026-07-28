@@ -34,6 +34,7 @@ public enum ProviderDiagnosticReportBuilder {
         appBuild: String,
         osVersion: String,
         snapshots: [ProviderSnapshot],
+        includeTokenDetails: Bool = false,
         generatedAt: Date = .now) -> String
     {
         var lines = [
@@ -59,18 +60,20 @@ public enum ProviderDiagnosticReportBuilder {
             lines.append("reset_credit_returned_count=\(snapshot.quotaResetCredits?.credits.count ?? 0)")
             lines.append(
                 "account_token_issue=\(snapshot.accountTokenUsageIssue?.rawValue ?? "none")")
-            self.append(
-                snapshot.accountTokenUsage?.todayTokens,
-                as: "account_token_today",
-                to: &lines)
-            self.append(
-                snapshot.accountTokenUsage?.currentMonthTokens,
-                as: "account_token_current_month",
-                to: &lines)
-            self.append(
-                snapshot.accountTokenUsage?.lifetimeTokens,
-                as: "account_token_lifetime",
-                to: &lines)
+            if includeTokenDetails {
+                self.append(
+                    snapshot.accountTokenUsage?.todayTokens,
+                    as: "account_token_today",
+                    to: &lines)
+                self.append(
+                    snapshot.accountTokenUsage?.currentMonthTokens,
+                    as: "account_token_current_month",
+                    to: &lines)
+                self.append(
+                    snapshot.accountTokenUsage?.lifetimeTokens,
+                    as: "account_token_lifetime",
+                    to: &lines)
+            }
 
             for (index, window) in snapshot.quotaWindows.enumerated() {
                 let prefix = "quota_\(index)"
@@ -82,25 +85,42 @@ public enum ProviderDiagnosticReportBuilder {
                 }
             }
 
-            if let usage = snapshot.tokenUsage {
-                lines.append("token_model=\(usage.modelID.map(DiagnosticSanitizer.scalar) ?? "unknown")")
-                lines.append("token_total=\(usage.totalTokens)")
-                self.append(usage.inputTokens, as: "token_input", to: &lines)
-                self.append(usage.cacheCreationInputTokens, as: "token_cache_creation", to: &lines)
-                self.append(usage.cacheCreation1hInputTokens, as: "token_cache_creation_1h", to: &lines)
-                self.append(usage.cachedInputTokens, as: "token_cached_input", to: &lines)
-                self.append(usage.outputTokens, as: "token_output", to: &lines)
-                self.append(usage.reasoningTokens, as: "token_reasoning", to: &lines)
+            if includeTokenDetails {
+                lines.append("token_details=included")
+                if let usage = snapshot.tokenUsage {
+                    lines.append(
+                        "token_model=\(usage.modelID.map(DiagnosticSanitizer.scalar) ?? "unknown")")
+                    lines.append("token_total=\(usage.totalTokens)")
+                    self.append(usage.inputTokens, as: "token_input", to: &lines)
+                    self.append(
+                        usage.cacheCreationInputTokens,
+                        as: "token_cache_creation",
+                        to: &lines)
+                    self.append(
+                        usage.cacheCreation1hInputTokens,
+                        as: "token_cache_creation_1h",
+                        to: &lines)
+                    self.append(usage.cachedInputTokens, as: "token_cached_input", to: &lines)
+                    self.append(usage.outputTokens, as: "token_output", to: &lines)
+                    self.append(usage.reasoningTokens, as: "token_reasoning", to: &lines)
+                } else {
+                    lines.append("token_model=none")
+                    lines.append("token_total=none")
+                }
             } else {
-                lines.append("token_model=none")
-                lines.append("token_total=none")
+                lines.append("token_details=excluded")
             }
 
             let costModels = snapshot.costEstimate?.modelIDs
                 .map(DiagnosticSanitizer.scalar)
                 .filter { $0 != "redacted" }
                 .sorted() ?? []
-            lines.append("cost_models=\(costModels.isEmpty ? "none" : costModels.joined(separator: ","))")
+            if includeTokenDetails {
+                lines.append(
+                    "cost_models=\(costModels.isEmpty ? "none" : costModels.joined(separator: ","))")
+            } else {
+                lines.append("cost_model_count=\(costModels.count)")
+            }
         }
 
         return lines.joined(separator: "\n")

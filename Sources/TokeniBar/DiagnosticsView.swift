@@ -5,6 +5,7 @@ import SwiftUI
 struct DiagnosticsView: View {
     @ObservedObject var store: UsageStore
     @State private var copied = false
+    @State private var includeTokenDetails = false
 
     private var report: String {
         let info = Bundle.main.infoDictionary ?? [:]
@@ -13,7 +14,8 @@ struct DiagnosticsView: View {
             appVersion: info["CFBundleShortVersionString"] as? String ?? "unknown",
             appBuild: info["CFBundleVersion"] as? String ?? "unknown",
             osVersion: ProcessInfo.processInfo.operatingSystemVersionString,
-            snapshots: self.store.snapshots)
+            snapshots: self.store.snapshots,
+            includeTokenDetails: self.includeTokenDetails)
     }
 
     var body: some View {
@@ -26,6 +28,13 @@ struct DiagnosticsView: View {
                 .font(.system(.caption, design: .monospaced))
                 .textSelection(.enabled)
                 .accessibilityLabel(AppLocalization.string("diagnostics.report"))
+
+            Toggle(
+                AppLocalization.string("diagnostics.includeTokenDetails"),
+                isOn: self.$includeTokenDetails)
+                .onChange(of: self.includeTokenDetails) { _, _ in
+                    self.copied = false
+                }
 
             HStack {
                 Text(AppLocalization.string("diagnostics.privacy"))

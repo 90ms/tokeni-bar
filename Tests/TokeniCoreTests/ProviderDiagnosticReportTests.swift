@@ -61,6 +61,7 @@ struct ProviderDiagnosticReportTests {
             appBuild: "45",
             osVersion: "macOS 15.5",
             snapshots: [snapshot],
+            includeTokenDetails: true,
             generatedAt: Date(timeIntervalSince1970: 1_700_000_060))
 
         #expect(report.contains("id=custom_provider"))
@@ -83,6 +84,44 @@ struct ProviderDiagnosticReportTests {
         #expect(!report.localizedCaseInsensitiveContains("cookie=value"))
         #expect(!report.localizedCaseInsensitiveContains("authorization:"))
         #expect(!report.contains("99"))
+    }
+
+    @Test
+    func reportExcludesTokenTotalsAndModelIDsByDefault() {
+        let descriptor = ProviderDescriptor(
+            id: .codex,
+            displayName: "Codex",
+            shortName: "Codex",
+            systemImage: "terminal",
+            capabilities: .init(supportsTokenUsage: true))
+        let snapshot = ProviderSnapshot(
+            descriptor: descriptor,
+            availability: .available,
+            tokenUsage: TokenUsage(
+                label: "Today",
+                modelID: "private-model-id",
+                inputTokens: 123_456,
+                totalTokens: 987_654),
+            accountTokenUsage: AccountTokenUsageSummary(
+                todayTokens: 111_111,
+                currentMonthTokens: 222_222,
+                lifetimeTokens: 333_333,
+                localDate: "2026-07-28"))
+
+        let report = ProviderDiagnosticReportBuilder.text(
+            appName: "Tokeni Bar",
+            appVersion: "1.2.3",
+            appBuild: "45",
+            osVersion: "macOS",
+            snapshots: [snapshot])
+
+        #expect(report.contains("token_details=excluded"))
+        #expect(!report.contains("private-model-id"))
+        #expect(!report.contains("123456"))
+        #expect(!report.contains("987654"))
+        #expect(!report.contains("111111"))
+        #expect(!report.contains("222222"))
+        #expect(!report.contains("333333"))
     }
 
     @Test
