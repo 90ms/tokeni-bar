@@ -64,13 +64,15 @@ struct TokeniBarApp: App {
     private var menuBarLabel: some View {
         switch self.store.menuBarDisplayMode {
         case .iconOnly:
-            MenuBarAppIcon(
+            MenuBarStatusIcon(
+                systemName: "chart.bar.xaxis",
                 isActive: self.store.showsActiveSession,
                 animationPulse: self.store.activityAnimationPulse,
                 showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
         case .lowestRemaining:
             let remaining = self.store.menuBarRemainingPercent
-            MenuBarAppIcon(
+            MenuBarStatusIcon(
+                systemName: self.menuBarIcon(for: remaining),
                 isActive: self.store.showsActiveSession,
                 animationPulse: self.store.activityAnimationPulse,
                 showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
@@ -80,7 +82,8 @@ struct TokeniBarApp: App {
                 Text(AppLocalization.string("app.menuName"))
             }
         case .monthlyCost:
-            MenuBarAppIcon(
+            MenuBarStatusIcon(
+                systemName: "dollarsign.circle",
                 isActive: self.store.showsActiveSession,
                 animationPulse: self.store.activityAnimationPulse,
                 showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
@@ -91,7 +94,8 @@ struct TokeniBarApp: App {
             }
         case .selectedProvider:
             let remaining = self.store.selectedMenuBarProviderRemainingPercent
-            MenuBarAppIcon(
+            MenuBarStatusIcon(
+                systemName: self.menuBarIcon(for: remaining),
                 isActive: self.store.activityAnimationsEnabled
                     && self.store.isActive(self.store.selectedMenuBarProviderID),
                 animationPulse: self.store.activityAnimationPulse,
@@ -108,20 +112,27 @@ struct TokeniBarApp: App {
             }
         case .tokeni:
             if self.store.companionEnabled {
-                MenuBarAppIcon(
+                MenuBarStatusIcon(
+                    systemName: "bolt.horizontal.circle",
                     isActive: self.store.showsActiveSession,
                     animationPulse: self.store.activityAnimationPulse,
                     showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
                 Text(AppLocalization.string(
                     "companion.behavior.short.\(self.store.companionBehavior.rawValue)"))
             } else {
-                MenuBarAppIcon(
+                MenuBarStatusIcon(
+                    systemName: "chart.bar.xaxis",
                     isActive: self.store.showsActiveSession,
                     animationPulse: self.store.activityAnimationPulse,
                     showsCompanionBadge: false)
                 Text(AppLocalization.string("app.menuName"))
             }
         }
+    }
+
+    private func menuBarIcon(for remaining: Double?) -> String {
+        guard let remaining else { return "chart.bar.xaxis" }
+        return remaining < 10 ? "exclamationmark.triangle.fill" : "chart.bar.xaxis"
     }
 }
 
@@ -146,25 +157,24 @@ private final class WindowFocusNSView: NSView {
     }
 }
 
-private struct MenuBarAppIcon: View {
+private struct MenuBarStatusIcon: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let systemName: String
     let isActive: Bool
     let animationPulse: Int
     let showsCompanionBadge: Bool
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Image(nsImage: NSApplication.shared.applicationIconImage)
-                .resizable()
-                .interpolation(.high)
-                .frame(width: 17, height: 17)
-                .scaleEffect(
-                    self.isActive && !self.reduceMotion && self.animationPulse.isMultiple(of: 2)
-                        ? 0.9
-                        : 1)
-                .animation(
-                    self.reduceMotion ? nil : .easeInOut(duration: 0.25),
-                    value: self.animationPulse)
+            Group {
+                if self.isActive, !self.reduceMotion {
+                    Image(systemName: "waveform")
+                        .symbolEffect(.pulse, value: self.animationPulse)
+                } else {
+                    Image(systemName: self.isActive ? "waveform" : self.systemName)
+                }
+            }
+            .frame(width: 15, height: 15)
 
             if self.showsCompanionBadge {
                 Circle()
@@ -178,7 +188,7 @@ private struct MenuBarAppIcon: View {
                         "companion.action.ready"))
             }
         }
-            .frame(width: 18, height: 18)
+            .frame(width: 17, height: 17)
             .accessibilityLabel(self.accessibilityLabel)
     }
 
