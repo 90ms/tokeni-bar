@@ -3,87 +3,12 @@ import SwiftUI
 
 @main
 struct TokeniBarApp: App {
-    @Environment(\.openSettings) private var openSettings
     @StateObject private var store = UsageStore()
     @StateObject private var companionOverlayController = CompanionOverlayController()
 
     var body: some Scene {
         MenuBarExtra {
-            VStack(spacing: 0) {
-                HStack {
-                    Text(AppLocalization.string("app.title"))
-                        .font(.headline)
-                    Spacer()
-                    if self.store.isRefreshing {
-                        ProgressView().controlSize(.small)
-                    }
-                    Button {
-                        Task { await self.store.refresh(forceProviderReload: true) }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .buttonStyle(.plain)
-                    .help(AppLocalization.string("action.refresh"))
-                }
-                .padding(.bottom, 8)
-
-                if self.store.companionEnabled {
-                    CompanionCard(
-                        store: self.store,
-                        compact: self.store.compactModeEnabled)
-                    Divider()
-                        .padding(.vertical, 8)
-                }
-
-                if self.store.snapshots.isEmpty {
-                    ContentUnavailableView(
-                        AppLocalization.string("empty.title"),
-                        systemImage: "chart.bar",
-                        description: Text(AppLocalization.string("empty.description")))
-                    .frame(height: 130)
-                } else {
-                    ForEach(Array(self.store.snapshots.enumerated()), id: \.element.id) { index, snapshot in
-                        if index > 0 { Divider() }
-                        ProviderRow(
-                            snapshot: snapshot,
-                            costCurrency: self.store.costDisplayCurrency,
-                            exchangeRate: self.store.exchangeRateQuote,
-                            compact: self.store.compactModeEnabled,
-                            isActive: self.store.activityAnimationsEnabled
-                                && self.store.isActive(snapshot.id))
-                    }
-                }
-
-                if let result = self.store.appUpdateResult, result.isUpdateAvailable {
-                    Divider()
-                        .padding(.vertical, 6)
-                    Link(destination: result.latestRelease.pageURL) {
-                        Label(
-                            AppLocalization.format(
-                                "updates.menuAvailable",
-                                result.latestRelease.version.description),
-                            systemImage: "arrow.down.circle")
-                    }
-                    .font(.caption)
-                }
-
-                Divider()
-                    .padding(.vertical, 8)
-                HStack {
-                    Button(AppLocalization.string("action.settings")) {
-                        self.openSettings()
-                        Task { @MainActor in
-                            await Task.yield()
-                            NSApplication.shared.activate(ignoringOtherApps: true)
-                        }
-                    }
-                    Spacer()
-                    Button(AppLocalization.string("action.quit")) { NSApplication.shared.terminate(nil) }
-                }
-            }
-            .padding(12)
-            .frame(width: self.store.compactModeEnabled ? 300 : 340)
-            .onAppear { self.store.start() }
+            MenuPopoverView(store: self.store)
         } label: {
             self.menuBarLabel
                 .onAppear {
