@@ -203,6 +203,27 @@ struct CompanionGameEngineTests {
         #expect(state.growthDateKey == "2027-01-17")
     }
 
+    @Test("A delayed usage award is added to the confirmation day's energy")
+    func delayedUsageAwardSettlesToday() throws {
+        let confirmedAt = try #require(self.date("2027-01-16T12:00:00Z"))
+        let engine = CompanionGameEngine(calendar: self.calendar)
+        var state = CompanionGameState(
+            growthEnergy: 100,
+            growthDateKey: "2027-01-15",
+            growthEarnedToday: 100)
+        let award = GrowthEnergyAward(
+            dateKey: "2027-01-15",
+            energy: 50,
+            createdAt: confirmedAt)
+
+        _ = engine.apply(award: award, to: &state)
+
+        #expect(state.growthDateKey == "2027-01-16")
+        #expect(state.growthCarriedToday == 20)
+        #expect(state.growthEarnedToday == 50)
+        #expect(state.growthEnergy == 70)
+    }
+
     @Test("Energy balance never exceeds the two-day cap")
     func energyCap() throws {
         let now = try #require(self.date("2027-01-15T12:00:00Z"))

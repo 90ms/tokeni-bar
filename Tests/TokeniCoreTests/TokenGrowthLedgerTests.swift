@@ -79,6 +79,50 @@ struct TokenGrowthLedgerTests {
         #expect(GrowthLocalDate.key(for: usageDate, calendar: self.calendar) == "2026-07-27")
     }
 
+    @Test("A delayed daily total only adds energy beyond local session credit")
+    func delayedDailyBucketReconcilesLocalCredit() throws {
+        let usageDate = try #require(self.date("2026-07-27T12:00:00Z"))
+        let confirmedAt = try #require(self.date("2026-07-28T12:00:00Z"))
+        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        var state = TokenGrowthLedgerState()
+
+        _ = engine.process(
+            observations: [
+                self.session(
+                    "local",
+                    tokens: 10_000,
+                    at: usageDate,
+                    providerID: .codex),
+            ],
+            at: usageDate,
+            in: &state)
+        let localAward = engine.process(
+            observations: [
+                self.session(
+                    "local",
+                    tokens: 60_000,
+                    at: usageDate,
+                    providerID: .codex),
+            ],
+            at: usageDate,
+            in: &state)
+        let confirmedAward = engine.process(
+            observations: [
+                GrowthUsageObservation.daily(
+                    providerID: .codex,
+                    dateKey: "2026-07-27",
+                    totalTokens: 100_000,
+                    observedAt: confirmedAt),
+            ],
+            at: confirmedAt,
+            in: &state)
+
+        #expect(localAward.map(\.energy) == [50])
+        #expect(confirmedAward.map(\.energy) == [24])
+        #expect(state.dayCredits.first?.awardedEnergy == 74)
+        #expect(state.providerDayTotals.first?.tokens == 100_000)
+    }
+
     @Test("Daily buckets older than the late window are ignored")
     func rejectsExpiredDailyBucket() throws {
         let observedAt = try #require(self.date("2026-07-28T12:00:00Z"))
@@ -253,10 +297,11 @@ struct TokenGrowthLedgerTests {
     private func session(
         _ id: String,
         tokens: Int64,
-        at date: Date) -> GrowthUsageObservation
+        at date: Date,
+        providerID: ProviderID = .gemini) -> GrowthUsageObservation
     {
         GrowthUsageObservation(
-            providerID: .gemini,
+            providerID: providerID,
             scope: .session,
             scopeID: id,
             totalTokens: tokens,
