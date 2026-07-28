@@ -8,114 +8,99 @@ struct CompanionCard: View {
     var compact = false
 
     var body: some View {
-        HStack(spacing: 12) {
-            ByteBotTransitionView(
-                speciesID: self.store.companionState.speciesID,
-                stage: self.store.companionStage,
-                rarity: self.store.companionState.rarity,
-                behavior: self.store.companionBehavior,
-                dimension: self.compact ? 58 : 72,
-                animationsEnabled: self.store.companionAnimationsEnabled)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                ByteBotTransitionView(
+                    speciesID: self.store.companionState.speciesID,
+                    stage: self.store.companionStage,
+                    rarity: self.store.companionState.rarity,
+                    behavior: self.store.companionBehavior,
+                    dimension: self.compact ? 50 : 62,
+                    animationsEnabled: self.store.companionAnimationsEnabled)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(self.companionName)
+                        .font(.headline)
+
+                    HStack(spacing: 5) {
+                        self.metadataBadge(AppLocalization.string(
+                            "companion.stage.\(self.store.companionStage.rawValue)"))
+                        if let rarity = self.store.companionState.rarity {
+                            self.metadataBadge(AppLocalization.string(
+                                "companion.rarity.\(rarity.rawValue)"))
+                        }
+                    }
+
+                    if !self.compact {
+                        Text(self.companionSubtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+
+                Spacer(minLength: 4)
+
+                Button {
+                    self.openCompanionCollection()
+                } label: {
+                    Image(systemName: "square.grid.3x3.fill")
+                }
+                .buttonStyle(.borderless)
+                .help(AppLocalization.string("companion.collection.open"))
+                .accessibilityLabel(AppLocalization.string(
+                    "companion.collection.open"))
+            }
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
-                    Text(self.companionName)
-                        .font(.headline)
-                    Text(AppLocalization.string(
-                        "companion.stage.\(self.store.companionStage.rawValue)"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if let rarity = self.store.companionState.rarity {
-                        Text(AppLocalization.string(
-                            "companion.rarity.\(rarity.rawValue)"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    if self.store.companionStage == .adult {
+                        Text(AppLocalization.format(
+                            "companion.progress.adult",
+                            self.store.companionState.bondEnergy,
+                            self.store.companionState.growthEnergy))
+                    } else if let nextEnergy = self.store.companionNextStageEnergy {
+                        Text(AppLocalization.format(
+                            "companion.progress",
+                            self.store.companionState.growthEnergy,
+                            nextEnergy))
                     }
+
                     Spacer()
-                }
 
-                Text(self.companionSubtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if self.store.companionStage == .adult {
                     Text(AppLocalization.format(
-                        "companion.progress.adult",
-                        self.store.companionState.bondEnergy,
-                        self.store.companionState.growthEnergy))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                } else if let nextEnergy = self.store.companionNextStageEnergy {
+                        "companion.today.short",
+                        self.store.companionTodayEnergy))
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+
+                if self.store.companionStage != .adult {
                     ProgressView(value: self.store.companionStageProgress)
-                    Text(AppLocalization.format(
-                        "companion.progress",
-                        self.store.companionState.growthEnergy,
-                        nextEnergy))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
                 }
-                Text(AppLocalization.format(
-                    "companion.today.short",
-                    self.store.companionTodayEnergy))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
             }
 
-            Button {
-                self.store.patCompanion()
-            } label: {
-                Image(systemName: "hand.point.up.left.fill")
-            }
-            .buttonStyle(.borderless)
-            .help(AppLocalization.string("companion.pat"))
-            .accessibilityLabel(AppLocalization.string("companion.pat"))
+            HStack(spacing: 8) {
+                self.primaryActionButton
 
-            Button {
-                self.openWindow(id: "companion-collection")
-                Task { @MainActor in
-                    await Task.yield()
-                    NSApplication.shared.activate(ignoringOtherApps: true)
-                }
-            } label: {
-                Image(systemName: "square.grid.3x3.fill")
-            }
-            .buttonStyle(.borderless)
-            .help(AppLocalization.string("companion.collection.open"))
+                Spacer()
 
-            switch self.store.companionStage {
-            case .egg:
                 Button {
-                    self.store.hatchCompanion()
+                    self.store.patCompanion()
                 } label: {
-                    Image(systemName: "sparkles")
+                    Image(systemName: "hand.point.up.left.fill")
                 }
-                .buttonStyle(.borderless)
-                .disabled(!self.store.canPerformCompanionAction)
-                .help(AppLocalization.string("companion.hatch.action"))
-            case .hatchling, .junior:
-                Button {
-                    self.store.evolveCompanion()
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                }
-                .buttonStyle(.borderless)
-                .disabled(!self.store.canPerformCompanionAction)
-                .help(AppLocalization.string("companion.evolve.action"))
-            case .adult:
-                Button {
-                    self.confirmsCompletion = true
-                } label: {
-                    Image(systemName: "archivebox.fill")
-                }
-                .buttonStyle(.borderless)
-                .disabled(!self.store.canPerformCompanionAction)
-                .help(AppLocalization.string("companion.complete.action"))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help(AppLocalization.string("companion.pat"))
+                .accessibilityLabel(AppLocalization.string("companion.pat"))
             }
         }
-        .padding(8)
-        .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: 10))
+        .padding(10)
+        .background(
+            .quaternary.opacity(0.5),
+            in: RoundedRectangle(cornerRadius: 10))
         .confirmationDialog(
             AppLocalization.string("companion.complete.confirm.title"),
             isPresented: self.$confirmsCompletion,
@@ -142,6 +127,62 @@ struct CompanionCard: View {
                 reveal: reveal,
                 animationsEnabled: self.store.companionAnimationsEnabled,
                 dismiss: self.store.dismissCompanionReveal)
+        }
+    }
+
+    @ViewBuilder
+    private var primaryActionButton: some View {
+        switch self.store.companionStage {
+        case .egg:
+            Button {
+                self.store.hatchCompanion()
+            } label: {
+                Label(
+                    AppLocalization.string("companion.hatch.action"),
+                    systemImage: "sparkles")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(!self.store.canPerformCompanionAction)
+        case .hatchling, .junior:
+            Button {
+                self.store.evolveCompanion()
+            } label: {
+                Label(
+                    AppLocalization.string("companion.evolve.action"),
+                    systemImage: "arrow.up.circle.fill")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(!self.store.canPerformCompanionAction)
+        case .adult:
+            Button {
+                self.confirmsCompletion = true
+            } label: {
+                Label(
+                    AppLocalization.string("companion.complete.action"),
+                    systemImage: "archivebox.fill")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(!self.store.canPerformCompanionAction)
+        }
+    }
+
+    private func metadataBadge(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(.quaternary, in: Capsule())
+    }
+
+    private func openCompanionCollection() {
+        self.openWindow(id: "companion-collection")
+        Task { @MainActor in
+            await Task.yield()
+            NSApplication.shared.activate(ignoringOtherApps: true)
         }
     }
 
