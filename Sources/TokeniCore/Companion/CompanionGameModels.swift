@@ -222,12 +222,12 @@ public struct CompanionPityState: Codable, Hashable, Sendable {
 
 public struct CompanionGameRules: Hashable, Sendable {
     public static let standard = CompanionGameRules(
-        newEggCost: 40,
-        hatchCost: 60,
-        juniorEvolutionCost: 100,
-        adultEvolutionCost: 160,
-        dailyCarryoverRate: 0.20,
-        maximumEnergyBalance: 320,
+        newEggCost: 300,
+        hatchCost: 500,
+        juniorEvolutionCost: 800,
+        adultEvolutionCost: 1_400,
+        dailyCarryoverRate: 1,
+        maximumEnergyBalance: 100_000,
         duplicateSpeciesPityHatches: 5)
 
     public let newEggCost: Int

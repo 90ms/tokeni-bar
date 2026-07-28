@@ -27,8 +27,8 @@ struct CompanionGameEngineTests {
 
         #expect(state.stage == .egg)
         #expect(state.rarity == nil)
-        #expect(state.growthEnergy == 320)
-        #expect(events == [.energyApplied(320)])
+        #expect(state.growthEnergy == 850)
+        #expect(events == [.energyApplied(850)])
     }
 
     @Test("The same growth award is idempotent")
@@ -54,7 +54,7 @@ struct CompanionGameEngineTests {
         let now = try #require(self.date("2027-01-15T12:00:00Z"))
         let engine = CompanionGameEngine(calendar: self.calendar)
         var state = CompanionGameState(
-            growthEnergy: 80,
+            growthEnergy: 800,
             growthDateKey: "2027-01-15")
 
         let events = try engine.hatch(
@@ -65,8 +65,8 @@ struct CompanionGameEngineTests {
 
         #expect(state.stage == .hatchling)
         #expect(state.rarity == .rare)
-        #expect(state.growthEnergy == 20)
-        #expect(state.growthSpentToday == 60)
+        #expect(state.growthEnergy == 300)
+        #expect(state.growthSpentToday == 500)
         #expect(events.contains {
             if case .hatched(
                 speciesID: .bytebot,
@@ -109,7 +109,7 @@ struct CompanionGameEngineTests {
             lastEncounteredAt: .now,
             encounterCount: 6)
         var state = CompanionGameState(
-            growthEnergy: 60,
+            growthEnergy: 500,
             growthDateKey: GrowthLocalDate.key(
                 for: .now,
                 calendar: self.calendar),
@@ -144,36 +144,36 @@ struct CompanionGameEngineTests {
             speciesID: .bytebot,
             stage: .hatchling,
             rarity: .rare,
-            growthEnergy: 260,
+            growthEnergy: 2_200,
             growthDateKey: "2027-01-15")
 
         _ = try engine.evolve(unitValue: 0.10, at: now, in: &state)
         #expect(state.stage == .junior)
         #expect(state.speciesID == .bytebot)
         #expect(state.rarity == .rare)
-        #expect(state.growthEnergy == 160)
+        #expect(state.growthEnergy == 1_400)
 
         _ = try engine.evolve(unitValue: 0.90, at: now, in: &state)
         #expect(state.stage == .adult)
         #expect(state.speciesID == .bytebot)
         #expect(state.rarity == .epic)
         #expect(state.growthEnergy == 0)
-        #expect(state.growthSpentToday == 260)
+        #expect(state.growthSpentToday == 2_200)
     }
 
     @Test("Insufficient energy leaves the egg unchanged")
     func insufficientEnergy() {
         let engine = CompanionGameEngine(calendar: self.calendar)
         var state = CompanionGameState(
-            growthEnergy: 59,
+            growthEnergy: 499,
             growthDateKey: GrowthLocalDate.key(
                 for: .now,
                 calendar: self.calendar))
         let original = state
 
         #expect(throws: CompanionGameError.insufficientEnergy(
-            required: 60,
-            available: 59))
+            required: 500,
+            available: 499))
         {
             try engine.hatch(
                 speciesUnitValue: 0,
@@ -183,7 +183,7 @@ struct CompanionGameEngineTests {
         #expect(state == original)
     }
 
-    @Test("Daily rollover carries twenty percent for every elapsed day")
+    @Test("Daily rollover preserves unspent energy across elapsed days")
     func dailyCarryover() throws {
         let first = try #require(self.date("2027-01-15T12:00:00Z"))
         let third = try #require(self.date("2027-01-17T12:00:00Z"))
@@ -196,8 +196,8 @@ struct CompanionGameEngineTests {
 
         engine.rollOverEnergyIfNeeded(at: third, in: &state)
 
-        #expect(state.growthEnergy == 12)
-        #expect(state.growthCarriedToday == 12)
+        #expect(state.growthEnergy == 300)
+        #expect(state.growthCarriedToday == 300)
         #expect(state.growthEarnedToday == 0)
         #expect(state.growthSpentToday == 0)
         #expect(state.growthDateKey == "2027-01-17")
@@ -219,17 +219,17 @@ struct CompanionGameEngineTests {
         _ = engine.apply(award: award, to: &state)
 
         #expect(state.growthDateKey == "2027-01-16")
-        #expect(state.growthCarriedToday == 20)
+        #expect(state.growthCarriedToday == 100)
         #expect(state.growthEarnedToday == 50)
-        #expect(state.growthEnergy == 70)
+        #expect(state.growthEnergy == 150)
     }
 
-    @Test("Energy balance never exceeds the two-day cap")
+    @Test("Energy balance never exceeds the safety cap")
     func energyCap() throws {
         let now = try #require(self.date("2027-01-15T12:00:00Z"))
         let engine = CompanionGameEngine(calendar: self.calendar)
         var state = CompanionGameState(
-            growthEnergy: 300,
+            growthEnergy: 99_950,
             growthDateKey: "2027-01-15")
 
         _ = engine.apply(
@@ -239,8 +239,8 @@ struct CompanionGameEngineTests {
                 createdAt: now),
             to: &state)
 
-        #expect(state.growthEnergy == 320)
-        #expect(state.growthEarnedToday == 20)
+        #expect(state.growthEnergy == 100_000)
+        #expect(state.growthEarnedToday == 50)
     }
 
     @Test("Adult pity guarantees the promised minimum rarity")
@@ -257,7 +257,7 @@ struct CompanionGameEngineTests {
                 speciesID: .bytebot,
                 stage: .junior,
                 rarity: .normal,
-                growthEnergy: 160,
+                growthEnergy: 1_400,
                 growthDateKey: dateKey,
                 pity: pity)
             _ = try engine.evolve(unitValue: 0, in: &state)
@@ -273,7 +273,7 @@ struct CompanionGameEngineTests {
             speciesID: .bytebot,
             stage: .adult,
             rarity: .normal,
-            growthEnergy: 120,
+            growthEnergy: 900,
             growthDateKey: dateKey)
 
         let events = try engine.completeGeneration(
@@ -285,13 +285,13 @@ struct CompanionGameEngineTests {
         #expect(state.speciesID == .cachecat)
         #expect(state.rarity == .normal)
         #expect(state.generationNumber == 2)
-        #expect(state.growthEnergy == 20)
-        #expect(state.growthSpentToday == 100)
+        #expect(state.growthEnergy == 100)
+        #expect(state.growthSpentToday == 800)
         #expect(state.pity.adultsWithoutRareOrHigher == 1)
         #expect(state.collection.completedCount(for: .normal) == 1)
         #expect(state.collection.archivedGenerations.count == 1)
-        #expect(engine.actionCost(for: .adult) == 100)
-        #expect(events.contains(.energySpent(100)))
+        #expect(engine.actionCost(for: .adult) == 800)
+        #expect(events.contains(.energySpent(800)))
         #expect(events.contains {
             if case .hatched(
                 speciesID: .cachecat,
@@ -313,14 +313,14 @@ struct CompanionGameEngineTests {
             speciesID: .bytebot,
             stage: .adult,
             rarity: .normal,
-            growthEnergy: 100,
+            growthEnergy: 800,
             growthDateKey: dateKey)
 
         for index in 0..<25 {
             state.speciesID = .bytebot
             state.stage = .adult
             state.rarity = index == 24 ? .legendary : .normal
-            state.growthEnergy = 100
+            state.growthEnergy = 800
             _ = try engine.completeGeneration(
                 speciesUnitValue: 0,
                 rarityUnitValue: 0,
@@ -363,7 +363,7 @@ struct CompanionGameEngineTests {
             speciesID: .bytebot,
             stage: .junior,
             rarity: .rare,
-            growthEnergy: 75,
+            growthEnergy: 375,
             growthDateKey: dateKey,
             collection: CompanionCollection(forms: [form]),
             pity: CompanionPityState(adultsWithoutEpicOrHigher: 4))
@@ -372,7 +372,7 @@ struct CompanionGameEngineTests {
 
         #expect(state.stage == .egg)
         #expect(state.rarity == nil)
-        #expect(state.growthEnergy == 35)
+        #expect(state.growthEnergy == 75)
         #expect(state.pity.adultsWithoutEpicOrHigher == 4)
         #expect(state.collection.forms == [form])
     }
