@@ -41,7 +41,7 @@ brew install --formula tokeni-bar
 
 | Area | Information |
 |---|---|
-| Menu bar | App icon, lowest quota, selected provider, monthly cost or pet status, and a growth-ready badge |
+| Menu bar | Native monochrome status icon, lowest quota, selected provider, monthly cost or pet status, and a growth-ready badge |
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Low remaining quota and monthly budget |
@@ -83,6 +83,12 @@ growth by provider and shows their combined total, today's energy target, and th
 additional tokens needed for the next energy point. CLIs without a complete
 daily total show only observed session or lifetime increases. Providers that
 do not yet have a trustworthy baseline remain **Waiting for data**.
+
+Codex daily account buckets combine usage from every PC signed into the same
+account, but the current-day bucket may not be available yet. Tokeni Bar accepts
+the newest confirmed bucket for up to three days, calculates growth for its
+original usage date, and settles the energy on the day it is confirmed. The
+collection shows the usage date plus **Settled today** or **Today pending**.
 
 ### 2. Four life stages
 
@@ -188,9 +194,9 @@ Open the grid button in the menu or choose
 
 ## Menu bar and on-screen pet
 
-Every menu-bar display mode uses the Tokeni Bar app icon. A red badge appears
-when there is enough energy to hatch an egg or evolve a Hatchling or Junior.
-Adult journey completion is not included in this badge.
+Every menu-bar display mode uses a native monochrome status icon. A red badge
+appears when there is enough energy to hatch an egg or evolve a Hatchling or
+Junior. Adult journey completion is not included in this badge.
 
 The menu popover keeps its header and history, settings, and quit actions
 fixed while the center content scrolls. Each provider card leads with its
@@ -212,7 +218,7 @@ panel above other apps.
 
 | Provider | Account quota | Token and cost display | Pet growth source |
 |---|---|---|---|
-| Codex | Weekly and model-scoped limits; reset credits | Daily, month, and lifetime tokens; reference cost | Confirmed daily total or session increases |
+| Codex | Weekly and model-scoped limits; reset credits | Latest confirmed daily, month, and lifetime tokens; aggregation state; reference cost | Confirmed daily totals arriving within three days, or session increases |
 | Claude Code | 5-hour, weekly, and model-scoped limits | Local daily tokens; cache-aware reference cost | Confirmed daily total |
 | Grok | Not available | Current local session context | Session increases after the first observation |
 | Gemini CLI | Not available | Latest local session tokens | Session increases after the first observation |

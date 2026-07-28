@@ -41,6 +41,11 @@ session or lifetime increase observed while Tokeni Bar is running. A provider
 without a trustworthy value says **Waiting for data** instead of showing a
 misleading zero.
 
+Codex account daily totals may arrive the next day. A confirmed value within
+the last three days is calculated against its original usage date and paid into
+action energy on the day it is confirmed. Provider rows show the usage date
+along with settled-today or today-pending status.
+
 ## Life stages
 
 | Action | Energy spent |
@@ -177,9 +182,9 @@ evolution odds, or pity.
 
 ## Menu bar and on-screen display
 
-The menu-bar app icon shows a red badge when action energy is sufficient to
-hatch an egg or evolve a Hatchling or Junior. Adult journey completion remains
-a separate choice and is not included in this badge.
+The native monochrome menu-bar status icon shows a red badge when action energy
+is sufficient to hatch an egg or evolve a Hatchling or Junior. Adult journey
+completion remains a separate choice and is not included in this badge.
 
 Enable **Settings → Tokeni → Show pet on screen** to place the pet in a
 transparent floating panel. Size, position lock, and click-through behavior are
@@ -193,7 +198,8 @@ Only token counters with known scope and reset behavior grant growth. Missing,
 stale, or incompatible data remains unavailable instead of becoming guessed
 energy.
 
-- Complete Codex and Claude daily totals can credit their confirmed date.
+- Complete Codex and Claude daily totals credit their confirmed usage date.
+  A total confirmed up to three days late pays energy on the confirmation day.
 - Gemini and Grok session totals and OpenCode lifetime totals establish a
   baseline first, then credit increases.
 - If the app was closed across a date boundary, session and lifetime counters

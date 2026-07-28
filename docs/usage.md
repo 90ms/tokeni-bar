@@ -40,12 +40,12 @@ An implausibly large increase must be confirmed by a later observation before
 it credits. Complete daily totals that arrive late may credit up to three
 recent days.
 
-The collection labels today's ledger values as **tokens reflected in growth**.
-Provider rows and the combined total come from the same ledger, so only visible
-numeric rows contribute to that total. Dated counters show the confirmed total
-for that date, while session and lifetime counters show observed increases
-after their baseline. A provider without a trustworthy value remains
-**Waiting for data** rather than becoming a misleading zero.
+The collection's combined total and target use today's usage-date ledger.
+Provider rows separately show each provider's newest confirmed usage date and
+token total. When an earlier daily bucket is first confirmed today, it says
+**Settled today**, and its energy is included in today's earned amount. A
+provider without a trustworthy value remains **Waiting for data** rather than
+becoming a misleading zero.
 
 Deduplication checkpoints live separately in `usage-growth-ledger.json`. The
 app saves a pending award, applies it to ByteBot state, and then marks it
@@ -58,6 +58,8 @@ See [ByteBot growth and collection](bytebot.md) for life stages and rarity.
 Codex account activity comes from the experimental `codex app-server`
 `account/usage/read` method. Its response contains dated daily buckets and a
 lifetime total. A daily bucket may arrive after its calendar day ends.
+`/usage daily` reads the same account service, so the current date may still be
+absent; OpenAI does not guarantee a settlement delay or boundary time.
 
 The popover shows:
 
@@ -65,9 +67,15 @@ The popover shows:
 - **This month**: valid returned buckets in the current local calendar month
 - **Lifetime**: the account-service lifetime total
 
+The popover distinguishes **Today's usage confirmed** from
+**Today pending · confirmed through yyyy-MM-dd**. If the newest confirmed bucket
+arrives within three days, the provider and usage date form an idempotent
+settlement key. A later increase to that bucket credits only the difference.
+
 Negative, future-dated, and otherwise invalid values are discarded. If there
 is no valid daily bucket, the app leaves it unavailable instead of inventing a
-value.
+zero. Missing CLI, sign-in required, unsupported CLI, and query failure are
+reported separately.
 
 ## Claude menu-bar quota
 
