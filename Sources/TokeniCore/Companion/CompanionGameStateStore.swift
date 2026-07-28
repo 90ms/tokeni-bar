@@ -2,6 +2,7 @@ import Foundation
 
 public actor CompanionGameStateStore {
     private let fileURL: URL
+    private var lastSavedRevision: UInt64 = 0
 
     public init(fileURL: URL? = nil) {
         self.fileURL = fileURL ?? AppStoragePaths.applicationSupportDirectory()
@@ -44,7 +45,13 @@ public actor CompanionGameStateStore {
         return state
     }
 
-    public func save(_ state: CompanionGameState) throws {
+    public func save(
+        _ state: CompanionGameState,
+        revision: UInt64? = nil) throws
+    {
+        if let revision, revision <= self.lastSavedRevision {
+            return
+        }
         try FileManager.default.createDirectory(
             at: self.fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true)
@@ -52,6 +59,9 @@ public actor CompanionGameStateStore {
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(state).write(to: self.fileURL, options: .atomic)
+        if let revision {
+            self.lastSavedRevision = revision
+        }
     }
 
     public func clear() throws {

@@ -84,6 +84,9 @@ final class UsageStore: ObservableObject {
     private let tokenGrowthLedgerEngine = TokenGrowthLedgerEngine()
     private var tokenGrowthLedgerState: TokenGrowthLedgerState
     private var companionStateLoaded = false
+    private var companionStateSaveRevision: UInt64 = 0
+    private var companionRewardSaveRevision: UInt64 = 0
+    private var tokenGrowthLedgerSaveRevision: UInt64 = 0
     private var appUpdateInstallationTask: Task<Void, Never>?
     private static let enabledProvidersKey = "enabledProviderIDs"
     private static let legacyShowsRemainingInMenuBarKey = "showsRemainingInMenuBar"
@@ -1037,7 +1040,10 @@ final class UsageStore: ObservableObject {
             at: now,
             in: &ledger)
         do {
-            try await self.tokenGrowthLedgerStore.save(ledger)
+            self.tokenGrowthLedgerSaveRevision &+= 1
+            try await self.tokenGrowthLedgerStore.save(
+                ledger,
+                revision: self.tokenGrowthLedgerSaveRevision)
             self.tokenGrowthLedgerState = ledger
         } catch {
             return
@@ -1053,7 +1059,10 @@ final class UsageStore: ObservableObject {
                 _ = self.companionGameEngine.apply(
                     award: award,
                     to: &companion)
-                try await self.companionStateStore.save(companion)
+                self.companionStateSaveRevision &+= 1
+                try await self.companionStateStore.save(
+                    companion,
+                    revision: self.companionStateSaveRevision)
             } catch {
                 return
             }
@@ -1062,7 +1071,10 @@ final class UsageStore: ObservableObject {
             var ledger = self.tokenGrowthLedgerState
             self.tokenGrowthLedgerEngine.markApplied(award.id, in: &ledger)
             do {
-                try await self.tokenGrowthLedgerStore.save(ledger)
+                self.tokenGrowthLedgerSaveRevision &+= 1
+                try await self.tokenGrowthLedgerStore.save(
+                    ledger,
+                    revision: self.tokenGrowthLedgerSaveRevision)
                 self.tokenGrowthLedgerState = ledger
             } catch {
                 return
@@ -1072,8 +1084,10 @@ final class UsageStore: ObservableObject {
 
     private func saveCompanionState() {
         let state = self.companionState
+        self.companionStateSaveRevision &+= 1
+        let revision = self.companionStateSaveRevision
         Task {
-            try? await self.companionStateStore.save(state)
+            try? await self.companionStateStore.save(state, revision: revision)
         }
     }
 
@@ -1090,8 +1104,10 @@ final class UsageStore: ObservableObject {
 
     private func saveCompanionRewardState() {
         let state = self.companionRewardState
+        self.companionRewardSaveRevision &+= 1
+        let revision = self.companionRewardSaveRevision
         Task {
-            try? await self.companionRewardStateStore.save(state)
+            try? await self.companionRewardStateStore.save(state, revision: revision)
         }
     }
 

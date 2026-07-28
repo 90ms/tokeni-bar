@@ -407,6 +407,7 @@ public struct TokenGrowthLedgerEngine: Sendable {
 
 public actor TokenGrowthLedgerStore {
     private let fileURL: URL
+    private var lastSavedRevision: UInt64 = 0
 
     public init(fileURL: URL? = nil) {
         self.fileURL = fileURL ?? AppStoragePaths.applicationSupportDirectory()
@@ -428,7 +429,13 @@ public actor TokenGrowthLedgerStore {
         return state
     }
 
-    public func save(_ state: TokenGrowthLedgerState) throws {
+    public func save(
+        _ state: TokenGrowthLedgerState,
+        revision: UInt64? = nil) throws
+    {
+        if let revision, revision <= self.lastSavedRevision {
+            return
+        }
         try FileManager.default.createDirectory(
             at: self.fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true)
@@ -436,6 +443,9 @@ public actor TokenGrowthLedgerStore {
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(state).write(to: self.fileURL, options: .atomic)
+        if let revision {
+            self.lastSavedRevision = revision
+        }
     }
 
     public func clear() throws {
