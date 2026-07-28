@@ -5,6 +5,7 @@ import SwiftUI
 struct TokeniBarApp: App {
     @Environment(\.openSettings) private var openSettings
     @StateObject private var store = UsageStore()
+    @StateObject private var companionOverlayController = CompanionOverlayController()
 
     var body: some Scene {
         MenuBarExtra {
@@ -85,7 +86,13 @@ struct TokeniBarApp: App {
             .onAppear { self.store.start() }
         } label: {
             self.menuBarLabel
-                .onAppear { self.store.start() }
+                .onAppear {
+                    self.store.start()
+                    self.companionOverlayController.connect(to: self.store)
+                }
+                .onChange(of: self.store.showsCompanionOverlay) { _, visible in
+                    self.companionOverlayController.setVisible(visible)
+                }
         }
         .menuBarExtraStyle(.window)
 
@@ -115,26 +122,26 @@ struct TokeniBarApp: App {
     private var menuBarLabel: some View {
         switch self.store.menuBarDisplayMode {
         case .iconOnly:
-            ActivityStatusIcon(
-                systemName: "chart.bar.fill",
+            MenuBarAppIcon(
                 isActive: self.store.showsActiveSession,
-                animationPulse: self.store.activityAnimationPulse)
+                animationPulse: self.store.activityAnimationPulse,
+                showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
         case .lowestRemaining:
             let remaining = self.store.menuBarRemainingPercent
-            ActivityStatusIcon(
-                systemName: self.menuBarIcon(for: remaining),
+            MenuBarAppIcon(
                 isActive: self.store.showsActiveSession,
-                animationPulse: self.store.activityAnimationPulse)
+                animationPulse: self.store.activityAnimationPulse,
+                showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
             if let remaining {
                 Text(AppLocalization.format("app.menuRemaining", Int(remaining.rounded())))
             } else {
                 Text(AppLocalization.string("app.menuName"))
             }
         case .monthlyCost:
-            ActivityStatusIcon(
-                systemName: "dollarsign.circle.fill",
+            MenuBarAppIcon(
                 isActive: self.store.showsActiveSession,
-                animationPulse: self.store.activityAnimationPulse)
+                animationPulse: self.store.activityAnimationPulse,
+                showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
             if let cost = self.store.menuBarMonthlyCost {
                 Text(AppLocalization.format("app.menuMonthlyCost", cost))
             } else {
@@ -142,11 +149,11 @@ struct TokeniBarApp: App {
             }
         case .selectedProvider:
             let remaining = self.store.selectedMenuBarProviderRemainingPercent
-            ActivityStatusIcon(
-                systemName: self.menuBarIcon(for: remaining),
+            MenuBarAppIcon(
                 isActive: self.store.activityAnimationsEnabled
                     && self.store.isActive(self.store.selectedMenuBarProviderID),
-                animationPulse: self.store.activityAnimationPulse)
+                animationPulse: self.store.activityAnimationPulse,
+                showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
             if let provider = self.store.selectedMenuBarProvider, let remaining {
                 Text(AppLocalization.format(
                     "app.menuProviderRemaining",
@@ -159,30 +166,20 @@ struct TokeniBarApp: App {
             }
         case .tokeni:
             if self.store.companionEnabled {
-                ByteBotSpriteView(
-                    speciesID: self.store.companionState.speciesID,
-                    stage: self.store.companionStage,
-                    rarity: self.store.companionDisplayRarity,
-                    behavior: self.store.companionBehavior,
-                    dimension: 18,
-                    // Continuously invalidating a MenuBarExtra label can block the
-                    // status item while AppKit is opening its window.
-                    animationsEnabled: false)
+                MenuBarAppIcon(
+                    isActive: self.store.showsActiveSession,
+                    animationPulse: self.store.activityAnimationPulse,
+                    showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
                 Text(AppLocalization.string(
                     "companion.behavior.short.\(self.store.companionBehavior.rawValue)"))
             } else {
-                ActivityStatusIcon(
-                    systemName: "chart.bar.fill",
+                MenuBarAppIcon(
                     isActive: self.store.showsActiveSession,
-                    animationPulse: self.store.activityAnimationPulse)
+                    animationPulse: self.store.activityAnimationPulse,
+                    showsCompanionBadge: false)
                 Text(AppLocalization.string("app.menuName"))
             }
         }
-    }
-
-    private func menuBarIcon(for remaining: Double?) -> String {
-        guard let remaining else { return "chart.bar.fill" }
-        return remaining < 10 ? "exclamationmark.triangle.fill" : "chart.bar.fill"
     }
 }
 
@@ -207,24 +204,47 @@ private final class WindowFocusNSView: NSView {
     }
 }
 
-private struct ActivityStatusIcon: View {
+private struct MenuBarAppIcon: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let systemName: String
     let isActive: Bool
     let animationPulse: Int
+    let showsCompanionBadge: Bool
 
     var body: some View {
-        Group {
-            if self.isActive, !self.reduceMotion {
-                Image(systemName: "waveform")
-                    .symbolEffect(.pulse, value: self.animationPulse)
-            } else {
-                Image(systemName: self.isActive ? "waveform" : self.systemName)
+        ZStack(alignment: .topTrailing) {
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 17, height: 17)
+                .scaleEffect(
+                    self.isActive && !self.reduceMotion && self.animationPulse.isMultiple(of: 2)
+                        ? 0.9
+                        : 1)
+                .animation(
+                    self.reduceMotion ? nil : .easeInOut(duration: 0.25),
+                    value: self.animationPulse)
+
+            if self.showsCompanionBadge {
+                Circle()
+                    .fill(.red)
+                    .frame(width: 6, height: 6)
+                    .overlay {
+                        Circle().stroke(.white.opacity(0.9), lineWidth: 1)
+                    }
+                    .offset(x: 2, y: -1)
+                    .accessibilityLabel(AppLocalization.string(
+                        "companion.action.ready"))
             }
         }
-            .frame(width: 14, height: 14)
-            .accessibilityLabel(self.isActive
-                ? AppLocalization.string("activity.active")
-                : AppLocalization.string("activity.idle"))
+            .frame(width: 18, height: 18)
+            .accessibilityLabel(self.accessibilityLabel)
+    }
+
+    private var accessibilityLabel: String {
+        let activity = self.isActive
+            ? AppLocalization.string("activity.active")
+            : AppLocalization.string("activity.idle")
+        guard self.showsCompanionBadge else { return activity }
+        return "\(activity), \(AppLocalization.string("companion.action.ready"))"
     }
 }

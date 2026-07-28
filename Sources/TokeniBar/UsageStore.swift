@@ -44,6 +44,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var appUpdateRequiresFormulaMigration: Bool
     @Published private(set) var companionEnabled: Bool
     @Published private(set) var companionAnimationsEnabled: Bool
+    @Published private(set) var companionOverlayEnabled: Bool
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
     @Published private(set) var companionRewardState: CompanionRewardState
@@ -88,6 +89,7 @@ final class UsageStore: ObservableObject {
     private static let pricingCatalogLastCheckKey = "pricingCatalogLastCheck"
     private static let companionEnabledKey = "companionEnabled"
     private static let companionAnimationsEnabledKey = "companionAnimationsEnabled"
+    private static let companionOverlayEnabledKey = "companionOverlayEnabled"
 
     init(providers: [any UsageProviding] = ProviderRegistry.defaultProviders()) {
         let knownIDs = Set(providers.map { $0.descriptor.id })
@@ -183,6 +185,8 @@ final class UsageStore: ObservableObject {
             forKey: Self.companionEnabledKey) as? Bool ?? true
         self.companionAnimationsEnabled = UserDefaults.standard.object(
             forKey: Self.companionAnimationsEnabledKey) as? Bool ?? true
+        self.companionOverlayEnabled = UserDefaults.standard.bool(
+            forKey: Self.companionOverlayEnabledKey)
         self.companionState = CompanionGameState()
         self.companionReveal = nil
         self.companionRewardState = CompanionRewardState()
@@ -500,6 +504,11 @@ final class UsageStore: ObservableObject {
         UserDefaults.standard.set(enabled, forKey: Self.companionAnimationsEnabledKey)
     }
 
+    func setCompanionOverlayEnabled(_ enabled: Bool) {
+        self.companionOverlayEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.companionOverlayEnabledKey)
+    }
+
     func patCompanion() {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionState
@@ -708,6 +717,22 @@ final class UsageStore: ObservableObject {
 
     var canPerformCompanionAction: Bool {
         self.companionGameEngine.canPerformAction(for: self.companionState)
+    }
+
+    var hasReadyCompanionGrowthAction: Bool {
+        guard self.companionEnabled,
+              self.companionStateLoaded,
+              self.companionStage == .egg
+                || self.companionStage == .hatchling
+                || self.companionStage == .junior
+        else {
+            return false
+        }
+        return self.canPerformCompanionAction
+    }
+
+    var showsCompanionOverlay: Bool {
+        self.companionEnabled && self.companionOverlayEnabled
     }
 
     var companionTodayEnergy: Int {

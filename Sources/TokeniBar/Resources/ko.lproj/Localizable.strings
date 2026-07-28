@@ -69,12 +69,16 @@
 "settings.menuBar.claudeQuota.fable" = "Fable";
 "settings.menuBar.compact" = "컴팩트 팝오버";
 "settings.menuBar.compact.description" = "핵심 쿼터만 표시하고 토큰, 비용, 상세 및 출처 행을 숨깁니다.";
+"settings.companion.overlay" = "화면 위에 펫 표시";
+"settings.companion.overlay.description" = "펫을 모든 데스크톱의 다른 앱 위에 표시합니다. 펫을 드래그하여 위치를 옮길 수 있습니다.";
 "settings.activity.enabled" = "활동 중인 세션 애니메이션";
 "settings.activity.window" = "활동 감지 시간";
 "settings.activity.seconds" = "%d초";
 "settings.activity.description" = "3초마다 사용량 파일의 변경 시각만 확인합니다. 활동 감지를 위해 프롬프트나 응답 내용은 읽지 않습니다. 동작 줄이기 사용 시 표시는 움직이지 않습니다.";
 "companion.name" = "Tokeni";
 "companion.pat" = "펫 토닥하기";
+"companion.action.ready" = "펫을 부화하거나 진화할 수 있음";
+"companion.overlay.drag" = "드래그하여 펫 위치 이동";
 "companion.species.mystery.name" = "수수께끼 알";
 "companion.species.mystery.personality" = "어떤 친구가 깨어날지는 부화 전까지 알 수 없어요.";
 "companion.species.bytebot.name" = "ByteBot";

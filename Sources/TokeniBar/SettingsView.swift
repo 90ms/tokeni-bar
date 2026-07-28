@@ -80,6 +80,16 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
+                    Toggle(isOn: Binding(
+                        get: { self.store.companionOverlayEnabled },
+                        set: { self.store.setCompanionOverlayEnabled($0) }))
+                    {
+                        Text(AppLocalization.string("settings.companion.overlay"))
+                    }
+                    Text(AppLocalization.string("settings.companion.overlay.description"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
                     Button(AppLocalization.string("companion.collection.open")) {
                         self.openWindow(id: "companion-collection")
                         Task { @MainActor in
