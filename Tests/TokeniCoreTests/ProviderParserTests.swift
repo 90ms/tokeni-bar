@@ -1,6 +1,5 @@
 @testable import TokeniCore
 import Foundation
-import LocalAuthentication
 import Security
 import Testing
 
@@ -312,10 +311,12 @@ struct ProviderParserTests {
         let background = ClaudeOAuthCredentialLoader.keychainQuery(interactive: false)
         let interactive = ClaudeOAuthCredentialLoader.keychainQuery(interactive: true)
 
-        let backgroundContext = background[kSecUseAuthenticationContext] as? LAContext
-        let interactiveContext = interactive[kSecUseAuthenticationContext] as? LAContext
-        #expect(backgroundContext?.interactionNotAllowed == true)
-        #expect(interactiveContext?.interactionNotAllowed == false)
+        #expect(
+            background[kSecUseAuthenticationUI] as? CFString
+                == kSecUseAuthenticationUIFail)
+        #expect(interactive[kSecUseAuthenticationUI] == nil)
+        #expect(background[kSecUseAuthenticationContext] == nil)
+        #expect(interactive[kSecUseAuthenticationContext] == nil)
     }
 
     @Test

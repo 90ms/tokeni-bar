@@ -1,5 +1,4 @@
 import Foundation
-import LocalAuthentication
 import Security
 
 struct ClaudeOAuthCredentials: Sendable {
@@ -78,15 +77,16 @@ struct ClaudeOAuthCredentialLoader: Sendable {
     }
 
     static func keychainQuery(interactive: Bool) -> [CFString: Any] {
-        let context = LAContext()
-        context.interactionNotAllowed = !interactive
-        return [
+        var query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: "Claude Code-credentials",
             kSecMatchLimit: kSecMatchLimitOne,
             kSecReturnData: true,
-            kSecUseAuthenticationContext: context,
         ]
+        if !interactive {
+            query[kSecUseAuthenticationUI] = kSecUseAuthenticationUIFail
+        }
+        return query
     }
 }
 

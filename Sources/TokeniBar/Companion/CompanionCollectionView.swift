@@ -14,6 +14,7 @@ struct CompanionCollectionView: View {
             VStack(alignment: .leading, spacing: 18) {
                 self.currentCompanion
                 self.energyWallet
+                self.rewardWallet
                 self.summary
                 self.pity
                 self.collectionGrid
@@ -48,7 +49,9 @@ struct CompanionCollectionView: View {
             }
             Button(AppLocalization.string("action.cancel"), role: .cancel) {}
         } message: {
-            Text(AppLocalization.string("companion.complete.confirm.message"))
+            Text(AppLocalization.format(
+                "companion.complete.confirm.message",
+                self.store.companionJourneyCompletionCost))
         }
         .sheet(item: Binding(
             get: { self.store.companionReveal },
@@ -98,6 +101,80 @@ struct CompanionCollectionView: View {
         }
     }
 
+    private var rewardWallet: some View {
+        GroupBox(AppLocalization.string("companion.rewards.title")) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Label(
+                        AppLocalization.format(
+                            "companion.rewards.balance",
+                            self.store.companionRewardState.starShards),
+                        systemImage: "star.fill")
+                        .font(.headline)
+                        .foregroundStyle(.yellow)
+                    Spacer()
+                    Button(self.attendanceButtonTitle) {
+                        self.store.claimCompanionAttendance()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(self.store.companionAttendanceStatus != .available)
+                }
+
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(AppLocalization.format(
+                            "companion.attendance.week",
+                            self.store.companionAttendanceWeekCount,
+                            self.store.companionAttendanceWeeklyGoal))
+                        ProgressView(
+                            value: Double(self.store.companionAttendanceWeekCount),
+                            total: Double(self.store.companionAttendanceWeeklyGoal))
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(AppLocalization.format(
+                            "companion.attendance.month",
+                            self.store.companionAttendanceMonthCount,
+                            self.store.companionAttendanceMonthlyGoal))
+                        ProgressView(
+                            value: Double(self.store.companionAttendanceMonthCount),
+                            total: Double(self.store.companionAttendanceMonthlyGoal))
+                    }
+                }
+                .font(.caption)
+
+                if let amount = self.store.companionRewardNoticeAmount {
+                    Text(AppLocalization.format(
+                        "companion.rewards.received",
+                        amount))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.green)
+                } else if self.store.companionAttendanceError == .clockRollback {
+                    Text(AppLocalization.string(
+                        "companion.attendance.clockRollback"))
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                } else {
+                    Text(AppLocalization.string("companion.rewards.description"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
+        }
+    }
+
+    private var attendanceButtonTitle: String {
+        switch self.store.companionAttendanceStatus {
+        case .available:
+            AppLocalization.string("companion.attendance.claim")
+        case .claimed:
+            AppLocalization.string("companion.attendance.claimed")
+        case .clockRollback:
+            AppLocalization.string("companion.attendance.unavailable")
+        }
+    }
+
     private var currentCompanion: some View {
         HStack(spacing: 18) {
             ByteBotTransitionView(
@@ -109,10 +186,7 @@ struct CompanionCollectionView: View {
                 animationsEnabled: self.store.companionAnimationsEnabled)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(AppLocalization.format(
-                    "companion.collection.generation",
-                    self.store.companionState.generationNumber,
-                    self.currentCompanionName))
+                Text(self.currentCompanionTitle)
                     .font(.title2.weight(.semibold))
                 HStack {
                     Text(AppLocalization.string(
@@ -340,6 +414,16 @@ struct CompanionCollectionView: View {
             "companion.species.\(speciesID.rawValue).name")
     }
 
+    private var currentCompanionTitle: String {
+        guard let speciesID = self.store.companionState.speciesID else {
+            return self.currentCompanionName
+        }
+        return AppLocalization.format(
+            "companion.collection.generation",
+            speciesID.contentGeneration,
+            self.currentCompanionName)
+    }
+
     private var isSelectedSpeciesDiscovered: Bool {
         self.store.companionState.collection.discoveredSpeciesIDs
             .contains(self.selectedSpeciesID)
@@ -362,7 +446,7 @@ struct CompanionCollectionView: View {
                     Button(AppLocalization.format(
                         "companion.action.withCost",
                         AppLocalization.string("companion.complete.action"),
-                        self.store.companionActionCost ?? 0))
+                        self.store.companionJourneyCompletionCost))
                     {
                         self.confirmsCompletion = true
                     }

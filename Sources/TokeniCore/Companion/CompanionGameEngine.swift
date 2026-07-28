@@ -50,7 +50,19 @@ public struct CompanionGameEngine: Sendable {
         self.rollOverEnergyIfNeeded(at: now, in: &state)
         guard state.stage == .egg else { throw CompanionGameError.eggRequired }
         try self.spend(self.rules.hatchCost, in: &state)
+        return [.energySpent(self.rules.hatchCost)] + self.revealHatch(
+            speciesUnitValue: speciesUnitValue,
+            rarityUnitValue: rarityUnitValue,
+            at: now,
+            in: &state)
+    }
 
+    private func revealHatch(
+        speciesUnitValue: Double,
+        rarityUnitValue: Double,
+        at now: Date,
+        in state: inout CompanionGameState) -> [CompanionGameEvent]
+    {
         let discoveredSpecies = state.collection.discoveredSpeciesIDs
         let missingSpecies = CompanionSpeciesID.allCases.filter {
             !discoveredSpecies.contains($0)
@@ -78,7 +90,6 @@ public struct CompanionGameEngine: Sendable {
             in: &state)
         state.celebrationUntil = now.addingTimeInterval(6)
         return [
-            .energySpent(self.rules.hatchCost),
             .hatched(
                 speciesID: speciesID,
                 rarity: rarity,
@@ -134,6 +145,8 @@ public struct CompanionGameEngine: Sendable {
     }
 
     public func completeGeneration(
+        speciesUnitValue: Double,
+        rarityUnitValue: Double,
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
     {
@@ -144,7 +157,8 @@ public struct CompanionGameEngine: Sendable {
         else {
             throw CompanionGameError.rarityMissing
         }
-        try self.spend(self.rules.newEggCost, in: &state)
+        let completionCost = self.rules.journeyCompletionCost
+        try self.spend(completionCost, in: &state)
 
         let completion = CompletedCompanionGeneration(
             generationID: state.generationID,
@@ -155,11 +169,16 @@ public struct CompanionGameEngine: Sendable {
             completedAt: now)
         self.recordCompletion(completion, in: &state)
         self.startNewEgg(at: now, in: &state)
+        let hatchEvents = self.revealHatch(
+            speciesUnitValue: speciesUnitValue,
+            rarityUnitValue: rarityUnitValue,
+            at: now,
+            in: &state)
         return [
-            .energySpent(self.rules.newEggCost),
+            .energySpent(completionCost),
             .generationCompleted(completion),
             .newEgg(generationNumber: state.generationNumber),
-        ]
+        ] + hatchEvents
     }
 
     public func abandonForNewEgg(
@@ -206,7 +225,7 @@ public struct CompanionGameEngine: Sendable {
         case .hatchling, .junior:
             self.rules.nextActionCost(after: stage)
         case .adult:
-            self.rules.newEggCost
+            self.rules.journeyCompletionCost
         }
     }
 

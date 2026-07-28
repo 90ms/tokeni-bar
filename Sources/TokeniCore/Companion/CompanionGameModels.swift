@@ -233,6 +233,10 @@ public struct CompanionGameRules: Hashable, Sendable {
     public let maximumEnergyBalance: Int
     public let duplicateSpeciesPityHatches: Int
 
+    public var journeyCompletionCost: Int {
+        Self.saturatedAdd(self.newEggCost, self.hatchCost)
+    }
+
     public init(
         newEggCost: Int,
         hatchCost: Int,
@@ -271,6 +275,11 @@ public struct CompanionGameRules: Hashable, Sendable {
 
     public func nextActionCost(after stage: CompanionGameStage) -> Int? {
         self.nextStage(after: stage).map { self.actionCost(to: $0) }
+    }
+
+    private static func saturatedAdd(_ lhs: Int, _ rhs: Int) -> Int {
+        let (sum, overflow) = lhs.addingReportingOverflow(rhs)
+        return overflow ? Int.max : sum
     }
 }
 

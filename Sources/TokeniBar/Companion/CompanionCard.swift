@@ -126,7 +126,9 @@ struct CompanionCard: View {
             }
             Button(AppLocalization.string("action.cancel"), role: .cancel) {}
         } message: {
-            Text(AppLocalization.string("companion.complete.confirm.message"))
+            Text(AppLocalization.format(
+                "companion.complete.confirm.message",
+                self.store.companionJourneyCompletionCost))
         }
         .sheet(item: Binding(
             get: { self.store.companionReveal },

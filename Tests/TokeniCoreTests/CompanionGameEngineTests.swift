@@ -244,7 +244,7 @@ struct CompanionGameEngineTests {
         }
     }
 
-    @Test("Completing an adult costs energy and creates an ungraded egg")
+    @Test("Completing an adult spends egg and hatch energy, then hatches again")
     func completion() throws {
         let engine = CompanionGameEngine(calendar: self.calendar)
         let dateKey = GrowthLocalDate.key(for: .now, calendar: self.calendar)
@@ -252,17 +252,43 @@ struct CompanionGameEngineTests {
             speciesID: .bytebot,
             stage: .adult,
             rarity: .normal,
-            growthEnergy: 40,
+            growthEnergy: 120,
             growthDateKey: dateKey)
 
-        _ = try engine.completeGeneration(in: &state)
+        let events = try engine.completeGeneration(
+            speciesUnitValue: 0.25,
+            rarityUnitValue: 0,
+            in: &state)
 
-        #expect(state.stage == .egg)
-        #expect(state.rarity == nil)
+        #expect(state.stage == .hatchling)
+        #expect(state.speciesID == .cachecat)
+        #expect(state.rarity == .normal)
         #expect(state.generationNumber == 2)
-        #expect(state.growthEnergy == 0)
+        #expect(state.growthEnergy == 20)
+        #expect(state.growthSpentToday == 100)
         #expect(state.pity.adultsWithoutRareOrHigher == 1)
         #expect(state.collection.completedCount(for: .normal) == 1)
+        #expect(engine.actionCost(for: .adult) == 100)
+        #expect(events.contains(.energySpent(100)))
+        #expect(events.contains {
+            if case .hatched(
+                speciesID: .cachecat,
+                rarity: .normal,
+                isNewSpecies: true,
+                unlockedFormIDs: _) = $0
+            {
+                return true
+            }
+            return false
+        })
+    }
+
+    @Test("Every currently bundled pet belongs to asset generation one")
+    func currentSpeciesAreGenerationOne() {
+        #expect(CompanionSpeciesID.allCases.allSatisfy {
+            $0.contentGeneration == 1
+        })
+        #expect(CompanionSpeciesID.latestContentGeneration == 1)
     }
 
     @Test("Restarting spends energy but preserves collection and pity")

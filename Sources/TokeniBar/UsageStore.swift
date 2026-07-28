@@ -46,6 +46,9 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionAnimationsEnabled: Bool
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
+    @Published private(set) var companionRewardState: CompanionRewardState
+    @Published private(set) var companionRewardNoticeAmount: Int?
+    @Published private(set) var companionAttendanceError: CompanionRewardError?
 
     private let providers: [any UsageProviding]
     private var refreshLoop: Task<Void, Never>?
@@ -58,8 +61,10 @@ final class UsageStore: ObservableObject {
     private let appUpdateClient: GitHubReleaseUpdateClient
     private let homebrewUpdateService: HomebrewUpdateService
     private let companionStateStore: CompanionGameStateStore
+    private let companionRewardStateStore: CompanionRewardStateStore
     private let tokenGrowthLedgerStore: TokenGrowthLedgerStore
     private let companionGameEngine = CompanionGameEngine()
+    private let companionRewardEngine = CompanionRewardEngine()
     private let tokenGrowthLedgerEngine = TokenGrowthLedgerEngine()
     private var tokenGrowthLedgerState: TokenGrowthLedgerState
     private var companionStateLoaded = false
@@ -95,6 +100,7 @@ final class UsageStore: ObservableObject {
         let appUpdateClient = GitHubReleaseUpdateClient()
         let homebrewUpdateService = HomebrewUpdateService()
         let companionStateStore = CompanionGameStateStore()
+        let companionRewardStateStore = CompanionRewardStateStore()
         let tokenGrowthLedgerStore = TokenGrowthLedgerStore()
         self.notificationController = notificationController
         self.launchAtLoginController = launchAtLoginController
@@ -104,6 +110,7 @@ final class UsageStore: ObservableObject {
         self.appUpdateClient = appUpdateClient
         self.homebrewUpdateService = homebrewUpdateService
         self.companionStateStore = companionStateStore
+        self.companionRewardStateStore = companionRewardStateStore
         self.tokenGrowthLedgerStore = tokenGrowthLedgerStore
         self.tokenGrowthLedgerState = TokenGrowthLedgerState()
         self.notificationsEnabled = notificationController.isEnabled
@@ -178,6 +185,9 @@ final class UsageStore: ObservableObject {
             forKey: Self.companionAnimationsEnabledKey) as? Bool ?? true
         self.companionState = CompanionGameState()
         self.companionReveal = nil
+        self.companionRewardState = CompanionRewardState()
+        self.companionRewardNoticeAmount = nil
+        self.companionAttendanceError = nil
         let enabledIDs: Set<ProviderID>
         if let stored = UserDefaults.standard.stringArray(forKey: Self.enabledProvidersKey) {
             enabledIDs = Set(stored.map { ProviderID(rawValue: $0) }).intersection(knownIDs)
@@ -199,6 +209,10 @@ final class UsageStore: ObservableObject {
                 ?? CompanionGameState()
             self.companionGameEngine.rollOverEnergyIfNeeded(
                 in: &self.companionState)
+            self.companionRewardState =
+                (try? await self.companionRewardStateStore.load())
+                    ?? CompanionRewardState()
+            self.reconcileCompanionRewards()
             self.tokenGrowthLedgerState = (try? await self.tokenGrowthLedgerStore.load())
                 ?? TokenGrowthLedgerState()
             self.companionStateLoaded = true
@@ -514,6 +528,7 @@ final class UsageStore: ObservableObject {
                     isNewSpecies: isNewSpecies)
             }
         }
+        self.reconcileCompanionRewards()
         self.saveCompanionState()
     }
 
@@ -533,6 +548,7 @@ final class UsageStore: ObservableObject {
             in: &state)) != nil
         else { return }
         self.companionState = state
+        self.reconcileCompanionRewards()
         self.saveCompanionState()
     }
 
@@ -542,10 +558,23 @@ final class UsageStore: ObservableObject {
               self.companionState.stage == .adult
         else { return }
         var state = self.companionState
-        guard (try? self.companionGameEngine.completeGeneration(in: &state)) != nil else {
+        guard let events = try? self.companionGameEngine.completeGeneration(
+            speciesUnitValue: Double.random(in: 0..<1),
+            rarityUnitValue: Double.random(in: 0..<1),
+            in: &state)
+        else {
             return
         }
         self.companionState = state
+        for event in events {
+            if case let .hatched(speciesID, rarity, isNewSpecies, _) = event {
+                self.companionReveal = CompanionHatchReveal(
+                    speciesID: speciesID,
+                    rarity: rarity,
+                    isNewSpecies: isNewSpecies)
+            }
+        }
+        self.reconcileCompanionRewards()
         self.saveCompanionState()
     }
 
@@ -557,6 +586,23 @@ final class UsageStore: ObservableObject {
         }
         self.companionState = state
         self.saveCompanionState()
+    }
+
+    func claimCompanionAttendance() {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionRewardState
+        do {
+            let grants = try self.companionRewardEngine.checkIn(in: &state)
+            self.companionRewardState = state
+            self.companionRewardNoticeAmount = grants.reduce(0) { $0 + $1.amount }
+            self.companionAttendanceError = nil
+            self.saveCompanionRewardState()
+        } catch let error as CompanionRewardError {
+            self.companionRewardNoticeAmount = nil
+            self.companionAttendanceError = error
+        } catch {
+            self.companionRewardNoticeAmount = nil
+        }
     }
 
     func setActivityWindowSeconds(_ seconds: Int) {
@@ -656,6 +702,10 @@ final class UsageStore: ObservableObject {
         self.companionGameEngine.rules.newEggCost
     }
 
+    var companionJourneyCompletionCost: Int {
+        self.companionGameEngine.rules.journeyCompletionCost
+    }
+
     var canPerformCompanionAction: Bool {
         self.companionGameEngine.canPerformAction(for: self.companionState)
     }
@@ -669,6 +719,28 @@ final class UsageStore: ObservableObject {
         return self.tokenGrowthLedgerState.dayCredits
             .first { $0.dateKey == dateKey }?
             .aggregateTokens ?? 0
+    }
+
+    var companionAttendanceStatus: CompanionAttendanceStatus {
+        self.companionRewardEngine.attendanceStatus(in: self.companionRewardState)
+    }
+
+    var companionAttendanceWeekCount: Int {
+        self.companionRewardEngine.attendanceCountThisWeek(
+            in: self.companionRewardState)
+    }
+
+    var companionAttendanceMonthCount: Int {
+        self.companionRewardEngine.attendanceCountThisMonth(
+            in: self.companionRewardState)
+    }
+
+    var companionAttendanceWeeklyGoal: Int {
+        self.companionRewardEngine.rules.weeklyAttendance.keys.max() ?? 7
+    }
+
+    var companionAttendanceMonthlyGoal: Int {
+        self.companionRewardEngine.rules.monthlyAttendanceDays
     }
 
     var companionGrowthProviderStatus: (available: Int, total: Int) {
@@ -841,6 +913,24 @@ final class UsageStore: ObservableObject {
         let state = self.companionState
         Task {
             try? await self.companionStateStore.save(state)
+        }
+    }
+
+    private func reconcileCompanionRewards() {
+        var state = self.companionRewardState
+        let grants = self.companionRewardEngine.reconcile(
+            collection: self.companionState.collection,
+            in: &state)
+        guard !grants.isEmpty else { return }
+        self.companionRewardState = state
+        self.companionRewardNoticeAmount = grants.reduce(0) { $0 + $1.amount }
+        self.saveCompanionRewardState()
+    }
+
+    private func saveCompanionRewardState() {
+        let state = self.companionRewardState
+        Task {
+            try? await self.companionRewardStateStore.save(state)
         }
     }
 
