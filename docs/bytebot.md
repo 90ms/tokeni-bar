@@ -34,6 +34,13 @@ Refreshing the same cumulative value never pays twice. On each date change,
 20% of the remaining balance carries over. If the app stays closed for multiple
 days, the 20% carry is applied once for every elapsed day.
 
+The collection's **Action energy** section shows reflected tokens per provider,
+their combined total, energy earned today, and the additional tokens required
+for the next energy point. CLIs without a complete daily total show only the
+session or lifetime increase observed while Tokeni Bar is running. A provider
+without a trustworthy value says **Waiting for data** instead of showing a
+misleading zero.
+
 ## Life stages
 
 | Action | Energy spent |
@@ -153,6 +160,21 @@ Existing species discoveries, completed journeys, and collection milestones
 are reconciled once when reward state first loads. Reading the same records
 again never pays twice.
 
+### Star Shard cosmetics
+
+Spend Star Shards in the collection to permanently unlock:
+
+| Cosmetic | Cost |
+|---|---:|
+| Sparkle Aura | 60 Star Shards |
+| Star Crown | 120 Star Shards |
+| Night Ring | 200 Star Shards |
+
+Purchased cosmetics can be equipped or removed at any time. The selection
+appears in the menu popover, current-pet collection view, Settings preview, and
+on-screen pet. Cosmetics are visual only and never affect energy, rarity,
+evolution odds, or pity.
+
 ## Menu bar and on-screen display
 
 The menu-bar app icon shows a red badge when action energy is sufficient to
@@ -183,7 +205,7 @@ See the [usage display guide](usage.md) for detailed accounting and cost rules.
 ## Storage and privacy
 
 - `companion-state.json`: species, stage, rarity, energy, bond, collection, pity, and interactions
-- `companion-rewards.json`: Star Shards, attendance dates, and awarded milestone identifiers
+- `companion-rewards.json`: Star Shards, attendance dates, awarded milestones, and unlocked/equipped cosmetics
 - `usage-growth-ledger.json`: scoped token checkpoints and daily credited energy
 - `usage-history.json`: 30 days of aggregate usage, quota, and cost history
 - user preferences: on-screen pet visibility, size, lock, click-through, and last position

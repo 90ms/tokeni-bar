@@ -40,6 +40,13 @@ An implausibly large increase must be confirmed by a later observation before
 it credits. Complete daily totals that arrive late may credit up to three
 recent days.
 
+The collection labels today's ledger values as **tokens reflected in growth**.
+Provider rows and the combined total come from the same ledger, so only visible
+numeric rows contribute to that total. Dated counters show the confirmed total
+for that date, while session and lifetime counters show observed increases
+after their baseline. A provider without a trustworthy value remains
+**Waiting for data** rather than becoming a misleading zero.
+
 Deduplication checkpoints live separately in `usage-growth-ledger.json`. The
 app saves a pending award, applies it to ByteBot state, and then marks it
 complete, preventing double payment if the app exits between writes.

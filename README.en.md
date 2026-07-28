@@ -45,8 +45,8 @@ brew install --formula tokeni-bar
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Low remaining quota and monthly budget |
-| Tokeni pets | Life stage, species, rarity, today's energy, bond, behavior, and an optional desktop overlay |
-| Collection and rewards | Five generation-1 species, 60 forms, attendance, Star Shards, and guarantees |
+| Tokeni pets | Life stage, species, rarity, provider growth tokens, bond, behavior, and an optional desktop overlay |
+| Collection and rewards | Five generation-1 species, 60 forms, attendance, Star Shard cosmetics, and guarantees |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -77,6 +77,12 @@ More tokens continue raising the daily energy target, although gains become
 more gradual at high usage. The action-energy balance is capped at 320.
 Refreshing the same cumulative value never pays twice, and 20% of the remaining
 balance carries over when the date changes.
+
+The collection's **Action energy** section separates tokens reflected in
+growth by provider and shows their combined total, energy earned today, and the
+additional tokens needed for the next energy point. CLIs without a complete
+daily total show only observed session or lifetime increases. Providers that
+do not yet have a trustworthy baseline remain **Waiting for data**.
 
 ### 2. Four life stages
 
@@ -164,6 +170,18 @@ claims for the same local date are rejected. If the system date moves behind
 the latest claimed date, new attendance remains unavailable until the date is
 valid again.
 
+Spend Star Shards on permanent cosmetics in the collection:
+
+| Cosmetic | Star Shards |
+|---|---:|
+| Sparkle Aura | 60 |
+| Star Crown | 120 |
+| Night Ring | 200 |
+
+The equipped cosmetic appears in the menu popover, collection, Settings
+preview, and on-screen pet. Cosmetics never affect growth energy, rarity, or
+guarantees.
+
 Open the grid button in the menu or choose
 **Settings → Tokeni → Open Pet Collection**. See
 [Tokeni pet growth and collection](docs/bytebot.md) for the complete rules.
@@ -212,7 +230,7 @@ not awarded as new growth. See
 | 2 | Start Tokeni Bar and open its app icon in the menu bar |
 | 3 | Choose providers and the menu-bar display under **Settings → General** |
 | 4 | For Claude account quotas, choose **Provider Connections → Connect** |
-| 5 | Use an agent, grow the pet, claim attendance, and optionally enable the on-screen pet |
+| 5 | Use an agent, grow the pet, claim attendance, try Star Shard cosmetics, and optionally enable the on-screen pet |
 
 ## Update and uninstall
 
@@ -240,7 +258,7 @@ blocks the first launch, approve it under
 |---|---|
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
 | Pet species, stage, rarity, collection, and guarantees | Access tokens, refresh tokens, and cookies |
-| Star Shards, attendance dates, and awarded milestone IDs | Account secrets and server telemetry |
+| Star Shards, attendance dates, purchased cosmetics, and awarded milestone IDs | Account secrets and server telemetry |
 | On-screen pet preferences and last position | Screen captures and input content |
 | Deduplication checkpoints | Remote game accounts and analytics telemetry |
 
