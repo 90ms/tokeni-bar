@@ -31,11 +31,15 @@ struct CompanionRewardEngineTests {
         #expect(engine.attendanceCountThisWeek(
             at: start,
             in: state) == 7)
+        let finalDate = try #require(self.calendar.date(
+            byAdding: .day,
+            value: 6,
+            to: start))
         #expect(engine.attendanceStatus(
-            at: start,
+            at: finalDate,
             in: state) == .claimed)
         #expect(throws: CompanionRewardError.alreadyClaimed) {
-            try engine.checkIn(at: start, in: &state)
+            try engine.checkIn(at: finalDate, in: &state)
         }
     }
 
