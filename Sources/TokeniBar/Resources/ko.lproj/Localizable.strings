@@ -179,7 +179,7 @@
 "companion.energy.providers" = "제공자별 내역";
 "companion.energy.providerTokens" = "%@ 토큰";
 "companion.energy.providerPending" = "확인 대기";
-"companion.energy.curve" = "검증된 토큰을 합산해 계산하며, 사용량이 커질수록 에너지는 완만하게 증가합니다.";
+"companion.energy.curve" = "검증된 토큰 10만 개마다 행동 에너지 1을 얻으며, 남은 토큰은 다음 날에도 유지됩니다.";
 "companion.energy.delayedSettlement" = "이전 날짜의 확정 사용량이 오늘 획득 에너지에 정산되었습니다.";
 "companion.energy.settledToday" = "오늘 정산";
 "companion.energy.todayPending" = "오늘 집계 대기";
@@ -246,7 +246,7 @@
 "settings.companion.animations" = "펫 애니메이션";
 "settings.companion.motion" = "동작 줄이기 또는 저전력 모드에서는 애니메이션이 자동으로 멈춥니다.";
 "settings.companion.growth" = "성장";
-"settings.companion.rules" = "검증된 토큰 사용량이 행동 에너지로 바뀝니다. 부화와 진화는 직접 눌러야 진행되며, 매일 남은 에너지의 20%가 최대 320까지 이월됩니다. 미발견 펫이 있다면 중복 부화 5회 뒤 다음 알에서 새 펫을 보장합니다.";
+"settings.companion.rules" = "검증된 토큰 10만 개마다 행동 에너지 1을 얻습니다. 남은 토큰과 사용하지 않은 에너지는 날짜가 바뀌어도 유지되며, 부화와 진화는 직접 눌러야 진행됩니다. 미발견 펫이 있다면 중복 부화 5회 뒤 다음 알에서 새 펫을 보장합니다.";
 "settings.companion.today" = "오늘: 토큰 %lld → 에너지 +%d";
 "settings.companion.wallet" = "현재 에너지 %d · 오늘 이월 %d";
 "settings.companion.providers" = "연결된 제공자 %d/%d개의 성장 데이터를 반영합니다.";

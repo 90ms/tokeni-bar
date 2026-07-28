@@ -179,7 +179,7 @@
 "companion.energy.providers" = "Provider breakdown";
 "companion.energy.providerTokens" = "%@ tokens";
 "companion.energy.providerPending" = "Waiting for data";
-"companion.energy.curve" = "Verified tokens are combined, with energy increasing more gradually at higher usage.";
+"companion.energy.curve" = "Every 100,000 verified tokens grant one action energy, and remainder tokens carry across dates.";
 "companion.energy.delayedSettlement" = "Confirmed usage from an earlier date was credited to today's earned energy.";
 "companion.energy.settledToday" = "Settled today";
 "companion.energy.todayPending" = "Today pending";
@@ -246,7 +246,7 @@
 "settings.companion.animations" = "Animate pets";
 "settings.companion.motion" = "Animations pause automatically with Reduce Motion or Low Power Mode.";
 "settings.companion.growth" = "Growth";
-"settings.companion.rules" = "Verified token usage becomes action energy. Hatching and evolution require an explicit click. Each day, 20% of the remaining energy carries over, up to 320. While pets remain undiscovered, five duplicate hatches guarantee a new species from the next egg.";
+"settings.companion.rules" = "Every 100,000 verified tokens grant one action energy. Remainder tokens and unspent energy carry across dates, while hatching and evolution require an explicit click. While pets remain undiscovered, five duplicate hatches guarantee a new species from the next egg.";
 "settings.companion.today" = "Today: %lld tokens → +%d energy";
 "settings.companion.wallet" = "Current energy %d · carried today %d";
 "settings.companion.providers" = "Growth data available from %d of %d connected providers.";

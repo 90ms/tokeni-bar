@@ -19,10 +19,10 @@ Tokeni growth uses only **verified increases** in token counters reported by
 providers. Usage-file modification times drive working and sleeping animation
 only; they never create growth energy.
 
-For verified daily token increases `T` across providers, after preventing
-replayed counters from paying twice, energy is
-`floor(32 × log2(1 + T / 25,000))`. There is no hard cap, and refreshing the
-same cumulative value never pays twice.
+Verified increases across providers are combined after preventing replayed
+counters from paying twice. Every 100,000 tokens grant one action energy.
+Unconverted remainder tokens carry across dates, and refreshing the same
+cumulative value never pays twice.
 
 Counter scope differs by provider:
 

@@ -59,24 +59,21 @@ references—not subscription bills.
 For today's verified token total `T`:
 
 ```text
-T = 0  → 0
-T > 0  → floor(32 × log2(1 + T / 25,000))
+Growth energy = floor(T / 100,000)
 ```
 
 | Tokens today | Growth energy today |
 |---:|---:|
-| 10,000 | 15 |
-| 25,000 | 32 |
-| 50,000 | 50 |
-| 100,000 | 74 |
-| 250,000 | 110 |
-| 500,000 | 140 |
-| 1,000,000 | 171 |
+| 100,000 | 1 |
+| 1,000,000 | 10 |
+| 10,000,000 | 100 |
+| 100,000,000 | 1,000 |
+| 300,000,000 | 3,000 |
 
-More tokens continue raising the daily energy target, although gains become
-more gradual at high usage. The action-energy balance is capped at 320.
-Refreshing the same cumulative value never pays twice, and 20% of the remaining
-balance carries over when the date changes.
+Every 100,000 verified tokens always grant one energy. A remainder below
+100,000 tokens and all unspent action energy carry across date changes. The
+wallet has a 100,000-energy safety limit to contain invalid data, and refreshing
+the same cumulative value never pays twice.
 
 The collection's **Action energy** section separates tokens reflected in
 growth by provider and shows their combined total, today's energy target, and the
@@ -94,11 +91,11 @@ collection shows the usage date plus **Settled today** or **Today pending**.
 
 | Action | Energy spent | Result |
 |---|---:|---|
-| Hatch egg | 60 | Reveal the species and first rarity, then become a Hatchling |
-| Evolve to Junior | 100 | Keep or raise rarity and become a Junior |
-| Evolve to Adult | 160 | Keep or raise rarity and become an Adult |
-| Finish an Adult journey and hatch again | 100 | Archive the Adult and immediately hatch a new pet |
-| Receive a new egg before Adult | 40 | Restart with an ungraded egg |
+| Hatch egg | 500 | Reveal the species and first rarity, then become a Hatchling |
+| Evolve to Junior | 800 | Keep or raise rarity and become a Junior |
+| Evolve to Adult | 1,400 | Keep or raise rarity and become an Adult |
+| Finish an Adult journey and hatch again | 800 | Archive the Adult and immediately hatch a new pet |
+| Receive a new egg before Adult | 300 | Restart with an ungraded egg |
 
 Having enough energy never hatches or evolves automatically. The user must
 click the action. Energy earned as an Adult fills action energy and also records
@@ -149,7 +146,7 @@ Adult keeps the existing guarantees but does not move them closer.
 | Choice | Result | What remains |
 |---|---|---|
 | Stay with an Adult | New energy becomes bond | Current form and all records |
-| Finish an Adult journey | Spend 100 energy, archive it, and hatch immediately | Collection and guarantees |
+| Finish an Adult journey | Spend 800 energy, archive it, and hatch immediately | Collection and guarantees |
 | Leave before Adult | Spend 40 energy and start a new egg | Collection and existing guarantees |
 
 The collection has 60 forms: five species, four rarities, and three visible

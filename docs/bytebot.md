@@ -8,31 +8,25 @@ stored on your Mac.
 
 ## Growth energy
 
-For verified daily token increases `T` across providers, after preventing
-replayed counters from paying twice, daily growth energy is:
+For verified token increases `T` across providers, after preventing replayed
+counters from paying twice, growth energy is:
 
 ```text
-T = 0  → 0
-T > 0  → floor(32 × log2(1 + T / 25,000))
+Growth energy = floor(T / 100,000)
 ```
 
-More tokens continue to increase the daily target, while each additional energy
-point costs more tokens at very high usage. The actual action-energy balance is
-capped at 320.
-
-| Tokens today | Energy today |
+| Verified tokens | Growth energy |
 |---:|---:|
-| 10,000 | 15 |
-| 25,000 | 32 |
-| 50,000 | 50 |
-| 100,000 | 74 |
-| 250,000 | 110 |
-| 500,000 | 140 |
-| 1,000,000 | 171 |
+| 100,000 | 1 |
+| 1,000,000 | 10 |
+| 10,000,000 | 100 |
+| 100,000,000 | 1,000 |
+| 300,000,000 | 3,000 |
 
-Refreshing the same cumulative value never pays twice. On each date change,
-20% of the remaining balance carries over. If the app stays closed for multiple
-days, the 20% carry is applied once for every elapsed day.
+The exchange rate stays constant at every usage level. A remainder below
+100,000 tokens remains in the ledger across dates, and all unspent action
+energy is retained. The action-energy wallet has a 100,000 safety limit.
+Refreshing the same cumulative value never pays twice.
 
 The collection's **Action energy** section shows reflected tokens per provider,
 their combined total, today's energy target, and the additional tokens required
@@ -50,11 +44,11 @@ along with settled-today or today-pending status.
 
 | Action | Energy spent |
 |---|---:|
-| Hatch egg | 60 |
-| Evolve to Junior | 100 |
-| Evolve to Adult | 160 |
-| Finish an Adult journey and hatch again | 100 |
-| Receive a new egg before Adult | 40 |
+| Hatch egg | 500 |
+| Evolve to Junior | 800 |
+| Evolve to Adult | 1,400 |
+| Finish an Adult journey and hatch again | 800 |
+| Receive a new egg before Adult | 300 |
 
 Every journey starts as an ungraded egg. Having enough energy never changes
 the stage automatically: the user must click Hatch or Evolve. Energy earned as
@@ -136,12 +130,12 @@ Collection** to see:
 
 ## New eggs and completed journeys
 
-At Adult, keep the current pet and grow bond, or spend 100 energy to finish its
-journey and immediately hatch a new pet. The 100 combines the 40-energy new-egg
-cost and the 60-energy hatch cost. Completion archives final rarity and bond,
+At Adult, keep the current pet and grow bond, or spend 800 energy to finish its
+journey and immediately hatch a new pet. The 800 combines the 300-energy
+new-egg cost and the 500-energy hatch cost. Completion archives final rarity and bond,
 updates pity, and reveals the next pet's species and first rarity in one action.
 
-Before Adult, you may spend 40 energy to part ways and restart:
+Before Adult, you may spend 300 energy to part ways and restart:
 
 - unlocked forms and existing pity remain;
 - unspent action energy remains;
