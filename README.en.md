@@ -102,7 +102,8 @@ collection shows the usage date plus **Settled today** or **Today pending**.
 
 Having enough energy never hatches or evolves automatically. The user must
 click the action. Energy earned as an Adult fills action energy and also records
-bond.
+bond. Evolution shows the previous form entering a glow before the new stage
+appears; Reduce Motion and Low Power Mode use a short transition.
 
 Working, low quota, patting, and long inactivity change the pet's behavior but
 never add growth energy.
@@ -153,6 +154,9 @@ The collection has 60 forms: five species, four rarities, and three visible
 life stages.
 When a high rarity first appears late, its earlier forms also unlock as
 **Lineage**.
+Completed pets remain under **Completed Pets**, where they can be brought out
+as the showcase companion or put away again. They are display-only; growth and
+rewards continue to apply to the current journey.
 
 ### 6. Attendance and collection activity award Star Shards
 
@@ -162,11 +166,14 @@ collection activity award a separate currency called **Star Shards**.
 | Condition | Star Shards |
 |---|---:|
 | Daily check-in | 10 |
+| First verified growth of the day | 5 |
 | 3 / 5 / 7 check-ins in a week | 10 / 20 / 30 |
 | 20 check-ins in a month | 50 |
 | First discovery of a species | 20 |
+| First Rare / Epic / Legendary encounter | 10 / 25 / 50 |
 | Completed Adult journey | 25 |
 | 10 / 30 / 60 collection forms unlocked | 20 / 50 / 100 |
+| First launch of a new stable release | 20 |
 
 Missing a day does not reset weekly or monthly cumulative progress. Duplicate
 claims for the same local date are rejected. If the system date moves behind
@@ -175,15 +182,15 @@ valid again.
 
 Spend Star Shards on permanent cosmetics in the collection:
 
-| Cosmetic | Star Shards |
-|---|---:|
-| Sparkle Aura | 60 |
-| Star Crown | 120 |
-| Night Ring | 200 |
+| Slot | Cosmetics | Star Shards |
+|---|---|---:|
+| Aura | Sparkle Aura / Pixel Hearts / Night Ring | 60 / 80 / 200 |
+| Head | Developer Headphones / Star Crown / Wizard Hat | 100 / 120 / 140 |
+| Background | Terminal Night / Cloud Garden | 160 / 220 |
 
 The equipped cosmetic appears in the menu popover, collection, Settings
-preview, and on-screen pet. Cosmetics never affect growth energy, rarity, or
-guarantees.
+preview, and on-screen pet. One item per slot can be equipped at the same time.
+Cosmetics never affect growth energy, rarity, or guarantees.
 
 Open the grid button in the menu or choose
 **Settings → Tokeni → Open Pet Collection**. See

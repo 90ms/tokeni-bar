@@ -60,6 +60,10 @@ Every journey starts as an ungraded egg. Having enough energy never changes
 the stage automatically: the user must click Hatch or Evolve. Energy earned as
 an Adult fills action energy and that pet's **bond energy**.
 
+During evolution, the previous form shrinks into a glow before the new stage
+appears. Another evolution cannot start during the transition. Reduce Motion
+and Low Power Mode use an immediate or short transition.
+
 Working, quota warning, patting, and longer inactivity change the animation.
 Activity detection drives behavior only and never fabricates growth energy.
 
@@ -136,6 +140,12 @@ Before Adult, you may spend 40 energy to part ways and restart:
 - an early restart does not count as a completed journey;
 - energy already assigned that day cannot be reused by the new egg.
 
+Completed Adults remain under **Completed Pets** in the collection. Choose
+**Stay Together** to show one in the menu bar, Settings preview, and on-screen
+pet; choose **Put Away** to return to the currently growing pet. A completed pet
+is display-only and cannot evolve or finish another journey. Action energy and
+rewards continue to apply only to the current journey.
+
 ## Star Shards and attendance
 
 Star Shards are a reward currency separate from growth energy. Growth energy
@@ -145,11 +155,14 @@ minutes never create growth energy.
 | Condition | Star Shards |
 |---|---:|
 | Daily check-in | 10 |
+| First verified growth energy of the day | 5 |
 | 3 / 5 / 7 check-ins in the same week | 10 / 20 / 30 |
 | 20 check-ins in the same month | 50 |
 | First discovery of a pet species | 20 |
+| First Rare / Epic / Legendary encounter | 10 / 25 / 50 |
 | Completed Adult journey | 25 |
 | 10 / 30 / 60 collection forms unlocked | 20 / 50 / 100 |
+| First launch of a new stable release | 20 |
 
 Attendance uses weekly and monthly cumulative counts rather than a fragile
 streak. Missing a day does not reset existing progress. A local date can pay
@@ -164,16 +177,22 @@ again never pays twice.
 
 Spend Star Shards in the collection to permanently unlock:
 
-| Cosmetic | Cost |
-|---|---:|
-| Sparkle Aura | 60 Star Shards |
-| Star Crown | 120 Star Shards |
-| Night Ring | 200 Star Shards |
+| Slot | Cosmetic | Cost |
+|---|---|---:|
+| Aura | Sparkle Aura | 60 Star Shards |
+| Aura | Pixel Hearts | 80 Star Shards |
+| Head | Developer Headphones | 100 Star Shards |
+| Head | Star Crown | 120 Star Shards |
+| Head | Wizard Hat | 140 Star Shards |
+| Background | Terminal Night | 160 Star Shards |
+| Aura | Night Ring | 200 Star Shards |
+| Background | Cloud Garden | 220 Star Shards |
 
-Purchased cosmetics can be equipped or removed at any time. The selection
-appears in the menu popover, current-pet collection view, Settings preview, and
-on-screen pet. Cosmetics are visual only and never affect energy, rarity,
-evolution odds, or pity.
+Purchased cosmetics can be equipped or removed at any time, with one item each
+in the Head, Aura, and Background slots. The selection appears in the menu
+popover, current-pet collection view, Settings preview, and on-screen pet.
+Cosmetics are visual only and never affect energy, rarity, evolution odds, or
+pity.
 
 ## Menu bar and on-screen display
 
