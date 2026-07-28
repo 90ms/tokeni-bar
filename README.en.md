@@ -233,7 +233,7 @@ not awarded as new growth. See
 | Step | Action |
 |---:|---|
 | 1 | Run and sign in to each CLI you want to use |
-| 2 | Start Tokeni Bar and open its app icon in the menu bar |
+| 2 | Start Tokeni Bar and open its status icon in the menu bar |
 | 3 | Choose providers and the menu-bar display under **Settings → General** |
 | 4 | For Claude account quotas, choose **Provider Connections → Connect** |
 | 5 | Use an agent, grow the pet, claim attendance, try Star Shard cosmetics, and optionally enable the on-screen pet |

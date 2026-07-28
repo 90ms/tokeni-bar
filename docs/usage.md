@@ -77,6 +77,22 @@ is no valid daily bucket, the app leaves it unavailable instead of inventing a
 zero. Missing CLI, sign-in required, unsupported CLI, and query failure are
 reported separately.
 
+### Codex CLI discovery and launch
+
+A menu-bar app may run with a more limited `PATH` than an interactive shell.
+In addition to `PATH` and common Homebrew locations, Tokeni Bar searches these
+user-managed installations:
+
+- `~/.local/bin`, Volta, asdf, Bun, and mise
+- Node version directories managed by nvm and fnm
+
+For installations such as nvm or fnm where Codex and `node` share a version
+directory, Tokeni Bar also adds that directory to the launch environment. If
+**Codex CLI not found** or **Account token query failed** still appears, run
+`codex` once in Terminal to verify sign-in and update the CLI, then restart
+Tokeni Bar. Tokeni Bar never copies or separately stores Codex credentials or
+tokens.
+
 ## Claude menu-bar quota
 
 Choose **Selected provider remaining** and **Claude Code** under

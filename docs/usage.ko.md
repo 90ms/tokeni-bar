@@ -71,6 +71,21 @@ Codex 계정 사용량은 실험적인 `codex app-server`의
 값이나 0을 만들지 않습니다. Codex CLI 미발견, 로그인 필요, CLI 버전 미지원과
 조회 실패도 서로 구분해 표시합니다.
 
+### Codex CLI 검색과 실행
+
+메뉴바 앱은 터미널보다 제한된 `PATH`로 실행될 수 있습니다. Tokeni Bar는
+`PATH` 외에도 Homebrew의 일반 설치 위치와 다음 사용자 설치 위치에서 Codex를
+찾습니다.
+
+- `~/.local/bin`, Volta, asdf, Bun, mise
+- nvm과 fnm이 관리하는 Node 버전 디렉터리
+
+nvm/fnm처럼 Codex와 `node`가 같은 버전 디렉터리에 설치된 경우 그 디렉터리를
+실행 환경에 함께 추가합니다. 그래도 **Codex CLI를 찾을 수 없음** 또는
+**계정 토큰 조회 실패**가 표시되면 터미널에서 `codex`를 한 번 실행해 로그인과
+CLI 업데이트를 확인한 뒤 Tokeni Bar를 다시 시작하세요. 인증 정보나 토큰은
+Tokeni Bar가 복사하거나 별도로 저장하지 않습니다.
+
 ## Claude 메뉴바 쿼터
 
 **설정 → 일반 → 메뉴바**에서 **선택한 제공자 잔여량**과 **Claude Code**를
