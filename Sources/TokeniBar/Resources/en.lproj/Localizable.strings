@@ -155,6 +155,13 @@
 "companion.energy.earnedToday" = "Earned today";
 "companion.energy.carried" = "Carried today";
 "companion.energy.spentToday" = "Spent today";
+"companion.energy.reflectedToday" = "Tokens reflected in growth today";
+"companion.energy.tokenTotal" = "%@ tokens";
+"companion.energy.next" = "%@ more reflected tokens for +1 action energy";
+"companion.energy.providers" = "Provider breakdown";
+"companion.energy.providerTokens" = "%@ tokens";
+"companion.energy.providerPending" = "Waiting for data";
+"companion.energy.curve" = "Verified tokens are combined, with energy increasing more gradually at higher usage.";
 "companion.rewards.title" = "Star Shards and Attendance";
 "companion.rewards.balance" = "%d Star Shards";
 "companion.rewards.description" = "Earn Star Shards from attendance, new pet discoveries, completed journeys, and collection milestones.";

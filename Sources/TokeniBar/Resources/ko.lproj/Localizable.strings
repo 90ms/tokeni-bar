@@ -155,6 +155,13 @@
 "companion.energy.earnedToday" = "오늘 획득";
 "companion.energy.carried" = "오늘 이월";
 "companion.energy.spentToday" = "오늘 사용";
+"companion.energy.reflectedToday" = "오늘 성장에 반영된 토큰";
+"companion.energy.tokenTotal" = "%@ 토큰";
+"companion.energy.next" = "%@ 토큰을 더 반영하면 행동 에너지 +1";
+"companion.energy.providers" = "제공자별 내역";
+"companion.energy.providerTokens" = "%@ 토큰";
+"companion.energy.providerPending" = "확인 대기";
+"companion.energy.curve" = "검증된 토큰을 합산해 계산하며, 사용량이 커질수록 에너지는 완만하게 증가합니다.";
 "companion.rewards.title" = "별조각과 출석";
 "companion.rewards.balance" = "별조각 %d개";
 "companion.rewards.description" = "출석, 새로운 펫 발견, 여정 완료와 도감 달성으로 별조각을 얻습니다.";

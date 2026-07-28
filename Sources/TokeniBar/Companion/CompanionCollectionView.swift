@@ -6,6 +6,7 @@ struct CompanionCollectionView: View {
     @State private var confirmsNewEgg = false
     @State private var confirmsCompletion = false
     @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
+    @State private var showsGrowthBreakdown = true
 
     private let stages: [CompanionGameStage] = [.hatchling, .junior, .adult]
 
@@ -79,22 +80,85 @@ struct CompanionCollectionView: View {
 
     private var energyWallet: some View {
         GroupBox(AppLocalization.string("companion.energy.title")) {
-            HStack {
-                self.metric(
-                    AppLocalization.string("companion.energy.balance"),
-                    value: "\(self.store.companionState.growthEnergy)")
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    self.metric(
+                        AppLocalization.string("companion.energy.balance"),
+                        value: "\(self.store.companionState.growthEnergy)")
+                    Divider()
+                    self.metric(
+                        AppLocalization.string("companion.energy.earnedToday"),
+                        value: "+\(self.store.companionState.growthEarnedToday)")
+                    Divider()
+                    self.metric(
+                        AppLocalization.string("companion.energy.carried"),
+                        value: "\(self.store.companionState.growthCarriedToday)")
+                    Divider()
+                    self.metric(
+                        AppLocalization.string("companion.energy.spentToday"),
+                        value: "-\(self.store.companionState.growthSpentToday)")
+                }
+                .frame(height: 42)
+
                 Divider()
-                self.metric(
-                    AppLocalization.string("companion.energy.earnedToday"),
-                    value: "+\(self.store.companionState.growthEarnedToday)")
-                Divider()
-                self.metric(
-                    AppLocalization.string("companion.energy.carried"),
-                    value: "\(self.store.companionState.growthCarriedToday)")
-                Divider()
-                self.metric(
-                    AppLocalization.string("companion.energy.spentToday"),
-                    value: "-\(self.store.companionState.growthSpentToday)")
+
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(AppLocalization.string(
+                            "companion.energy.reflectedToday"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(AppLocalization.format(
+                            "companion.energy.tokenTotal",
+                            self.store.companionTodayTokens.formatted(.number)))
+                            .font(.title3.weight(.semibold))
+                    }
+                    Spacer()
+                    Label(
+                        "+\(self.store.companionTodayEnergy)",
+                        systemImage: "bolt.fill")
+                        .font(.headline)
+                        .foregroundStyle(.orange)
+                }
+
+                if let required = self.store.companionNextEnergyTokenRequirement {
+                    Text(AppLocalization.format(
+                        "companion.energy.next",
+                        required.formatted(.number)))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                DisclosureGroup(
+                    AppLocalization.string("companion.energy.providers"),
+                    isExpanded: self.$showsGrowthBreakdown)
+                {
+                    VStack(spacing: 7) {
+                        ForEach(self.store.companionGrowthProviderBreakdown) { provider in
+                            HStack(spacing: 8) {
+                                ProviderIcon(descriptor: provider.descriptor)
+                                Text(provider.descriptor.displayName)
+                                Spacer()
+                                if let tokens = provider.reflectedTokens {
+                                    Text(AppLocalization.format(
+                                        "companion.energy.providerTokens",
+                                        tokens.formatted(.number)))
+                                        .monospacedDigit()
+                                } else {
+                                    Text(AppLocalization.string(
+                                        "companion.energy.providerPending"))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                    .font(.caption)
+                    .padding(.top, 6)
+                }
+
+                Text(AppLocalization.string("companion.energy.curve"))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
