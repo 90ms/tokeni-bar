@@ -26,6 +26,7 @@ struct TokenGrowthLedgerTests {
 
         #expect(awards.map(\.energy) == [74])
         #expect(state.dayCredits.first?.aggregateTokens == 100_000)
+        #expect(state.dayCredits.first?.targetEnergy == 74)
         #expect(state.pendingAwards == awards)
     }
 

@@ -815,6 +815,13 @@ final class UsageStore: ObservableObject {
             .aggregateTokens ?? 0
     }
 
+    var companionTodayEnergyTarget: Int {
+        let dateKey = GrowthLocalDate.key(for: .now)
+        return self.tokenGrowthLedgerState.dayCredits
+            .first { $0.dateKey == dateKey }?
+            .targetEnergy ?? 0
+    }
+
     var companionNextEnergyTokenRequirement: Int64? {
         TokenGrowthEnergyFormula.standard.additionalTokensForNextEnergy(
             afterDailyTokens: self.companionTodayTokens)

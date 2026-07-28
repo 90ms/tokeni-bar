@@ -79,7 +79,7 @@ Refreshing the same cumulative value never pays twice, and 20% of the remaining
 balance carries over when the date changes.
 
 The collection's **Action energy** section separates tokens reflected in
-growth by provider and shows their combined total, energy earned today, and the
+growth by provider and shows their combined total, today's energy target, and the
 additional tokens needed for the next energy point. CLIs without a complete
 daily total show only observed session or lifetime increases. Providers that
 do not yet have a trustworthy baseline remain **Waiting for data**.

@@ -35,7 +35,7 @@ Refreshing the same cumulative value never pays twice. On each date change,
 days, the 20% carry is applied once for every elapsed day.
 
 The collection's **Action energy** section shows reflected tokens per provider,
-their combined total, energy earned today, and the additional tokens required
+their combined total, today's energy target, and the additional tokens required
 for the next energy point. CLIs without a complete daily total show only the
 session or lifetime increase observed while Tokeni Bar is running. A provider
 without a trustworthy value says **Waiting for data** instead of showing a

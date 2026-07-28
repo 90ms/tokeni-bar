@@ -147,7 +147,7 @@ struct CompanionCollectionView: View {
                     }
                     Spacer()
                     Label(
-                        "+\(self.store.companionTodayEnergy)",
+                        "+\(self.store.companionTodayEnergyTarget)",
                         systemImage: "bolt.fill")
                         .font(.headline)
                         .foregroundStyle(.orange)
