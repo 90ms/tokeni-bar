@@ -10,6 +10,7 @@ struct ByteBotTransitionView: View {
     let stage: CompanionGameStage
     let rarity: CompanionRarity?
     let behavior: CompanionBehavior
+    var cosmeticID: CompanionCosmeticID? = nil
     var dimension: CGFloat = 64
     var animationsEnabled = true
 
@@ -32,6 +33,12 @@ struct ByteBotTransitionView: View {
                 dimension: self.dimension,
                 animationsEnabled: self.animationsEnabled)
                 .scaleEffect(self.effect == nil ? 1 : (self.expanded ? 1.08 : 0.72))
+
+            if let cosmeticID = self.cosmeticID {
+                CompanionCosmeticDecoration(
+                    cosmeticID: cosmeticID,
+                    dimension: self.dimension)
+            }
 
             if let effect {
                 Text(self.message(for: effect))

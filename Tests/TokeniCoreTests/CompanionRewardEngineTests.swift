@@ -112,6 +112,47 @@ struct CompanionRewardEngineTests {
         #expect(repeated.isEmpty)
     }
 
+    @Test("Cosmetics spend shards once and can be equipped")
+    func cosmeticPurchase() throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let engine = CompanionRewardEngine(calendar: self.calendar)
+        var state = CompanionRewardState(starShards: 250)
+
+        try engine.purchase(
+            cosmeticID: .starCrown,
+            at: now,
+            in: &state)
+
+        #expect(state.starShards == 130)
+        #expect(state.unlockedCosmeticIDs == [.starCrown])
+        #expect(state.selectedCosmeticID == .starCrown)
+        #expect(state.updatedAt == now)
+        #expect(throws: CompanionRewardError.cosmeticAlreadyOwned) {
+            try engine.purchase(cosmeticID: .starCrown, in: &state)
+        }
+
+        try engine.select(cosmeticID: nil, at: now, in: &state)
+        #expect(state.selectedCosmeticID == nil)
+        try engine.select(cosmeticID: .starCrown, at: now, in: &state)
+        #expect(state.selectedCosmeticID == .starCrown)
+    }
+
+    @Test("Cosmetics reject insufficient balances and locked selections")
+    func cosmeticPurchaseFailures() {
+        let engine = CompanionRewardEngine(calendar: self.calendar)
+        var state = CompanionRewardState(starShards: 59)
+
+        #expect(throws: CompanionRewardError.insufficientStarShards) {
+            try engine.purchase(cosmeticID: .sparkleAura, in: &state)
+        }
+        #expect(throws: CompanionRewardError.cosmeticNotOwned) {
+            try engine.select(cosmeticID: .nightRing, in: &state)
+        }
+        #expect(state.starShards == 59)
+        #expect(state.unlockedCosmeticIDs.isEmpty)
+        #expect(state.selectedCosmeticID == nil)
+    }
+
     @Test("Reward state persists without companion or provider data")
     func persistence() async throws {
         let directory = FileManager.default.temporaryDirectory
@@ -134,6 +175,37 @@ struct CompanionRewardEngineTests {
         #expect(!text.contains("provider"))
         #expect(!text.contains("token"))
         #expect(!text.contains("prompt"))
+    }
+
+    @Test("Version one reward state migrates without losing shards")
+    func legacyPersistence() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let file = directory.appending(path: "rewards.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true)
+        let legacy = """
+        {
+          "schemaVersion" : 1,
+          "starShards" : 175,
+          "attendanceRecords" : [],
+          "awardedMilestoneIDs" : [],
+          "rewardedSpeciesIDs" : [],
+          "rewardedJourneyCount" : 0,
+          "rewardedFormMilestones" : [],
+          "updatedAt" : "2027-01-15T08:00:00Z"
+        }
+        """
+        try Data(legacy.utf8).write(to: file)
+
+        let state = try await CompanionRewardStateStore(fileURL: file).load()
+
+        #expect(state.schemaVersion == CompanionRewardState.currentSchemaVersion)
+        #expect(state.starShards == 175)
+        #expect(state.unlockedCosmeticIDs.isEmpty)
+        #expect(state.selectedCosmeticID == nil)
     }
 
     private func forms(at date: Date) -> [CompanionFormRecord] {

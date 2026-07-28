@@ -661,6 +661,28 @@ final class UsageStore: ObservableObject {
         }
     }
 
+    func purchaseCompanionCosmetic(_ cosmeticID: CompanionCosmeticID) {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionRewardState
+        guard (try? self.companionRewardEngine.purchase(
+            cosmeticID: cosmeticID,
+            in: &state)) != nil
+        else { return }
+        self.companionRewardState = state
+        self.saveCompanionRewardState()
+    }
+
+    func selectCompanionCosmetic(_ cosmeticID: CompanionCosmeticID?) {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionRewardState
+        guard (try? self.companionRewardEngine.select(
+            cosmeticID: cosmeticID,
+            in: &state)) != nil
+        else { return }
+        self.companionRewardState = state
+        self.saveCompanionRewardState()
+    }
+
     func setActivityWindowSeconds(_ seconds: Int) {
         guard Self.supportedActivityWindows.contains(seconds) else { return }
         self.activityWindowSeconds = seconds
@@ -838,6 +860,10 @@ final class UsageStore: ObservableObject {
 
     var companionAttendanceMonthlyGoal: Int {
         self.companionRewardEngine.rules.monthlyAttendanceDays
+    }
+
+    var companionCosmetics: [CompanionCosmetic] {
+        self.companionRewardEngine.cosmetics
     }
 
     var companionGrowthProviderStatus: (available: Int, total: Int) {

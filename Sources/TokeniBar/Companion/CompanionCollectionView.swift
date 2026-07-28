@@ -7,6 +7,7 @@ struct CompanionCollectionView: View {
     @State private var confirmsCompletion = false
     @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
     @State private var showsGrowthBreakdown = true
+    @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
 
     private let stages: [CompanionGameStage] = [.hatchling, .junior, .adult]
 
@@ -53,6 +54,37 @@ struct CompanionCollectionView: View {
             Text(AppLocalization.format(
                 "companion.complete.confirm.message",
                 self.store.companionJourneyCompletionCost))
+        }
+        .confirmationDialog(
+            AppLocalization.string("companion.cosmetic.confirm.title"),
+            isPresented: Binding(
+                get: { self.pendingCosmeticPurchaseID != nil },
+                set: { presented in
+                    if !presented {
+                        self.pendingCosmeticPurchaseID = nil
+                    }
+                }),
+            titleVisibility: .visible)
+        {
+            if let cosmetic = self.pendingCosmeticPurchase {
+                Button(AppLocalization.format(
+                    "companion.cosmetic.confirm.action",
+                    cosmetic.cost))
+                {
+                    self.store.purchaseCompanionCosmetic(cosmetic.id)
+                    self.pendingCosmeticPurchaseID = nil
+                }
+            }
+            Button(AppLocalization.string("action.cancel"), role: .cancel) {
+                self.pendingCosmeticPurchaseID = nil
+            }
+        } message: {
+            if let cosmetic = self.pendingCosmeticPurchase {
+                Text(AppLocalization.format(
+                    "companion.cosmetic.confirm.message",
+                    self.cosmeticName(cosmetic.id),
+                    cosmetic.cost))
+            }
         }
         .sheet(item: Binding(
             get: { self.store.companionReveal },
@@ -222,6 +254,27 @@ struct CompanionCollectionView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(AppLocalization.string("companion.cosmetic.shop"))
+                        .font(.subheadline.weight(.semibold))
+                    Text(AppLocalization.string("companion.cosmetic.description"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                LazyVGrid(
+                    columns: Array(
+                        repeating: GridItem(.flexible(), spacing: 8),
+                        count: 3),
+                    spacing: 8)
+                {
+                    ForEach(self.store.companionCosmetics) { cosmetic in
+                        self.cosmeticCard(cosmetic)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 4)
@@ -239,6 +292,78 @@ struct CompanionCollectionView: View {
         }
     }
 
+    private var pendingCosmeticPurchase: CompanionCosmetic? {
+        guard let pendingCosmeticPurchaseID else { return nil }
+        return self.store.companionCosmetics.first {
+            $0.id == pendingCosmeticPurchaseID
+        }
+    }
+
+    private func cosmeticCard(_ cosmetic: CompanionCosmetic) -> some View {
+        let isOwned = self.store.companionRewardState.unlockedCosmeticIDs
+            .contains(cosmetic.id)
+        let isSelected = self.store.companionRewardState.selectedCosmeticID
+            == cosmetic.id
+        let canAfford = self.store.companionRewardState.starShards >= cosmetic.cost
+
+        return VStack(spacing: 7) {
+            Image(systemName: cosmetic.id.systemImage)
+                .font(.title2)
+                .foregroundStyle(isOwned ? Color.yellow : Color.secondary)
+                .frame(height: 26)
+            Text(self.cosmeticName(cosmetic.id))
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+            Text(AppLocalization.format(
+                "companion.cosmetic.price",
+                cosmetic.cost))
+                .font(.caption2)
+                .foregroundStyle(
+                    canAfford || isOwned ? Color.secondary : Color.orange)
+
+            Button(self.cosmeticActionTitle(
+                isOwned: isOwned,
+                isSelected: isSelected,
+                canAfford: canAfford))
+            {
+                if isSelected {
+                    self.store.selectCompanionCosmetic(nil)
+                } else if isOwned {
+                    self.store.selectCompanionCosmetic(cosmetic.id)
+                } else {
+                    self.pendingCosmeticPurchaseID = cosmetic.id
+                }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(!isOwned && !canAfford)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(9)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func cosmeticName(_ cosmeticID: CompanionCosmeticID) -> String {
+        AppLocalization.string("companion.cosmetic.\(cosmeticID.rawValue)")
+    }
+
+    private func cosmeticActionTitle(
+        isOwned: Bool,
+        isSelected: Bool,
+        canAfford: Bool) -> String
+    {
+        if isSelected {
+            return AppLocalization.string("companion.cosmetic.remove")
+        }
+        if isOwned {
+            return AppLocalization.string("companion.cosmetic.equip")
+        }
+        return AppLocalization.string(
+            canAfford
+                ? "companion.cosmetic.buy"
+                : "companion.cosmetic.insufficient")
+    }
+
     private var currentCompanion: some View {
         HStack(spacing: 18) {
             ByteBotTransitionView(
@@ -246,6 +371,7 @@ struct CompanionCollectionView: View {
                 stage: self.store.companionStage,
                 rarity: self.store.companionState.rarity,
                 behavior: self.store.companionBehavior,
+                cosmeticID: self.store.companionRewardState.selectedCosmeticID,
                 dimension: 104,
                 animationsEnabled: self.store.companionAnimationsEnabled)
 

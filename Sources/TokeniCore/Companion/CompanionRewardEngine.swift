@@ -47,13 +47,20 @@ public struct CompanionRewardRules: Sendable {
 
 public struct CompanionRewardEngine: Sendable {
     public let rules: CompanionRewardRules
+    public let cosmetics: [CompanionCosmetic]
     private var calendar: Calendar
 
     public init(
         rules: CompanionRewardRules = .standard,
+        cosmetics: [CompanionCosmetic] = [
+            CompanionCosmetic(id: .sparkleAura, cost: 60),
+            CompanionCosmetic(id: .starCrown, cost: 120),
+            CompanionCosmetic(id: .nightRing, cost: 200),
+        ],
         calendar: Calendar = .current)
     {
         self.rules = rules
+        self.cosmetics = cosmetics
         self.calendar = calendar
     }
 
@@ -171,6 +178,41 @@ public struct CompanionRewardEngine: Sendable {
 
         self.apply(grants, at: date, to: &state)
         return grants
+    }
+
+    public func purchase(
+        cosmeticID: CompanionCosmeticID,
+        at date: Date = .now,
+        in state: inout CompanionRewardState) throws
+    {
+        guard let cosmetic = self.cosmetics.first(where: { $0.id == cosmeticID }) else {
+            throw CompanionRewardError.unknownCosmetic
+        }
+        guard !state.unlockedCosmeticIDs.contains(cosmeticID) else {
+            throw CompanionRewardError.cosmeticAlreadyOwned
+        }
+        guard state.starShards >= cosmetic.cost else {
+            throw CompanionRewardError.insufficientStarShards
+        }
+
+        state.starShards -= cosmetic.cost
+        state.unlockedCosmeticIDs.insert(cosmeticID)
+        state.selectedCosmeticID = cosmeticID
+        state.updatedAt = date
+    }
+
+    public func select(
+        cosmeticID: CompanionCosmeticID?,
+        at date: Date = .now,
+        in state: inout CompanionRewardState) throws
+    {
+        if let cosmeticID,
+           !state.unlockedCosmeticIDs.contains(cosmeticID)
+        {
+            throw CompanionRewardError.cosmeticNotOwned
+        }
+        state.selectedCosmeticID = cosmeticID
+        state.updatedAt = date
     }
 
     private func apply(
