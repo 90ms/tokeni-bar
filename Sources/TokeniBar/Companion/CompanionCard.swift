@@ -15,7 +15,7 @@ struct CompanionCard: View {
                     stage: self.store.companionStage,
                     rarity: self.store.companionState.rarity,
                     behavior: self.store.companionBehavior,
-                    cosmeticID: self.store.companionRewardState.selectedCosmeticID,
+                    cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                     dimension: self.compact ? 50 : 62,
                     animationsEnabled: self.store.companionAnimationsEnabled)
 

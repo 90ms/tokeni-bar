@@ -10,7 +10,7 @@ struct ByteBotTransitionView: View {
     let stage: CompanionGameStage
     let rarity: CompanionRarity?
     let behavior: CompanionBehavior
-    var cosmeticID: CompanionCosmeticID? = nil
+    var cosmeticIDs: Set<CompanionCosmeticID> = []
     var dimension: CGFloat = 64
     var animationsEnabled = true
 
@@ -22,6 +22,18 @@ struct ByteBotTransitionView: View {
 
     var body: some View {
         ZStack {
+            if let cosmeticID = self.cosmeticID(in: .background) {
+                CompanionCosmeticDecoration(
+                    cosmeticID: cosmeticID,
+                    dimension: self.dimension)
+            }
+
+            if let cosmeticID = self.cosmeticID(in: .aura) {
+                CompanionCosmeticDecoration(
+                    cosmeticID: cosmeticID,
+                    dimension: self.dimension)
+            }
+
             if let effect {
                 self.burst(for: effect)
             }
@@ -35,7 +47,7 @@ struct ByteBotTransitionView: View {
                 animationsEnabled: self.animationsEnabled)
                 .scaleEffect(self.effect == nil ? 1 : (self.expanded ? 1.08 : 0.72))
 
-            if let cosmeticID = self.cosmeticID {
+            if let cosmeticID = self.cosmeticID(in: .head) {
                 CompanionCosmeticDecoration(
                     cosmeticID: cosmeticID,
                     dimension: self.dimension)
@@ -116,6 +128,10 @@ struct ByteBotTransitionView: View {
 
     private var displayedKey: TransitionKey {
         self.presentedKey ?? self.transitionKey
+    }
+
+    private func cosmeticID(in slot: CompanionCosmeticSlot) -> CompanionCosmeticID? {
+        self.cosmeticIDs.first { $0.slot == slot }
     }
 
     private func handleTransition(

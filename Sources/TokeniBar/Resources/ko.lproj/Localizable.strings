@@ -182,6 +182,14 @@
 "companion.cosmetic.sparkleAura" = "반짝임 오라";
 "companion.cosmetic.starCrown" = "별 왕관";
 "companion.cosmetic.nightRing" = "밤하늘 링";
+"companion.cosmetic.pixelHearts" = "픽셀 하트";
+"companion.cosmetic.developerHeadphones" = "개발자 헤드폰";
+"companion.cosmetic.wizardHat" = "마법사 모자";
+"companion.cosmetic.terminalNight" = "터미널 나이트";
+"companion.cosmetic.cloudGarden" = "구름 정원";
+"companion.cosmetic.slot.head" = "머리";
+"companion.cosmetic.slot.aura" = "오라";
+"companion.cosmetic.slot.background" = "배경";
 "companion.cosmetic.price" = "별조각 %d개";
 "companion.cosmetic.buy" = "구매";
 "companion.cosmetic.equip" = "착용";

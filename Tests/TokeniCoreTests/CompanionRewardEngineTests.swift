@@ -168,16 +168,22 @@ struct CompanionRewardEngineTests {
 
         #expect(state.starShards == 130)
         #expect(state.unlockedCosmeticIDs == [.starCrown])
-        #expect(state.selectedCosmeticID == .starCrown)
+        #expect(state.selectedCosmeticIDs == [.starCrown])
         #expect(state.updatedAt == now)
         #expect(throws: CompanionRewardError.cosmeticAlreadyOwned) {
             try engine.purchase(cosmeticID: .starCrown, in: &state)
         }
 
-        try engine.select(cosmeticID: nil, at: now, in: &state)
-        #expect(state.selectedCosmeticID == nil)
+        engine.unequip(slot: .head, at: now, in: &state)
+        #expect(state.selectedCosmeticIDs.isEmpty)
         try engine.select(cosmeticID: .starCrown, at: now, in: &state)
-        #expect(state.selectedCosmeticID == .starCrown)
+        #expect(state.selectedCosmeticIDs == [.starCrown])
+
+        state.starShards = 500
+        try engine.purchase(cosmeticID: .sparkleAura, at: now, in: &state)
+        #expect(state.selectedCosmeticIDs == [.starCrown, .sparkleAura])
+        try engine.purchase(cosmeticID: .pixelHearts, at: now, in: &state)
+        #expect(state.selectedCosmeticIDs == [.starCrown, .pixelHearts])
     }
 
     @Test("Cosmetics reject insufficient balances and locked selections")
@@ -193,7 +199,7 @@ struct CompanionRewardEngineTests {
         }
         #expect(state.starShards == 59)
         #expect(state.unlockedCosmeticIDs.isEmpty)
-        #expect(state.selectedCosmeticID == nil)
+        #expect(state.selectedCosmeticIDs.isEmpty)
         #expect(state.rewardedRarities.isEmpty)
         #expect(state.rewardedGrowthDateKeys.isEmpty)
         #expect(state.latestRewardedAppVersion == nil)
@@ -251,7 +257,38 @@ struct CompanionRewardEngineTests {
         #expect(state.schemaVersion == CompanionRewardState.currentSchemaVersion)
         #expect(state.starShards == 175)
         #expect(state.unlockedCosmeticIDs.isEmpty)
-        #expect(state.selectedCosmeticID == nil)
+        #expect(state.selectedCosmeticIDs.isEmpty)
+    }
+
+    @Test("Single equipped cosmetic migrates into its slot")
+    func legacyCosmeticSelection() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let file = directory.appending(path: "rewards.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true)
+        let legacy = """
+        {
+          "schemaVersion" : 3,
+          "starShards" : 55,
+          "attendanceRecords" : [],
+          "awardedMilestoneIDs" : [],
+          "rewardedSpeciesIDs" : [],
+          "rewardedJourneyCount" : 0,
+          "rewardedFormMilestones" : [],
+          "unlockedCosmeticIDs" : ["starCrown"],
+          "selectedCosmeticID" : "starCrown",
+          "updatedAt" : "2027-01-15T08:00:00Z"
+        }
+        """
+        try Data(legacy.utf8).write(to: file)
+
+        let state = try await CompanionRewardStateStore(fileURL: file).load()
+
+        #expect(state.unlockedCosmeticIDs == [.starCrown])
+        #expect(state.selectedCosmeticIDs == [.starCrown])
     }
 
     private func forms(at date: Date) -> [CompanionFormRecord] {

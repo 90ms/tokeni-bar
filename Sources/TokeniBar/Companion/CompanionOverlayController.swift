@@ -172,7 +172,7 @@ private struct CompanionOverlayView: View {
             stage: self.store.companionStage,
             rarity: self.store.companionState.rarity,
             behavior: self.store.companionBehavior,
-            cosmeticID: self.store.companionRewardState.selectedCosmeticID,
+            cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
             dimension: self.store.companionOverlaySize.spriteDimension,
             animationsEnabled: self.store.companionAnimationsEnabled)
             .padding(8)

@@ -66,8 +66,13 @@ public struct CompanionRewardEngine: Sendable {
         rules: CompanionRewardRules = .standard,
         cosmetics: [CompanionCosmetic] = [
             CompanionCosmetic(id: .sparkleAura, cost: 60),
+            CompanionCosmetic(id: .pixelHearts, cost: 80),
+            CompanionCosmetic(id: .developerHeadphones, cost: 100),
             CompanionCosmetic(id: .starCrown, cost: 120),
+            CompanionCosmetic(id: .wizardHat, cost: 140),
+            CompanionCosmetic(id: .terminalNight, cost: 160),
             CompanionCosmetic(id: .nightRing, cost: 200),
+            CompanionCosmetic(id: .cloudGarden, cost: 220),
         ],
         calendar: Calendar = .current)
     {
@@ -266,21 +271,36 @@ public struct CompanionRewardEngine: Sendable {
 
         state.starShards -= cosmetic.cost
         state.unlockedCosmeticIDs.insert(cosmeticID)
-        state.selectedCosmeticID = cosmeticID
+        state.selectedCosmeticIDs = Set(state.selectedCosmeticIDs.filter {
+            $0.slot != cosmeticID.slot
+        })
+        state.selectedCosmeticIDs.insert(cosmeticID)
         state.updatedAt = date
     }
 
     public func select(
-        cosmeticID: CompanionCosmeticID?,
+        cosmeticID: CompanionCosmeticID,
         at date: Date = .now,
         in state: inout CompanionRewardState) throws
     {
-        if let cosmeticID,
-           !state.unlockedCosmeticIDs.contains(cosmeticID)
-        {
+        guard state.unlockedCosmeticIDs.contains(cosmeticID) else {
             throw CompanionRewardError.cosmeticNotOwned
         }
-        state.selectedCosmeticID = cosmeticID
+        state.selectedCosmeticIDs = Set(state.selectedCosmeticIDs.filter {
+            $0.slot != cosmeticID.slot
+        })
+        state.selectedCosmeticIDs.insert(cosmeticID)
+        state.updatedAt = date
+    }
+
+    public func unequip(
+        slot: CompanionCosmeticSlot,
+        at date: Date = .now,
+        in state: inout CompanionRewardState)
+    {
+        state.selectedCosmeticIDs = Set(state.selectedCosmeticIDs.filter {
+            $0.slot != slot
+        })
         state.updatedAt = date
     }
 

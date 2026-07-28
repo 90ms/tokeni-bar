@@ -333,8 +333,8 @@ struct CompanionCollectionView: View {
     private func cosmeticCard(_ cosmetic: CompanionCosmetic) -> some View {
         let isOwned = self.store.companionRewardState.unlockedCosmeticIDs
             .contains(cosmetic.id)
-        let isSelected = self.store.companionRewardState.selectedCosmeticID
-            == cosmetic.id
+        let isSelected = self.store.companionRewardState.selectedCosmeticIDs
+            .contains(cosmetic.id)
         let canAfford = self.store.companionRewardState.starShards >= cosmetic.cost
 
         return VStack(spacing: 7) {
@@ -345,6 +345,9 @@ struct CompanionCollectionView: View {
             Text(self.cosmeticName(cosmetic.id))
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
+            Text(self.cosmeticSlotName(cosmetic.id.slot))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
             Text(AppLocalization.format(
                 "companion.cosmetic.price",
                 cosmetic.cost))
@@ -358,7 +361,7 @@ struct CompanionCollectionView: View {
                 canAfford: canAfford))
             {
                 if isSelected {
-                    self.store.selectCompanionCosmetic(nil)
+                    self.store.unequipCompanionCosmetic(slot: cosmetic.id.slot)
                 } else if isOwned {
                     self.store.selectCompanionCosmetic(cosmetic.id)
                 } else {
@@ -376,6 +379,10 @@ struct CompanionCollectionView: View {
 
     private func cosmeticName(_ cosmeticID: CompanionCosmeticID) -> String {
         AppLocalization.string("companion.cosmetic.\(cosmeticID.rawValue)")
+    }
+
+    private func cosmeticSlotName(_ slot: CompanionCosmeticSlot) -> String {
+        AppLocalization.string("companion.cosmetic.slot.\(slot.rawValue)")
     }
 
     private func cosmeticActionTitle(
@@ -402,7 +409,7 @@ struct CompanionCollectionView: View {
                 stage: self.store.companionStage,
                 rarity: self.store.companionState.rarity,
                 behavior: self.store.companionBehavior,
-                cosmeticID: self.store.companionRewardState.selectedCosmeticID,
+                cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                 dimension: 104,
                 animationsEnabled: self.store.companionAnimationsEnabled)
 

@@ -57,7 +57,7 @@ struct SettingsView: View {
                         stage: self.store.companionStage,
                         rarity: self.store.companionState.rarity,
                         behavior: self.store.companionBehavior,
-                        cosmeticID: self.store.companionRewardState.selectedCosmeticID,
+                        cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                         dimension: 96,
                         animationsEnabled: self.store.companionAnimationsEnabled)
                     Spacer()

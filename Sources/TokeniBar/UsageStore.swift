@@ -692,13 +692,21 @@ final class UsageStore: ObservableObject {
         self.saveCompanionRewardState()
     }
 
-    func selectCompanionCosmetic(_ cosmeticID: CompanionCosmeticID?) {
+    func selectCompanionCosmetic(_ cosmeticID: CompanionCosmeticID) {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionRewardState
         guard (try? self.companionRewardEngine.select(
             cosmeticID: cosmeticID,
             in: &state)) != nil
         else { return }
+        self.companionRewardState = state
+        self.saveCompanionRewardState()
+    }
+
+    func unequipCompanionCosmetic(slot: CompanionCosmeticSlot) {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionRewardState
+        self.companionRewardEngine.unequip(slot: slot, in: &state)
         self.companionRewardState = state
         self.saveCompanionRewardState()
     }

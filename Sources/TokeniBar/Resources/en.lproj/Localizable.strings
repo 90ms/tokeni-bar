@@ -182,6 +182,14 @@
 "companion.cosmetic.sparkleAura" = "Sparkle Aura";
 "companion.cosmetic.starCrown" = "Star Crown";
 "companion.cosmetic.nightRing" = "Night Ring";
+"companion.cosmetic.pixelHearts" = "Pixel Hearts";
+"companion.cosmetic.developerHeadphones" = "Developer Headphones";
+"companion.cosmetic.wizardHat" = "Wizard Hat";
+"companion.cosmetic.terminalNight" = "Terminal Night";
+"companion.cosmetic.cloudGarden" = "Cloud Garden";
+"companion.cosmetic.slot.head" = "Head";
+"companion.cosmetic.slot.aura" = "Aura";
+"companion.cosmetic.slot.background" = "Background";
 "companion.cosmetic.price" = "%d Star Shards";
 "companion.cosmetic.buy" = "Buy";
 "companion.cosmetic.equip" = "Equip";

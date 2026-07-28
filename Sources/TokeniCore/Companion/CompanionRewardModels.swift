@@ -4,6 +4,28 @@ public enum CompanionCosmeticID: String, Codable, CaseIterable, Hashable, Sendab
     case sparkleAura
     case starCrown
     case nightRing
+    case pixelHearts
+    case developerHeadphones
+    case wizardHat
+    case terminalNight
+    case cloudGarden
+
+    public var slot: CompanionCosmeticSlot {
+        switch self {
+        case .sparkleAura, .nightRing, .pixelHearts:
+            .aura
+        case .starCrown, .developerHeadphones, .wizardHat:
+            .head
+        case .terminalNight, .cloudGarden:
+            .background
+        }
+    }
+}
+
+public enum CompanionCosmeticSlot: String, Codable, CaseIterable, Hashable, Sendable {
+    case head
+    case aura
+    case background
 }
 
 public struct CompanionCosmetic: Identifiable, Hashable, Sendable {
@@ -36,7 +58,7 @@ public struct CompanionAttendanceRecord: Codable, Hashable, Sendable {
 }
 
 public struct CompanionRewardState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 3
+    public static let currentSchemaVersion = 4
 
     public var schemaVersion: Int
     public var starShards: Int
@@ -50,7 +72,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
     public var latestRewardedAppVersion: String?
     public var latestObservedDateKey: String?
     public var unlockedCosmeticIDs: Set<CompanionCosmeticID>
-    public var selectedCosmeticID: CompanionCosmeticID?
+    public var selectedCosmeticIDs: Set<CompanionCosmeticID>
     public var updatedAt: Date
 
     public init(
@@ -66,7 +88,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         latestRewardedAppVersion: String? = nil,
         latestObservedDateKey: String? = nil,
         unlockedCosmeticIDs: Set<CompanionCosmeticID> = [],
-        selectedCosmeticID: CompanionCosmeticID? = nil,
+        selectedCosmeticIDs: Set<CompanionCosmeticID> = [],
         updatedAt: Date = .now)
     {
         self.schemaVersion = schemaVersion
@@ -81,7 +103,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         self.latestRewardedAppVersion = latestRewardedAppVersion
         self.latestObservedDateKey = latestObservedDateKey
         self.unlockedCosmeticIDs = unlockedCosmeticIDs
-        self.selectedCosmeticID = selectedCosmeticID
+        self.selectedCosmeticIDs = selectedCosmeticIDs
         self.updatedAt = updatedAt
     }
 
@@ -106,9 +128,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             && self.latestRewardedAppVersion.map {
                 SemanticVersion($0) != nil
             } != false
-            && self.selectedCosmeticID.map {
-                self.unlockedCosmeticIDs.contains($0)
-            } != false
+            && Set(self.selectedCosmeticIDs.map(\.slot)).count
+                == self.selectedCosmeticIDs.count
+            && self.selectedCosmeticIDs.isSubset(of: self.unlockedCosmeticIDs)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -124,6 +146,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         case latestRewardedAppVersion
         case latestObservedDateKey
         case unlockedCosmeticIDs
+        case selectedCosmeticIDs
         case selectedCosmeticID
         case updatedAt
     }
@@ -138,6 +161,23 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
                 forKey: .schemaVersion,
                 in: container,
                 debugDescription: "Unsupported companion reward schema")
+        }
+        let unlockedCosmeticIDs = try container.decodeIfPresent(
+            Set<CompanionCosmeticID>.self,
+            forKey: .unlockedCosmeticIDs) ?? []
+        let selectedCosmeticIDs: Set<CompanionCosmeticID>
+        if let current = try container.decodeIfPresent(
+            Set<CompanionCosmeticID>.self,
+            forKey: .selectedCosmeticIDs)
+        {
+            selectedCosmeticIDs = current
+        } else if let legacy = try container.decodeIfPresent(
+            CompanionCosmeticID.self,
+            forKey: .selectedCosmeticID)
+        {
+            selectedCosmeticIDs = [legacy]
+        } else {
+            selectedCosmeticIDs = []
         }
         self.init(
             starShards: try container.decodeIfPresent(
@@ -170,12 +210,8 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             latestObservedDateKey: try container.decodeIfPresent(
                 String.self,
                 forKey: .latestObservedDateKey),
-            unlockedCosmeticIDs: try container.decodeIfPresent(
-                Set<CompanionCosmeticID>.self,
-                forKey: .unlockedCosmeticIDs) ?? [],
-            selectedCosmeticID: try container.decodeIfPresent(
-                CompanionCosmeticID.self,
-                forKey: .selectedCosmeticID),
+            unlockedCosmeticIDs: unlockedCosmeticIDs,
+            selectedCosmeticIDs: selectedCosmeticIDs,
             updatedAt: try container.decodeIfPresent(
                 Date.self,
                 forKey: .updatedAt) ?? .now)
