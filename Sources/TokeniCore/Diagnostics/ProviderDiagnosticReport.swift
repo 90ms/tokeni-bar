@@ -57,6 +57,8 @@ public enum ProviderDiagnosticReportBuilder {
             lines.append("quota_window_count=\(snapshot.quotaWindows.count)")
             lines.append("reset_credit_available_count=\(snapshot.quotaResetCredits?.availableCount ?? 0)")
             lines.append("reset_credit_returned_count=\(snapshot.quotaResetCredits?.credits.count ?? 0)")
+            lines.append(
+                "account_token_issue=\(snapshot.accountTokenUsageIssue?.rawValue ?? "none")")
             self.append(
                 snapshot.accountTokenUsage?.todayTokens,
                 as: "account_token_today",

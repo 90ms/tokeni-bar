@@ -42,6 +42,7 @@ struct ProviderDiagnosticReportTests {
                 currentMonthTokens: 2_000,
                 lifetimeTokens: 3_000,
                 localDate: "2026-07-21"),
+            accountTokenUsageIssue: .unsupported,
             credits: CreditBalance(balance: secret, hasCredits: true, unlimited: false),
             quotaResetCredits: QuotaResetCreditSummary(
                 availableCount: 1,
@@ -72,6 +73,7 @@ struct ProviderDiagnosticReportTests {
         #expect(report.contains("account_token_today=1000"))
         #expect(report.contains("account_token_current_month=2000"))
         #expect(report.contains("account_token_lifetime=3000"))
+        #expect(report.contains("account_token_issue=unsupported"))
         #expect(report.contains("cost_models=safe-model-1"))
         #expect(report.contains("freshness_seconds=60"))
         #expect(!report.contains(homePath))

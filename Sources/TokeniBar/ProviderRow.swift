@@ -148,6 +148,25 @@ struct ProviderRow: View {
                         systemImage: "chart.bar.xaxis")
                         .font(.caption)
 
+                    if accountUsage.todayTokens != nil {
+                        Label(
+                            AppLocalization.string("usage.accountTokens.todayConfirmed"),
+                            systemImage: "checkmark.circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                    } else {
+                        Label(
+                            accountUsage.latestBucketDate.map {
+                                AppLocalization.format(
+                                    "usage.accountTokens.todayPendingThrough",
+                                    $0)
+                            } ?? AppLocalization.string(
+                                "usage.accountTokens.todayPending"),
+                            systemImage: "clock")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
+
                     self.accountTokenUsageRow(
                         label: accountUsage.latestBucketDate.map {
                             AppLocalization.format("usage.accountTokens.latestDaily", $0)
@@ -167,6 +186,14 @@ struct ProviderRow: View {
                         tokens: accountUsage.lifetimeTokens,
                         costUSD: referenceCosts?.lifetime.amountUSD)
                 }
+            }
+
+            if let issue = snapshot.accountTokenUsageIssue {
+                Label(
+                    AppLocalization.string("usage.accountTokens.issue.\(issue.rawValue)"),
+                    systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
             }
 
             if snapshot.accountTokenUsage == nil,

@@ -24,6 +24,13 @@
 "usage.accountTokens.costDisclaimer" = "A rough reference based on total account tokens, not an actual bill.";
 "usage.accountTokens.dataThrough" = "Account data through %@";
 "usage.accountTokens.unavailable" = "Pending";
+"usage.accountTokens.todayConfirmed" = "Today's usage confirmed";
+"usage.accountTokens.todayPending" = "Waiting for today's usage";
+"usage.accountTokens.todayPendingThrough" = "Today pending · confirmed through %@";
+"usage.accountTokens.issue.executableUnavailable" = "Codex CLI not found";
+"usage.accountTokens.issue.signInRequired" = "Codex sign-in required";
+"usage.accountTokens.issue.unsupported" = "Codex CLI update required";
+"usage.accountTokens.issue.failed" = "Account token activity unavailable";
 "usage.resetCredits" = "Limit reset credits";
 "usage.resetCredits.available" = "%d available";
 "usage.resetCredits.expires" = "Expires";
@@ -162,6 +169,9 @@
 "companion.energy.providerTokens" = "%@ tokens";
 "companion.energy.providerPending" = "Waiting for data";
 "companion.energy.curve" = "Verified tokens are combined, with energy increasing more gradually at higher usage.";
+"companion.energy.delayedSettlement" = "Confirmed usage from an earlier date was credited to today's earned energy.";
+"companion.energy.settledToday" = "Settled today";
+"companion.energy.todayPending" = "Today pending";
 "companion.rewards.title" = "Star Shards and Attendance";
 "companion.rewards.balance" = "%d Star Shards";
 "companion.rewards.description" = "Earn Star Shards from attendance, discoveries, journeys, and collection milestones, then spend them on cosmetics.";

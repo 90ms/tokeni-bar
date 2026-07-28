@@ -73,7 +73,8 @@ struct TokenGrowthLedgerTests {
             GrowthProviderDayTotal(
                 dateKey: "2026-07-27",
                 providerID: .codex,
-                tokens: 352_031),
+                tokens: 352_031,
+                lastCreditedAt: observedAt),
         ])
         #expect(GrowthLocalDate.key(for: usageDate, calendar: self.calendar) == "2026-07-27")
     }
@@ -97,6 +98,21 @@ struct TokenGrowthLedgerTests {
 
         #expect(awards.isEmpty)
         #expect(state.providerDayTotals.isEmpty)
+    }
+
+    @Test("Legacy provider totals decode without settlement metadata")
+    func legacyProviderTotalDecoding() throws {
+        let data = Data(
+            #"{"dateKey":"2026-07-27","providerID":"codex","tokens":352031}"#.utf8)
+
+        let decoded = try JSONDecoder().decode(
+            GrowthProviderDayTotal.self,
+            from: data)
+
+        #expect(decoded.dateKey == "2026-07-27")
+        #expect(decoded.providerID == .codex)
+        #expect(decoded.tokens == 352_031)
+        #expect(decoded.lastCreditedAt == nil)
     }
 
     @Test("Cumulative counters establish a baseline before awarding deltas")

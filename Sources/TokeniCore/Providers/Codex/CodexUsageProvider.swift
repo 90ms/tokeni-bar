@@ -29,14 +29,15 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
 
     public func fetchUsage() async -> ProviderSnapshot {
         let localUsage = self.latestLocalUsage()
-        async let accountTokenUsageFetch = try? self.accountTokenUsageClient.fetch()
+        async let accountTokenUsageTask = self.fetchAccountTokenUsage()
 
         do {
             let credentials = try self.credentialLoader.load()
             async let resetCreditsFetch = try? self.resetCreditsClient.fetch(credentials: credentials)
             let result = try await self.accountClient.fetch(credentials: credentials)
             let resetCreditsResult = await resetCreditsFetch
-            let accountTokenUsageResult = await accountTokenUsageFetch
+            let accountTokenUsageFetch = await accountTokenUsageTask
+            let accountTokenUsageResult = accountTokenUsageFetch.result
             let resetCredits = resetCreditsResult?.response.summary()
             let accountTokenUsage = self.accountTokenUsage(from: accountTokenUsageResult)
             let growthObservation = self.growthObservation(
@@ -62,16 +63,18 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
                 },
                 costEstimate: referenceCost,
                 accountTokenUsage: accountTokenUsage,
+                accountTokenUsageIssue: accountTokenUsageFetch.issue,
                 credits: accountUsage.creditBalance,
                 quotaResetCredits: resetCredits,
                 growthUsageObservation: growthObservation,
                 detail: detail,
                 updatedAt: max(result.fetchedAt, accountTokenUsageResult?.fetchedAt ?? .distantPast))
         } catch {
-            let accountTokenUsageResult = await accountTokenUsageFetch
+            let accountTokenUsageFetch = await accountTokenUsageTask
             return self.localFallback(
                 localUsage: localUsage,
-                accountTokenUsageResult: accountTokenUsageResult,
+                accountTokenUsageResult: accountTokenUsageFetch.result,
+                accountTokenUsageIssue: accountTokenUsageFetch.issue,
                 accountError: error)
         }
     }
@@ -106,6 +109,7 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
     private func localFallback(
         localUsage: CodexParsedUsage?,
         accountTokenUsageResult: CodexAccountTokenUsageResult?,
+        accountTokenUsageIssue: AccountTokenUsageIssue?,
         accountError: Error) -> ProviderSnapshot
     {
         let errorMessage = (accountError as? LocalizedError)?.errorDescription
@@ -126,6 +130,7 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
                 },
                 costEstimate: referenceCost,
                 accountTokenUsage: accountTokenUsage,
+                accountTokenUsageIssue: accountTokenUsageIssue,
                 credits: localUsage?.credits,
                 growthUsageObservation: growthObservation,
                 detail: errorMessage.map { "Partial Codex data · \($0)" }
@@ -138,7 +143,31 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             descriptor: self.descriptor,
             availability: .stale,
             source: .localSessionLog,
+            accountTokenUsageIssue: accountTokenUsageIssue,
             detail: errorMessage ?? "No Codex usage event was found in ~/.codex/sessions")
+    }
+
+    private func fetchAccountTokenUsage() async -> (
+        result: CodexAccountTokenUsageResult?,
+        issue: AccountTokenUsageIssue?)
+    {
+        do {
+            return (try await self.accountTokenUsageClient.fetch(), nil)
+        } catch let error as CodexAccountTokenUsageError {
+            let issue: AccountTokenUsageIssue = switch error {
+            case .executableUnavailable:
+                .executableUnavailable
+            case .accountUnavailable:
+                .signInRequired
+            case .unsupported:
+                .unsupported
+            case .launchFailed, .timedOut, .server(_), .invalidResponse:
+                .failed
+            }
+            return (nil, issue)
+        } catch {
+            return (nil, .failed)
+        }
     }
 
     private func accountTokenUsage(

@@ -24,6 +24,13 @@
 "usage.accountTokens.costDisclaimer" = "계정 총 토큰으로 계산한 거친 참고값이며 실제 청구액이 아닙니다.";
 "usage.accountTokens.dataThrough" = "계정 데이터 %@까지";
 "usage.accountTokens.unavailable" = "집계 대기 중";
+"usage.accountTokens.todayConfirmed" = "오늘 사용량 확정";
+"usage.accountTokens.todayPending" = "오늘 사용량 집계 대기";
+"usage.accountTokens.todayPendingThrough" = "오늘 집계 대기 · %@까지 확정";
+"usage.accountTokens.issue.executableUnavailable" = "Codex CLI를 찾을 수 없음";
+"usage.accountTokens.issue.signInRequired" = "Codex 로그인이 필요함";
+"usage.accountTokens.issue.unsupported" = "Codex CLI 업데이트가 필요함";
+"usage.accountTokens.issue.failed" = "계정 토큰 사용량 조회 실패";
 "usage.resetCredits" = "한도 초기화 충전권";
 "usage.resetCredits.available" = "%d개 보유";
 "usage.resetCredits.expires" = "만료";
@@ -162,6 +169,9 @@
 "companion.energy.providerTokens" = "%@ 토큰";
 "companion.energy.providerPending" = "확인 대기";
 "companion.energy.curve" = "검증된 토큰을 합산해 계산하며, 사용량이 커질수록 에너지는 완만하게 증가합니다.";
+"companion.energy.delayedSettlement" = "이전 날짜의 확정 사용량이 오늘 획득 에너지에 정산되었습니다.";
+"companion.energy.settledToday" = "오늘 정산";
+"companion.energy.todayPending" = "오늘 집계 대기";
 "companion.rewards.title" = "별조각과 출석";
 "companion.rewards.balance" = "별조각 %d개";
 "companion.rewards.description" = "출석, 새로운 펫 발견, 여정 완료와 도감 달성으로 별조각을 얻어 꾸미기를 해금할 수 있습니다.";

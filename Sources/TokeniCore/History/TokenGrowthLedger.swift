@@ -15,6 +15,19 @@ public struct GrowthProviderDayTotal: Codable, Hashable, Sendable {
     public let dateKey: String
     public let providerID: ProviderID
     public var tokens: Int64
+    public var lastCreditedAt: Date?
+
+    public init(
+        dateKey: String,
+        providerID: ProviderID,
+        tokens: Int64,
+        lastCreditedAt: Date? = nil)
+    {
+        self.dateKey = dateKey
+        self.providerID = providerID
+        self.tokens = max(tokens, 0)
+        self.lastCreditedAt = lastCreditedAt
+    }
 }
 
 public struct GrowthDayCredit: Codable, Hashable, Sendable {
@@ -222,11 +235,13 @@ public struct TokenGrowthLedgerEngine: Sendable {
             state.providerDayTotals[totalIndex].tokens = max(
                 state.providerDayTotals[totalIndex].tokens,
                 observation.totalTokens)
+            state.providerDayTotals[totalIndex].lastCreditedAt = observation.observedAt
         } else {
             state.providerDayTotals.append(GrowthProviderDayTotal(
                 dateKey: dateKey,
                 providerID: observation.providerID,
-                tokens: observation.totalTokens))
+                tokens: observation.totalTokens,
+                lastCreditedAt: observation.observedAt))
         }
         return true
     }
@@ -277,11 +292,13 @@ public struct TokenGrowthLedgerEngine: Sendable {
             state.providerDayTotals[totalIndex].tokens = Self.saturatedAdd(
                 state.providerDayTotals[totalIndex].tokens,
                 delta)
+            state.providerDayTotals[totalIndex].lastCreditedAt = observation.observedAt
         } else {
             state.providerDayTotals.append(GrowthProviderDayTotal(
                 dateKey: dateKey,
                 providerID: observation.providerID,
-                tokens: delta))
+                tokens: delta,
+                lastCreditedAt: observation.observedAt))
         }
         return true
     }

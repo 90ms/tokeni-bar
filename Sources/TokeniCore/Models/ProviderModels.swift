@@ -210,6 +210,13 @@ public struct QuotaResetCreditSummary: Codable, Hashable, Sendable {
     }
 }
 
+public enum AccountTokenUsageIssue: String, Hashable, Sendable {
+    case executableUnavailable
+    case signInRequired
+    case unsupported
+    case failed
+}
+
 public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
     public let descriptor: ProviderDescriptor
     public let availability: ProviderAvailability
@@ -218,6 +225,7 @@ public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
     public let tokenUsage: TokenUsage?
     public let costEstimate: TokenCostEstimate?
     public let accountTokenUsage: AccountTokenUsageSummary?
+    public let accountTokenUsageIssue: AccountTokenUsageIssue?
     public let credits: CreditBalance?
     public let quotaResetCredits: QuotaResetCreditSummary?
     public let growthUsageObservation: GrowthUsageObservation?
@@ -234,6 +242,7 @@ public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
         tokenUsage: TokenUsage? = nil,
         costEstimate: TokenCostEstimate? = nil,
         accountTokenUsage: AccountTokenUsageSummary? = nil,
+        accountTokenUsageIssue: AccountTokenUsageIssue? = nil,
         credits: CreditBalance? = nil,
         quotaResetCredits: QuotaResetCreditSummary? = nil,
         growthUsageObservation: GrowthUsageObservation? = nil,
@@ -247,6 +256,7 @@ public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
         self.tokenUsage = tokenUsage
         self.costEstimate = costEstimate
         self.accountTokenUsage = accountTokenUsage
+        self.accountTokenUsageIssue = accountTokenUsageIssue
         self.credits = credits
         self.quotaResetCredits = quotaResetCredits
         self.growthUsageObservation = growthUsageObservation

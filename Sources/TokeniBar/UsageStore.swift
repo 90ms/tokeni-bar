@@ -5,6 +5,10 @@ import Foundation
 struct CompanionGrowthProviderBreakdown: Identifiable, Equatable {
     let descriptor: ProviderDescriptor
     let reflectedTokens: Int64?
+    let usageDateKey: String?
+    let wasSettledToday: Bool
+    let isTodayPending: Bool
+    let accountIssue: AccountTokenUsageIssue?
 
     var id: ProviderID { self.descriptor.id }
 }
@@ -830,11 +834,17 @@ final class UsageStore: ObservableObject {
     var companionGrowthProviderBreakdown: [CompanionGrowthProviderBreakdown] {
         let dateKey = GrowthLocalDate.key(for: .now)
         let totals = self.tokenGrowthLedgerState.providerDayTotals
-            .filter { $0.dateKey == dateKey }
-            .reduce(into: [ProviderID: Int64]()) { result, total in
-                result[total.providerID] = max(
-                    result[total.providerID, default: 0],
-                    total.tokens)
+            .filter { $0.dateKey <= dateKey }
+            .reduce(into: [ProviderID: GrowthProviderDayTotal]()) { result, total in
+                guard let existing = result[total.providerID] else {
+                    result[total.providerID] = total
+                    return
+                }
+                if total.dateKey > existing.dateKey
+                    || (total.dateKey == existing.dateKey && total.tokens > existing.tokens)
+                {
+                    result[total.providerID] = total
+                }
             }
 
         return self.providers
@@ -847,11 +857,25 @@ final class UsageStore: ObservableObject {
                 let snapshot = self.snapshots.first {
                     $0.id == provider.descriptor.id
                 }
+                let total = totals[provider.descriptor.id]
+                let creditedDateKey = total?.lastCreditedAt.map {
+                    GrowthLocalDate.key(for: $0)
+                }
                 return CompanionGrowthProviderBreakdown(
                     descriptor: provider.descriptor,
-                    reflectedTokens: totals[provider.descriptor.id]
-                        ?? (snapshot?.growthUsageObservation == nil ? nil : 0))
+                    reflectedTokens: total?.tokens,
+                    usageDateKey: total?.dateKey,
+                    wasSettledToday: total?.dateKey != dateKey
+                        && creditedDateKey == dateKey,
+                    isTodayPending: snapshot?.accountTokenUsage.map {
+                        $0.todayTokens == nil
+                    } ?? false,
+                    accountIssue: snapshot?.accountTokenUsageIssue)
             }
+    }
+
+    var hasDelayedCompanionSettlementToday: Bool {
+        self.companionGrowthProviderBreakdown.contains { $0.wasSettledToday }
     }
 
     var companionAttendanceStatus: CompanionAttendanceStatus {

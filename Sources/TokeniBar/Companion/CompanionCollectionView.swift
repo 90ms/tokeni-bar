@@ -161,6 +161,14 @@ struct CompanionCollectionView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                if self.store.hasDelayedCompanionSettlementToday {
+                    Label(
+                        AppLocalization.string("companion.energy.delayedSettlement"),
+                        systemImage: "clock.arrow.circlepath")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+
                 DisclosureGroup(
                     AppLocalization.string("companion.energy.providers"),
                     isExpanded: self.$showsGrowthBreakdown)
@@ -171,15 +179,34 @@ struct CompanionCollectionView: View {
                                 ProviderIcon(descriptor: provider.descriptor)
                                 Text(provider.descriptor.displayName)
                                 Spacer()
-                                if let tokens = provider.reflectedTokens {
-                                    Text(AppLocalization.format(
-                                        "companion.energy.providerTokens",
-                                        tokens.formatted(.number)))
-                                        .monospacedDigit()
-                                } else {
-                                    Text(AppLocalization.string(
-                                        "companion.energy.providerPending"))
-                                        .foregroundStyle(.secondary)
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    if let tokens = provider.reflectedTokens {
+                                        Text(AppLocalization.format(
+                                            "companion.energy.providerTokens",
+                                            tokens.formatted(.number)))
+                                            .monospacedDigit()
+                                        if let usageDateKey = provider.usageDateKey {
+                                            Text(usageDateKey)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        if provider.wasSettledToday {
+                                            Text(AppLocalization.string(
+                                                "companion.energy.settledToday"))
+                                                .foregroundStyle(.orange)
+                                        } else if provider.isTodayPending {
+                                            Text(AppLocalization.string(
+                                                "companion.energy.todayPending"))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    } else if let issue = provider.accountIssue {
+                                        Text(AppLocalization.string(
+                                            "usage.accountTokens.issue.\(issue.rawValue)"))
+                                            .foregroundStyle(.orange)
+                                    } else {
+                                        Text(AppLocalization.string(
+                                            "companion.energy.providerPending"))
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                             }
                         }
