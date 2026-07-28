@@ -47,6 +47,8 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionOverlayEnabled: Bool
     @Published private(set) var companionOverlaySize: CompanionOverlaySize
     @Published private(set) var companionOverlayPositionLocked: Bool
+    @Published private(set) var companionOverlayClickThroughEnabled: Bool
+    @Published private(set) var companionOverlayPositionResetPulse: Int
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
     @Published private(set) var companionRewardState: CompanionRewardState
@@ -95,6 +97,8 @@ final class UsageStore: ObservableObject {
     private static let companionOverlaySizeKey = "companionOverlaySize"
     private static let companionOverlayPositionLockedKey =
         "companionOverlayPositionLocked"
+    private static let companionOverlayClickThroughEnabledKey =
+        "companionOverlayClickThroughEnabled"
 
     init(providers: [any UsageProviding] = ProviderRegistry.defaultProviders()) {
         let knownIDs = Set(providers.map { $0.descriptor.id })
@@ -197,6 +201,9 @@ final class UsageStore: ObservableObject {
             .flatMap(CompanionOverlaySize.init(rawValue:)) ?? .medium
         self.companionOverlayPositionLocked = UserDefaults.standard.bool(
             forKey: Self.companionOverlayPositionLockedKey)
+        self.companionOverlayClickThroughEnabled = UserDefaults.standard.bool(
+            forKey: Self.companionOverlayClickThroughEnabledKey)
+        self.companionOverlayPositionResetPulse = 0
         self.companionState = CompanionGameState()
         self.companionReveal = nil
         self.companionRewardState = CompanionRewardState()
@@ -529,6 +536,17 @@ final class UsageStore: ObservableObject {
         UserDefaults.standard.set(
             locked,
             forKey: Self.companionOverlayPositionLockedKey)
+    }
+
+    func setCompanionOverlayClickThroughEnabled(_ enabled: Bool) {
+        self.companionOverlayClickThroughEnabled = enabled
+        UserDefaults.standard.set(
+            enabled,
+            forKey: Self.companionOverlayClickThroughEnabledKey)
+    }
+
+    func resetCompanionOverlayPosition() {
+        self.companionOverlayPositionResetPulse &+= 1
     }
 
     func patCompanion() {

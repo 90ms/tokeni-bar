@@ -13,6 +13,8 @@ final class CompanionOverlayController: ObservableObject {
         }
         self.setSize(store.companionOverlaySize)
         self.setPositionLocked(store.companionOverlayPositionLocked)
+        self.setClickThroughEnabled(
+            store.companionOverlayClickThroughEnabled)
         self.setVisible(store.showsCompanionOverlay)
     }
 
@@ -49,6 +51,18 @@ final class CompanionOverlayController: ObservableObject {
         self.panel?.isMovableByWindowBackground = !locked
     }
 
+    func setClickThroughEnabled(_ enabled: Bool) {
+        self.panel?.ignoresMouseEvents = enabled
+    }
+
+    func resetPosition(size: CompanionOverlaySize) {
+        guard let panel else { return }
+        let panelSize = NSSize(
+            width: size.panelDimension,
+            height: size.panelDimension)
+        panel.setFrameOrigin(self.defaultOrigin(panelSize: panelSize))
+    }
+
     private func makePanel(store: UsageStore) -> CompanionOverlayPanel {
         let panelSize = NSSize(
             width: store.companionOverlaySize.panelDimension,
@@ -68,7 +82,7 @@ final class CompanionOverlayController: ObservableObject {
         panel.hidesOnDeactivate = false
         panel.isMovableByWindowBackground = !store.companionOverlayPositionLocked
         panel.isReleasedWhenClosed = false
-        panel.ignoresMouseEvents = false
+        panel.ignoresMouseEvents = store.companionOverlayClickThroughEnabled
         panel.collectionBehavior = [
             .canJoinAllSpaces,
             .fullScreenAuxiliary,

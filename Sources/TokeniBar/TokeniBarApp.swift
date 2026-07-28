@@ -99,6 +99,17 @@ struct TokeniBarApp: App {
                 .onChange(of: self.store.companionOverlayPositionLocked) { _, locked in
                     self.companionOverlayController.setPositionLocked(locked)
                 }
+                .onChange(
+                    of: self.store.companionOverlayClickThroughEnabled
+                ) { _, enabled in
+                    self.companionOverlayController.setClickThroughEnabled(enabled)
+                }
+                .onChange(
+                    of: self.store.companionOverlayPositionResetPulse
+                ) { _, _ in
+                    self.companionOverlayController.resetPosition(
+                        size: self.store.companionOverlaySize)
+                }
         }
         .menuBarExtraStyle(.window)
 

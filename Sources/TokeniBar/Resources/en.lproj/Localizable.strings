@@ -76,6 +76,9 @@
 "settings.companion.overlay.size.medium" = "Medium";
 "settings.companion.overlay.size.large" = "Large";
 "settings.companion.overlay.positionLocked" = "Lock pet position";
+"settings.companion.overlay.clickThrough" = "Click through pet";
+"settings.companion.overlay.clickThrough.description" = "Send clicks to the app beneath the pet. Turn this off before moving the pet.";
+"settings.companion.overlay.resetPosition" = "Reset pet position";
 "settings.activity.enabled" = "Animate active sessions";
 "settings.activity.window" = "Activity window";
 "settings.activity.seconds" = "%d seconds";

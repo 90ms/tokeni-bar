@@ -109,6 +109,28 @@ struct SettingsView: View {
                             Text(AppLocalization.string(
                                 "settings.companion.overlay.positionLocked"))
                         }
+
+                        Toggle(isOn: Binding(
+                            get: {
+                                self.store.companionOverlayClickThroughEnabled
+                            },
+                            set: {
+                                self.store.setCompanionOverlayClickThroughEnabled($0)
+                            }))
+                        {
+                            Text(AppLocalization.string(
+                                "settings.companion.overlay.clickThrough"))
+                        }
+                        Text(AppLocalization.string(
+                            "settings.companion.overlay.clickThrough.description"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Button(AppLocalization.string(
+                            "settings.companion.overlay.resetPosition"))
+                        {
+                            self.store.resetCompanionOverlayPosition()
+                        }
                     }
 
                     Button(AppLocalization.string("companion.collection.open")) {

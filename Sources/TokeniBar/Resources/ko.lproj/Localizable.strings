@@ -76,6 +76,9 @@
 "settings.companion.overlay.size.medium" = "보통";
 "settings.companion.overlay.size.large" = "크게";
 "settings.companion.overlay.positionLocked" = "펫 위치 잠금";
+"settings.companion.overlay.clickThrough" = "마우스 클릭 통과";
+"settings.companion.overlay.clickThrough.description" = "펫 아래의 앱을 바로 클릭할 수 있습니다. 이동하려면 이 설정을 끄세요.";
+"settings.companion.overlay.resetPosition" = "펫 위치 초기화";
 "settings.activity.enabled" = "활동 중인 세션 애니메이션";
 "settings.activity.window" = "활동 감지 시간";
 "settings.activity.seconds" = "%d초";
