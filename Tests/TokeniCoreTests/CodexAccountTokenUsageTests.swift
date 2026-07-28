@@ -151,7 +151,9 @@ struct CodexAccountTokenUsageTests {
             pathEnvironment: "",
             homeDirectory: home).resolve()
 
-        #expect(resolved == codex)
+        #expect(
+            resolved?.resolvingSymlinksInPath()
+                == codex.resolvingSymlinksInPath())
     }
 
     @Test
