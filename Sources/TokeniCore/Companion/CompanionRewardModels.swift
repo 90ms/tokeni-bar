@@ -216,6 +216,44 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
                 Date.self,
                 forKey: .updatedAt) ?? .now)
     }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(Self.currentSchemaVersion, forKey: .schemaVersion)
+        try container.encode(self.starShards, forKey: .starShards)
+        try container.encode(self.attendanceRecords, forKey: .attendanceRecords)
+        try container.encode(
+            self.awardedMilestoneIDs,
+            forKey: .awardedMilestoneIDs)
+        try container.encode(
+            self.rewardedSpeciesIDs,
+            forKey: .rewardedSpeciesIDs)
+        try container.encode(
+            self.rewardedJourneyCount,
+            forKey: .rewardedJourneyCount)
+        try container.encode(
+            self.rewardedFormMilestones,
+            forKey: .rewardedFormMilestones)
+        try container.encode(
+            self.rewardedRarities,
+            forKey: .rewardedRarities)
+        try container.encode(
+            self.rewardedGrowthDateKeys,
+            forKey: .rewardedGrowthDateKeys)
+        try container.encodeIfPresent(
+            self.latestRewardedAppVersion,
+            forKey: .latestRewardedAppVersion)
+        try container.encodeIfPresent(
+            self.latestObservedDateKey,
+            forKey: .latestObservedDateKey)
+        try container.encode(
+            self.unlockedCosmeticIDs,
+            forKey: .unlockedCosmeticIDs)
+        try container.encode(
+            self.selectedCosmeticIDs,
+            forKey: .selectedCosmeticIDs)
+        try container.encode(self.updatedAt, forKey: .updatedAt)
+    }
 }
 
 public enum CompanionRewardReason: Hashable, Sendable {

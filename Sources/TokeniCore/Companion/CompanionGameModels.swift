@@ -372,6 +372,15 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     }
 
     public func isValid(rules: CompanionGameRules = .standard) -> Bool {
+        let archivedGenerationsAreValid =
+            self.collection.archivedGenerations.allSatisfy { generation in
+                generation.generationNumber >= 1 && generation.bondEnergy >= 0
+            }
+        let showcasedGenerationIsValid = self.showcasedGenerationID.map { generationID in
+            self.collection.archivedGenerations.contains { generation in
+                generation.generationID == generationID
+            }
+        } != false
         guard self.schemaVersion == Self.currentSchemaVersion,
               self.generationNumber >= 1,
               self.growthEnergy >= 0,
@@ -390,14 +399,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                 == self.collection.archivedGenerations.count,
               self.collection.archivedGenerations.count
                 <= self.collection.totalCompletedGenerations,
-              self.collection.archivedGenerations.allSatisfy {
-                  $0.generationNumber >= 1 && $0.bondEnergy >= 0
-              },
-              self.showcasedGenerationID.map { generationID in
-                  self.collection.archivedGenerations.contains {
-                      $0.generationID == generationID
-                  }
-              } != false,
+              archivedGenerationsAreValid,
+              showcasedGenerationIsValid,
               self.collection.forms.count
                 <= CompanionSpeciesID.allCases.count
                     * 3
