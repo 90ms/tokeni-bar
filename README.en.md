@@ -41,11 +41,11 @@ brew install --formula tokeni-bar
 
 | Area | Information |
 |---|---|
-| Menu bar | Lowest quota, selected provider, monthly cost, or pet status |
+| Menu bar | App icon, lowest quota, selected provider, monthly cost or pet status, and a growth-ready badge |
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Low remaining quota and monthly budget |
-| Tokeni pets | Life stage, species, rarity, today's energy, bond, and behavior |
+| Tokeni pets | Life stage, species, rarity, today's energy, bond, behavior, and an optional desktop overlay |
 | Collection and rewards | Five generation-1 species, 60 forms, attendance, Star Shards, and guarantees |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
@@ -168,6 +168,23 @@ Open the grid button in the menu or choose
 **Settings → Tokeni → Open Pet Collection**. See
 [Tokeni pet growth and collection](docs/bytebot.md) for the complete rules.
 
+## Menu bar and on-screen pet
+
+Every menu-bar display mode uses the Tokeni Bar app icon. A red badge appears
+when there is enough energy to hatch an egg or evolve a Hatchling or Junior.
+Adult journey completion is not included in this badge.
+
+Enable **Settings → Tokeni → Show pet on screen** to keep a transparent pet
+panel above other apps.
+
+- Choose a Small, Medium, or Large display size.
+- Drag the pet to a position that is restored on the next launch.
+- Lock the position to prevent accidental movement.
+- Click-through sends pointer input to the app beneath the pet. Turn it off
+  before moving the pet.
+- Reset position returns the pet to the upper-right of the current screen.
+- The panel joins every desktop Space and supported full-screen apps.
+
 ## Provider support
 
 | Provider | Account quota | Token and cost display | Pet growth source |
@@ -187,10 +204,10 @@ not awarded as new growth. See
 | Step | Action |
 |---:|---|
 | 1 | Run and sign in to each CLI you want to use |
-| 2 | Start Tokeni Bar and open the chart icon in the menu bar |
+| 2 | Start Tokeni Bar and open its app icon in the menu bar |
 | 3 | Choose providers and the menu-bar display under **Settings → General** |
 | 4 | For Claude account quotas, choose **Provider Connections → Connect** |
-| 5 | Use an agent, grow the pet, and claim attendance in the collection |
+| 5 | Use an agent, grow the pet, claim attendance, and optionally enable the on-screen pet |
 
 ## Update and uninstall
 
@@ -219,6 +236,7 @@ blocks the first launch, approve it under
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
 | Pet species, stage, rarity, collection, and guarantees | Access tokens, refresh tokens, and cookies |
 | Star Shards, attendance dates, and awarded milestone IDs | Account secrets and server telemetry |
+| On-screen pet preferences and last position | Screen captures and input content |
 | Deduplication checkpoints | Remote game accounts and analytics telemetry |
 
 Usage history stays on the Mac for 30 days. Pet state, reward records, and
@@ -229,7 +247,9 @@ server.
 
 | Symptom | What to check |
 |---|---|
-| No app window | Look for the chart icon on the right side of the menu bar, not the Dock |
+| No app window | Look for the Tokeni Bar app icon on the right side of the menu bar, not the Dock |
+| Cannot move the on-screen pet | Turn off position lock and click-through under **Settings → Tokeni** |
+| Cannot find the on-screen pet | Choose **Settings → Tokeni → Reset pet position** |
 | Provider unavailable | Confirm the CLI is installed and signed in, then run it once |
 | Claude password prompt repeats after unlock | Update the app and connect once under **Settings → General → Provider Connections**. Background refreshes never open authentication UI |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |

@@ -153,6 +153,18 @@ Existing species discoveries, completed journeys, and collection milestones
 are reconciled once when reward state first loads. Reading the same records
 again never pays twice.
 
+## Menu bar and on-screen display
+
+The menu-bar app icon shows a red badge when action energy is sufficient to
+hatch an egg or evolve a Hatchling or Junior. Adult journey completion remains
+a separate choice and is not included in this badge.
+
+Enable **Settings → Tokeni → Show pet on screen** to place the pet in a
+transparent floating panel. Size, position lock, and click-through behavior are
+configurable, and the dragged position is stored in local preferences. If the
+pet is off-screen or the display arrangement changes, **Reset pet position**
+returns it to the upper-right of the current screen.
+
 ## When tokens cannot be counted
 
 Only token counters with known scope and reset behavior grant growth. Missing,
@@ -174,6 +186,7 @@ See the [usage display guide](usage.md) for detailed accounting and cost rules.
 - `companion-rewards.json`: Star Shards, attendance dates, and awarded milestone identifiers
 - `usage-growth-ledger.json`: scoped token checkpoints and daily credited energy
 - `usage-history.json`: 30 days of aggregate usage, quota, and cost history
+- user preferences: on-screen pet visibility, size, lock, click-through, and last position
 
 Companion and reward state contain no provider names or raw token totals. No
 prompt, response, authentication token, cookie, or account secret is stored in
