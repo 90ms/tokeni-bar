@@ -51,7 +51,10 @@ struct CodexAccountCredentialLoader: Sendable {
     }
 
     func load() throws -> CodexAccountCredentials {
-        guard let data = try? Data(contentsOf: self.credentialsFile) else {
+        guard let data = LocalFiles.data(
+            in: self.credentialsFile,
+            maximumBytes: 1 * 1_024 * 1_024)
+        else {
             throw CodexAccountUsageError.credentialsUnavailable
         }
         return try CodexAccountCredentials.decode(data)

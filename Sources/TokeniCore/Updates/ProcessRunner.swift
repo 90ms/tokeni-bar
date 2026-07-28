@@ -82,12 +82,14 @@ public final class SystemProcessRunner: ProcessRunning {
                     let readers = DispatchGroup()
                     readers.enter()
                     DispatchQueue.global(qos: .utility).async {
-                        output.value = outputPipe.fileHandleForReading.readDataToEndOfFile()
+                        output.value = BoundedPipeReader.read(
+                            outputPipe.fileHandleForReading)
                         readers.leave()
                     }
                     readers.enter()
                     DispatchQueue.global(qos: .utility).async {
-                        error.value = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                        error.value = BoundedPipeReader.read(
+                            errorPipe.fileHandleForReading)
                         readers.leave()
                     }
                     readers.wait()
@@ -108,6 +110,22 @@ public final class SystemProcessRunner: ProcessRunning {
             }
         } onCancel: {
             controller.cancel()
+        }
+    }
+}
+
+private enum BoundedPipeReader {
+    private static let maximumCapturedBytes = 1 * 1_024 * 1_024
+
+    static func read(_ handle: FileHandle) -> Data {
+        var result = Data()
+        while true {
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else { return result }
+            let remaining = self.maximumCapturedBytes - result.count
+            if remaining > 0 {
+                result.append(chunk.prefix(remaining))
+            }
         }
     }
 }

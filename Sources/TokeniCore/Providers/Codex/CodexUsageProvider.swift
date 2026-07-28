@@ -232,7 +232,8 @@ struct CodexParsedUsage {
 
 enum CodexLogParser {
     static func latestUsage(in file: URL) -> CodexParsedUsage? {
-        let events = LocalFiles.lines(in: file).compactMap {
+        guard let lines = LocalFiles.lines(in: file) else { return nil }
+        let events = lines.compactMap {
             try? JSONDecoder().decode(CodexEvent.self, from: $0)
         }
         let modelID = events.reversed().compactMap(\.payload?.model).first

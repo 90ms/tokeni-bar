@@ -39,10 +39,12 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
             modifiedAfter: startOfDay,
             limit: 200)
         let aggregate = ClaudeLogParser.aggregate(files: files, since: startOfDay)
-        let usage = aggregate.tokenUsage
-        let localTokenUsage = usage.totalTokens > 0
-            ? usage
-            : files.isEmpty ? nil : TokenUsage(label: "Today", totalTokens: 0)
+        let usage = aggregate?.tokenUsage
+        let localTokenUsage = files.isEmpty ? nil : usage.map {
+            $0.totalTokens > 0
+                ? $0
+                : TokenUsage(label: "Today", totalTokens: 0)
+        }
         let observedAt = Date.now
         let growthObservation = localTokenUsage.map {
             GrowthUsageObservation.daily(
@@ -67,7 +69,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
                 source: .officialAPI,
                 quotaWindows: oauthUsage.quotaWindows(),
                 tokenUsage: localTokenUsage,
-                costEstimate: localTokenUsage == nil ? nil : aggregate.costEstimate,
+                costEstimate: localTokenUsage == nil ? nil : aggregate?.costEstimate,
                 growthUsageObservation: growthObservation,
                 detail: detail.isEmpty ? "Claude Code OAuth" : detail,
                 updatedAt: result.fetchedAt)
@@ -110,11 +112,10 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
 
     private func localFallback(
         files: [URL],
-        aggregate: ClaudeAggregatedUsage,
+        aggregate: ClaudeAggregatedUsage?,
         growthObservation: GrowthUsageObservation?,
         oauthError: Error) -> ProviderSnapshot
     {
-        let usage = aggregate.tokenUsage
         let errorMessage = (oauthError as? LocalizedError)?.errorDescription
         guard !files.isEmpty else {
             return .init(
@@ -124,6 +125,15 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
                 detail: errorMessage ?? "Claude Code is installed, but no local session was updated today")
         }
 
+        guard let aggregate else {
+            return .init(
+                descriptor: self.descriptor,
+                availability: .stale,
+                source: .localSessionLog,
+                detail: errorMessage
+                    ?? "Claude local usage logs are too large or could not be read safely")
+        }
+        let usage = aggregate.tokenUsage
         guard usage.totalTokens > 0 else {
             return .init(
                 descriptor: self.descriptor,
@@ -153,7 +163,10 @@ struct ClaudeAggregatedUsage {
 }
 
 enum ClaudeLogParser {
-    static func aggregate(files: [URL], since startDate: Date) -> ClaudeAggregatedUsage {
+    static func aggregate(
+        files: [URL],
+        since startDate: Date) -> ClaudeAggregatedUsage?
+    {
         var seenMessageIDs: Set<String> = []
         var input: Int64 = 0
         var cacheCreation: Int64 = 0
@@ -166,7 +179,8 @@ enum ClaudeLogParser {
         var recordCount = 0
 
         for file in files {
-            for line in LocalFiles.lines(in: file) {
+            guard let lines = LocalFiles.lines(in: file) else { return nil }
+            for line in lines {
                 guard let record = try? JSONDecoder().decode(ClaudeRecord.self, from: line),
                       let usage = record.message?.usage,
                       let timestamp = TimestampParser.parse(record.timestamp),

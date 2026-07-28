@@ -22,7 +22,7 @@ public struct GrokUsageProvider: UsageProviding, UsageActivityProviding {
             below: self.sessionsDirectory,
             named: "signals.json",
             limit: 1).first,
-            let data = try? Data(contentsOf: file),
+            let data = LocalFiles.data(in: file),
             let signals = try? JSONDecoder().decode(GrokSignals.self, from: data)
         else {
             return .init(

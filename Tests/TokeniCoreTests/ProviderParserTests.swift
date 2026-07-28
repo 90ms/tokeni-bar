@@ -128,7 +128,8 @@ struct ProviderParserTests {
             forResource: "claude-usage",
             withExtension: "jsonl",
             subdirectory: "Fixtures"))
-        let aggregate = ClaudeLogParser.aggregate(files: [file], since: .distantPast)
+        let aggregate = try #require(
+            ClaudeLogParser.aggregate(files: [file], since: .distantPast))
         let usage = aggregate.tokenUsage
 
         #expect(usage.inputTokens == 100)

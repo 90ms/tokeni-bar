@@ -1,6 +1,9 @@
 import Foundation
 
 enum LocalFiles {
+    static let maximumJSONBytes = 16 * 1_024 * 1_024
+    static let maximumJSONLinesBytes = 64 * 1_024 * 1_024
+
     static func latestModificationDate(
         below root: URL,
         modifiedAfter cutoff: Date,
@@ -34,6 +37,7 @@ enum LocalFiles {
         modifiedAfter: Date? = nil,
         limit: Int) -> [URL]
     {
+        guard limit > 0 else { return [] }
         guard let enumerator = FileManager.default.enumerator(
             at: root,
             includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey],
@@ -50,6 +54,11 @@ enum LocalFiles {
             else { continue }
             guard modifiedAfter == nil || modifiedAt >= modifiedAfter! else { continue }
             candidates.append((url, modifiedAt))
+            if candidates.count >= max(limit * 2, 256) {
+                candidates = Array(
+                    candidates.sorted { $0.modifiedAt > $1.modifiedAt }
+                        .prefix(limit))
+            }
         }
 
         return candidates
@@ -58,8 +67,29 @@ enum LocalFiles {
             .map(\.url)
     }
 
-    static func lines(in file: URL) -> [Data] {
-        guard let data = try? Data(contentsOf: file, options: .mappedIfSafe) else { return [] }
+    static func data(
+        in file: URL,
+        maximumBytes: Int = LocalFiles.maximumJSONBytes) -> Data?
+    {
+        guard maximumBytes >= 0,
+              let values = try? file.resourceValues(
+                forKeys: [.fileSizeKey, .isRegularFileKey, .isSymbolicLinkKey]),
+              values.isRegularFile == true,
+              values.isSymbolicLink != true,
+              let fileSize = values.fileSize,
+              fileSize >= 0,
+              fileSize <= maximumBytes
+        else { return nil }
+        return try? Data(contentsOf: file, options: .mappedIfSafe)
+    }
+
+    static func lines(
+        in file: URL,
+        maximumBytes: Int = LocalFiles.maximumJSONLinesBytes) -> [Data]?
+    {
+        guard let data = self.data(in: file, maximumBytes: maximumBytes) else {
+            return nil
+        }
         return data.split(whereSeparator: { $0 == 0x0A }).map { Data($0) }
     }
 }

@@ -53,7 +53,9 @@ struct ClaudeOAuthCredentialLoader: Sendable {
     }
 
     func load(interactive: Bool = false) throws -> ClaudeOAuthCredentials {
-        if let data = try? Data(contentsOf: self.credentialsFile),
+        if let data = LocalFiles.data(
+            in: self.credentialsFile,
+            maximumBytes: 1 * 1_024 * 1_024),
            let credentials = try? ClaudeOAuthCredentials.decode(data)
         {
             guard !credentials.isExpired else { throw ClaudeOAuthUsageError.expiredCredentials }

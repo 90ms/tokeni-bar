@@ -75,7 +75,7 @@ struct GeminiParsedUsage {
 
 enum GeminiSessionParser {
     static func latestUsage(in file: URL) -> GeminiParsedUsage? {
-        guard let data = try? Data(contentsOf: file, options: .mappedIfSafe),
+        guard let data = LocalFiles.data(in: file),
               let session = try? JSONDecoder().decode(GeminiSession.self, from: data)
         else { return nil }
 
