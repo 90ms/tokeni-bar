@@ -147,7 +147,7 @@ struct CompanionRewardEngineTests {
         ]
         return combinations.map { combination in
             let (speciesID, stage, rarity) = combination
-            CompanionFormRecord(
+            return CompanionFormRecord(
                 formID: CompanionGameState.formID(
                     speciesID: speciesID,
                     stage: stage,

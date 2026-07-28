@@ -1,4 +1,5 @@
 import Foundation
+import LocalAuthentication
 import Security
 
 struct ClaudeOAuthCredentials: Sendable {
@@ -84,7 +85,9 @@ struct ClaudeOAuthCredentialLoader: Sendable {
             kSecReturnData: true,
         ]
         if !interactive {
-            query[kSecUseAuthenticationUI] = kSecUseAuthenticationUIFail
+            let context = LAContext()
+            context.interactionNotAllowed = true
+            query[kSecUseAuthenticationContext] = context
         }
         return query
     }
