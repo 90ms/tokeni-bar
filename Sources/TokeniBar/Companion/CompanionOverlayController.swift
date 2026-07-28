@@ -11,7 +11,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
         super.init()
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(self.screenParametersDidChange),
+            selector: #selector(self.screenParametersDidChange(_:)),
             name: NSApplication.didChangeScreenParametersNotification,
             object: nil)
     }
@@ -73,7 +73,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
     }
 
     @objc
-    private func screenParametersDidChange() {
+    private func screenParametersDidChange(_ notification: Notification) {
         guard let panel else { return }
         panel.setFrameOrigin(self.constrainedOrigin(
             panel.frame.origin,
