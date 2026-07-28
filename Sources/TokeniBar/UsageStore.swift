@@ -830,13 +830,20 @@ final class UsageStore: ObservableObject {
                     total.tokens)
             }
 
-        return self.snapshots
-            .filter { $0.descriptor.capabilities.supportsTokenUsage }
-            .map { snapshot in
-                CompanionGrowthProviderBreakdown(
-                    descriptor: snapshot.descriptor,
-                    reflectedTokens: totals[snapshot.id]
-                        ?? (snapshot.growthUsageObservation == nil ? nil : 0))
+        return self.providers
+            .filter {
+                $0.descriptor.capabilities.supportsTokenUsage
+                    && (self.enabledProviderIDs.contains($0.descriptor.id)
+                        || totals[$0.descriptor.id] != nil)
+            }
+            .map { provider in
+                let snapshot = self.snapshots.first {
+                    $0.id == provider.descriptor.id
+                }
+                return CompanionGrowthProviderBreakdown(
+                    descriptor: provider.descriptor,
+                    reflectedTokens: totals[provider.descriptor.id]
+                        ?? (snapshot?.growthUsageObservation == nil ? nil : 0))
             }
     }
 
