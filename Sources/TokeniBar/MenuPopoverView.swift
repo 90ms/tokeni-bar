@@ -4,6 +4,7 @@ import SwiftUI
 struct MenuPopoverView: View {
     @ObservedObject var store: UsageStore
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,21 +24,25 @@ struct MenuPopoverView: View {
                             .padding(.vertical, 10)
                     }
 
+                    if !self.store.snapshots.isEmpty {
+                        HStack {
+                            Text(AppLocalization.string("settings.tab.usage"))
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                        .padding(.bottom, 7)
+                    }
+
                     self.providerContent
 
                     if let result = self.store.appUpdateResult,
                        result.isUpdateAvailable
                     {
-                        Divider()
-                            .padding(.vertical, 8)
-                        Link(destination: result.latestRelease.pageURL) {
-                            Label(
-                                AppLocalization.format(
-                                    "updates.menuAvailable",
-                                    result.latestRelease.version.description),
-                                systemImage: "arrow.down.circle")
-                        }
-                        .font(.caption)
+                        self.updateBanner(
+                            version: result.latestRelease.version.description,
+                            destination: result.latestRelease.pageURL)
+                            .padding(.top, 10)
                     }
                 }
                 .padding(.horizontal, 14)
@@ -118,22 +123,80 @@ struct MenuPopoverView: View {
     }
 
     private var footer: some View {
-        HStack {
-            Button(AppLocalization.string("action.settings")) {
-                self.openSettings()
-                Task { @MainActor in
-                    await Task.yield()
-                    NSApplication.shared.activate(ignoringOtherApps: true)
-                }
+        HStack(spacing: 10) {
+            Button {
+                self.openWindow(id: "usage-history")
+                self.activateApplication()
+            } label: {
+                Label(
+                    AppLocalization.string("history.title"),
+                    systemImage: "chart.xyaxis.line")
             }
             .buttonStyle(.plain)
 
             Spacer()
 
-            Button(AppLocalization.string("action.quit")) {
-                NSApplication.shared.terminate(nil)
+            Button {
+                self.openSettings()
+                self.activateApplication()
+            } label: {
+                Image(systemName: "gearshape")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
+            .help(AppLocalization.string("action.settings"))
+            .accessibilityLabel(AppLocalization.string("action.settings"))
+
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Image(systemName: "power")
+            }
+            .buttonStyle(.borderless)
+            .help(AppLocalization.string("action.quit"))
+            .accessibilityLabel(AppLocalization.string("action.quit"))
+        }
+        .controlSize(.small)
+    }
+
+    private func updateBanner(
+        version: String,
+        destination: URL) -> some View
+    {
+        Link(destination: destination) {
+            HStack(spacing: 9) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(Color.accentColor)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(AppLocalization.format(
+                        "updates.menuAvailable",
+                        version))
+                        .font(.caption.weight(.semibold))
+                    Text(AppLocalization.string("updates.menuDescription"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(9)
+            .foregroundStyle(.primary)
+            .background(
+                Color.accentColor.opacity(0.1),
+                in: RoundedRectangle(cornerRadius: 9))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func activateApplication() {
+        Task { @MainActor in
+            await Task.yield()
+            NSApplication.shared.activate(ignoringOtherApps: true)
         }
     }
 }

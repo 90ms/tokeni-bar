@@ -174,6 +174,11 @@ Every menu-bar display mode uses the Tokeni Bar app icon. A red badge appears
 when there is enough energy to hatch an egg or evolve a Hatchling or Junior.
 Adult journey completion is not included in this badge.
 
+The menu popover keeps its header and history, settings, and quit actions
+fixed while the center content scrolls. Each provider card leads with its
+primary quota and reset time; expand **Show details** for additional quotas,
+tokens, reference costs, and source information.
+
 Enable **Settings → Tokeni → Show pet on screen** to keep a transparent pet
 panel above other apps.
 

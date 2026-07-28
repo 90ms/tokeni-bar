@@ -227,6 +227,7 @@
 "settings.updates.installFailed" = "업데이트를 설치하지 못했습니다: %@";
 "settings.updates.installUnknownFailed" = "업데이트를 설치하지 못했습니다.";
 "updates.menuAvailable" = "버전 %@ 사용 가능";
+"updates.menuDescription" = "릴리스 정보 및 다운로드 보기";
 "settings.cost.title" = "비용 추정";
 "settings.cost.currency" = "표시 통화";
 "settings.cost.usd" = "달러 ($)";

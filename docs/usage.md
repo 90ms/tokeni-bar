@@ -2,6 +2,17 @@
 
 [한국어](usage.ko.md) | **English**
 
+## Menu popover
+
+Each provider card shows its primary quota, remaining percentage, and reset
+time by default. Expand **Show details** for additional quota windows, token
+totals, API-equivalent reference costs, data source, and update time. The
+header and footer actions stay fixed while the center scrolls when many
+providers or expanded details need more room.
+
+**Usage History** in the footer opens the 30-day local aggregate window
+directly; settings and quit remain available as right-side icon actions.
+
 ## ByteBot token-growth accounting
 
 ByteBot growth uses only **verified increases** in token counters reported by
