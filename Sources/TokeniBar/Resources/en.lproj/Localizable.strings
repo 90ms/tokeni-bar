@@ -203,6 +203,7 @@
 "companion.evolve.action" = "Evolve";
 "companion.evolve.ready" = "Ready to evolve.";
 "companion.evolve.description" = "Spend energy to evolve manually. Rarity can stay the same or rise, but never fall.";
+"companion.animation.evolved" = "Evolved to %@!";
 "companion.animation.hatched" = "Hatched as %@!";
 "companion.animation.rarityUp" = "Rarity up: %@!";
 "companion.reveal.new" = "New pet discovered!";

@@ -16,6 +16,7 @@ struct ByteBotTransitionView: View {
 
     @State private var effect: Effect?
     @State private var expanded = false
+    @State private var presentedKey: TransitionKey?
     @State private var effectTask: Task<Void, Never>?
     @State private var lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
 
@@ -26,9 +27,9 @@ struct ByteBotTransitionView: View {
             }
 
             ByteBotSpriteView(
-                speciesID: self.speciesID,
-                stage: self.stage,
-                rarity: self.rarity ?? .normal,
+                speciesID: self.displayedKey.speciesID,
+                stage: self.displayedKey.stage,
+                rarity: self.displayedKey.rarity ?? .normal,
                 behavior: self.behavior,
                 dimension: self.dimension,
                 animationsEnabled: self.animationsEnabled)
@@ -59,6 +60,7 @@ struct ByteBotTransitionView: View {
             if !enabled {
                 self.effectTask?.cancel()
                 self.effect = nil
+                self.presentedKey = nil
             }
         }
         .onDisappear {
@@ -71,6 +73,7 @@ struct ByteBotTransitionView: View {
             if self.lowPowerModeEnabled {
                 self.effectTask?.cancel()
                 self.effect = nil
+                self.presentedKey = nil
             }
         }
     }
@@ -111,6 +114,10 @@ struct ByteBotTransitionView: View {
             rarity: self.rarity)
     }
 
+    private var displayedKey: TransitionKey {
+        self.presentedKey ?? self.transitionKey
+    }
+
     private func handleTransition(
         from oldValue: TransitionKey,
         to newValue: TransitionKey)
@@ -121,16 +128,29 @@ struct ByteBotTransitionView: View {
         else { return }
 
         let effect: Effect?
-        if oldValue.stage == .egg,
+        let isEvolution = oldValue.stage != newValue.stage
+            && oldValue.stage != .egg
+            && newValue.stage != .egg
+        if isEvolution,
+           let rarity = newValue.rarity
+        {
+            effect = Effect(
+                kind: .evolution,
+                rarity: rarity,
+                stage: newValue.stage)
+        } else if oldValue.stage == .egg,
            newValue.stage == .hatchling,
            let rarity = newValue.rarity
         {
-            effect = Effect(kind: .hatch, rarity: rarity)
+            effect = Effect(kind: .hatch, rarity: rarity, stage: newValue.stage)
         } else if let oldRarity = oldValue.rarity,
                   let newRarity = newValue.rarity,
                   newRarity.rank > oldRarity.rank
         {
-            effect = Effect(kind: .rarityUp, rarity: newRarity)
+            effect = Effect(
+                kind: .rarityUp,
+                rarity: newRarity,
+                stage: newValue.stage)
         } else {
             effect = nil
         }
@@ -138,17 +158,27 @@ struct ByteBotTransitionView: View {
 
         self.effectTask?.cancel()
         self.effect = effect
-        self.expanded = false
+        self.presentedKey = isEvolution ? oldValue : nil
+        self.expanded = isEvolution
         self.effectTask = Task { @MainActor in
             await Task.yield()
             guard !Task.isCancelled else { return }
+            if isEvolution {
+                withAnimation(.easeIn(duration: 0.35)) {
+                    self.expanded = false
+                }
+                try? await Task.sleep(for: .milliseconds(400))
+                guard !Task.isCancelled else { return }
+                self.presentedKey = newValue
+            }
             withAnimation(.spring(response: 0.58, dampingFraction: 0.58)) {
                 self.expanded = true
             }
-            try? await Task.sleep(nanoseconds: 1_250_000_000)
+            try? await Task.sleep(for: .milliseconds(isEvolution ? 800 : 1_250))
             guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.2)) {
                 self.effect = nil
+                self.presentedKey = nil
             }
         }
     }
@@ -166,6 +196,10 @@ struct ByteBotTransitionView: View {
         let rarity = AppLocalization.string(
             "companion.rarity.\(effect.rarity.rawValue)")
         switch effect.kind {
+        case .evolution:
+            let stage = AppLocalization.string(
+                "companion.stage.\(effect.stage.rawValue)")
+            return AppLocalization.format("companion.animation.evolved", stage)
         case .hatch:
             return AppLocalization.format("companion.animation.hatched", rarity)
         case .rarityUp:
@@ -182,10 +216,12 @@ private struct TransitionKey: Equatable {
 
 private struct Effect: Equatable {
     enum Kind: Equatable {
+        case evolution
         case hatch
         case rarityUp
     }
 
     let kind: Kind
     let rarity: CompanionRarity
+    let stage: CompanionGameStage
 }

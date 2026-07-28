@@ -203,6 +203,7 @@
 "companion.evolve.action" = "진화";
 "companion.evolve.ready" = "진화할 준비가 되었습니다.";
 "companion.evolve.description" = "에너지를 사용해 직접 다음 단계로 진화합니다. 등급은 유지되거나 상승하며 내려가지 않습니다.";
+"companion.animation.evolved" = "%@로 진화!";
 "companion.animation.hatched" = "%@ 등급으로 부화!";
 "companion.animation.rarityUp" = "%@ 등급으로 상승!";
 "companion.reveal.new" = "새로운 펫 발견!";

@@ -62,6 +62,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionOverlayPositionResetPulse: Int
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
+    @Published private(set) var isCompanionEvolving: Bool
     @Published private(set) var companionRewardState: CompanionRewardState
     @Published private(set) var companionRewardNoticeAmount: Int?
     @Published private(set) var companionAttendanceError: CompanionRewardError?
@@ -220,6 +221,7 @@ final class UsageStore: ObservableObject {
         self.companionOverlayPositionResetPulse = 0
         self.companionState = CompanionGameState()
         self.companionReveal = nil
+        self.isCompanionEvolving = false
         self.companionRewardState = CompanionRewardState()
         self.companionRewardNoticeAmount = nil
         self.companionAttendanceError = nil
@@ -602,6 +604,7 @@ final class UsageStore: ObservableObject {
     func evolveCompanion() {
         guard self.companionEnabled,
               self.companionStateLoaded,
+              !self.isCompanionEvolving,
               self.companionState.stage == .hatchling
                 || self.companionState.stage == .junior
         else { return }
@@ -611,6 +614,16 @@ final class UsageStore: ObservableObject {
             in: &state)) != nil
         else { return }
         self.companionState = state
+        if self.companionAnimationsEnabled,
+           !ProcessInfo.processInfo.isLowPowerModeEnabled,
+           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        {
+            self.isCompanionEvolving = true
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(1.4))
+                self?.isCompanionEvolving = false
+            }
+        }
         self.reconcileCompanionRewards()
         self.saveCompanionState()
     }
@@ -792,7 +805,8 @@ final class UsageStore: ObservableObject {
     }
 
     var canPerformCompanionAction: Bool {
-        self.companionGameEngine.canPerformAction(for: self.companionState)
+        !self.isCompanionEvolving
+            && self.companionGameEngine.canPerformAction(for: self.companionState)
     }
 
     var hasReadyCompanionGrowthAction: Bool {
