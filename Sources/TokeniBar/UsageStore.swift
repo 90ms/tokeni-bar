@@ -2,6 +2,13 @@ import TokeniCore
 import AppKit
 import Foundation
 
+struct CompanionGrowthProviderBreakdown: Identifiable, Equatable {
+    let descriptor: ProviderDescriptor
+    let reflectedTokens: Int64?
+
+    var id: ProviderID { self.descriptor.id }
+}
+
 @MainActor
 final class UsageStore: ObservableObject {
     @Published private(set) var snapshots: [ProviderSnapshot]
@@ -784,6 +791,31 @@ final class UsageStore: ObservableObject {
         return self.tokenGrowthLedgerState.dayCredits
             .first { $0.dateKey == dateKey }?
             .aggregateTokens ?? 0
+    }
+
+    var companionNextEnergyTokenRequirement: Int64? {
+        TokenGrowthEnergyFormula.standard.additionalTokensForNextEnergy(
+            afterDailyTokens: self.companionTodayTokens)
+    }
+
+    var companionGrowthProviderBreakdown: [CompanionGrowthProviderBreakdown] {
+        let dateKey = GrowthLocalDate.key(for: .now)
+        let totals = self.tokenGrowthLedgerState.providerDayTotals
+            .filter { $0.dateKey == dateKey }
+            .reduce(into: [ProviderID: Int64]()) { result, total in
+                result[total.providerID] = max(
+                    result[total.providerID, default: 0],
+                    total.tokens)
+            }
+
+        return self.snapshots
+            .filter { $0.descriptor.capabilities.supportsTokenUsage }
+            .map { snapshot in
+                CompanionGrowthProviderBreakdown(
+                    descriptor: snapshot.descriptor,
+                    reflectedTokens: totals[snapshot.id]
+                        ?? (snapshot.growthUsageObservation == nil ? nil : 0))
+            }
     }
 
     var companionAttendanceStatus: CompanionAttendanceStatus {
