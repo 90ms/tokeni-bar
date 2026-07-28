@@ -10,10 +10,12 @@ public actor CompanionGameStateStore {
     }
 
     public func load() throws -> CompanionGameState {
-        guard FileManager.default.fileExists(atPath: self.fileURL.path) else {
-            return CompanionGameState()
-        }
-        let data = try Data(contentsOf: self.fileURL)
+        try RecoverableFileStorage.load(
+            from: self.fileURL,
+            decode: Self.decode) ?? CompanionGameState()
+    }
+
+    private static func decode(_ data: Data) throws -> CompanionGameState {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let state: CompanionGameState
@@ -35,12 +37,10 @@ public actor CompanionGameStateStore {
         {
             state = current
         } else {
-            try FileManager.default.removeItem(at: self.fileURL)
-            return CompanionGameState()
+            throw CompanionGameStateStoreError.invalidState
         }
         guard state.isValid() else {
-            try FileManager.default.removeItem(at: self.fileURL)
-            return CompanionGameState()
+            throw CompanionGameStateStoreError.invalidState
         }
         return state
     }
@@ -58,16 +58,21 @@ public actor CompanionGameStateStore {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(state).write(to: self.fileURL, options: .atomic)
+        try RecoverableFileStorage.write(
+            encoder.encode(state),
+            to: self.fileURL)
         if let revision {
             self.lastSavedRevision = revision
         }
     }
 
     public func clear() throws {
-        guard FileManager.default.fileExists(atPath: self.fileURL.path) else { return }
-        try FileManager.default.removeItem(at: self.fileURL)
+        try RecoverableFileStorage.removePrimaryAndBackups(for: self.fileURL)
     }
+}
+
+private enum CompanionGameStateStoreError: Error {
+    case invalidState
 }
 
 private struct SchemaVersion: Decodable {

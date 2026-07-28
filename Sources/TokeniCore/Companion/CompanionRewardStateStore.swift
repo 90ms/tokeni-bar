@@ -10,17 +10,18 @@ public actor CompanionRewardStateStore {
     }
 
     public func load() throws -> CompanionRewardState {
-        guard FileManager.default.fileExists(atPath: self.fileURL.path) else {
-            return CompanionRewardState()
-        }
-        let data = try Data(contentsOf: self.fileURL)
+        try RecoverableFileStorage.load(
+            from: self.fileURL,
+            decode: Self.decode) ?? CompanionRewardState()
+    }
+
+    private static func decode(_ data: Data) throws -> CompanionRewardState {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         guard let state = try? decoder.decode(CompanionRewardState.self, from: data),
               state.isValid()
         else {
-            try FileManager.default.removeItem(at: self.fileURL)
-            return CompanionRewardState()
+            throw CompanionRewardStateStoreError.invalidState
         }
         return state
     }
@@ -39,9 +40,15 @@ public actor CompanionRewardStateStore {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(state).write(to: self.fileURL, options: .atomic)
+        try RecoverableFileStorage.write(
+            encoder.encode(state),
+            to: self.fileURL)
         if let revision {
             self.lastSavedRevision = revision
         }
     }
+}
+
+private enum CompanionRewardStateStoreError: Error {
+    case invalidState
 }

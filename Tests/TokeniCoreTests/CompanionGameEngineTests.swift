@@ -399,8 +399,8 @@ struct CompanionGameEngineTests {
         #expect(state.growthEnergy == 320)
     }
 
-    @Test("Unsupported old companion state is deliberately removed")
-    func removesLegacyState() async throws {
+    @Test("Unsupported old companion state is quarantined")
+    func quarantinesLegacyState() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         let file = directory.appending(path: "companion-state.json")
@@ -417,6 +417,13 @@ struct CompanionGameEngineTests {
         #expect(state.speciesID == nil)
         #expect(state.rarity == nil)
         #expect(!FileManager.default.fileExists(atPath: file.path))
+        let quarantinedFiles = try FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil)
+        #expect(quarantinedFiles.contains {
+            $0.lastPathComponent.hasPrefix("companion-state.corrupt-")
+                && $0.pathExtension == "json"
+        })
     }
 
     @Test("New game state round-trips without provider or token totals")

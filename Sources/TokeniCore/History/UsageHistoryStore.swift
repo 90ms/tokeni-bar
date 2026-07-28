@@ -59,15 +59,13 @@ public actor UsageHistoryStore {
 
     public func records() throws -> [UsageHistoryRecord] {
         if let cachedRecords { return cachedRecords }
-        guard FileManager.default.fileExists(atPath: self.fileURL.path) else {
-            self.cachedRecords = []
-            return []
-        }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let records = try decoder.decode(
-            [UsageHistoryRecord].self,
-            from: Data(contentsOf: self.fileURL))
+        let records = try RecoverableFileStorage.load(
+            from: self.fileURL,
+            decode: {
+                try decoder.decode([UsageHistoryRecord].self, from: $0)
+            }) ?? []
         self.cachedRecords = records
         return records
     }
@@ -104,14 +102,14 @@ public actor UsageHistoryStore {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys]
-        try encoder.encode(records).write(to: self.fileURL, options: .atomic)
+        try RecoverableFileStorage.write(
+            encoder.encode(records),
+            to: self.fileURL)
         self.cachedRecords = records
     }
 
     public func clear() throws {
-        if FileManager.default.fileExists(atPath: self.fileURL.path) {
-            try FileManager.default.removeItem(at: self.fileURL)
-        }
+        try RecoverableFileStorage.removePrimaryAndBackups(for: self.fileURL)
         self.cachedRecords = []
     }
 }

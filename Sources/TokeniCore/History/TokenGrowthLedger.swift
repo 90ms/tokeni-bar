@@ -415,16 +415,19 @@ public actor TokenGrowthLedgerStore {
     }
 
     public func load() throws -> TokenGrowthLedgerState {
-        guard FileManager.default.fileExists(atPath: self.fileURL.path) else {
-            return TokenGrowthLedgerState()
-        }
+        try RecoverableFileStorage.load(
+            from: self.fileURL,
+            decode: Self.decode) ?? TokenGrowthLedgerState()
+    }
+
+    private static func decode(_ data: Data) throws -> TokenGrowthLedgerState {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let state = try decoder.decode(
             TokenGrowthLedgerState.self,
-            from: Data(contentsOf: self.fileURL))
+            from: data)
         guard state.schemaVersion == TokenGrowthLedgerState.currentSchemaVersion else {
-            return TokenGrowthLedgerState()
+            throw TokenGrowthLedgerStoreError.invalidState
         }
         return state
     }
@@ -442,14 +445,19 @@ public actor TokenGrowthLedgerStore {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(state).write(to: self.fileURL, options: .atomic)
+        try RecoverableFileStorage.write(
+            encoder.encode(state),
+            to: self.fileURL)
         if let revision {
             self.lastSavedRevision = revision
         }
     }
 
     public func clear() throws {
-        guard FileManager.default.fileExists(atPath: self.fileURL.path) else { return }
-        try FileManager.default.removeItem(at: self.fileURL)
+        try RecoverableFileStorage.removePrimaryAndBackups(for: self.fileURL)
     }
+}
+
+private enum TokenGrowthLedgerStoreError: Error {
+    case invalidState
 }
