@@ -61,6 +61,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionOverlayClickThroughEnabled: Bool
     @Published private(set) var companionOverlayPositionResetPulse: Int
     @Published private(set) var companionInteractionPulse: Int
+    @Published private(set) var companionGrowthPulse: Int
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
     @Published private(set) var isCompanionEvolving: Bool
@@ -221,6 +222,7 @@ final class UsageStore: ObservableObject {
             forKey: Self.companionOverlayClickThroughEnabledKey)
         self.companionOverlayPositionResetPulse = 0
         self.companionInteractionPulse = 0
+        self.companionGrowthPulse = 0
         self.companionState = CompanionGameState()
         self.companionReveal = nil
         self.isCompanionEvolving = false
@@ -1111,8 +1113,9 @@ final class UsageStore: ObservableObject {
         guard self.companionStateLoaded else { return }
         for award in self.tokenGrowthLedgerState.pendingAwards {
             var companion = self.companionState
+            let events: [CompanionGameEvent]
             do {
-                _ = self.companionGameEngine.apply(
+                events = self.companionGameEngine.apply(
                     award: award,
                     to: &companion)
                 self.companionStateSaveRevision &+= 1
@@ -1123,6 +1126,15 @@ final class UsageStore: ObservableObject {
                 return
             }
             self.companionState = companion
+            if events.contains(where: { event in
+                if case let .energyApplied(amount) = event {
+                    return amount > 0
+                }
+                return false
+            }) {
+                self.companionGrowthPulse &+= 1
+                self.reconcileCompanionRewards()
+            }
 
             var ledger = self.tokenGrowthLedgerState
             self.tokenGrowthLedgerEngine.markApplied(award.id, in: &ledger)

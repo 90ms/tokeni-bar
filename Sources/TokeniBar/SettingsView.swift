@@ -60,7 +60,10 @@ struct SettingsView: View {
                         cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                         dimension: 96,
                         animationsEnabled: self.store.companionAnimationsEnabled,
-                        interactionPulse: self.store.companionInteractionPulse)
+                        interactionPulse: self.store.companionInteractionPulse,
+                        growthPulse: self.store.isShowingArchivedCompanion
+                            ? 0
+                            : self.store.companionGrowthPulse)
                     Spacer()
                 }
 

@@ -175,7 +175,10 @@ private struct CompanionOverlayView: View {
             cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
             dimension: self.store.companionOverlaySize.spriteDimension,
             animationsEnabled: self.store.companionAnimationsEnabled,
-            interactionPulse: self.store.companionInteractionPulse)
+            interactionPulse: self.store.companionInteractionPulse,
+            growthPulse: self.store.isShowingArchivedCompanion
+                ? 0
+                : self.store.companionGrowthPulse)
             .padding(8)
             .contentShape(Rectangle())
             .onTapGesture {

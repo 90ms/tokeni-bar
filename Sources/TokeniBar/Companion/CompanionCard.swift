@@ -18,7 +18,10 @@ struct CompanionCard: View {
                     cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                     dimension: self.compact ? 50 : 62,
                     animationsEnabled: self.store.companionAnimationsEnabled,
-                    interactionPulse: self.store.companionInteractionPulse)
+                    interactionPulse: self.store.companionInteractionPulse,
+                    growthPulse: self.store.isShowingArchivedCompanion
+                        ? 0
+                        : self.store.companionGrowthPulse)
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(self.companionName)

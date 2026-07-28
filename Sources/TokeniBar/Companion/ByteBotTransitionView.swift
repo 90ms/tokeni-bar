@@ -14,6 +14,7 @@ struct ByteBotTransitionView: View {
     var dimension: CGFloat = 64
     var animationsEnabled = true
     var interactionPulse = 0
+    var growthPulse = 0
 
     @State private var effect: Effect?
     @State private var expanded = false
@@ -21,6 +22,9 @@ struct ByteBotTransitionView: View {
     @State private var effectTask: Task<Void, Never>?
     @State private var interactionOffset: CGSize = .zero
     @State private var interactionTask: Task<Void, Never>?
+    @State private var growthEffectVisible = false
+    @State private var growthExpanded = false
+    @State private var growthTask: Task<Void, Never>?
     @State private var lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
 
     var body: some View {
@@ -39,6 +43,11 @@ struct ByteBotTransitionView: View {
 
             if let effect {
                 self.burst(for: effect)
+            }
+
+            if self.growthEffectVisible {
+                self.growthBurst
+                    .transition(.opacity)
             }
 
             ByteBotSpriteView(
@@ -69,24 +78,32 @@ struct ByteBotTransitionView: View {
         }
         .frame(width: self.dimension, height: self.dimension)
         .offset(self.interactionOffset)
+        .scaleEffect(self.growthExpanded ? 1.08 : 1)
         .onChange(of: self.transitionKey) { oldValue, newValue in
             self.handleTransition(from: oldValue, to: newValue)
         }
         .onChange(of: self.interactionPulse) { _, newValue in
             self.handleInteraction(pulse: newValue)
         }
+        .onChange(of: self.growthPulse) { _, newValue in
+            self.handleGrowth(pulse: newValue)
+        }
         .onChange(of: self.animationsEnabled) { _, enabled in
             if !enabled {
                 self.effectTask?.cancel()
                 self.interactionTask?.cancel()
+                self.growthTask?.cancel()
                 self.effect = nil
                 self.presentedKey = nil
                 self.interactionOffset = .zero
+                self.growthEffectVisible = false
+                self.growthExpanded = false
             }
         }
         .onDisappear {
             self.effectTask?.cancel()
             self.interactionTask?.cancel()
+            self.growthTask?.cancel()
         }
         .onReceive(NotificationCenter.default.publisher(
             for: .NSProcessInfoPowerStateDidChange))
@@ -95,9 +112,12 @@ struct ByteBotTransitionView: View {
             if self.lowPowerModeEnabled {
                 self.effectTask?.cancel()
                 self.interactionTask?.cancel()
+                self.growthTask?.cancel()
                 self.effect = nil
                 self.presentedKey = nil
                 self.interactionOffset = .zero
+                self.growthEffectVisible = false
+                self.growthExpanded = false
             }
         }
     }
@@ -125,6 +145,35 @@ struct ByteBotTransitionView: View {
                             : 0)
                     .scaleEffect(self.expanded ? 1 : 0.25)
                     .opacity(self.expanded ? 0 : 1)
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private var growthBurst: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.mint.opacity(0.85), lineWidth: 2)
+                .frame(width: self.dimension, height: self.dimension)
+                .scaleEffect(self.growthExpanded ? 1.38 : 0.35)
+                .opacity(self.growthExpanded ? 0 : 1)
+
+            ForEach(0..<6, id: \.self) { index in
+                let angle = Double(index) * .pi / 3
+                Image(systemName: "sparkle")
+                    .font(.system(size: max(self.dimension * 0.12, 7)))
+                    .foregroundStyle(
+                        index.isMultiple(of: 2) ? Color.mint : Color.yellow)
+                    .offset(
+                        x: self.growthExpanded
+                            ? CGFloat(cos(angle)) * self.dimension * 0.52
+                            : 0,
+                        y: self.growthExpanded
+                            ? CGFloat(sin(angle)) * self.dimension * 0.52
+                            : 0)
+                    .scaleEffect(self.growthExpanded ? 1 : 0.2)
+                    .opacity(self.growthExpanded ? 0 : 1)
             }
         }
         .allowsHitTesting(false)
@@ -230,6 +279,31 @@ struct ByteBotTransitionView: View {
             guard !Task.isCancelled else { return }
             withAnimation(.spring(response: 0.3, dampingFraction: 0.62)) {
                 self.interactionOffset = .zero
+            }
+        }
+    }
+
+    private func handleGrowth(pulse: Int) {
+        guard pulse > 0,
+              self.animationsEnabled,
+              !self.reduceMotion,
+              !self.lowPowerModeEnabled
+        else { return }
+
+        self.growthTask?.cancel()
+        self.growthEffectVisible = true
+        self.growthExpanded = false
+        self.growthTask = Task { @MainActor in
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.62)) {
+                self.growthExpanded = true
+            }
+            try? await Task.sleep(for: .milliseconds(520))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.18)) {
+                self.growthEffectVisible = false
+                self.growthExpanded = false
             }
         }
     }
