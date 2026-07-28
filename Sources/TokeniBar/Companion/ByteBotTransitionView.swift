@@ -22,6 +22,7 @@ struct ByteBotTransitionView: View {
     @State private var effectTask: Task<Void, Never>?
     @State private var interactionOffset: CGSize = .zero
     @State private var interactionTask: Task<Void, Never>?
+    @State private var ambientOffset: CGSize = .zero
     @State private var growthEffectVisible = false
     @State private var growthExpanded = false
     @State private var growthTask: Task<Void, Never>?
@@ -77,7 +78,9 @@ struct ByteBotTransitionView: View {
             }
         }
         .frame(width: self.dimension, height: self.dimension)
-        .offset(self.interactionOffset)
+        .offset(
+            x: self.interactionOffset.width + self.ambientOffset.width,
+            y: self.interactionOffset.height + self.ambientOffset.height)
         .scaleEffect(self.growthExpanded ? 1.08 : 1)
         .onChange(of: self.transitionKey) { oldValue, newValue in
             self.handleTransition(from: oldValue, to: newValue)
@@ -104,6 +107,9 @@ struct ByteBotTransitionView: View {
             self.effectTask?.cancel()
             self.interactionTask?.cancel()
             self.growthTask?.cancel()
+        }
+        .task(id: self.ambientMotionEnabled) {
+            await self.runAmbientMotion()
         }
         .onReceive(NotificationCenter.default.publisher(
             for: .NSProcessInfoPowerStateDidChange))
@@ -189,6 +195,13 @@ struct ByteBotTransitionView: View {
 
     private var displayedKey: TransitionKey {
         self.presentedKey ?? self.transitionKey
+    }
+
+    private var ambientMotionEnabled: Bool {
+        self.behavior == .idle
+            && self.animationsEnabled
+            && !self.reduceMotion
+            && !self.lowPowerModeEnabled
     }
 
     private func cosmeticID(in slot: CompanionCosmeticSlot) -> CompanionCosmeticID? {
@@ -304,6 +317,31 @@ struct ByteBotTransitionView: View {
             withAnimation(.easeOut(duration: 0.18)) {
                 self.growthEffectVisible = false
                 self.growthExpanded = false
+            }
+        }
+    }
+
+    @MainActor
+    private func runAmbientMotion() async {
+        guard self.ambientMotionEnabled else {
+            self.ambientOffset = .zero
+            return
+        }
+
+        while !Task.isCancelled {
+            try? await Task.sleep(
+                for: .milliseconds(Int.random(in: 18_000...32_000)))
+            guard !Task.isCancelled, self.ambientMotionEnabled else { return }
+            let direction: CGFloat = Bool.random() ? -1 : 1
+            withAnimation(.easeInOut(duration: 0.28)) {
+                self.ambientOffset = CGSize(
+                    width: direction * self.dimension * 0.07,
+                    height: -self.dimension * 0.025)
+            }
+            try? await Task.sleep(for: .milliseconds(420))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.32)) {
+                self.ambientOffset = .zero
             }
         }
     }
