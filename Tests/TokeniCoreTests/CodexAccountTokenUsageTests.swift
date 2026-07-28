@@ -57,6 +57,45 @@ struct CodexAccountTokenUsageTests {
     }
 
     @Test
+    func launchesVersionManagedCodexWithSiblingRuntime() async throws {
+        let fixture = try #require(Bundle.module.url(
+            forResource: "codex-account-token-usage",
+            withExtension: "json",
+            subdirectory: "Fixtures"))
+        let fixtureJSON = try String(contentsOf: fixture, encoding: .utf8)
+            .replacingOccurrences(of: "\n", with: "")
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        _ = try self.makeExecutableScript(
+            """
+            #!/bin/sh
+            exec /bin/sh "$@"
+            """,
+            named: "tokeni-test-runtime",
+            in: directory)
+        let executable = try self.makeExecutableScript(
+            """
+            #!/usr/bin/env tokeni-test-runtime
+            IFS= read -r initialize_request
+            printf '%s\\n' '{"id":1,"result":{}}'
+            IFS= read -r initialized_notification
+            IFS= read -r usage_request
+            printf '%s\\n' '{"id":2,"result":\(fixtureJSON)}'
+            """,
+            in: directory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let client = CodexAccountTokenUsageClient(
+            executableURL: executable,
+            pathEnvironment: "",
+            cache: CodexAccountTokenUsageCache(),
+            timeout: 2)
+        let result = try await client.fetch()
+
+        #expect(result.response.summary.lifetimeTokens == 987_654_321)
+    }
+
+    @Test
     func mapsUnsupportedMethodWithoutReturningServerMessage() async throws {
         let executable = try self.makeExecutableScript(
             """
@@ -150,11 +189,15 @@ struct CodexAccountTokenUsageTests {
             now: fetchedAt) == nil)
     }
 
-    private func makeExecutableScript(_ contents: String) throws -> URL {
-        let directory = FileManager.default.temporaryDirectory
+    private func makeExecutableScript(
+        _ contents: String,
+        named name: String = "codex",
+        in directory: URL? = nil) throws -> URL
+    {
+        let directory = directory ?? FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let executable = directory.appending(path: "codex")
+        let executable = directory.appending(path: name)
         try contents.write(to: executable, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o700],

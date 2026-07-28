@@ -270,6 +270,14 @@ private final class CodexAppServerUsageRunner: @unchecked Sendable {
         let outputPipe = Pipe()
         process.executableURL = self.executableURL
         process.arguments = ["app-server", "--stdio"]
+        var environment = ProcessInfo.processInfo.environment
+        let executableDirectory = self.executableURL.deletingLastPathComponent().path
+        if let path = environment["PATH"], !path.isEmpty {
+            environment["PATH"] = "\(executableDirectory):\(path)"
+        } else {
+            environment["PATH"] = executableDirectory
+        }
+        process.environment = environment
         process.standardInput = inputPipe
         process.standardOutput = outputPipe
         process.standardError = FileHandle.nullDevice
