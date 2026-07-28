@@ -111,16 +111,6 @@ struct CodexExecutableLocator: Sendable {
             return self.isExecutable(explicitURL) ? explicitURL : nil
         }
 
-        let commonPaths = [
-            "/opt/homebrew/bin/codex",
-            "/usr/local/bin/codex",
-            "/usr/bin/codex",
-        ]
-        for path in commonPaths {
-            let candidate = URL(fileURLWithPath: path)
-            if self.isExecutable(candidate) { return candidate }
-        }
-
         for relativePath in [
             ".local/bin/codex",
             ".volta/bin/codex",
@@ -130,6 +120,16 @@ struct CodexExecutableLocator: Sendable {
             ".mise/shims/codex",
         ] {
             let candidate = self.homeDirectory.appending(path: relativePath)
+            if self.isExecutable(candidate) { return candidate }
+        }
+
+        let commonPaths = [
+            "/opt/homebrew/bin/codex",
+            "/usr/local/bin/codex",
+            "/usr/bin/codex",
+        ]
+        for path in commonPaths {
+            let candidate = URL(fileURLWithPath: path)
             if self.isExecutable(candidate) { return candidate }
         }
 
@@ -158,7 +158,11 @@ struct CodexExecutableLocator: Sendable {
                 at: root,
                 includingPropertiesForKeys: nil,
                 options: [.skipsHiddenFiles])) ?? []
-            return versions.sorted { $0.lastPathComponent > $1.lastPathComponent }.map { version in
+            return versions.sorted {
+                $0.lastPathComponent.compare(
+                    $1.lastPathComponent,
+                    options: .numeric) == .orderedDescending
+            }.map { version in
                 if root.lastPathComponent == "node" {
                     version.appending(path: "bin/codex")
                 } else {
