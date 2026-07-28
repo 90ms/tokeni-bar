@@ -747,7 +747,7 @@ struct CompanionCollectionView: View {
         .background(
             isShowcased
                 ? Color.accentColor.opacity(0.14)
-                : Color.quaternary.opacity(0.5),
+                : Color.secondary.opacity(0.08),
             in: RoundedRectangle(cornerRadius: 8))
     }
 
