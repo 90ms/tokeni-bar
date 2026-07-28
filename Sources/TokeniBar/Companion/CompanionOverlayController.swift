@@ -2,10 +2,19 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class CompanionOverlayController: ObservableObject {
+final class CompanionOverlayController: NSObject, ObservableObject {
     private static let frameOriginKey = "companionOverlayFrameOrigin"
 
     private var panel: CompanionOverlayPanel?
+
+    override init() {
+        super.init()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(self.screenParametersDidChange),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil)
+    }
 
     func connect(to store: UsageStore) {
         if self.panel == nil {
@@ -61,6 +70,14 @@ final class CompanionOverlayController: ObservableObject {
             width: size.panelDimension,
             height: size.panelDimension)
         panel.setFrameOrigin(self.defaultOrigin(panelSize: panelSize))
+    }
+
+    @objc
+    private func screenParametersDidChange() {
+        guard let panel else { return }
+        panel.setFrameOrigin(self.constrainedOrigin(
+            panel.frame.origin,
+            panelSize: panel.frame.size))
     }
 
     private func makePanel(store: UsageStore) -> CompanionOverlayPanel {
