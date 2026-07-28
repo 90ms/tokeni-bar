@@ -46,7 +46,7 @@ brew install --formula tokeni-bar
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Low remaining quota and monthly budget |
 | Tokeni pets | Life stage, species, rarity, today's energy, bond, and behavior |
-| Collection | 5 species, 60 forms, discovery records, and guarantees |
+| Collection and rewards | Five generation-1 species, 60 forms, attendance, Star Shards, and guarantees |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -85,7 +85,8 @@ balance carries over when the date changes.
 | Hatch egg | 60 | Reveal the species and first rarity, then become a Hatchling |
 | Evolve to Junior | 100 | Keep or raise rarity and become a Junior |
 | Evolve to Adult | 160 | Keep or raise rarity and become an Adult |
-| Receive a new egg | 40 | Start the next generation as an ungraded egg |
+| Finish an Adult journey and hatch again | 100 | Archive the Adult and immediately hatch a new pet |
+| Receive a new egg before Adult | 40 | Restart with an ungraded egg |
 
 Having enough energy never hatches or evolves automatically. The user must
 click the action. Energy earned as an Adult fills action energy and also records
@@ -119,7 +120,7 @@ guarantees:
 
 ### 4. Repeated low rarity activates guarantees
 
-| Guaranteed rarity | Maximum completed generations |
+| Guaranteed rarity | Maximum completed journeys |
 |---|---:|
 | Rare or higher | 3 |
 | Epic or higher | 7 |
@@ -133,13 +134,35 @@ Adult keeps the existing guarantees but does not move them closer.
 | Choice | Result | What remains |
 |---|---|---|
 | Stay with an Adult | New energy becomes bond | Current form and all records |
-| Finish an Adult journey | Archive rarity and bond, then start a new egg | Collection and guarantees |
+| Finish an Adult journey | Spend 100 energy, archive it, and hatch immediately | Collection and guarantees |
 | Leave before Adult | Spend 40 energy and start a new egg | Collection and existing guarantees |
 
 The collection has 60 forms: five species, four rarities, and three visible
 life stages.
 When a high rarity first appears late, its earlier forms also unlock as
 **Lineage**.
+All five current species belong to **asset generation 1**. Repeating journeys
+does not increase a pet's generation. Future species will show generation 2,
+3, and so on when those asset sets are added.
+
+### 6. Attendance and collection activity award Star Shards
+
+Growth energy continues to come only from verified token usage. Attendance and
+collection activity award a separate currency called **Star Shards**.
+
+| Condition | Star Shards |
+|---|---:|
+| Daily check-in | 10 |
+| 3 / 5 / 7 check-ins in a week | 10 / 20 / 30 |
+| 20 check-ins in a month | 50 |
+| First discovery of a species | 20 |
+| Completed Adult journey | 25 |
+| 10 / 30 / 60 collection forms unlocked | 20 / 50 / 100 |
+
+Missing a day does not reset weekly or monthly cumulative progress. Duplicate
+claims for the same local date are rejected. If the system date moves behind
+the latest claimed date, new attendance remains unavailable until the date is
+valid again.
 
 Open the grid button in the menu or choose
 **Settings → Tokeni → Open Pet Collection**. See
@@ -167,7 +190,7 @@ not awarded as new growth. See
 | 2 | Start Tokeni Bar and open the chart icon in the menu bar |
 | 3 | Choose providers and the menu-bar display under **Settings → General** |
 | 4 | For Claude account quotas, choose **Provider Connections → Connect** |
-| 5 | Use an agent and watch the pet grow |
+| 5 | Use an agent, grow the pet, and claim attendance in the collection |
 
 ## Update and uninstall
 
@@ -195,10 +218,12 @@ blocks the first launch, approve it under
 |---|---|
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
 | Pet species, stage, rarity, collection, and guarantees | Access tokens, refresh tokens, and cookies |
-| Deduplication checkpoints | Account secrets and server telemetry |
+| Star Shards, attendance dates, and awarded milestone IDs | Account secrets and server telemetry |
+| Deduplication checkpoints | Remote game accounts and analytics telemetry |
 
-Usage history stays on the Mac for 30 days. Pet state and token checkpoints
-are separate, and there is no analytics or remote game server.
+Usage history stays on the Mac for 30 days. Pet state, reward records, and
+token checkpoints are separate, and there is no analytics or remote game
+server.
 
 ## Troubleshooting
 
@@ -206,6 +231,7 @@ are separate, and there is no analytics or remote game server.
 |---|---|
 | No app window | Look for the chart icon on the right side of the menu bar, not the Dock |
 | Provider unavailable | Confirm the CLI is installed and signed in, then run it once |
+| Claude password prompt repeats after unlock | Update the app and connect once under **Settings → General → Provider Connections**. Background refreshes never open authentication UI |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Previous pet progress is absent | Version 0.8.0 starts the token-powered game with a new egg; settings and usage history remain |
 

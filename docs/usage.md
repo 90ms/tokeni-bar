@@ -64,6 +64,27 @@ Fable is the default and the selection is stored locally. If the selected
 window is absent from the account response, Claude remains unavailable instead
 of silently substituting another quota.
 
+### Claude Keychain connection
+
+Claude account quotas reuse the existing OAuth sign-in that Claude Code stores
+in the macOS Keychain. Tokeni Bar never copies or separately persists the
+token.
+
+- Automatic refreshes prohibit authentication UI. If access is unavailable or
+  the Mac is locked, the app falls back to local Claude usage without opening a
+  password prompt.
+- Start the initial connection explicitly under **Settings → General →
+  Provider Connections → Connect Claude Code**. Choosing **Always Allow** in
+  the macOS dialog prevents repeat prompts while the same app identity and
+  Keychain item remain in place.
+- A source-built Formula update can change the app signature, and Claude Code
+  can replace its Keychain item. macOS may require approval again in either
+  case; reconnect from Settings.
+
+Unlocking the Mac alone does not initiate interactive authentication. When
+connection approval is unavailable, the app leaves account quotas unavailable
+rather than inventing values and continues showing local-session usage.
+
 ## Cost estimates, exchange rates, and history
 
 Cost is an API-price-equivalent reference for the available token data. It is

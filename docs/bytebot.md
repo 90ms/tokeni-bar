@@ -41,9 +41,10 @@ days, the 20% carry is applied once for every elapsed day.
 | Hatch egg | 60 |
 | Evolve to Junior | 100 |
 | Evolve to Adult | 160 |
-| Receive a new egg or restart | 40 |
+| Finish an Adult journey and hatch again | 100 |
+| Receive a new egg before Adult | 40 |
 
-Every generation starts as an ungraded egg. Having enough energy never changes
+Every journey starts as an ungraded egg. Having enough energy never changes
 the stage automatically: the user must click Hatch or Evolve. Energy earned as
 an Adult fills action energy and that pet's **bond energy**.
 
@@ -83,11 +84,11 @@ Without pity, an Adult hatched from an ungraded egg ends Normal 42.2%, Rare
 
 Completed Adults provide visible guarantees:
 
-- Rare or higher within at most 3 generations
-- Epic or higher within at most 7 generations
-- Legendary within at most 16 generations
+- Rare or higher within at most 3 completed journeys
+- Epic or higher within at most 7 completed journeys
+- Legendary within at most 16 completed journeys
 
-The collection shows the maximum completed generations remaining. Restarting
+The collection shows the maximum completed journeys remaining. Restarting
 early keeps existing pity but does not advance it.
 
 ## Collection
@@ -106,21 +107,51 @@ Collection** to see:
 - discovery and hatch-encounter counts for all five species;
 - all 60 form unlocks;
 - Met versus Lineage unlocks;
-- completed generations, best rarity, and best bond;
-- maximum generations remaining for every guarantee.
+- completed journeys, best rarity, and best bond;
+- maximum completed journeys remaining for every guarantee.
+
+ByteBot, CacheCat, StackFox, PromptPup, and NullSlime all belong to **asset
+generation 1**. Finishing journeys or receiving new eggs never changes this
+asset generation. Future sprite sets can assign their species to generation 2,
+3, and later. An unidentified egg does not display a generation.
 
 ## New eggs and completed journeys
 
-At Adult, keep the current pet and grow bond, or spend 40 energy to finish
-its journey and receive a new ungraded egg. Completion archives final rarity
-and bond and updates pity.
+At Adult, keep the current pet and grow bond, or spend 100 energy to finish its
+journey and immediately hatch a new pet. The 100 combines the 40-energy new-egg
+cost and the 60-energy hatch cost. Completion archives final rarity and bond,
+updates pity, and reveals the next pet's species and first rarity in one action.
 
 Before Adult, you may spend 40 energy to part ways and restart:
 
 - unlocked forms and existing pity remain;
 - unspent action energy remains;
-- an early restart does not count as a completed generation;
+- an early restart does not count as a completed journey;
 - energy already assigned that day cannot be reused by the new egg.
+
+## Star Shards and attendance
+
+Star Shards are a reward currency separate from growth energy. Growth energy
+continues to come only from verified token increases. Attendance and active
+minutes never create growth energy.
+
+| Condition | Star Shards |
+|---|---:|
+| Daily check-in | 10 |
+| 3 / 5 / 7 check-ins in the same week | 10 / 20 / 30 |
+| 20 check-ins in the same month | 50 |
+| First discovery of a pet species | 20 |
+| Completed Adult journey | 25 |
+| 10 / 30 / 60 collection forms unlocked | 20 / 50 / 100 |
+
+Attendance uses weekly and monthly cumulative counts rather than a fragile
+streak. Missing a day does not reset existing progress. A local date can pay
+only once. If the system date moves behind the latest claimed date, attendance
+remains unavailable until the date is valid again.
+
+Existing species discoveries, completed journeys, and collection milestones
+are reconciled once when reward state first loads. Reading the same records
+again never pays twice.
 
 ## When tokens cannot be counted
 
@@ -140,9 +171,10 @@ See the [usage display guide](usage.md) for detailed accounting and cost rules.
 ## Storage and privacy
 
 - `companion-state.json`: species, stage, rarity, energy, bond, collection, pity, and interactions
+- `companion-rewards.json`: Star Shards, attendance dates, and awarded milestone identifiers
 - `usage-growth-ledger.json`: scoped token checkpoints and daily credited energy
 - `usage-history.json`: 30 days of aggregate usage, quota, and cost history
 
-Companion state contains no provider names or raw token totals. No prompt,
-response, authentication token, cookie, or account secret is stored in the
-growth ledger. There is no analytics or server telemetry.
+Companion and reward state contain no provider names or raw token totals. No
+prompt, response, authentication token, cookie, or account secret is stored in
+the growth ledger. There is no analytics or server telemetry.
