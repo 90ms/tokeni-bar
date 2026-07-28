@@ -94,13 +94,16 @@ actor CodexAccountTokenUsageCache {
 struct CodexExecutableLocator: Sendable {
     private let explicitURL: URL?
     private let pathEnvironment: String?
+    private let homeDirectory: URL
 
     init(
         explicitURL: URL? = nil,
-        pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"])
+        pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"],
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser)
     {
         self.explicitURL = explicitURL
         self.pathEnvironment = pathEnvironment
+        self.homeDirectory = homeDirectory
     }
 
     func resolve() -> URL? {
@@ -118,12 +121,51 @@ struct CodexExecutableLocator: Sendable {
             if self.isExecutable(candidate) { return candidate }
         }
 
+        for relativePath in [
+            ".local/bin/codex",
+            ".volta/bin/codex",
+            ".asdf/shims/codex",
+            ".bun/bin/codex",
+            ".local/share/mise/shims/codex",
+            ".mise/shims/codex",
+        ] {
+            let candidate = self.homeDirectory.appending(path: relativePath)
+            if self.isExecutable(candidate) { return candidate }
+        }
+
+        for candidate in self.versionManagedCandidates() {
+            if self.isExecutable(candidate) { return candidate }
+        }
+
         for directory in (self.pathEnvironment ?? "").split(separator: ":") {
             let candidate = URL(fileURLWithPath: String(directory), isDirectory: true)
                 .appending(path: "codex")
             if self.isExecutable(candidate) { return candidate }
         }
         return nil
+    }
+
+    private func versionManagedCandidates() -> [URL] {
+        let roots = [
+            self.homeDirectory.appending(path: ".nvm/versions/node", directoryHint: .isDirectory),
+            self.homeDirectory.appending(
+                path: ".local/share/fnm/node-versions",
+                directoryHint: .isDirectory),
+            self.homeDirectory.appending(path: ".fnm/node-versions", directoryHint: .isDirectory),
+        ]
+        return roots.flatMap { root in
+            let versions = (try? FileManager.default.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles])) ?? []
+            return versions.sorted { $0.lastPathComponent > $1.lastPathComponent }.map { version in
+                if root.lastPathComponent == "node" {
+                    version.appending(path: "bin/codex")
+                } else {
+                    version.appending(path: "installation/bin/codex")
+                }
+            }
+        }
     }
 
     private func isExecutable(_ url: URL) -> Bool {
@@ -140,11 +182,15 @@ struct CodexAccountTokenUsageClient: Sendable {
     init(
         executableURL: URL? = nil,
         pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"],
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         cache: CodexAccountTokenUsageCache = .shared,
         cacheMaxAge: TimeInterval = 5 * 60,
         timeout: TimeInterval = 15)
     {
-        self.locator = .init(explicitURL: executableURL, pathEnvironment: pathEnvironment)
+        self.locator = .init(
+            explicitURL: executableURL,
+            pathEnvironment: pathEnvironment,
+            homeDirectory: homeDirectory)
         self.cache = cache
         self.cacheMaxAge = cacheMaxAge
         self.timeout = timeout

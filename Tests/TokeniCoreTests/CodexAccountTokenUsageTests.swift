@@ -95,6 +95,27 @@ struct CodexAccountTokenUsageTests {
     }
 
     @Test
+    func locatesCodexInstalledByUserLevelVersionManagers() throws {
+        let home = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let codex = home.appending(path: ".nvm/versions/node/v24.1.0/bin/codex")
+        try FileManager.default.createDirectory(
+            at: codex.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try Data().write(to: codex)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o700],
+            ofItemAtPath: codex.path)
+        defer { try? FileManager.default.removeItem(at: home) }
+
+        let resolved = CodexExecutableLocator(
+            pathEnvironment: "",
+            homeDirectory: home).resolve()
+
+        #expect(resolved == codex)
+    }
+
+    @Test
     func cachesPerAccountAndSupportsInvalidation() async throws {
         let cache = CodexAccountTokenUsageCache()
         let response = CodexAccountTokenUsageResponse(

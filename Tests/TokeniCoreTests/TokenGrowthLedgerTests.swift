@@ -50,6 +50,55 @@ struct TokenGrowthLedgerTests {
         #expect(state.dayCredits.first?.awardedEnergy == 110)
     }
 
+    @Test("A delayed daily bucket is credited to its original usage date")
+    func delayedDailyBucket() throws {
+        let usageDate = try #require(self.date("2026-07-27T12:00:00Z"))
+        let observedAt = try #require(self.date("2026-07-28T12:00:00Z"))
+        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        var state = TokenGrowthLedgerState()
+        let observation = GrowthUsageObservation.daily(
+            providerID: .codex,
+            dateKey: "2026-07-27",
+            totalTokens: 352_031,
+            observedAt: observedAt)
+
+        let awards = engine.process(
+            observations: [observation],
+            at: observedAt,
+            in: &state)
+
+        #expect(awards.count == 1)
+        #expect(awards.first?.dateKey == "2026-07-27")
+        #expect(state.providerDayTotals == [
+            GrowthProviderDayTotal(
+                dateKey: "2026-07-27",
+                providerID: .codex,
+                tokens: 352_031),
+        ])
+        #expect(GrowthLocalDate.key(for: usageDate, calendar: self.calendar) == "2026-07-27")
+    }
+
+    @Test("Daily buckets older than the late window are ignored")
+    func rejectsExpiredDailyBucket() throws {
+        let observedAt = try #require(self.date("2026-07-28T12:00:00Z"))
+        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        var state = TokenGrowthLedgerState()
+
+        let awards = engine.process(
+            observations: [
+                GrowthUsageObservation.daily(
+                    providerID: .codex,
+                    dateKey: "2026-07-24",
+                    totalTokens: 352_031,
+                    observedAt: observedAt),
+            ],
+            at: observedAt,
+            in: &state)
+
+        #expect(awards.isEmpty)
+        #expect(state.providerDayTotals.isEmpty)
+    }
+
     @Test("Cumulative counters establish a baseline before awarding deltas")
     func cumulativeBaseline() throws {
         let now = try #require(self.date("2026-07-26T12:00:00Z"))

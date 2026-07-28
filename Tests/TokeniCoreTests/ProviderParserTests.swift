@@ -44,6 +44,29 @@ struct ProviderParserTests {
     }
 
     @Test
+    func codexUsesLatestConfirmedDailyBucketWhenTodayIsPending() throws {
+        let observedAt = try #require(
+            ISO8601DateFormatter().date(from: "2026-07-28T12:00:00Z"))
+        let usage = AccountTokenUsageSummary(
+            todayTokens: nil,
+            latestDailyTokens: 352_031,
+            currentMonthTokens: 1_000_000,
+            lifetimeTokens: 2_000_000,
+            localDate: "2026-07-28",
+            latestBucketDate: "2026-07-27")
+
+        let observation = try #require(CodexUsageProvider().growthObservation(
+            accountUsage: usage,
+            accountObservedAt: observedAt,
+            localUsage: nil))
+
+        #expect(observation.scope == .daily)
+        #expect(observation.scopeID == "2026-07-27")
+        #expect(observation.totalTokens == 352_031)
+        #expect(observation.observedAt == observedAt)
+    }
+
+    @Test
     func codexCredentialParserAcceptsSnakeAndCamelCaseWithoutExposingToken() throws {
         let snake = try CodexAccountCredentials.decode(Data(
             #"{"tokens":{"access_token":"fake-token","account_id":"account-1"}}"#.utf8))

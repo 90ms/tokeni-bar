@@ -22,7 +22,8 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
         self.sessionsDirectory = homeDirectory.appending(path: ".codex/sessions", directoryHint: .isDirectory)
         self.credentialLoader = CodexAccountCredentialLoader(homeDirectory: homeDirectory)
         self.accountClient = CodexAccountUsageClient()
-        self.accountTokenUsageClient = CodexAccountTokenUsageClient()
+        self.accountTokenUsageClient = CodexAccountTokenUsageClient(
+            homeDirectory: homeDirectory)
         self.resetCreditsClient = CodexResetCreditsClient()
     }
 
@@ -167,18 +168,19 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             modelIDs: [estimator.assumption.referenceModelID])
     }
 
-    private func growthObservation(
+    func growthObservation(
         accountUsage: AccountTokenUsageSummary?,
         accountObservedAt: Date?,
         localUsage: CodexParsedUsage?) -> GrowthUsageObservation?
     {
         if let accountUsage,
-           let todayTokens = accountUsage.todayTokens
+           let latestBucketDate = accountUsage.latestBucketDate,
+           let latestDailyTokens = accountUsage.latestDailyTokens
         {
             return .daily(
                 providerID: .codex,
-                dateKey: accountUsage.localDate,
-                totalTokens: todayTokens,
+                dateKey: latestBucketDate,
+                totalTokens: latestDailyTokens,
                 observedAt: accountObservedAt ?? .now)
         }
         guard let localUsage else { return nil }
