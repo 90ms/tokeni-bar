@@ -128,11 +128,13 @@
 "companion.rarity.unhatched" = "미부화";
 "companion.behavior.idle" = "다음 작업을 기다리는 중";
 "companion.behavior.working" = "에이전트와 함께 성장 중";
+"companion.behavior.waiting" = "다음 응답을 기다리는 중";
 "companion.behavior.warning" = "쿼터가 얼마 남지 않았어요";
 "companion.behavior.celebrate" = "토닥여 줘서 신났어요!";
 "companion.behavior.sleep" = "잠깐 쉬는 중";
 "companion.behavior.short.idle" = "펫";
 "companion.behavior.short.working" = "작업 중";
+"companion.behavior.short.waiting" = "응답 대기";
 "companion.behavior.short.warning" = "쿼터 부족";
 "companion.behavior.short.celebrate" = "신남";
 "companion.behavior.short.sleep" = "자는 중";

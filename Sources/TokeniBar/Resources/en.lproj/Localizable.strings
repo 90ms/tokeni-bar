@@ -128,11 +128,13 @@
 "companion.rarity.unhatched" = "Unhatched";
 "companion.behavior.idle" = "Waiting for the next task";
 "companion.behavior.working" = "Growing with your agents";
+"companion.behavior.waiting" = "Waiting for the next response";
 "companion.behavior.warning" = "A quota is running low";
 "companion.behavior.celebrate" = "Happy from a gentle pat!";
 "companion.behavior.sleep" = "Taking a tiny rest";
 "companion.behavior.short.idle" = "Pet";
 "companion.behavior.short.working" = "Working";
+"companion.behavior.short.waiting" = "Waiting";
 "companion.behavior.short.warning" = "Low quota";
 "companion.behavior.short.celebrate" = "Happy";
 "companion.behavior.short.sleep" = "Sleeping";

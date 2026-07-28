@@ -492,7 +492,7 @@ struct CompanionGameEngineTests {
         #expect(!encoded.contains("token"))
     }
 
-    @Test("Behavior priority remains celebration warning work sleep idle")
+    @Test("Behavior priority remains celebration warning work waiting sleep idle")
     func behaviorPriority() {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         var state = CompanionGameState(
@@ -515,6 +515,19 @@ struct CompanionGameEngineTests {
             isWorking: true,
             lowestRemainingQuotaPercent: 50,
             at: now) == .working)
+        state.lastActiveAt = now.addingTimeInterval(-30)
+        #expect(CompanionBehaviorResolver.resolve(
+            state: state,
+            isWorking: false,
+            lowestRemainingQuotaPercent: 50,
+            at: now) == .waiting)
+        state.lastActiveAt = now.addingTimeInterval(-300)
+        #expect(CompanionBehaviorResolver.resolve(
+            state: state,
+            isWorking: false,
+            lowestRemainingQuotaPercent: 50,
+            at: now) == .idle)
+        state.lastActiveAt = now.addingTimeInterval(-700)
         #expect(CompanionBehaviorResolver.resolve(
             state: state,
             isWorking: false,
