@@ -97,6 +97,7 @@ struct ProviderDiagnosticReportTests {
         let snapshot = ProviderSnapshot(
             descriptor: descriptor,
             availability: .available,
+            source: .officialAPI,
             tokenUsage: TokenUsage(
                 label: "Today",
                 modelID: "private-model-id",
