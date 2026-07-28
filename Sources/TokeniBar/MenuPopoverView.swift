@@ -103,20 +103,16 @@ struct MenuPopoverView: View {
                 description: Text(AppLocalization.string("empty.description")))
                 .frame(height: 130)
         } else {
-            ForEach(Array(self.store.snapshots.enumerated()), id: \.element.id) {
-                index,
-                snapshot in
-                if index > 0 {
-                    Divider()
-                        .padding(.vertical, 4)
+            VStack(spacing: 8) {
+                ForEach(self.store.snapshots) { snapshot in
+                    ProviderRow(
+                        snapshot: snapshot,
+                        costCurrency: self.store.costDisplayCurrency,
+                        exchangeRate: self.store.exchangeRateQuote,
+                        compact: self.store.compactModeEnabled,
+                        isActive: self.store.activityAnimationsEnabled
+                            && self.store.isActive(snapshot.id))
                 }
-                ProviderRow(
-                    snapshot: snapshot,
-                    costCurrency: self.store.costDisplayCurrency,
-                    exchangeRate: self.store.exchangeRateQuote,
-                    compact: self.store.compactModeEnabled,
-                    isActive: self.store.activityAnimationsEnabled
-                        && self.store.isActive(snapshot.id))
             }
         }
     }

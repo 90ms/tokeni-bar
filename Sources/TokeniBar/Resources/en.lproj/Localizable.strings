@@ -28,6 +28,13 @@
 "usage.resetCredits.available" = "%d available";
 "usage.resetCredits.expires" = "Expires";
 "usage.updated" = "Updated";
+"usage.resets" = "Resets";
+"usage.details.show" = "Show details";
+"usage.details.hide" = "Hide details";
+"provider.status.available" = "Available";
+"provider.status.stale" = "Stale";
+"provider.status.unavailable" = "Unavailable";
+"provider.status.failed" = "Error";
 "source.localSessionLog" = "Local session";
 "source.localProtocol" = "Local protocol";
 "source.officialAPI" = "Account API";

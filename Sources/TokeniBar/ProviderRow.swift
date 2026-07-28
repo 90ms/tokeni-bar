@@ -8,44 +8,104 @@ struct ProviderRow: View {
     let exchangeRate: ExchangeRateQuote?
     let compact: Bool
     let isActive: Bool
+    @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: self.compact ? 5 : 9) {
-            HStack(spacing: 8) {
-                ProviderIcon(descriptor: self.snapshot.descriptor)
-                    .frame(width: 18)
-                Text(self.snapshot.descriptor.displayName)
-                    .font(.headline)
-                if self.isActive {
-                    Image(systemName: "waveform")
-                        .foregroundStyle(.green)
-                        .symbolEffect(
-                            .pulse,
-                            options: .repeating,
-                            isActive: !self.reduceMotion)
-                        .help(AppLocalization.string("activity.active"))
-                        .accessibilityLabel(AppLocalization.string("activity.active"))
-                }
-                Spacer()
-                self.availabilityBadge
+        VStack(alignment: .leading, spacing: 9) {
+            self.providerHeader
+
+            if let primaryQuota = self.snapshot.quotaWindows.first {
+                self.quotaView(primaryQuota, emphasizesValue: true)
+            } else if let detail = self.snapshot.detail {
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
 
-            ForEach(self.snapshot.quotaWindows) { window in
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack {
-                        Text(window.label)
-                        Spacer()
-                        Text(window.remainingPercent, format: .number.precision(.fractionLength(0)))
-                            + Text(AppLocalization.string("usage.percentLeft"))
-                        if let reset = window.resetsAt {
-                            Text("·")
-                            Text(reset, style: .relative)
-                        }
-                    }
-                    .font(.caption)
-                    ProgressView(value: window.remainingPercent, total: 100)
-                        .tint(self.tint(forRemainingPercent: window.remainingPercent))
+            if !self.compact, self.hasExpandableDetails {
+                DisclosureGroup(isExpanded: self.$isExpanded) {
+                    self.providerDetails
+                        .padding(.top, 7)
+                } label: {
+                    Text(AppLocalization.string(
+                        self.isExpanded
+                            ? "usage.details.hide"
+                            : "usage.details.show"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                .tint(.secondary)
+            }
+        }
+        .padding(10)
+        .background(
+            .quaternary.opacity(0.38),
+            in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var providerHeader: some View {
+        HStack(spacing: 8) {
+            ProviderIcon(descriptor: self.snapshot.descriptor)
+                .frame(width: 18)
+            Text(self.snapshot.descriptor.displayName)
+                .font(.headline)
+
+            if self.isActive {
+                Image(systemName: "waveform")
+                    .foregroundStyle(.green)
+                    .symbolEffect(
+                        .pulse,
+                        options: .repeating,
+                        isActive: !self.reduceMotion)
+                    .help(AppLocalization.string("activity.active"))
+                    .accessibilityLabel(AppLocalization.string("activity.active"))
+            }
+
+            Spacer()
+            self.availabilityBadge
+        }
+    }
+
+    private func quotaView(
+        _ window: QuotaWindow,
+        emphasizesValue: Bool = false) -> some View
+    {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(window.label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                HStack(spacing: 0) {
+                    Text(
+                        window.remainingPercent,
+                        format: .number.precision(.fractionLength(0)))
+                    Text(AppLocalization.string("usage.percentLeft"))
+                }
+                .font(emphasizesValue ? .subheadline.weight(.semibold) : .caption)
+                .monospacedDigit()
+            }
+
+            ProgressView(value: window.remainingPercent, total: 100)
+                .tint(self.tint(forRemainingPercent: window.remainingPercent))
+
+            if let reset = window.resetsAt {
+                HStack(spacing: 3) {
+                    Text(AppLocalization.string("usage.resets"))
+                    Text(reset, style: .relative)
+                }
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var providerDetails: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(self.snapshot.quotaWindows.dropFirst())) { window in
+                self.quotaView(window)
             }
 
             if let resetCredits = self.snapshot.quotaResetCredits {
@@ -62,25 +122,23 @@ struct ProviderRow: View {
                     }
                     .font(.caption)
 
-                    if !self.compact {
-                        ForEach(resetCredits.credits) { credit in
-                            HStack {
-                                Text(credit.title)
-                                Spacer()
-                                if let expiresAt = credit.expiresAt {
-                                    Text(AppLocalization.string("usage.resetCredits.expires"))
-                                    Text(expiresAt, format: .dateTime
-                                        .year().month().day().hour().minute())
-                                }
+                    ForEach(resetCredits.credits) { credit in
+                        HStack {
+                            Text(credit.title)
+                            Spacer()
+                            if let expiresAt = credit.expiresAt {
+                                Text(AppLocalization.string("usage.resetCredits.expires"))
+                                Text(expiresAt, format: .dateTime
+                                    .year().month().day().hour().minute())
                             }
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
                         }
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                     }
                 }
             }
 
-            if !self.compact, let accountUsage = snapshot.accountTokenUsage {
+            if let accountUsage = snapshot.accountTokenUsage {
                 let referenceCosts = AccountTokenReferenceCostEstimator
                     .codexInputOutputReferenceV1()
                     .map { $0.estimate(summary: accountUsage) }
@@ -111,8 +169,7 @@ struct ProviderRow: View {
                 }
             }
 
-            if !self.compact,
-               snapshot.accountTokenUsage == nil,
+            if snapshot.accountTokenUsage == nil,
                let tokenUsage = snapshot.tokenUsage
             {
                 HStack {
@@ -126,8 +183,7 @@ struct ProviderRow: View {
                 .foregroundStyle(.secondary)
             }
 
-            if !self.compact,
-               snapshot.accountTokenUsage == nil,
+            if snapshot.accountTokenUsage == nil,
                let estimate = snapshot.costEstimate,
                let formattedCost = self.formattedCost(estimate.amountUSD)
             {
@@ -142,14 +198,16 @@ struct ProviderRow: View {
                 .help(estimate.modelIDs.joined(separator: ", "))
             }
 
-            if !self.compact, let detail = snapshot.detail {
+            if let detail = snapshot.detail,
+               !self.snapshot.quotaWindows.isEmpty
+            {
                 Text(detail)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
 
-            if !self.compact, let source = snapshot.source {
+            if let source = snapshot.source {
                 HStack(spacing: 4) {
                     Text(AppLocalization.sourceName(source))
                     Spacer()
@@ -160,23 +218,60 @@ struct ProviderRow: View {
                 .foregroundStyle(.tertiary)
             }
         }
-        .padding(.vertical, self.compact ? 2 : 6)
     }
 
     @ViewBuilder
     private var availabilityBadge: some View {
         switch self.snapshot.availability {
         case .available:
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+            Circle()
+                .fill(.green)
+                .frame(width: 7, height: 7)
+                .help(AppLocalization.string("provider.status.available"))
+                .accessibilityLabel(AppLocalization.string(
+                    "provider.status.available"))
         case .loading:
             ProgressView().controlSize(.small)
         case .stale:
-            Image(systemName: "clock.badge.exclamationmark").foregroundStyle(.orange)
+            self.statusBadge(
+                key: "provider.status.stale",
+                systemImage: "clock.badge.exclamationmark",
+                color: .orange)
         case .unavailable:
-            Image(systemName: "minus.circle").foregroundStyle(.secondary)
+            self.statusBadge(
+                key: "provider.status.unavailable",
+                systemImage: "minus.circle",
+                color: .gray)
         case .failed:
-            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+            self.statusBadge(
+                key: "provider.status.failed",
+                systemImage: "exclamationmark.triangle.fill",
+                color: .red)
         }
+    }
+
+    private func statusBadge(
+        key: String,
+        systemImage: String,
+        color: Color) -> some View
+    {
+        Label(AppLocalization.string(key), systemImage: systemImage)
+            .font(.caption2)
+            .foregroundStyle(color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.12), in: Capsule())
+    }
+
+    private var hasExpandableDetails: Bool {
+        self.snapshot.quotaWindows.count > 1
+            || self.snapshot.quotaResetCredits != nil
+            || self.snapshot.accountTokenUsage != nil
+            || self.snapshot.tokenUsage != nil
+            || self.snapshot.costEstimate != nil
+            || (self.snapshot.detail != nil
+                && !self.snapshot.quotaWindows.isEmpty)
+            || self.snapshot.source != nil
     }
 
     private func tint(forRemainingPercent percent: Double) -> Color {

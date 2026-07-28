@@ -28,6 +28,13 @@
 "usage.resetCredits.available" = "%d개 보유";
 "usage.resetCredits.expires" = "만료";
 "usage.updated" = "업데이트";
+"usage.resets" = "초기화";
+"usage.details.show" = "상세 보기";
+"usage.details.hide" = "상세 접기";
+"provider.status.available" = "정상";
+"provider.status.stale" = "오래됨";
+"provider.status.unavailable" = "사용 불가";
+"provider.status.failed" = "오류";
 "source.localSessionLog" = "로컬 세션";
 "source.localProtocol" = "로컬 프로토콜";
 "source.officialAPI" = "계정 API";
