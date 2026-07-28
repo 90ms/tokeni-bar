@@ -151,6 +151,15 @@
 "companion.collection.encountered" = "만남";
 "companion.collection.lineage" = "계보";
 "companion.collection.locked" = "잠김";
+"companion.archive.title" = "완료한 펫";
+"companion.archive.description" = "성장을 마친 펫을 대표 펫으로 꺼낼 수 있습니다. 전시 중에도 성장과 보상은 현재 여정에만 적용됩니다.";
+"companion.archive.empty" = "아직 완료한 펫이 없습니다.";
+"companion.archive.bond" = "친밀도 %d";
+"companion.archive.record" = "%d번째 여정 · %@";
+"companion.archive.showcase" = "함께 지내기";
+"companion.archive.putAway" = "보관하기";
+"companion.archive.showCurrent" = "성장 중인 펫 보기";
+"companion.archive.showcasedSummary" = "보관된 성체 · 친밀도 %d";
 "companion.pity.title" = "보장 현황";
 "companion.pity.rare" = "앞으로 최대 %d번의 성체 완성 안에 희귀 이상";
 "companion.pity.epic" = "앞으로 최대 %d번의 성체 완성 안에 영웅 이상";

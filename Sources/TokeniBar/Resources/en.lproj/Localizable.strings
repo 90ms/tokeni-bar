@@ -151,6 +151,15 @@
 "companion.collection.encountered" = "Met";
 "companion.collection.lineage" = "Lineage";
 "companion.collection.locked" = "Locked";
+"companion.archive.title" = "Completed Pets";
+"companion.archive.description" = "Bring out a completed pet as your showcase companion. Growth and rewards continue to apply only to the current journey.";
+"companion.archive.empty" = "No completed pets yet.";
+"companion.archive.bond" = "%d bond";
+"companion.archive.record" = "Journey %d · %@";
+"companion.archive.showcase" = "Stay Together";
+"companion.archive.putAway" = "Put Away";
+"companion.archive.showCurrent" = "Show Growing Pet";
+"companion.archive.showcasedSummary" = "Archived Adult · %d bond";
 "companion.pity.title" = "Guarantees";
 "companion.pity.rare" = "Rare or higher within %d completed adult(s)";
 "companion.pity.epic" = "Epic or higher within %d completed adult(s)";

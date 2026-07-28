@@ -664,6 +664,17 @@ final class UsageStore: ObservableObject {
         self.saveCompanionState()
     }
 
+    func showcaseArchivedCompanion(_ generationID: UUID?) {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionState
+        guard (try? self.companionGameEngine.showcaseArchivedGeneration(
+            generationID,
+            in: &state)) != nil
+        else { return }
+        self.companionState = state
+        self.saveCompanionState()
+    }
+
     func claimCompanionAttendance() {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionRewardState
@@ -778,8 +789,28 @@ final class UsageStore: ObservableObject {
         self.companionState.stage
     }
 
-    var companionDisplayRarity: CompanionRarity {
-        self.companionState.rarity ?? .normal
+    var showcasedCompanion: CompletedCompanionGeneration? {
+        self.companionState.showcasedGeneration
+    }
+
+    var isShowingArchivedCompanion: Bool {
+        self.showcasedCompanion != nil
+    }
+
+    var displayedCompanionSpeciesID: CompanionSpeciesID? {
+        self.showcasedCompanion?.speciesID ?? self.companionState.speciesID
+    }
+
+    var displayedCompanionStage: CompanionGameStage {
+        self.isShowingArchivedCompanion ? .adult : self.companionStage
+    }
+
+    var displayedCompanionRarity: CompanionRarity? {
+        self.showcasedCompanion?.finalRarity ?? self.companionState.rarity
+    }
+
+    var displayedCompanionBondEnergy: Int {
+        self.showcasedCompanion?.bondEnergy ?? self.companionState.bondEnergy
     }
 
     var companionBehavior: CompanionBehavior {

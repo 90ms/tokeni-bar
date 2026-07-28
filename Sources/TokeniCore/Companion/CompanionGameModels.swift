@@ -92,13 +92,15 @@ public struct CompanionFormRecord: Codable, Hashable, Sendable {
     }
 }
 
-public struct CompletedCompanionGeneration: Codable, Hashable, Sendable {
+public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sendable {
     public let generationID: UUID
     public let generationNumber: Int
     public let speciesID: CompanionSpeciesID
     public let finalRarity: CompanionRarity
     public let bondEnergy: Int
     public let completedAt: Date
+
+    public var id: UUID { self.generationID }
 
     public init(
         generationID: UUID,
@@ -161,8 +163,7 @@ public struct CompanionCollection: Codable, Hashable, Sendable {
         self.completedByRarity = completedByRarity
         self.highestRarity = highestRarity
         self.highestBondEnergy = max(highestBondEnergy, 0)
-        self.recentCompletedGenerations = Array(
-            recentCompletedGenerations.suffix(20))
+        self.recentCompletedGenerations = recentCompletedGenerations
     }
 
     public var unlockedFormCount: Int { self.forms.count }
@@ -183,6 +184,10 @@ public struct CompanionCollection: Codable, Hashable, Sendable {
 
     public func completedCount(for rarity: CompanionRarity) -> Int {
         self.completedByRarity[rarity.rawValue, default: 0]
+    }
+
+    public var archivedGenerations: [CompletedCompanionGeneration] {
+        self.recentCompletedGenerations
     }
 }
 
@@ -305,6 +310,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var lastActiveAt: Date?
     public var lastPattedAt: Date?
     public var celebrationUntil: Date?
+    public var showcasedGenerationID: UUID?
     public var generationCreatedAt: Date
     public var updatedAt: Date
 
@@ -328,6 +334,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         lastActiveAt: Date? = nil,
         lastPattedAt: Date? = nil,
         celebrationUntil: Date? = nil,
+        showcasedGenerationID: UUID? = nil,
         generationCreatedAt: Date = .now,
         updatedAt: Date = .now)
     {
@@ -351,6 +358,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.lastActiveAt = lastActiveAt
         self.lastPattedAt = lastPattedAt
         self.celebrationUntil = celebrationUntil
+        self.showcasedGenerationID = showcasedGenerationID
         self.generationCreatedAt = generationCreatedAt
         self.updatedAt = updatedAt
     }
@@ -378,6 +386,18 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                   ? self.rarity == nil && self.speciesID == nil
                   : self.rarity != nil && self.speciesID != nil),
               Set(self.appliedGrowthAwardIDs).count == self.appliedGrowthAwardIDs.count,
+              Set(self.collection.archivedGenerations.map(\.generationID)).count
+                == self.collection.archivedGenerations.count,
+              self.collection.archivedGenerations.count
+                <= self.collection.totalCompletedGenerations,
+              self.collection.archivedGenerations.allSatisfy {
+                  $0.generationNumber >= 1 && $0.bondEnergy >= 0
+              },
+              self.showcasedGenerationID.map { generationID in
+                  self.collection.archivedGenerations.contains {
+                      $0.generationID == generationID
+                  }
+              } != false,
               self.collection.forms.count
                 <= CompanionSpeciesID.allCases.count
                     * 3
@@ -396,6 +416,13 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                 && (form.unlockKind == .encountered
                     ? form.encounterCount > 0 && form.lastEncounteredAt != nil
                     : form.encounterCount == 0)
+        }
+    }
+
+    public var showcasedGeneration: CompletedCompanionGeneration? {
+        guard let showcasedGenerationID else { return nil }
+        return self.collection.archivedGenerations.first {
+            $0.generationID == showcasedGenerationID
         }
     }
 }
@@ -425,4 +452,5 @@ public enum CompanionGameError: Error, Equatable {
     case evolutionUnavailable
     case rarityMissing
     case adultRequired
+    case archivedGenerationNotFound
 }

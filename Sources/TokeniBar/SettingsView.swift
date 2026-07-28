@@ -53,9 +53,9 @@ struct SettingsView: View {
                 HStack {
                     Spacer()
                     ByteBotTransitionView(
-                        speciesID: self.store.companionState.speciesID,
-                        stage: self.store.companionStage,
-                        rarity: self.store.companionState.rarity,
+                        speciesID: self.store.displayedCompanionSpeciesID,
+                        stage: self.store.displayedCompanionStage,
+                        rarity: self.store.displayedCompanionRarity,
                         behavior: self.store.companionBehavior,
                         cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                         dimension: 96,

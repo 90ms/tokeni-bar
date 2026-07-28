@@ -289,6 +289,7 @@ struct CompanionGameEngineTests {
         #expect(state.growthSpentToday == 100)
         #expect(state.pity.adultsWithoutRareOrHigher == 1)
         #expect(state.collection.completedCount(for: .normal) == 1)
+        #expect(state.collection.archivedGenerations.count == 1)
         #expect(engine.actionCost(for: .adult) == 100)
         #expect(events.contains(.energySpent(100)))
         #expect(events.contains {
@@ -302,6 +303,40 @@ struct CompanionGameEngineTests {
             }
             return false
         })
+    }
+
+    @Test("Completed pets remain archived and can be showcased")
+    func archivedCompanions() throws {
+        let engine = CompanionGameEngine(calendar: self.calendar)
+        let dateKey = GrowthLocalDate.key(for: .now, calendar: self.calendar)
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .adult,
+            rarity: .normal,
+            growthEnergy: 100,
+            growthDateKey: dateKey)
+
+        for index in 0..<25 {
+            state.speciesID = .bytebot
+            state.stage = .adult
+            state.rarity = index == 24 ? .legendary : .normal
+            state.growthEnergy = 100
+            _ = try engine.completeGeneration(
+                speciesUnitValue: 0,
+                rarityUnitValue: 0,
+                in: &state)
+        }
+
+        #expect(state.collection.archivedGenerations.count == 25)
+        let first = try #require(state.collection.archivedGenerations.first)
+        try engine.showcaseArchivedGeneration(first.generationID, in: &state)
+        #expect(state.showcasedGeneration == first)
+
+        try engine.showcaseArchivedGeneration(nil, in: &state)
+        #expect(state.showcasedGeneration == nil)
+        #expect(throws: CompanionGameError.archivedGenerationNotFound) {
+            try engine.showcaseArchivedGeneration(UUID(), in: &state)
+        }
     }
 
     @Test("Every currently bundled pet belongs to asset generation one")

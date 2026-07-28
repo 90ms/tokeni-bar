@@ -20,6 +20,7 @@ struct CompanionCollectionView: View {
                 self.summary
                 self.pity
                 self.collectionGrid
+                self.companionArchive
                 self.journeyActions
             }
             .padding(20)
@@ -661,6 +662,91 @@ struct CompanionCollectionView: View {
         guard self.isSelectedSpeciesDiscovered else { return "???" }
         return AppLocalization.string(
             "companion.species.\(self.selectedSpeciesID.rawValue).name")
+    }
+
+    private var companionArchive: some View {
+        GroupBox(AppLocalization.string("companion.archive.title")) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(AppLocalization.string("companion.archive.description"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if self.store.companionState.collection.archivedGenerations.isEmpty {
+                    Text(AppLocalization.string("companion.archive.empty"))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, minHeight: 60)
+                } else {
+                    LazyVGrid(
+                        columns: Array(
+                            repeating: GridItem(.flexible(), spacing: 8),
+                            count: 3),
+                        spacing: 8)
+                    {
+                        ForEach(Array(
+                            self.store.companionState.collection
+                                .archivedGenerations.reversed()))
+                        { generation in
+                            self.archivedCompanionCard(generation)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func archivedCompanionCard(
+        _ generation: CompletedCompanionGeneration) -> some View
+    {
+        let isShowcased = self.store.companionState.showcasedGenerationID
+            == generation.generationID
+        return VStack(spacing: 6) {
+            ByteBotSpriteView(
+                speciesID: generation.speciesID,
+                stage: .adult,
+                rarity: generation.finalRarity,
+                behavior: .idle,
+                dimension: 58,
+                animationsEnabled: false)
+            Text(AppLocalization.string(
+                "companion.species.\(generation.speciesID.rawValue).name"))
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+            CompanionRarityBadge(rarity: generation.finalRarity)
+            Text(AppLocalization.format(
+                "companion.archive.bond",
+                generation.bondEnergy))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(AppLocalization.format(
+                "companion.archive.record",
+                generation.generationNumber,
+                generation.completedAt.formatted(
+                    date: .abbreviated,
+                    time: .omitted)))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+            Button(AppLocalization.string(
+                isShowcased
+                    ? "companion.archive.putAway"
+                    : "companion.archive.showcase"))
+            {
+                self.store.showcaseArchivedCompanion(
+                    isShowcased ? nil : generation.generationID)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(9)
+        .background(
+            isShowcased
+                ? Color.accentColor.opacity(0.14)
+                : Color.quaternary.opacity(0.5),
+            in: RoundedRectangle(cornerRadius: 8))
     }
 
     @ViewBuilder

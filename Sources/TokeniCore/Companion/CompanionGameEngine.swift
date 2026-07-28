@@ -195,6 +195,22 @@ public struct CompanionGameEngine: Sendable {
         ]
     }
 
+    public func showcaseArchivedGeneration(
+        _ generationID: UUID?,
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws
+    {
+        if let generationID,
+           !state.collection.archivedGenerations.contains(where: {
+               $0.generationID == generationID
+           })
+        {
+            throw CompanionGameError.archivedGenerationNotFound
+        }
+        state.showcasedGenerationID = generationID
+        state.updatedAt = now
+    }
+
     public func rollOverEnergyIfNeeded(
         at now: Date = .now,
         in state: inout CompanionGameState)
@@ -412,8 +428,6 @@ public struct CompanionGameEngine: Sendable {
             state.collection.highestBondEnergy,
             completion.bondEnergy)
         state.collection.recentCompletedGenerations.append(completion)
-        state.collection.recentCompletedGenerations = Array(
-            state.collection.recentCompletedGenerations.suffix(20))
 
         state.pity.adultsWithoutRareOrHigher = completion.finalRarity.rank >= 1
             ? 0
@@ -438,6 +452,7 @@ public struct CompanionGameEngine: Sendable {
         state.bondEnergy = 0
         state.lastPattedAt = nil
         state.celebrationUntil = nil
+        state.showcasedGenerationID = nil
         state.generationCreatedAt = now
         state.updatedAt = now
     }

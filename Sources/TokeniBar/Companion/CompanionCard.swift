@@ -11,9 +11,9 @@ struct CompanionCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
                 ByteBotTransitionView(
-                    speciesID: self.store.companionState.speciesID,
-                    stage: self.store.companionStage,
-                    rarity: self.store.companionState.rarity,
+                    speciesID: self.store.displayedCompanionSpeciesID,
+                    stage: self.store.displayedCompanionStage,
+                    rarity: self.store.displayedCompanionRarity,
                     behavior: self.store.companionBehavior,
                     cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                     dimension: self.compact ? 50 : 62,
@@ -25,8 +25,8 @@ struct CompanionCard: View {
 
                     HStack(spacing: 5) {
                         self.metadataBadge(AppLocalization.string(
-                            "companion.stage.\(self.store.companionStage.rawValue)"))
-                        if let rarity = self.store.companionState.rarity {
+                            "companion.stage.\(self.store.displayedCompanionStage.rawValue)"))
+                        if let rarity = self.store.displayedCompanionRarity {
                             self.metadataBadge(AppLocalization.string(
                                 "companion.rarity.\(rarity.rawValue)"))
                         }
@@ -55,7 +55,11 @@ struct CompanionCard: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
-                    if self.store.companionStage == .adult {
+                    if self.store.isShowingArchivedCompanion {
+                        Text(AppLocalization.format(
+                            "companion.archive.showcasedSummary",
+                            self.store.displayedCompanionBondEnergy))
+                    } else if self.store.companionStage == .adult {
                         Text(AppLocalization.format(
                             "companion.progress.adult",
                             self.store.companionState.bondEnergy,
@@ -77,7 +81,9 @@ struct CompanionCard: View {
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
 
-                if self.store.companionStage != .adult {
+                if !self.store.isShowingArchivedCompanion,
+                   self.store.companionStage != .adult
+                {
                     ProgressView(value: self.store.companionStageProgress)
                 }
             }
@@ -133,40 +139,52 @@ struct CompanionCard: View {
 
     @ViewBuilder
     private var primaryActionButton: some View {
-        switch self.store.companionStage {
-        case .egg:
+        if self.store.isShowingArchivedCompanion {
             Button {
-                self.store.hatchCompanion()
+                self.store.showcaseArchivedCompanion(nil)
             } label: {
                 Label(
-                    AppLocalization.string("companion.hatch.action"),
-                    systemImage: "sparkles")
+                    AppLocalization.string("companion.archive.showCurrent"),
+                    systemImage: "arrow.uturn.backward.circle.fill")
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
-            .disabled(!self.store.canPerformCompanionAction)
-        case .hatchling, .junior:
-            Button {
-                self.store.evolveCompanion()
-            } label: {
-                Label(
-                    AppLocalization.string("companion.evolve.action"),
-                    systemImage: "arrow.up.circle.fill")
+        } else {
+            switch self.store.companionStage {
+            case .egg:
+                Button {
+                    self.store.hatchCompanion()
+                } label: {
+                    Label(
+                        AppLocalization.string("companion.hatch.action"),
+                        systemImage: "sparkles")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(!self.store.canPerformCompanionAction)
+            case .hatchling, .junior:
+                Button {
+                    self.store.evolveCompanion()
+                } label: {
+                    Label(
+                        AppLocalization.string("companion.evolve.action"),
+                        systemImage: "arrow.up.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(!self.store.canPerformCompanionAction)
+            case .adult:
+                Button {
+                    self.confirmsCompletion = true
+                } label: {
+                    Label(
+                        AppLocalization.string("companion.complete.action"),
+                        systemImage: "archivebox.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(!self.store.canPerformCompanionAction)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .disabled(!self.store.canPerformCompanionAction)
-        case .adult:
-            Button {
-                self.confirmsCompletion = true
-            } label: {
-                Label(
-                    AppLocalization.string("companion.complete.action"),
-                    systemImage: "archivebox.fill")
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .disabled(!self.store.canPerformCompanionAction)
         }
     }
 
@@ -188,7 +206,7 @@ struct CompanionCard: View {
     }
 
     private var companionName: String {
-        guard let speciesID = self.store.companionState.speciesID else {
+        guard let speciesID = self.store.displayedCompanionSpeciesID else {
             return AppLocalization.string("companion.species.mystery.name")
         }
         return AppLocalization.string(
@@ -196,7 +214,7 @@ struct CompanionCard: View {
     }
 
     private var companionSubtitle: String {
-        guard let speciesID = self.store.companionState.speciesID else {
+        guard let speciesID = self.store.displayedCompanionSpeciesID else {
             return AppLocalization.string("companion.species.mystery.personality")
         }
         if self.store.companionBehavior == .idle {
