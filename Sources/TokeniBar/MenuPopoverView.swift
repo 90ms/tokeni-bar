@@ -48,7 +48,10 @@ struct MenuPopoverView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
             }
-            .frame(maxHeight: 560)
+            .frame(
+                minHeight: self.contentMinimumHeight,
+                idealHeight: self.contentIdealHeight,
+                maxHeight: 560)
 
             Divider()
 
@@ -58,6 +61,17 @@ struct MenuPopoverView: View {
         }
         .frame(width: self.store.compactModeEnabled ? 320 : 360)
         .onAppear { self.store.start() }
+    }
+
+    private var contentMinimumHeight: CGFloat {
+        if self.store.companionEnabled {
+            return self.store.compactModeEnabled ? 300 : 340
+        }
+        return self.store.compactModeEnabled ? 180 : 220
+    }
+
+    private var contentIdealHeight: CGFloat {
+        self.store.companionEnabled ? 500 : 360
     }
 
     private var header: some View {
