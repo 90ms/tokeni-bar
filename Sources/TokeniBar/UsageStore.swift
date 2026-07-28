@@ -889,7 +889,7 @@ final class UsageStore: ObservableObject {
 
     var companionNextEnergyTokenRequirement: Int64? {
         TokenGrowthEnergyFormula.standard.additionalTokensForNextEnergy(
-            afterDailyTokens: self.companionTodayTokens)
+            afterDailyTokens: self.tokenGrowthLedgerState.conversionRemainderTokens)
     }
 
     var companionGrowthProviderBreakdown: [CompanionGrowthProviderBreakdown] {

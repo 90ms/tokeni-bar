@@ -57,26 +57,79 @@ public struct GrowthEnergyAward: Identifiable, Codable, Hashable, Sendable {
 }
 
 public struct TokenGrowthLedgerState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 1
+    public static let currentSchemaVersion = 2
 
     public var schemaVersion: Int
     public var checkpoints: [GrowthMeasurementCheckpoint]
     public var providerDayTotals: [GrowthProviderDayTotal]
     public var dayCredits: [GrowthDayCredit]
     public var pendingAwards: [GrowthEnergyAward]
+    public var conversionRemainderTokens: Int64
 
     public init(
         schemaVersion: Int = Self.currentSchemaVersion,
         checkpoints: [GrowthMeasurementCheckpoint] = [],
         providerDayTotals: [GrowthProviderDayTotal] = [],
         dayCredits: [GrowthDayCredit] = [],
-        pendingAwards: [GrowthEnergyAward] = [])
+        pendingAwards: [GrowthEnergyAward] = [],
+        conversionRemainderTokens: Int64 = 0)
     {
         self.schemaVersion = schemaVersion
         self.checkpoints = checkpoints
         self.providerDayTotals = providerDayTotals
         self.dayCredits = dayCredits
         self.pendingAwards = pendingAwards
+        self.conversionRemainderTokens = max(conversionRemainderTokens, 0)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion
+        case checkpoints
+        case providerDayTotals
+        case dayCredits
+        case pendingAwards
+        case conversionRemainderTokens
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedVersion = try container.decodeIfPresent(
+            Int.self,
+            forKey: .schemaVersion) ?? 1
+        guard decodedVersion <= Self.currentSchemaVersion else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .schemaVersion,
+                in: container,
+                debugDescription: "Unsupported token growth ledger schema")
+        }
+        self.init(
+            checkpoints: try container.decodeIfPresent(
+                [GrowthMeasurementCheckpoint].self,
+                forKey: .checkpoints) ?? [],
+            providerDayTotals: try container.decodeIfPresent(
+                [GrowthProviderDayTotal].self,
+                forKey: .providerDayTotals) ?? [],
+            dayCredits: try container.decodeIfPresent(
+                [GrowthDayCredit].self,
+                forKey: .dayCredits) ?? [],
+            pendingAwards: try container.decodeIfPresent(
+                [GrowthEnergyAward].self,
+                forKey: .pendingAwards) ?? [],
+            conversionRemainderTokens: try container.decodeIfPresent(
+                Int64.self,
+                forKey: .conversionRemainderTokens) ?? 0)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(Self.currentSchemaVersion, forKey: .schemaVersion)
+        try container.encode(self.checkpoints, forKey: .checkpoints)
+        try container.encode(self.providerDayTotals, forKey: .providerDayTotals)
+        try container.encode(self.dayCredits, forKey: .dayCredits)
+        try container.encode(self.pendingAwards, forKey: .pendingAwards)
+        try container.encode(
+            self.conversionRemainderTokens,
+            forKey: .conversionRemainderTokens)
     }
 }
 
@@ -146,29 +199,38 @@ public struct TokenGrowthLedgerEngine: Sendable {
         var awards: [GrowthEnergyAward] = []
         for dateKey in affectedDateKeys.sorted() {
             let aggregate = self.aggregateTokens(for: dateKey, in: state)
-            let target = self.formula.energy(forDailyTokens: aggregate)
             let index = state.dayCredits.firstIndex { $0.dateKey == dateKey }
-            let alreadyAwarded = index.map { state.dayCredits[$0].awardedEnergy } ?? 0
-            let energy = max(target - alreadyAwarded, 0)
+            let previousAggregate = index.map {
+                state.dayCredits[$0].aggregateTokens
+            } ?? 0
+            let newTokens = max(aggregate - previousAggregate, 0)
 
             if let index {
                 state.dayCredits[index].aggregateTokens = aggregate
-                state.dayCredits[index].targetEnergy = max(
-                    state.dayCredits[index].targetEnergy,
-                    target)
             } else {
                 state.dayCredits.append(GrowthDayCredit(
                     dateKey: dateKey,
                     aggregateTokens: aggregate,
-                    targetEnergy: target,
+                    targetEnergy: 0,
                     awardedEnergy: 0))
             }
 
+            let convertibleTokens = Self.saturatedAdd(
+                state.conversionRemainderTokens,
+                newTokens)
+            let energy = self.formula.energy(
+                forDailyTokens: convertibleTokens)
+            let consumedTokens = self.formula.minimumDailyTokens(
+                forEnergy: energy) ?? 0
+            state.conversionRemainderTokens = max(
+                convertibleTokens - consumedTokens,
+                0)
             guard energy > 0,
                   let creditIndex = state.dayCredits.firstIndex(where: {
                       $0.dateKey == dateKey
                   })
             else { continue }
+            state.dayCredits[creditIndex].targetEnergy += energy
             state.dayCredits[creditIndex].awardedEnergy += energy
             let award = GrowthEnergyAward(
                 dateKey: dateKey,

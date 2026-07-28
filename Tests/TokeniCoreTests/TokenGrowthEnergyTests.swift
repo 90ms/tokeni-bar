@@ -4,19 +4,16 @@ import Testing
 
 @Suite("Token growth energy")
 struct TokenGrowthEnergyTests {
-    @Test("Matches the published standard curve")
-    func standardCurve() {
+    @Test("Matches the published linear conversion")
+    func standardConversion() {
         let formula = TokenGrowthEnergyFormula.standard
 
         #expect(formula.energy(forDailyTokens: 0) == 0)
-        #expect(formula.energy(forDailyTokens: 10_000) == 15)
-        #expect(formula.energy(forDailyTokens: 25_000) == 32)
-        #expect(formula.energy(forDailyTokens: 50_000) == 50)
-        #expect(formula.energy(forDailyTokens: 100_000) == 74)
-        #expect(formula.energy(forDailyTokens: 250_000) == 110)
-        #expect(formula.energy(forDailyTokens: 500_000) == 140)
-        #expect(formula.energy(forDailyTokens: 1_000_000) == 171)
-        #expect(formula.energy(forDailyTokens: 2_000_000) == 202)
+        #expect(formula.energy(forDailyTokens: 99_999) == 0)
+        #expect(formula.energy(forDailyTokens: 100_000) == 1)
+        #expect(formula.energy(forDailyTokens: 250_000) == 2)
+        #expect(formula.energy(forDailyTokens: 1_000_000) == 10)
+        #expect(formula.energy(forDailyTokens: 300_000_000) == 3_000)
     }
 
     @Test("Never decreases and has no hard cap")
@@ -53,7 +50,7 @@ struct TokenGrowthEnergyTests {
 
     @Test("Reports unreachable targets without overflowing")
     func unreachableTarget() {
-        let disabled = TokenGrowthEnergyFormula(scale: 0, tokenUnit: 25_000)
+        let disabled = TokenGrowthEnergyFormula(tokensPerEnergy: 0)
 
         #expect(disabled.minimumDailyTokens(forEnergy: 1) == nil)
         #expect(disabled.additionalTokensForNextEnergy(afterDailyTokens: 100_000) == nil)
