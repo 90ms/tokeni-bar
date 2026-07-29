@@ -136,6 +136,7 @@ and test expectations in the same change.
 - Kept the companion and benefit state schemas unchanged and added no persisted
   provider, token, prompt, or response fields.
 - Passed macOS CI Swift tests, release build, and app-bundle validation.
+- Published GitHub release and Homebrew Cask/Formula 0.15.0.
 
 ### 1.0.0 · 2026-07-29 · Tokeni Bar v0.14.0
 
