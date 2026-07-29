@@ -1297,13 +1297,27 @@ struct CompanionCollectionView: View {
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
                 Spacer(minLength: 4)
-                Button(AppLocalization.string(
-                    isShowcased
-                        ? "companion.archive.putAway"
-                        : "companion.archive.showcase"))
+
+                if CompanionBenefitRegistry.definition(
+                    for: generation.speciesID)?.activation == .passive
                 {
+                    self.archivePassiveMenu(
+                        generation,
+                        assignedSlot: passiveSlot)
+                }
+
+                Button {
                     self.store.showcaseArchivedCompanion(
                         isShowcased ? nil : generation.generationID)
+                } label: {
+                    Label(
+                        AppLocalization.string(
+                            isShowcased
+                                ? "companion.archive.putAway"
+                                : "companion.archive.showcase"),
+                        systemImage: isShowcased
+                            ? "archivebox"
+                            : "figure.2")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
@@ -1316,6 +1330,58 @@ struct CompanionCollectionView: View {
                 ? Color.accentColor.opacity(0.14)
                 : Color.secondary.opacity(0.08),
             in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func archivePassiveMenu(
+        _ generation: CompletedCompanionGeneration,
+        assignedSlot: Int?) -> some View
+    {
+        Menu {
+            ForEach(
+                0..<self.store.companionUnlockedPassiveSlotCount,
+                id: \.self)
+            { slot in
+                Button {
+                    self.store.setPassiveCompanion(
+                        generation.generationID,
+                        slot: slot)
+                } label: {
+                    Label(
+                        AppLocalization.format(
+                            assignedSlot == slot
+                                ? "companion.archive.passive.assigned"
+                                : "companion.archive.passive.assign",
+                            slot + 1),
+                        systemImage: assignedSlot == slot
+                            ? "checkmark"
+                            : "square.stack.3d.up")
+                }
+                .disabled(self.passiveCandidateIsUsedElsewhere(
+                    generation,
+                    slot: slot))
+            }
+
+            if let assignedSlot {
+                Divider()
+                Button(role: .destructive) {
+                    self.store.setPassiveCompanion(nil, slot: assignedSlot)
+                } label: {
+                    Label(
+                        AppLocalization.string(
+                            "companion.archive.passive.remove"),
+                        systemImage: "minus.circle")
+                }
+            }
+        } label: {
+            Label(
+                AppLocalization.string(
+                    assignedSlot == nil
+                        ? "companion.archive.passive.choose"
+                        : "companion.archive.passive.change"),
+                systemImage: "square.stack.3d.up.fill")
+        }
+        .menuStyle(.button)
+        .controlSize(.small)
     }
 
     @ViewBuilder

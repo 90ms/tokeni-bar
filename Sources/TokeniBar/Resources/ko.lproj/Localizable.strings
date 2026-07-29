@@ -172,6 +172,11 @@
 "companion.archive.showcasedSummary" = "보관된 성체 · 친밀도 %d";
 "companion.archive.status.together" = "동행 중";
 "companion.archive.status.passiveSlot" = "패시브 %d";
+"companion.archive.passive.choose" = "패시브 배치";
+"companion.archive.passive.change" = "패시브 변경";
+"companion.archive.passive.assign" = "%d번 슬롯에 배치";
+"companion.archive.passive.assigned" = "%d번 슬롯에 적용 중";
+"companion.archive.passive.remove" = "패시브에서 해제";
 "companion.benefit.title" = "특성 및 패시브";
 "companion.benefit.appliedEffects.title" = "현재 적용 효과";
 "companion.benefit.appliedEffects.empty" = "현재 적용 중인 동행 특성이나 패시브가 없습니다.";

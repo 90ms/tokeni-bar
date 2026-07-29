@@ -172,6 +172,11 @@
 "companion.archive.showcasedSummary" = "Archived Adult · %d bond";
 "companion.archive.status.together" = "Together";
 "companion.archive.status.passiveSlot" = "Passive %d";
+"companion.archive.passive.choose" = "Assign Passive";
+"companion.archive.passive.change" = "Change Passive";
+"companion.archive.passive.assign" = "Assign to slot %d";
+"companion.archive.passive.assigned" = "Active in slot %d";
+"companion.archive.passive.remove" = "Remove from passives";
 "companion.benefit.title" = "Traits & Passives";
 "companion.benefit.appliedEffects.title" = "Active Effects";
 "companion.benefit.appliedEffects.empty" = "No active companion traits or passives.";
