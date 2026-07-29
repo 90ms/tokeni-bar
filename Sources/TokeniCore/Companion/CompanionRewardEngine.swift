@@ -304,6 +304,20 @@ public struct CompanionRewardEngine: Sendable {
         state.updatedAt = date
     }
 
+    public func grantBenefitShards(
+        _ amount: Int,
+        benefitID: CompanionBenefitID,
+        at date: Date = .now,
+        in state: inout CompanionRewardState) -> CompanionRewardGrant?
+    {
+        guard amount > 0 else { return nil }
+        let grant = CompanionRewardGrant(
+            amount: amount,
+            reason: .benefit(benefitID))
+        self.apply([grant], at: date, to: &state)
+        return grant
+    }
+
     private func apply(
         _ grants: [CompanionRewardGrant],
         at date: Date,

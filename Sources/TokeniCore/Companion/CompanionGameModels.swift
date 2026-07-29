@@ -289,7 +289,7 @@ public struct CompanionGameRules: Hashable, Sendable {
 }
 
 public struct CompanionGameState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 4
+    public static let currentSchemaVersion = 5
 
     public var schemaVersion: Int
     public var speciesID: CompanionSpeciesID?
@@ -300,6 +300,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var growthEnergy: Int
     public var growthDateKey: String
     public var growthEarnedToday: Int
+    public var delayedGrowthEarnedToday: Int
     public var growthCarriedToday: Int
     public var growthSpentToday: Int
     public var bondEnergy: Int
@@ -324,6 +325,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         growthEnergy: Int = 0,
         growthDateKey: String? = nil,
         growthEarnedToday: Int = 0,
+        delayedGrowthEarnedToday: Int = 0,
         growthCarriedToday: Int = 0,
         growthSpentToday: Int = 0,
         bondEnergy: Int = 0,
@@ -348,6 +350,9 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.growthDateKey = growthDateKey
             ?? GrowthLocalDate.key(for: generationCreatedAt)
         self.growthEarnedToday = max(growthEarnedToday, 0)
+        self.delayedGrowthEarnedToday = min(
+            max(delayedGrowthEarnedToday, 0),
+            self.growthEarnedToday)
         self.growthCarriedToday = max(growthCarriedToday, 0)
         self.growthSpentToday = max(growthSpentToday, 0)
         self.bondEnergy = max(bondEnergy, 0)
@@ -387,6 +392,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
               self.growthEnergy <= rules.maximumEnergyBalance,
               !self.growthDateKey.isEmpty,
               self.growthEarnedToday >= 0,
+              self.delayedGrowthEarnedToday >= 0,
+              self.delayedGrowthEarnedToday <= self.growthEarnedToday,
               self.growthCarriedToday >= 0,
               self.growthSpentToday >= 0,
               self.bondEnergy >= 0,
@@ -402,9 +409,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
               archivedGenerationsAreValid,
               showcasedGenerationIsValid,
               self.collection.forms.count
-                <= CompanionSpeciesID.allCases.count
-                    * 3
-                    * CompanionRarity.allCases.count
+                <= CompanionSpeciesID.totalRegisteredFormCount
         else { return false }
 
         let formIDs = self.collection.forms.map(\.formID)
@@ -412,13 +417,12 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         return self.collection.forms.allSatisfy { form in
             form.stage != .egg
                 && form.formID == Self.formID(
-                speciesID: form.speciesID,
-                stage: form.stage,
-                rarity: form.rarity)
-                && form.encounterCount >= 0
-                && (form.unlockKind == .encountered
-                    ? form.encounterCount > 0 && form.lastEncounteredAt != nil
-                    : form.encounterCount == 0)
+                    speciesID: form.speciesID,
+                    stage: form.stage,
+                    rarity: form.rarity)
+                && form.unlockKind == .encountered
+                && form.encounterCount > 0
+                && form.lastEncounteredAt != nil
         }
     }
 

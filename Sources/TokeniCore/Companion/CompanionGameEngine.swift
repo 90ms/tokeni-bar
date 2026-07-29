@@ -29,6 +29,14 @@ public struct CompanionGameEngine: Sendable {
         state.growthEarnedToday = Self.saturatedAdd(
             state.growthEarnedToday,
             credited)
+        let settlementDateKey = GrowthLocalDate.key(
+            for: award.createdAt,
+            calendar: self.calendar)
+        if award.dateKey != settlementDateKey {
+            state.delayedGrowthEarnedToday = Self.saturatedAdd(
+                state.delayedGrowthEarnedToday,
+                credited)
+        }
 
         var events: [CompanionGameEvent] = []
         if credited > 0 {
@@ -44,15 +52,23 @@ public struct CompanionGameEngine: Sendable {
     public func hatch(
         speciesUnitValue: Double,
         rarityUnitValue: Double,
+        luckyCheerUnitValue: Double? = nil,
+        luckyCheerBasisPoints: Int = 0,
+        costDiscountBasisPoints: Int = 0,
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
     {
         self.rollOverEnergyIfNeeded(at: now, in: &state)
         guard state.stage == .egg else { throw CompanionGameError.eggRequired }
-        try self.spend(self.rules.hatchCost, in: &state)
-        return [.energySpent(self.rules.hatchCost)] + self.revealHatch(
+        let cost = self.discountedCost(
+            self.rules.hatchCost,
+            basisPoints: costDiscountBasisPoints)
+        try self.spend(cost, in: &state)
+        return [.energySpent(cost)] + self.revealHatch(
             speciesUnitValue: speciesUnitValue,
             rarityUnitValue: rarityUnitValue,
+            luckyCheerUnitValue: luckyCheerUnitValue,
+            luckyCheerBasisPoints: luckyCheerBasisPoints,
             at: now,
             in: &state)
     }
@@ -60,6 +76,8 @@ public struct CompanionGameEngine: Sendable {
     private func revealHatch(
         speciesUnitValue: Double,
         rarityUnitValue: Double,
+        luckyCheerUnitValue: Double?,
+        luckyCheerBasisPoints: Int,
         at now: Date,
         in state: inout CompanionGameState) -> [CompanionGameEvent]
     {
@@ -74,9 +92,14 @@ public struct CompanionGameEngine: Sendable {
             from: pityApplies ? missingSpecies : CompanionSpeciesID.allCases,
             unitValue: speciesUnitValue)
         let isNewSpecies = !discoveredSpecies.contains(speciesID)
-        let rarity = self.rollRarity(
+        var rarity = self.rollRarity(
             from: .normal,
             unitValue: rarityUnitValue)
+        rarity = self.applyLuckyCheer(
+            to: rarity,
+            from: .normal,
+            unitValue: luckyCheerUnitValue,
+            basisPoints: luckyCheerBasisPoints)
         state.speciesID = speciesID
         state.stage = .hatchling
         state.rarity = rarity
@@ -100,6 +123,9 @@ public struct CompanionGameEngine: Sendable {
 
     public func evolve(
         unitValue: Double,
+        luckyCheerUnitValue: Double? = nil,
+        luckyCheerBasisPoints: Int = 0,
+        costDiscountBasisPoints: Int = 0,
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
     {
@@ -111,11 +137,18 @@ public struct CompanionGameEngine: Sendable {
             throw CompanionGameError.rarityMissing
         }
 
-        let cost = self.rules.actionCost(to: nextStage)
+        let cost = self.discountedCost(
+            self.rules.actionCost(to: nextStage),
+            basisPoints: costDiscountBasisPoints)
         try self.spend(cost, in: &state)
         var nextRarity = self.rollRarity(
             from: fromRarity,
             unitValue: unitValue)
+        nextRarity = self.applyLuckyCheer(
+            to: nextRarity,
+            from: fromRarity,
+            unitValue: luckyCheerUnitValue,
+            basisPoints: luckyCheerBasisPoints)
         if nextStage == .adult {
             nextRarity = CompanionRarity.max(
                 nextRarity,
@@ -129,7 +162,6 @@ public struct CompanionGameEngine: Sendable {
         state.celebrationUntil = now.addingTimeInterval(6)
         let unlocked = self.recordEvolution(
             stage: nextStage,
-            previousRarity: fromRarity,
             rarity: nextRarity,
             at: now,
             in: &state)
@@ -147,6 +179,9 @@ public struct CompanionGameEngine: Sendable {
     public func completeGeneration(
         speciesUnitValue: Double,
         rarityUnitValue: Double,
+        luckyCheerUnitValue: Double? = nil,
+        luckyCheerBasisPoints: Int = 0,
+        costDiscountBasisPoints: Int = 0,
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
     {
@@ -157,7 +192,9 @@ public struct CompanionGameEngine: Sendable {
         else {
             throw CompanionGameError.rarityMissing
         }
-        let completionCost = self.rules.journeyCompletionCost
+        let completionCost = self.discountedCost(
+            self.rules.journeyCompletionCost,
+            basisPoints: costDiscountBasisPoints)
         try self.spend(completionCost, in: &state)
 
         let completion = CompletedCompanionGeneration(
@@ -172,6 +209,8 @@ public struct CompanionGameEngine: Sendable {
         let hatchEvents = self.revealHatch(
             speciesUnitValue: speciesUnitValue,
             rarityUnitValue: rarityUnitValue,
+            luckyCheerUnitValue: luckyCheerUnitValue,
+            luckyCheerBasisPoints: luckyCheerBasisPoints,
             at: now,
             in: &state)
         return [
@@ -182,15 +221,19 @@ public struct CompanionGameEngine: Sendable {
     }
 
     public func abandonForNewEgg(
+        costDiscountBasisPoints: Int = 0,
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
     {
         self.rollOverEnergyIfNeeded(at: now, in: &state)
         guard state.stage != .egg else { throw CompanionGameError.eggRequired }
-        try self.spend(self.rules.newEggCost, in: &state)
+        let cost = self.discountedCost(
+            self.rules.newEggCost,
+            basisPoints: costDiscountBasisPoints)
+        try self.spend(cost, in: &state)
         self.startNewEgg(at: now, in: &state)
         return [
-            .energySpent(self.rules.newEggCost),
+            .energySpent(cost),
             .newEgg(generationNumber: state.generationNumber),
         ]
     }
@@ -230,12 +273,16 @@ public struct CompanionGameEngine: Sendable {
         state.growthDateKey = currentKey
         state.growthCarriedToday = state.growthEnergy
         state.growthEarnedToday = 0
+        state.delayedGrowthEarnedToday = 0
         state.growthSpentToday = 0
         state.updatedAt = now
     }
 
-    public func actionCost(for stage: CompanionGameStage) -> Int? {
-        switch stage {
+    public func actionCost(
+        for stage: CompanionGameStage,
+        costDiscountBasisPoints: Int = 0) -> Int?
+    {
+        let baseCost: Int? = switch stage {
         case .egg:
             self.rules.hatchCost
         case .hatchling, .junior:
@@ -243,12 +290,30 @@ public struct CompanionGameEngine: Sendable {
         case .adult:
             self.rules.journeyCompletionCost
         }
+        return baseCost.map {
+            self.discountedCost($0, basisPoints: costDiscountBasisPoints)
+        }
     }
 
-    public func canPerformAction(for state: CompanionGameState) -> Bool {
-        self.actionCost(for: state.stage).map {
+    public func canPerformAction(
+        for state: CompanionGameState,
+        costDiscountBasisPoints: Int = 0) -> Bool
+    {
+        self.actionCost(
+            for: state.stage,
+            costDiscountBasisPoints: costDiscountBasisPoints).map {
             state.growthEnergy >= $0
         } ?? false
+    }
+
+    public func discountedCost(_ baseCost: Int, basisPoints: Int) -> Int {
+        guard baseCost > 0 else { return 0 }
+        let multiplier = max(10_000 - min(max(basisPoints, 0), 9_999), 1)
+        let product = baseCost.multipliedReportingOverflow(by: multiplier)
+        guard !product.overflow else { return baseCost }
+        let quotient = product.partialValue / 10_000
+        let roundedUp = quotient + (product.partialValue % 10_000 == 0 ? 0 : 1)
+        return max(roundedUp, 1)
     }
 
     public func pat(
@@ -305,6 +370,26 @@ public struct CompanionGameEngine: Sendable {
         return available[index]
     }
 
+    private func applyLuckyCheer(
+        to rolledRarity: CompanionRarity,
+        from previousRarity: CompanionRarity,
+        unitValue: Double?,
+        basisPoints: Int) -> CompanionRarity
+    {
+        guard rolledRarity == previousRarity,
+              rolledRarity != .legendary,
+              let unitValue,
+              min(max(unitValue, 0), 0.999_999_999_999)
+                < Double(min(max(basisPoints, 0), 10_000)) / 10_000
+        else { return rolledRarity }
+        return switch rolledRarity {
+        case .normal: .rare
+        case .rare: .epic
+        case .epic: .legendary
+        case .legendary: .legendary
+        }
+    }
+
     private func spend(
         _ amount: Int,
         in state: inout CompanionGameState) throws
@@ -341,43 +426,22 @@ public struct CompanionGameEngine: Sendable {
 
     private func recordEvolution(
         stage: CompanionGameStage,
-        previousRarity: CompanionRarity,
         rarity: CompanionRarity,
         at date: Date,
         in state: inout CompanionGameState) -> [String]
     {
         guard let speciesID = state.speciesID else { return [] }
-        var unlocked: [String] = []
-        if rarity.rank > previousRarity.rank {
-            for lineageStage in [CompanionGameStage.hatchling, .junior, .adult]
-                where self.stageRank(lineageStage) <= self.stageRank(stage)
-            {
-                if self.unlock(
-                    stage: lineageStage,
-                    rarity: rarity,
-                    kind: lineageStage == stage ? .encountered : .lineage,
-                    at: date,
-                    in: &state)
-                {
-                    unlocked.append(CompanionGameState.formID(
-                        speciesID: speciesID,
-                        stage: lineageStage,
-                        rarity: rarity))
-                }
-            }
-        } else if self.unlock(
+        guard self.unlock(
             stage: stage,
             rarity: rarity,
             kind: .encountered,
             at: date,
             in: &state)
-        {
-            unlocked.append(CompanionGameState.formID(
-                speciesID: speciesID,
-                stage: stage,
-                rarity: rarity))
-        }
-        return unlocked
+        else { return [] }
+        return [CompanionGameState.formID(
+            speciesID: speciesID,
+            stage: stage,
+            rarity: rarity)]
     }
 
     @discardableResult
@@ -478,15 +542,6 @@ public struct CompanionGameEngine: Sendable {
         components.month = month
         components.day = day
         return self.calendar.date(from: components)
-    }
-
-    private func stageRank(_ stage: CompanionGameStage) -> Int {
-        switch stage {
-        case .egg: 0
-        case .hatchling: 1
-        case .junior: 2
-        case .adult: 3
-        }
     }
 
     private static func saturatedAdd(_ lhs: Int, _ rhs: Int) -> Int {

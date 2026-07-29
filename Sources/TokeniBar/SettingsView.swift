@@ -58,7 +58,7 @@ struct SettingsView: View {
                         rarity: self.store.displayedCompanionRarity,
                         behavior: self.store.companionBehavior,
                         cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
-                        dimension: 96,
+                        dimension: self.store.companionOverlaySize.spriteDimension,
                         animationsEnabled: self.store.companionAnimationsEnabled,
                         interactionPulse: self.store.companionInteractionPulse,
                         growthPulse: self.store.isShowingArchivedCompanion
@@ -66,6 +66,7 @@ struct SettingsView: View {
                             : self.store.companionGrowthPulse)
                     Spacer()
                 }
+                .frame(height: CompanionOverlaySize.large.spriteDimension)
 
                 Toggle(isOn: Binding(
                     get: { self.store.companionEnabled },

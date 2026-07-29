@@ -46,7 +46,7 @@ brew install --formula tokeni-bar
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Low remaining quota and monthly budget |
 | Tokeni pets | Life stage, species, rarity, provider growth tokens, bond, behavior, and an optional desktop overlay |
-| Collection and rewards | Five species, 60 forms, attendance, Star Shard cosmetics, and guarantees |
+| Collection and rewards | Registered pets and forms, attendance, Star Shard cosmetics, active traits, passives, and guarantees |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -92,7 +92,7 @@ collection shows the usage date plus **Settled today** or **Today pending**.
 | Action | Energy spent | Result |
 |---|---:|---|
 | Hatch egg | 500 | Reveal the species and first rarity, then become a Hatchling |
-| Evolve to Junior | 800 | Keep or raise rarity and become a Junior |
+| Evolve to Juvenile | 800 | Keep or raise rarity and become a Juvenile |
 | Evolve to Adult | 1,400 | Keep or raise rarity and become an Adult |
 | Finish an Adult journey and hatch again | 800 | Archive the Adult and immediately hatch a new pet |
 | Receive a new egg before Adult | 300 | Restart with an ungraded egg |
@@ -147,15 +147,14 @@ Adult keeps the existing guarantees but does not move them closer.
 |---|---|---|
 | Stay with an Adult | New energy becomes bond | Current form and all records |
 | Finish an Adult journey | Spend 800 energy, archive it, and hatch immediately | Collection and guarantees |
-| Leave before Adult | Spend 40 energy and start a new egg | Collection and existing guarantees |
+| Leave before Adult | Spend 300 energy and start a new egg | Collection and existing guarantees |
 
-The collection has 60 forms: five species, four rarities, and three visible
-life stages.
-When a high rarity first appears late, its earlier forms also unlock as
-**Lineage**.
+Generation one has 60 forms: five species, four rarities, and three visible
+life stages. Only the exact stage and rarity actually encountered is added to
+the collection; unseen earlier forms remain locked.
 Completed pets remain under **Completed Pets**, where they can be brought out
-as the showcase companion or put away again. They are display-only; growth and
-rewards continue to apply to the current journey.
+with **Stay Together** or put away again. Action energy continues to feed the
+current journey, while the selected completed pet's active trait takes effect.
 
 ### 6. Attendance and collection activity award Star Shards
 
@@ -189,17 +188,36 @@ Spend Star Shards on permanent cosmetics in the collection:
 
 The equipped cosmetic appears in the menu popover, collection, Settings
 preview, and on-screen pet. One item per slot can be equipped at the same time.
+Its decoration scales with the Small, Medium, or Large pet size setting.
 Cosmetics never affect growth energy, rarity, or guarantees.
+
+### 7. Equip active traits and passives
+
+One **active trait** comes from the pet selected with **Stay Together**.
+Completed archived pets can simultaneously occupy **passive slots**. One slot
+is available initially, and another unlocks permanently after meeting 30, 60,
+90, and 120 actual collection forms. The same species cannot occupy multiple
+passive slots.
+
+| Pet | Mode | Generation-one benefit |
+|---|---|---|
+| ByteBot | Active | Bonus energy from verified base action energy |
+| CacheCat | Active | Star Shards for time spent together |
+| StackFox | Passive | Lower pet action-energy costs |
+| PromptPup | Passive | A one-tier rarity chance when the base roll does not improve |
+| NullSlime | Passive | Bonus collection and journey Star Shards |
 
 Open the grid button in the menu or choose
 **Settings → Tokeni → Open Pet Collection**. See
-[Tokeni pet growth and collection](docs/bytebot.md) for the complete rules.
+[Tokeni pet growth and collection](docs/bytebot.md) for player-facing rules and
+the [companion system policy](docs/companion-policy.md) for extensibility and
+balance records.
 
 ## Menu bar and on-screen pet
 
 Every menu-bar display mode uses a native monochrome status icon. A red badge
 appears when there is enough energy to hatch an egg or evolve a Hatchling or
-Junior. Adult journey completion is not included in this badge.
+Juvenile. Adult journey completion is not included in this badge.
 
 The menu popover keeps its header and history, settings, and quit actions
 fixed while the center content scrolls. Each provider card leads with its

@@ -29,24 +29,33 @@ struct ByteBotSpriteView: View {
                 at: context.date,
                 animation: animation,
                 shouldAnimate: shouldAnimate)
-            if let frame = catalog.frame(
-                speciesID: self.speciesID,
-                stage: self.stage,
-                rarity: self.rarity,
-                behavior: self.behavior,
-                index: frameIndex)
-            {
-                Image(decorative: frame, scale: 1, orientation: .up)
-                    .resizable()
-                    .interpolation(.none)
-                    .frame(width: self.dimension, height: self.dimension)
-            } else {
-                Image(systemName: "cpu")
-                    .resizable()
-                    .scaledToFit()
-                    .padding(self.dimension * 0.2)
-                    .frame(width: self.dimension, height: self.dimension)
-                    .foregroundStyle(.secondary)
+            ZStack {
+                if self.stage != .egg {
+                    CompanionRarityDecoration(
+                        speciesID: self.speciesID,
+                        rarity: self.rarity,
+                        dimension: self.dimension)
+                }
+
+                if let frame = catalog.frame(
+                    speciesID: self.speciesID,
+                    stage: self.stage,
+                    rarity: self.rarity,
+                    behavior: self.behavior,
+                    index: frameIndex)
+                {
+                    Image(decorative: frame, scale: 1, orientation: .up)
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: self.dimension, height: self.dimension)
+                } else {
+                    Image(systemName: "cpu")
+                        .resizable()
+                        .scaledToFit()
+                        .padding(self.dimension * 0.2)
+                        .frame(width: self.dimension, height: self.dimension)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .frame(width: self.dimension, height: self.dimension)

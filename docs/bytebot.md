@@ -45,7 +45,7 @@ along with settled-today or today-pending status.
 | Action | Energy spent |
 |---|---:|
 | Hatch egg | 500 |
-| Evolve to Junior | 800 |
+| Evolve to Juvenile | 800 |
 | Evolve to Adult | 1,400 |
 | Finish an Adult journey and hatch again | 800 |
 | Receive a new egg before Adult | 300 |
@@ -82,7 +82,7 @@ reveals the first rarity and one of five species:
 | PromptPup | Optimistic prompt dog | 20% |
 | NullSlime | Laid-back digital slime | 20% |
 
-The revealed species stays the same through Junior and Adult. While any species
+The revealed species stays the same through Juvenile and Adult. While any species
 is missing, five consecutive duplicate hatches guarantee that the next egg
 reveals an undiscovered species.
 
@@ -111,20 +111,20 @@ early keeps existing pity but does not advance it.
 
 ## Collection
 
-The collection has 60 forms: five species, four rarities, and Hatchling,
-Junior, and Adult.
+Generation one has 60 forms: five species, four rarities, and Hatchling,
+Juvenile, and Adult.
 The ungraded egg is not counted as a collectible form.
 
-A form shown during evolution is marked **Met**. If a rarity first appears at a
-later stage, its earlier-stage art unlocks as **Lineage**. A Legendary first
-found as an Adult therefore also unlocks Legendary Hatchling and Junior art.
+Only the exact stage and rarity shown during growth is marked **Met**. For
+example, evolving from a Normal Hatchling into a Rare Juvenile records those
+two forms; the unseen Rare Hatchling remains locked.
 
 Open the grid button in the menu or choose **Settings → Tokeni → Open Pet
 Collection** to see:
 
 - discovery and hatch-encounter counts for all five species;
 - all 60 form unlocks;
-- Met versus Lineage unlocks;
+- stages and rarities actually encountered;
 - completed journeys, best rarity, and best bond;
 - maximum completed journeys remaining for every guarantee.
 
@@ -145,8 +145,20 @@ Before Adult, you may spend 300 energy to part ways and restart:
 Completed Adults remain under **Completed Pets** in the collection. Choose
 **Stay Together** to show one in the menu bar, Settings preview, and on-screen
 pet; choose **Put Away** to return to the currently growing pet. A completed pet
-is display-only and cannot evolve or finish another journey. Action energy and
-rewards continue to apply only to the current journey.
+cannot evolve or finish another journey. Action energy continues to feed the
+current journey, while the completed pet's active trait takes effect.
+
+## Traits and passives
+
+One active trait comes from the pet selected with **Stay Together**. Completed,
+archived pets can also occupy passive slots. One slot is available initially;
+additional slots unlock permanently after meeting 30, 60, 90, and 120 actual
+collection forms. The same species cannot occupy multiple passive slots.
+
+ByteBot and CacheCat are active species in generation one. StackFox, PromptPup,
+and NullSlime are passive species. See the
+[companion system policy](companion-policy.md) for rarity values, processing
+order, privacy constraints, and the generation-extension checklist.
 
 ## Star Shards and attendance
 
@@ -199,7 +211,7 @@ pity.
 ## Menu bar and on-screen display
 
 The native monochrome menu-bar status icon shows a red badge when action energy
-is sufficient to hatch an egg or evolve a Hatchling or Junior. Adult journey
+is sufficient to hatch an egg or evolve a Hatchling or Juvenile. Adult journey
 completion remains a separate choice and is not included in this badge.
 
 Enable **Settings → Tokeni → Show pet on screen** to place the pet in a

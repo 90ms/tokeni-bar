@@ -66,6 +66,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionReveal: CompanionHatchReveal?
     @Published private(set) var isCompanionEvolving: Bool
     @Published private(set) var companionRewardState: CompanionRewardState
+    @Published private(set) var companionBenefitState: CompanionBenefitState
     @Published private(set) var companionRewardNoticeAmount: Int?
     @Published private(set) var companionAttendanceError: CompanionRewardError?
 
@@ -81,14 +82,17 @@ final class UsageStore: ObservableObject {
     private let homebrewUpdateService: HomebrewUpdateService
     private let companionStateStore: CompanionGameStateStore
     private let companionRewardStateStore: CompanionRewardStateStore
+    private let companionBenefitStateStore: CompanionBenefitStateStore
     private let tokenGrowthLedgerStore: TokenGrowthLedgerStore
     private let companionGameEngine = CompanionGameEngine()
     private let companionRewardEngine = CompanionRewardEngine()
+    private let companionBenefitEngine = CompanionBenefitEngine()
     private let tokenGrowthLedgerEngine = TokenGrowthLedgerEngine()
     private var tokenGrowthLedgerState: TokenGrowthLedgerState
     private var companionStateLoaded = false
     private var companionStateSaveRevision: UInt64 = 0
     private var companionRewardSaveRevision: UInt64 = 0
+    private var companionBenefitSaveRevision: UInt64 = 0
     private var tokenGrowthLedgerSaveRevision: UInt64 = 0
     private var appUpdateInstallationTask: Task<Void, Never>?
     private static let enabledProvidersKey = "enabledProviderIDs"
@@ -129,6 +133,7 @@ final class UsageStore: ObservableObject {
         let homebrewUpdateService = HomebrewUpdateService()
         let companionStateStore = CompanionGameStateStore()
         let companionRewardStateStore = CompanionRewardStateStore()
+        let companionBenefitStateStore = CompanionBenefitStateStore()
         let tokenGrowthLedgerStore = TokenGrowthLedgerStore()
         self.notificationController = notificationController
         self.launchAtLoginController = launchAtLoginController
@@ -139,6 +144,7 @@ final class UsageStore: ObservableObject {
         self.homebrewUpdateService = homebrewUpdateService
         self.companionStateStore = companionStateStore
         self.companionRewardStateStore = companionRewardStateStore
+        self.companionBenefitStateStore = companionBenefitStateStore
         self.tokenGrowthLedgerStore = tokenGrowthLedgerStore
         self.tokenGrowthLedgerState = TokenGrowthLedgerState()
         self.notificationsEnabled = notificationController.isEnabled
@@ -227,6 +233,7 @@ final class UsageStore: ObservableObject {
         self.companionReveal = nil
         self.isCompanionEvolving = false
         self.companionRewardState = CompanionRewardState()
+        self.companionBenefitState = CompanionBenefitState()
         self.companionRewardNoticeAmount = nil
         self.companionAttendanceError = nil
         let enabledIDs: Set<ProviderID>
@@ -253,11 +260,18 @@ final class UsageStore: ObservableObject {
             self.companionRewardState =
                 (try? await self.companionRewardStateStore.load())
                     ?? CompanionRewardState()
+            self.companionBenefitState =
+                (try? await self.companionBenefitStateStore.load())
+                    ?? CompanionBenefitState()
+            self.companionBenefitEngine.reconcileSlots(
+                unlockedFormCount: self.companionState.collection.unlockedFormCount,
+                in: &self.companionBenefitState)
             self.reconcileCompanionRewards()
             self.tokenGrowthLedgerState = (try? await self.tokenGrowthLedgerStore.load())
                 ?? TokenGrowthLedgerState()
             self.companionStateLoaded = true
             self.saveCompanionState()
+            self.saveCompanionBenefitState()
             await self.applyPendingCompanionGrowthAwards()
             self.historyRecords = (try? await self.historyStore.records()) ?? []
             let cachedPricing = await self.pricingCatalogClient.activateCachedCatalog()
@@ -587,6 +601,9 @@ final class UsageStore: ObservableObject {
         guard let events = try? self.companionGameEngine.hatch(
             speciesUnitValue: Double.random(in: 0..<1),
             rarityUnitValue: Double.random(in: 0..<1),
+            luckyCheerUnitValue: Double.random(in: 0..<1),
+            luckyCheerBasisPoints: self.companionLuckyCheerBasisPoints,
+            costDiscountBasisPoints: self.companionCostDiscountBasisPoints,
             in: &state)
         else { return }
         self.companionState = state
@@ -616,6 +633,9 @@ final class UsageStore: ObservableObject {
         var state = self.companionState
         guard (try? self.companionGameEngine.evolve(
             unitValue: Double.random(in: 0..<1),
+            luckyCheerUnitValue: Double.random(in: 0..<1),
+            luckyCheerBasisPoints: self.companionLuckyCheerBasisPoints,
+            costDiscountBasisPoints: self.companionCostDiscountBasisPoints,
             in: &state)) != nil
         else { return }
         self.companionState = state
@@ -642,6 +662,9 @@ final class UsageStore: ObservableObject {
         guard let events = try? self.companionGameEngine.completeGeneration(
             speciesUnitValue: Double.random(in: 0..<1),
             rarityUnitValue: Double.random(in: 0..<1),
+            luckyCheerUnitValue: Double.random(in: 0..<1),
+            luckyCheerBasisPoints: self.companionLuckyCheerBasisPoints,
+            costDiscountBasisPoints: self.companionCostDiscountBasisPoints,
             in: &state)
         else {
             return
@@ -662,7 +685,9 @@ final class UsageStore: ObservableObject {
     func abandonCompanionForNewEgg() {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionState
-        guard (try? self.companionGameEngine.abandonForNewEgg(in: &state)) != nil else {
+        guard (try? self.companionGameEngine.abandonForNewEgg(
+            costDiscountBasisPoints: self.companionCostDiscountBasisPoints,
+            in: &state)) != nil else {
             return
         }
         self.companionState = state
@@ -671,6 +696,7 @@ final class UsageStore: ObservableObject {
 
     func showcaseArchivedCompanion(_ generationID: UUID?) {
         guard self.companionEnabled, self.companionStateLoaded else { return }
+        self.settleCompanionTimeBenefits(at: .now)
         var state = self.companionState
         guard (try? self.companionGameEngine.showcaseArchivedGeneration(
             generationID,
@@ -678,6 +704,19 @@ final class UsageStore: ObservableObject {
         else { return }
         self.companionState = state
         self.saveCompanionState()
+    }
+
+    func setPassiveCompanion(_ generationID: UUID?, slot: Int) {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionBenefitState
+        guard (try? self.companionBenefitEngine.assignPassive(
+            generationID: generationID,
+            to: slot,
+            archivedCompanions: self.companionState.collection.archivedGenerations,
+            in: &state)) != nil
+        else { return }
+        self.companionBenefitState = state
+        self.saveCompanionBenefitState()
     }
 
     func claimCompanionAttendance() {
@@ -818,6 +857,100 @@ final class UsageStore: ObservableObject {
         self.showcasedCompanion?.bondEnergy ?? self.companionState.bondEnergy
     }
 
+    var activeBenefitCompanion: CompanionBenefitCompanion? {
+        if let showcased = self.showcasedCompanion {
+            return CompanionBenefitCompanion(
+                generationID: showcased.generationID,
+                speciesID: showcased.speciesID,
+                rarity: showcased.finalRarity)
+        }
+        guard self.companionState.stage != .egg,
+              let speciesID = self.companionState.speciesID,
+              let rarity = self.companionState.rarity
+        else { return nil }
+        return CompanionBenefitCompanion(
+            generationID: self.companionState.generationID,
+            speciesID: speciesID,
+            rarity: rarity)
+    }
+
+    var activeCompanionBenefitDefinition: CompanionBenefitDefinition? {
+        guard let companion = self.activeBenefitCompanion,
+              let definition = CompanionBenefitRegistry.definition(
+                for: companion.speciesID),
+              definition.activation == .active
+        else { return nil }
+        return definition
+    }
+
+    var activeCompanionBenefitProgress: CompanionBenefitProgress? {
+        guard let generationID = self.activeBenefitCompanion?.generationID else {
+            return nil
+        }
+        return self.companionBenefitState.progress.first {
+            $0.generationID == generationID
+        }
+    }
+
+    var companionActivePassives: [CompanionBenefitCompanion] {
+        self.companionBenefitEngine.activePassives(
+            archivedCompanions: self.companionState.collection.archivedGenerations,
+            state: self.companionBenefitState)
+    }
+
+    var companionUnlockedPassiveSlotCount: Int {
+        self.companionBenefitState.unlockedPassiveSlotCount
+    }
+
+    var companionPassiveAssignments: [CompletedCompanionGeneration?] {
+        let archived = Dictionary(uniqueKeysWithValues:
+            self.companionState.collection.archivedGenerations.map {
+                ($0.generationID, $0)
+            })
+        return (0..<5).map { index in
+            guard index < self.companionBenefitState.passiveGenerationIDs.count,
+                  let generationID =
+                    self.companionBenefitState.passiveGenerationIDs[index]
+            else { return nil }
+            return archived[generationID]
+        }
+    }
+
+    var companionPassiveCandidates: [CompletedCompanionGeneration] {
+        self.companionState.collection.archivedGenerations.filter {
+            CompanionBenefitRegistry.definition(for: $0.speciesID)?
+                .activation == .passive
+        }
+    }
+
+    var companionNextPassiveSlotThreshold: Int? {
+        self.companionBenefitEngine.passiveSlotThresholds.first {
+            self.companionState.collection.unlockedFormCount < $0
+        }
+    }
+
+    func companionPassiveUnlockThreshold(for slot: Int) -> Int? {
+        guard slot > 0,
+              slot - 1 < self.companionBenefitEngine.passiveSlotThresholds.count
+        else { return nil }
+        return self.companionBenefitEngine.passiveSlotThresholds[slot - 1]
+    }
+
+    var companionCostDiscountBasisPoints: Int {
+        self.companionBenefitEngine.actionCostDiscountBasisPoints(
+            passives: self.companionActivePassives)
+    }
+
+    var companionLuckyCheerBasisPoints: Int {
+        self.companionBenefitEngine.luckyCheerBasisPoints(
+            passives: self.companionActivePassives)
+    }
+
+    var companionRewardAbsorptionBasisPoints: Int {
+        self.companionBenefitEngine.rewardAbsorptionBasisPoints(
+            passives: self.companionActivePassives)
+    }
+
     var companionBehavior: CompanionBehavior {
         CompanionBehaviorResolver.resolve(
             state: self.companionState,
@@ -837,20 +970,28 @@ final class UsageStore: ObservableObject {
     }
 
     var companionActionCost: Int? {
-        self.companionGameEngine.actionCost(for: self.companionStage)
+        self.companionGameEngine.actionCost(
+            for: self.companionStage,
+            costDiscountBasisPoints: self.companionCostDiscountBasisPoints)
     }
 
     var companionNewEggCost: Int {
-        self.companionGameEngine.rules.newEggCost
+        self.companionGameEngine.discountedCost(
+            self.companionGameEngine.rules.newEggCost,
+            basisPoints: self.companionCostDiscountBasisPoints)
     }
 
     var companionJourneyCompletionCost: Int {
-        self.companionGameEngine.rules.journeyCompletionCost
+        self.companionGameEngine.discountedCost(
+            self.companionGameEngine.rules.journeyCompletionCost,
+            basisPoints: self.companionCostDiscountBasisPoints)
     }
 
     var canPerformCompanionAction: Bool {
         !self.isCompanionEvolving
-            && self.companionGameEngine.canPerformAction(for: self.companionState)
+            && self.companionGameEngine.canPerformAction(
+                for: self.companionState,
+                costDiscountBasisPoints: self.companionCostDiscountBasisPoints)
     }
 
     var hasReadyCompanionGrowthAction: Bool {
@@ -933,10 +1074,6 @@ final class UsageStore: ObservableObject {
                     } ?? false,
                     accountIssue: snapshot?.accountTokenUsageIssue)
             }
-    }
-
-    var hasDelayedCompanionSettlementToday: Bool {
-        self.companionGrowthProviderBreakdown.contains { $0.wasSettledToday }
     }
 
     var companionAttendanceStatus: CompanionAttendanceStatus {
@@ -1076,6 +1213,7 @@ final class UsageStore: ObservableObject {
 
     private func recordCompanionActivity(at now: Date) {
         guard self.companionEnabled, self.companionStateLoaded else { return }
+        self.settleCompanionTimeBenefits(at: now)
         let previousState = self.companionState
         var state = previousState
         self.companionGameEngine.rollOverEnergyIfNeeded(
@@ -1112,6 +1250,28 @@ final class UsageStore: ObservableObject {
     private func applyPendingCompanionGrowthAwards() async {
         guard self.companionStateLoaded else { return }
         for award in self.tokenGrowthLedgerState.pendingAwards {
+            let availableRoom = max(
+                self.companionGameEngine.rules.maximumEnergyBalance
+                    - self.companionState.growthEnergy,
+                0)
+            let creditedBaseEnergy = min(award.energy, availableRoom)
+            var benefit = self.companionBenefitState
+            self.companionBenefitEngine.processVerifiedBaseEnergy(
+                creditedBaseEnergy,
+                sourceAwardID: award.id,
+                activeCompanion: self.activeBenefitCompanion,
+                at: award.createdAt,
+                in: &benefit)
+            do {
+                self.companionBenefitSaveRevision &+= 1
+                try await self.companionBenefitStateStore.save(
+                    benefit,
+                    revision: self.companionBenefitSaveRevision)
+                self.companionBenefitState = benefit
+            } catch {
+                return
+            }
+
             var companion = self.companionState
             let events: [CompanionGameEvent]
             do {
@@ -1147,6 +1307,50 @@ final class UsageStore: ObservableObject {
             } catch {
                 return
             }
+            await self.applyPendingCompanionBenefitEnergy()
+        }
+    }
+
+    private func applyPendingCompanionBenefitEnergy() async {
+        for bonus in self.companionBenefitState.pendingEnergyBonuses {
+            var companion = self.companionState
+            let dateKey = GrowthLocalDate.key(for: bonus.createdAt)
+            let events = self.companionGameEngine.apply(
+                award: GrowthEnergyAward(
+                    id: bonus.id,
+                    dateKey: dateKey,
+                    energy: bonus.amount,
+                    createdAt: bonus.createdAt),
+                to: &companion)
+            do {
+                self.companionStateSaveRevision &+= 1
+                try await self.companionStateStore.save(
+                    companion,
+                    revision: self.companionStateSaveRevision)
+            } catch {
+                return
+            }
+            self.companionState = companion
+            if events.contains(where: {
+                if case let .energyApplied(amount) = $0 { return amount > 0 }
+                return false
+            }) {
+                self.companionGrowthPulse &+= 1
+            }
+
+            var benefit = self.companionBenefitState
+            self.companionBenefitEngine.markEnergyBonusApplied(
+                bonus.id,
+                in: &benefit)
+            do {
+                self.companionBenefitSaveRevision &+= 1
+                try await self.companionBenefitStateStore.save(
+                    benefit,
+                    revision: self.companionBenefitSaveRevision)
+                self.companionBenefitState = benefit
+            } catch {
+                return
+            }
         }
     }
 
@@ -1159,11 +1363,59 @@ final class UsageStore: ObservableObject {
         }
     }
 
+    private func saveCompanionBenefitState() {
+        let state = self.companionBenefitState
+        self.companionBenefitSaveRevision &+= 1
+        let revision = self.companionBenefitSaveRevision
+        Task {
+            try? await self.companionBenefitStateStore.save(
+                state,
+                revision: revision)
+        }
+    }
+
+    private func settleCompanionTimeBenefits(at date: Date) {
+        var benefit = self.companionBenefitState
+        let shards = self.companionBenefitEngine.settleActiveTime(
+            activeCompanion: self.activeBenefitCompanion,
+            at: date,
+            in: &benefit)
+        guard benefit != self.companionBenefitState || shards > 0 else { return }
+        self.companionBenefitState = benefit
+        self.saveCompanionBenefitState()
+        guard shards > 0 else { return }
+        var reward = self.companionRewardState
+        guard self.companionRewardEngine.grantBenefitShards(
+            shards,
+            benefitID: .starlightCache,
+            at: date,
+            in: &reward) != nil
+        else { return }
+        self.companionRewardState = reward
+        self.companionRewardNoticeAmount = shards
+        self.saveCompanionRewardState()
+    }
+
     private func reconcileCompanionRewards() {
         var state = self.companionRewardState
         var grants = self.companionRewardEngine.reconcile(
             collection: self.companionState.collection,
             in: &state)
+        var benefit = self.companionBenefitState
+        self.companionBenefitEngine.reconcileSlots(
+            unlockedFormCount: self.companionState.collection.unlockedFormCount,
+            in: &benefit)
+        let absorptionBonus = self.companionBenefitEngine.rewardAbsorptionBonus(
+            for: grants,
+            basisPoints: self.companionRewardAbsorptionBasisPoints,
+            in: &benefit)
+        if let grant = self.companionRewardEngine.grantBenefitShards(
+            absorptionBonus,
+            benefitID: .rewardAbsorption,
+            in: &state)
+        {
+            grants.append(grant)
+        }
         if let grant = self.companionRewardEngine.rewardVerifiedGrowth(
             energy: self.companionState.growthEarnedToday,
             in: &state)
@@ -1175,6 +1427,10 @@ final class UsageStore: ObservableObject {
             in: &state)
         {
             grants.append(grant)
+        }
+        if benefit != self.companionBenefitState {
+            self.companionBenefitState = benefit
+            self.saveCompanionBenefitState()
         }
         guard !grants.isEmpty else { return }
         self.companionRewardState = state

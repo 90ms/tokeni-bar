@@ -159,6 +159,13 @@ struct CompanionGameEngineTests {
         #expect(state.rarity == .epic)
         #expect(state.growthEnergy == 0)
         #expect(state.growthSpentToday == 2_200)
+        #expect(state.collection.forms.map(\.formID).sorted() == [
+            "bytebot.adult.epic",
+            "bytebot.junior.rare",
+        ])
+        #expect(!state.collection.forms.contains {
+            $0.rarity == .epic && $0.stage != .adult
+        })
     }
 
     @Test("Insufficient energy leaves the egg unchanged")
@@ -192,6 +199,7 @@ struct CompanionGameEngineTests {
             growthEnergy: 300,
             growthDateKey: "2027-01-15",
             growthEarnedToday: 300,
+            delayedGrowthEarnedToday: 100,
             generationCreatedAt: first)
 
         engine.rollOverEnergyIfNeeded(at: third, in: &state)
@@ -199,6 +207,7 @@ struct CompanionGameEngineTests {
         #expect(state.growthEnergy == 300)
         #expect(state.growthCarriedToday == 300)
         #expect(state.growthEarnedToday == 0)
+        #expect(state.delayedGrowthEarnedToday == 0)
         #expect(state.growthSpentToday == 0)
         #expect(state.growthDateKey == "2027-01-17")
     }
@@ -221,6 +230,7 @@ struct CompanionGameEngineTests {
         #expect(state.growthDateKey == "2027-01-16")
         #expect(state.growthCarriedToday == 100)
         #expect(state.growthEarnedToday == 50)
+        #expect(state.delayedGrowthEarnedToday == 50)
         #expect(state.growthEnergy == 150)
     }
 
@@ -420,18 +430,67 @@ struct CompanionGameEngineTests {
         let versionThree = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":4"#,
+                    of: #""schemaVersion":5"#,
                     with: #""schemaVersion":3"#)
                 .data(using: .utf8))
         try versionThree.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 4)
+        #expect(state.schemaVersion == 5)
         #expect(state.speciesID == .bytebot)
         #expect(state.stage == .junior)
         #expect(state.rarity == .epic)
         #expect(state.growthEnergy == 320)
+    }
+
+    @Test("Version four lineage forms are removed during migration")
+    func migratesVersionFourLineageForms() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let file = directory.appending(path: "companion-state.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
+        let encountered = CompanionFormRecord(
+            formID: "bytebot.adult.rare",
+            stage: .adult,
+            rarity: .rare,
+            unlockKind: .encountered,
+            firstUnlockedAt: timestamp,
+            lastEncounteredAt: timestamp,
+            encounterCount: 1)
+        let lineage = CompanionFormRecord(
+            formID: "bytebot.hatchling.rare",
+            stage: .hatchling,
+            rarity: .rare,
+            unlockKind: .lineage,
+            firstUnlockedAt: timestamp,
+            lastEncounteredAt: nil,
+            encounterCount: 0)
+        let current = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .adult,
+            rarity: .rare,
+            collection: CompanionCollection(forms: [encountered, lineage]),
+            generationCreatedAt: timestamp,
+            updatedAt: timestamp)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let encoded = try encoder.encode(current)
+        let versionFour = try #require(
+            String(data: encoded, encoding: .utf8)?
+                .replacingOccurrences(
+                    of: #""schemaVersion":5"#,
+                    with: #""schemaVersion":4"#)
+                .data(using: .utf8))
+        try versionFour.write(to: file)
+
+        let state = try await CompanionGameStateStore(fileURL: file).load()
+
+        #expect(state.schemaVersion == 5)
+        #expect(state.collection.forms == [encountered])
+        #expect(state.delayedGrowthEarnedToday == 0)
     }
 
     @Test("Unsupported old companion state is quarantined")
@@ -447,7 +506,7 @@ struct CompanionGameEngineTests {
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 4)
+        #expect(state.schemaVersion == 5)
         #expect(state.stage == .egg)
         #expect(state.speciesID == nil)
         #expect(state.rarity == nil)

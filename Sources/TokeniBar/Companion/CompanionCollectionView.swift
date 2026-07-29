@@ -17,6 +17,7 @@ struct CompanionCollectionView: View {
                 self.currentCompanion
                 self.energyWallet
                 self.rewardWallet
+                self.companionBenefits
                 self.summary
                 self.pity
                 self.collectionGrid
@@ -162,9 +163,11 @@ struct CompanionCollectionView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if self.store.hasDelayedCompanionSettlementToday {
+                if self.store.companionState.delayedGrowthEarnedToday > 0 {
                     Label(
-                        AppLocalization.string("companion.energy.delayedSettlement"),
+                        AppLocalization.format(
+                            "companion.energy.delayedSettlement",
+                            self.store.companionState.delayedGrowthEarnedToday),
                         systemImage: "clock.arrow.circlepath")
                         .font(.caption)
                         .foregroundStyle(.orange)
@@ -313,6 +316,282 @@ struct CompanionCollectionView: View {
         }
     }
 
+    private var companionBenefits: some View {
+        GroupBox(AppLocalization.string("companion.benefit.title")) {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(
+                        AppLocalization.string("companion.benefit.active.title"),
+                        systemImage: "figure.walk")
+                        .font(.subheadline.weight(.semibold))
+
+                    if let companion = self.store.activeBenefitCompanion,
+                       let definition =
+                           self.store.activeCompanionBenefitDefinition
+                    {
+                        HStack(alignment: .top, spacing: 10) {
+                            ByteBotSpriteView(
+                                speciesID: companion.speciesID,
+                                stage: self.store.displayedCompanionStage,
+                                rarity: companion.rarity,
+                                behavior: .idle,
+                                dimension: 50,
+                                animationsEnabled: false)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(self.benefitName(definition.id))
+                                    .font(.caption.weight(.semibold))
+                                Text(self.benefitValue(
+                                    definition.id,
+                                    rarity: companion.rarity))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(self.benefitProgress(
+                                    definition.id,
+                                    rarity: companion.rarity))
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            Spacer()
+                            CompanionRarityBadge(rarity: companion.rarity)
+                        }
+                    } else if self.store.activeBenefitCompanion != nil {
+                        Text(AppLocalization.string(
+                            "companion.benefit.active.passiveSpecies"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(AppLocalization.string(
+                            "companion.benefit.active.empty"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Label(
+                            AppLocalization.string(
+                                "companion.benefit.passive.title"),
+                            systemImage: "square.stack.3d.up.fill")
+                            .font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Text(AppLocalization.format(
+                            "companion.benefit.passive.count",
+                            self.store.companionUnlockedPassiveSlotCount,
+                            5))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    ForEach(0..<5, id: \.self) { slot in
+                        self.passiveSlot(slot)
+                    }
+
+                    if let threshold =
+                        self.store.companionNextPassiveSlotThreshold
+                    {
+                        Text(AppLocalization.format(
+                            "companion.benefit.passive.next",
+                            threshold,
+                            self.store.companionState.collection
+                                .unlockedFormCount))
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
+        }
+    }
+
+    @ViewBuilder
+    private func passiveSlot(_ slot: Int) -> some View {
+        if slot >= self.store.companionUnlockedPassiveSlotCount {
+            HStack {
+                Label(
+                    AppLocalization.format(
+                        "companion.benefit.passive.slot",
+                        slot + 1),
+                    systemImage: "lock.fill")
+                Spacer()
+                Group {
+                    if let threshold =
+                        self.store.companionPassiveUnlockThreshold(for: slot)
+                    {
+                        Text(AppLocalization.format(
+                            "companion.benefit.passive.lockedProgress",
+                            self.store.companionState.collection
+                                .unlockedFormCount,
+                            threshold))
+                    } else {
+                        Text(AppLocalization.string(
+                            "companion.benefit.passive.locked"))
+                    }
+                }
+                .foregroundStyle(.tertiary)
+            }
+            .font(.caption)
+            .padding(8)
+            .background(
+                Color.secondary.opacity(0.05),
+                in: RoundedRectangle(cornerRadius: 7))
+        } else {
+            Menu {
+                Button(AppLocalization.string(
+                    "companion.benefit.passive.remove"))
+                {
+                    self.store.setPassiveCompanion(nil, slot: slot)
+                }
+                .disabled(self.store.companionPassiveAssignments[slot] == nil)
+
+                Divider()
+
+                ForEach(self.store.companionPassiveCandidates) { generation in
+                    Button {
+                        self.store.setPassiveCompanion(
+                            generation.generationID,
+                            slot: slot)
+                    } label: {
+                        Text(self.passiveCandidateTitle(generation))
+                    }
+                }
+            } label: {
+                HStack(spacing: 9) {
+                    Text("\(slot + 1)")
+                        .font(.caption2.weight(.bold))
+                        .frame(width: 20, height: 20)
+                        .background(
+                            Color.accentColor.opacity(0.15),
+                            in: Circle())
+                    if let generation =
+                        self.store.companionPassiveAssignments[slot],
+                       let definition = CompanionBenefitRegistry.definition(
+                           for: generation.speciesID)
+                    {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(self.benefitName(definition.id))
+                                .font(.caption.weight(.semibold))
+                            Text(self.benefitValue(
+                                definition.id,
+                                rarity: generation.finalRarity))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        CompanionRarityBadge(
+                            rarity: generation.finalRarity)
+                    } else {
+                        Text(AppLocalization.string(
+                            "companion.benefit.passive.empty"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .padding(8)
+            .background(
+                Color.secondary.opacity(0.08),
+                in: RoundedRectangle(cornerRadius: 7))
+        }
+    }
+
+    private func passiveCandidateTitle(
+        _ generation: CompletedCompanionGeneration) -> String
+    {
+        let species = AppLocalization.string(
+            "companion.species.\(generation.speciesID.rawValue).name")
+        let rarity = AppLocalization.string(
+            "companion.rarity.\(generation.finalRarity.rawValue)")
+        return "\(species) · \(rarity)"
+    }
+
+    private func benefitName(_ id: CompanionBenefitID) -> String {
+        AppLocalization.string("companion.benefit.\(id.rawValue).name")
+    }
+
+    private func benefitValue(
+        _ id: CompanionBenefitID,
+        rarity: CompanionRarity) -> String
+    {
+        switch id {
+        case .tokenOptimization:
+            let tier = CompanionBenefitRegistry.tokenOptimization(for: rarity)
+            return AppLocalization.format(
+                "companion.benefit.tokenOptimization.value",
+                tier.requiredBaseEnergy,
+                tier.dailyCap)
+        case .starlightCache:
+            let tier = CompanionBenefitRegistry.starlightCache(for: rarity)
+            return AppLocalization.format(
+                "companion.benefit.starlightCache.value",
+                Int(tier.interval / 3_600),
+                tier.dailyCap)
+        case .stackOptimization:
+            return self.percentBenefitValue(
+                key: "companion.benefit.stackOptimization.value",
+                CompanionBenefitRegistry.stackOptimizationBasisPoints(
+                    for: rarity))
+        case .luckyCheer:
+            return self.percentBenefitValue(
+                key: "companion.benefit.luckyCheer.value",
+                CompanionBenefitRegistry.luckyCheerBasisPoints(for: rarity))
+        case .rewardAbsorption:
+            return self.percentBenefitValue(
+                key: "companion.benefit.rewardAbsorption.value",
+                CompanionBenefitRegistry.rewardAbsorptionBasisPoints(
+                    for: rarity))
+        }
+    }
+
+    private func percentBenefitValue(
+        key: String,
+        _ basisPoints: Int) -> String
+    {
+        AppLocalization.format(
+            key,
+            Double(basisPoints) / 100)
+    }
+
+    private func benefitProgress(
+        _ id: CompanionBenefitID,
+        rarity: CompanionRarity) -> String
+    {
+        switch id {
+        case .tokenOptimization:
+            let tier = CompanionBenefitRegistry.tokenOptimization(for: rarity)
+            return AppLocalization.format(
+                "companion.benefit.tokenOptimization.progress",
+                self.store.activeCompanionBenefitProgress?
+                    .baseEnergyRemainder ?? 0,
+                tier.requiredBaseEnergy,
+                self.store.companionBenefitState
+                    .tokenOptimizationGrantedToday,
+                tier.dailyCap)
+        case .starlightCache:
+            let tier = CompanionBenefitRegistry.starlightCache(for: rarity)
+            let elapsed = self.store.activeCompanionBenefitProgress?
+                .activeSeconds ?? 0
+            return AppLocalization.format(
+                "companion.benefit.starlightCache.progress",
+                Int(elapsed / 3_600),
+                Int(tier.interval / 3_600),
+                self.store.companionBenefitState
+                    .starlightCacheGrantedToday,
+                tier.dailyCap)
+        case .stackOptimization, .luckyCheer, .rewardAbsorption:
+            return ""
+        }
+    }
+
     private var attendanceButtonTitle: String {
         switch self.store.companionAttendanceStatus {
         case .available:
@@ -452,13 +731,13 @@ struct CompanionCollectionView: View {
     private var summary: some View {
         GroupBox(AppLocalization.string("companion.collection.summary")) {
             HStack {
-                self.metric(
-                    AppLocalization.string("companion.collection.unlocked"),
-                    value: "\(self.store.companionState.collection.unlockedFormCount) / 60")
+                    self.metric(
+                        AppLocalization.string("companion.collection.unlocked"),
+                    value: "\(self.store.companionState.collection.unlockedFormCount) / \(CompanionSpeciesID.totalRegisteredFormCount)")
                 Divider()
                 self.metric(
                     AppLocalization.string("companion.collection.species"),
-                    value: "\(self.store.companionState.collection.discoveredSpeciesIDs.count) / 5")
+                    value: "\(self.store.companionState.collection.discoveredSpeciesIDs.count) / \(CompanionSpeciesID.allCases.count)")
                 Divider()
                 self.metric(
                     AppLocalization.string("companion.collection.bestRarity"),
@@ -579,10 +858,7 @@ struct CompanionCollectionView: View {
                     behavior: .idle,
                     dimension: 62,
                     animationsEnabled: false)
-                Text(AppLocalization.string(
-                    record.unlockKind == .encountered
-                        ? "companion.collection.encountered"
-                        : "companion.collection.lineage"))
+                Text(AppLocalization.string("companion.collection.encountered"))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             } else {
@@ -717,6 +993,21 @@ struct CompanionCollectionView: View {
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
             CompanionRarityBadge(rarity: generation.finalRarity)
+            if let definition = CompanionBenefitRegistry.definition(
+                for: generation.speciesID)
+            {
+                Text(AppLocalization.string(
+                    "companion.benefit.mode.\(definition.activation.rawValue)"))
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(self.benefitValue(
+                    definition.id,
+                    rarity: generation.finalRarity))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
             Text(AppLocalization.format(
                 "companion.archive.bond",
                 generation.bondEnergy))

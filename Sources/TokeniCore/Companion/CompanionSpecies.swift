@@ -21,4 +21,10 @@ public enum CompanionSpeciesID: String, Codable, CaseIterable, Hashable, Sendabl
     public static var latestContentGeneration: Int {
         Self.allCases.map(\.contentGeneration).max() ?? 1
     }
+
+    public static var totalRegisteredFormCount: Int {
+        Self.allCases.count
+            * CompanionRarity.allCases.count
+            * CompanionGameStage.allCases.filter { $0 != .egg }.count
+    }
 }

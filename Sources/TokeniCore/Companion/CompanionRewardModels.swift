@@ -266,6 +266,7 @@ public enum CompanionRewardReason: Hashable, Sendable {
     case collectionForms(Int)
     case verifiedGrowth(dateKey: String)
     case releaseGift(version: String)
+    case benefit(CompanionBenefitID)
 }
 
 public struct CompanionRewardGrant: Hashable, Sendable {

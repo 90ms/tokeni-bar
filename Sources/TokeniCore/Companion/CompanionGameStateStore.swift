@@ -30,6 +30,12 @@ public actor CompanionGameStateStore {
                       from: data)
         {
             state = legacy.migrated()
+        } else if version == 4,
+                  let legacy = try? decoder.decode(
+                      LegacyCompanionGameStateV4.self,
+                      from: data)
+        {
+            state = legacy.migrated()
         } else if version == CompanionGameState.currentSchemaVersion,
                   let current = try? decoder.decode(
             CompanionGameState.self,
@@ -99,7 +105,9 @@ private struct LegacyCompanionGameStateV2: Decodable {
 
     func migrated(at now: Date) -> CompanionGameState {
         var collection = self.collection
-        collection.forms.removeAll { $0.stage == .egg }
+        collection.forms.removeAll {
+            $0.stage == .egg || $0.unlockKind == .lineage
+        }
         let balance = min(
             max(self.growthEnergy, 0),
             CompanionGameRules.standard.maximumEnergyBalance)
@@ -127,6 +135,57 @@ private struct LegacyCompanionGameStateV2: Decodable {
     }
 }
 
+private struct LegacyCompanionGameStateV4: Decodable {
+    let speciesID: CompanionSpeciesID?
+    let generationID: UUID
+    let generationNumber: Int
+    let stage: CompanionGameStage
+    let rarity: CompanionRarity?
+    let growthEnergy: Int
+    let growthDateKey: String
+    let growthEarnedToday: Int
+    let growthCarriedToday: Int
+    let growthSpentToday: Int
+    let bondEnergy: Int
+    let collection: CompanionCollection
+    let consecutiveDuplicateHatches: Int
+    let pity: CompanionPityState
+    let appliedGrowthAwardIDs: [UUID]
+    let lastActiveAt: Date?
+    let lastPattedAt: Date?
+    let celebrationUntil: Date?
+    let showcasedGenerationID: UUID?
+    let generationCreatedAt: Date
+    let updatedAt: Date
+
+    func migrated() -> CompanionGameState {
+        var collection = self.collection
+        collection.forms.removeAll { $0.unlockKind == .lineage }
+        return CompanionGameState(
+            speciesID: self.speciesID,
+            generationID: self.generationID,
+            generationNumber: self.generationNumber,
+            stage: self.stage,
+            rarity: self.rarity,
+            growthEnergy: self.growthEnergy,
+            growthDateKey: self.growthDateKey,
+            growthEarnedToday: self.growthEarnedToday,
+            growthCarriedToday: self.growthCarriedToday,
+            growthSpentToday: self.growthSpentToday,
+            bondEnergy: self.bondEnergy,
+            collection: collection,
+            consecutiveDuplicateHatches: self.consecutiveDuplicateHatches,
+            pity: self.pity,
+            appliedGrowthAwardIDs: self.appliedGrowthAwardIDs,
+            lastActiveAt: self.lastActiveAt,
+            lastPattedAt: self.lastPattedAt,
+            celebrationUntil: self.celebrationUntil,
+            showcasedGenerationID: self.showcasedGenerationID,
+            generationCreatedAt: self.generationCreatedAt,
+            updatedAt: self.updatedAt)
+    }
+}
+
 private struct LegacyCompanionGameStateV3: Decodable {
     let speciesID: String
     let generationID: UUID
@@ -150,7 +209,9 @@ private struct LegacyCompanionGameStateV3: Decodable {
     let updatedAt: Date
 
     func migrated() -> CompanionGameState {
-        CompanionGameState(
+        var collection = self.collection
+        collection.forms.removeAll { $0.unlockKind == .lineage }
+        return CompanionGameState(
             speciesID: self.stage == .egg
                 ? nil
                 : CompanionSpeciesID(rawValue: self.speciesID) ?? .bytebot,
@@ -164,7 +225,7 @@ private struct LegacyCompanionGameStateV3: Decodable {
             growthCarriedToday: self.growthCarriedToday,
             growthSpentToday: self.growthSpentToday,
             bondEnergy: self.bondEnergy,
-            collection: self.collection,
+            collection: collection,
             consecutiveDuplicateHatches: self.consecutiveDuplicateHatches ?? 0,
             pity: self.pity,
             appliedGrowthAwardIDs: self.appliedGrowthAwardIDs,
