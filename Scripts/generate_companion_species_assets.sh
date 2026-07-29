@@ -123,11 +123,11 @@ for species in "${species_ids[@]}"; do
         normal="$asset_dir/${stage}-normal.png"
         render_sheet "$species" "$stage" "$normal"
         add_rarity_style "$normal" "$asset_dir/${stage}-rare.png" \
-            "eq=saturation=1.15:brightness=0.02"
+            "colorchannelmixer=rr=1.22:gg=0.68:bb=0.82,eq=contrast=1.12:brightness=0.02:saturation=1.45"
         add_rarity_style "$normal" "$asset_dir/${stage}-epic.png" \
-            "hue=h=12:s=1.25,eq=brightness=0.04"
+            "colorchannelmixer=rr=0.98:rb=0.24:gg=0.88:gb=0.16:br=0.18:bg=0.08:bb=1.18,eq=contrast=1.14:brightness=0.035:saturation=1.48"
         add_rarity_style "$normal" "$asset_dir/${stage}-legendary.png" \
-            "hue=h=25:s=1.40,eq=brightness=0.07"
+            "colorchannelmixer=rr=1.10:rg=0.12:gg=1.12:bb=0.68,eq=contrast=1.08:brightness=0.08:saturation=1.05"
     done
 done
 

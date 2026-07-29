@@ -208,6 +208,11 @@ popover, current-pet collection view, Settings preview, and on-screen pet.
 Cosmetics are visual only and never affect energy, rarity, evolution odds, or
 pity.
 
+Rarity is expressed by the pet sprite itself: stronger body colors, markings,
+and species-specific silhouette details. The renderer does not add rarity
+circles, halos, particles, or backgrounds around a pet, so those visual layers
+remain reserved for equipped Aura and Background cosmetics.
+
 ## Menu bar and on-screen display
 
 The native monochrome menu-bar status icon shows a red badge when action energy

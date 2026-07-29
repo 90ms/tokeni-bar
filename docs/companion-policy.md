@@ -119,6 +119,15 @@ and test expectations in the same change.
 
 ## Policy release notes
 
+### 1.0.1 · 2026-07-29 · unreleased
+
+- Status: implementing
+- Clarified current-companion traits and passive-slot assignments in the menu
+  popover and collection UI.
+- Split the collection into Home, Collection, Pet Setup, and Rewards & Style.
+- Reserved external aura and background layers for cosmetics; rarity is
+  represented only within the pet sprite.
+
 ### 1.0.0 · 2026-07-29 · Tokeni Bar v0.14.0
 
 - Status: released
