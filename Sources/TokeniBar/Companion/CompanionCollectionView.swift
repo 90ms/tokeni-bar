@@ -338,7 +338,8 @@ struct CompanionCollectionView: View {
                                 dimension: 50,
                                 animationsEnabled: false)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(self.benefitName(definition.id))
+                                Text(CompanionBenefitPresentation.name(
+                                    definition.id))
                                     .font(.caption.weight(.semibold))
                                 Text(self.benefitValue(
                                     definition.id,
@@ -387,6 +388,14 @@ struct CompanionCollectionView: View {
 
                     ForEach(0..<5, id: \.self) { slot in
                         self.passiveSlot(slot)
+                    }
+
+                    if let error = self.store.companionBenefitError {
+                        Label(
+                            self.passiveErrorText(error),
+                            systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
                     }
 
                     if let threshold =
@@ -439,64 +448,102 @@ struct CompanionCollectionView: View {
                 Color.secondary.opacity(0.05),
                 in: RoundedRectangle(cornerRadius: 7))
         } else {
-            Menu {
-                Button(AppLocalization.string(
-                    "companion.benefit.passive.remove"))
+            HStack(spacing: 10) {
+                Text("\(slot + 1)")
+                    .font(.caption2.weight(.bold))
+                    .frame(width: 22, height: 22)
+                    .background(
+                        Color.accentColor.opacity(0.15),
+                        in: Circle())
+
+                if let generation =
+                    self.store.companionPassiveAssignments[slot],
+                   let definition = CompanionBenefitRegistry.definition(
+                       for: generation.speciesID)
                 {
-                    self.store.setPassiveCompanion(nil, slot: slot)
-                }
-                .disabled(self.store.companionPassiveAssignments[slot] == nil)
-
-                Divider()
-
-                ForEach(self.store.companionPassiveCandidates) { generation in
-                    Button {
-                        self.store.setPassiveCompanion(
-                            generation.generationID,
-                            slot: slot)
-                    } label: {
-                        Text(self.passiveCandidateTitle(generation))
-                    }
-                }
-            } label: {
-                HStack(spacing: 9) {
-                    Text("\(slot + 1)")
-                        .font(.caption2.weight(.bold))
-                        .frame(width: 20, height: 20)
-                        .background(
-                            Color.accentColor.opacity(0.15),
-                            in: Circle())
-                    if let generation =
-                        self.store.companionPassiveAssignments[slot],
-                       let definition = CompanionBenefitRegistry.definition(
-                           for: generation.speciesID)
-                    {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(self.benefitName(definition.id))
+                    ByteBotSpriteView(
+                        speciesID: generation.speciesID,
+                        stage: .adult,
+                        rarity: generation.finalRarity,
+                        behavior: .idle,
+                        dimension: 38,
+                        animationsEnabled: false)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 5) {
+                            Text(CompanionBenefitPresentation.speciesName(
+                                generation.speciesID))
                                 .font(.caption.weight(.semibold))
-                            Text(self.benefitValue(
-                                definition.id,
-                                rarity: generation.finalRarity))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                            CompanionRarityBadge(
+                                rarity: generation.finalRarity)
                         }
-                        Spacer()
-                        CompanionRarityBadge(
-                            rarity: generation.finalRarity)
-                    } else {
+                        Text(CompanionBenefitPresentation.name(
+                            definition.id))
+                            .font(.caption2.weight(.semibold))
+                        Text(CompanionBenefitPresentation.value(
+                            definition.id,
+                            rarity: generation.finalRarity))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(AppLocalization.format(
+                            "companion.benefit.passive.slot",
+                            slot + 1))
+                            .font(.caption.weight(.semibold))
                         Text(AppLocalization.string(
                             "companion.benefit.passive.empty"))
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundStyle(.secondary)
-                        Spacer()
                     }
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
                 }
-                .contentShape(Rectangle())
+
+                Spacer(minLength: 6)
+
+                if self.store.companionPassiveAssignments[slot] != nil {
+                    Text(AppLocalization.string(
+                        "companion.benefit.status.applied"))
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.green)
+                }
+
+                Menu {
+                    ForEach(self.store.companionPassiveCandidates) { generation in
+                        Button {
+                            self.store.setPassiveCompanion(
+                                generation.generationID,
+                                slot: slot)
+                        } label: {
+                            Text(self.passiveCandidateTitle(
+                                generation,
+                                slot: slot))
+                        }
+                        .disabled(self.passiveCandidateIsUsedElsewhere(
+                            generation,
+                            slot: slot))
+                    }
+
+                    if !self.store.companionPassiveCandidates.isEmpty {
+                        Divider()
+                    }
+
+                    Button(AppLocalization.string(
+                        "companion.benefit.passive.remove"))
+                    {
+                        self.store.setPassiveCompanion(nil, slot: slot)
+                    }
+                    .disabled(
+                        self.store.companionPassiveAssignments[slot] == nil)
+                } label: {
+                    Text(AppLocalization.string(
+                        self.store.companionPassiveAssignments[slot] == nil
+                            ? "companion.benefit.passive.choose"
+                            : "companion.benefit.passive.change"))
+                }
+                .menuStyle(.button)
+                .controlSize(.small)
             }
-            .menuStyle(.borderlessButton)
             .padding(8)
             .background(
                 Color.secondary.opacity(0.08),
@@ -505,60 +552,60 @@ struct CompanionCollectionView: View {
     }
 
     private func passiveCandidateTitle(
-        _ generation: CompletedCompanionGeneration) -> String
+        _ generation: CompletedCompanionGeneration,
+        slot: Int) -> String
     {
-        let species = AppLocalization.string(
-            "companion.species.\(generation.speciesID.rawValue).name")
-        let rarity = AppLocalization.string(
-            "companion.rarity.\(generation.finalRarity.rawValue)")
-        return "\(species) · \(rarity)"
+        let species = CompanionBenefitPresentation.speciesName(
+            generation.speciesID)
+        let rarity = CompanionBenefitPresentation.rarityName(
+            generation.finalRarity)
+        let benefit = CompanionBenefitRegistry.definition(
+            for: generation.speciesID).map {
+            CompanionBenefitPresentation.name($0.id)
+        } ?? ""
+        let suffix = self.passiveCandidateIsUsedElsewhere(
+            generation,
+            slot: slot)
+            ? AppLocalization.string("companion.benefit.passive.inUse")
+            : ""
+        return [species, rarity, benefit, suffix]
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
     }
 
-    private func benefitName(_ id: CompanionBenefitID) -> String {
-        AppLocalization.string("companion.benefit.\(id.rawValue).name")
+    private func passiveCandidateIsUsedElsewhere(
+        _ generation: CompletedCompanionGeneration,
+        slot: Int) -> Bool
+    {
+        self.store.companionPassiveAssignments.enumerated().contains {
+            $0.offset != slot
+                && $0.element?.speciesID == generation.speciesID
+        }
+    }
+
+    private func passiveErrorText(
+        _ error: CompanionBenefitError) -> String
+    {
+        let key: String = switch error {
+        case .slotLocked:
+            "companion.benefit.error.slotLocked"
+        case .archivedCompanionNotFound:
+            "companion.benefit.error.notFound"
+        case .passiveCompanionRequired:
+            "companion.benefit.error.passiveRequired"
+        case .duplicateCompanion:
+            "companion.benefit.error.duplicateCompanion"
+        case .duplicateSpecies:
+            "companion.benefit.error.duplicateSpecies"
+        }
+        return AppLocalization.string(key)
     }
 
     private func benefitValue(
         _ id: CompanionBenefitID,
         rarity: CompanionRarity) -> String
     {
-        switch id {
-        case .tokenOptimization:
-            let tier = CompanionBenefitRegistry.tokenOptimization(for: rarity)
-            return AppLocalization.format(
-                "companion.benefit.tokenOptimization.value",
-                tier.requiredBaseEnergy,
-                tier.dailyCap)
-        case .starlightCache:
-            let tier = CompanionBenefitRegistry.starlightCache(for: rarity)
-            return AppLocalization.format(
-                "companion.benefit.starlightCache.value",
-                Int(tier.interval / 3_600),
-                tier.dailyCap)
-        case .stackOptimization:
-            return self.percentBenefitValue(
-                key: "companion.benefit.stackOptimization.value",
-                CompanionBenefitRegistry.stackOptimizationBasisPoints(
-                    for: rarity))
-        case .luckyCheer:
-            return self.percentBenefitValue(
-                key: "companion.benefit.luckyCheer.value",
-                CompanionBenefitRegistry.luckyCheerBasisPoints(for: rarity))
-        case .rewardAbsorption:
-            return self.percentBenefitValue(
-                key: "companion.benefit.rewardAbsorption.value",
-                CompanionBenefitRegistry.rewardAbsorptionBasisPoints(
-                    for: rarity))
-        }
-    }
-
-    private func percentBenefitValue(
-        key: String,
-        _ basisPoints: Int) -> String
-    {
-        AppLocalization.format(
-            key,
-            Double(basisPoints) / 100)
+        CompanionBenefitPresentation.value(id, rarity: rarity)
     }
 
     private func benefitProgress(
@@ -685,9 +732,9 @@ struct CompanionCollectionView: View {
     private var currentCompanion: some View {
         HStack(spacing: 18) {
             ByteBotTransitionView(
-                speciesID: self.store.companionState.speciesID,
-                stage: self.store.companionStage,
-                rarity: self.store.companionState.rarity,
+                speciesID: self.store.displayedCompanionSpeciesID,
+                stage: self.store.displayedCompanionStage,
+                rarity: self.store.displayedCompanionRarity,
                 behavior: self.store.companionBehavior,
                 cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                 dimension: 104,
@@ -696,19 +743,24 @@ struct CompanionCollectionView: View {
                 growthPulse: self.store.companionGrowthPulse)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(self.currentCompanionTitle)
+                Text(self.displayedCompanionTitle)
                     .font(.title2.weight(.semibold))
                 HStack {
                     Text(AppLocalization.string(
-                        "companion.stage.\(self.store.companionStage.rawValue)"))
-                    if let rarity = self.store.companionState.rarity {
+                        "companion.stage.\(self.store.displayedCompanionStage.rawValue)"))
+                    if let rarity = self.store.displayedCompanionRarity {
                         CompanionRarityBadge(rarity: rarity)
                     } else {
                         Text(AppLocalization.string("companion.rarity.unhatched"))
                             .foregroundStyle(.secondary)
                     }
                 }
-                if self.store.companionStage == .adult {
+                if self.store.isShowingArchivedCompanion {
+                    Text(AppLocalization.format(
+                        "companion.archive.showcasedSummary",
+                        self.store.displayedCompanionBondEnergy))
+                        .foregroundStyle(.secondary)
+                } else if self.store.companionStage == .adult {
                     Text(AppLocalization.format(
                         "companion.collection.bond",
                         self.store.companionState.bondEnergy))
@@ -723,6 +775,8 @@ struct CompanionCollectionView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                CompanionTraitSummaryView(store: self.store)
             }
             Spacer()
         }
@@ -913,22 +967,22 @@ struct CompanionCollectionView: View {
         .buttonStyle(.plain)
     }
 
-    private var currentCompanionName: String {
-        guard let speciesID = self.store.companionState.speciesID else {
+    private var displayedCompanionName: String {
+        guard let speciesID = self.store.displayedCompanionSpeciesID else {
             return AppLocalization.string("companion.species.mystery.name")
         }
         return AppLocalization.string(
             "companion.species.\(speciesID.rawValue).name")
     }
 
-    private var currentCompanionTitle: String {
-        guard let speciesID = self.store.companionState.speciesID else {
-            return self.currentCompanionName
+    private var displayedCompanionTitle: String {
+        guard let speciesID = self.store.displayedCompanionSpeciesID else {
+            return self.displayedCompanionName
         }
         return AppLocalization.format(
             "companion.collection.generation",
             speciesID.contentGeneration,
-            self.currentCompanionName)
+            self.displayedCompanionName)
     }
 
     private var isSelectedSpeciesDiscovered: Bool {

@@ -67,6 +67,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var isCompanionEvolving: Bool
     @Published private(set) var companionRewardState: CompanionRewardState
     @Published private(set) var companionBenefitState: CompanionBenefitState
+    @Published private(set) var companionBenefitError: CompanionBenefitError?
     @Published private(set) var companionRewardNoticeAmount: Int?
     @Published private(set) var companionAttendanceError: CompanionRewardError?
 
@@ -234,6 +235,7 @@ final class UsageStore: ObservableObject {
         self.isCompanionEvolving = false
         self.companionRewardState = CompanionRewardState()
         self.companionBenefitState = CompanionBenefitState()
+        self.companionBenefitError = nil
         self.companionRewardNoticeAmount = nil
         self.companionAttendanceError = nil
         let enabledIDs: Set<ProviderID>
@@ -709,14 +711,21 @@ final class UsageStore: ObservableObject {
     func setPassiveCompanion(_ generationID: UUID?, slot: Int) {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionBenefitState
-        guard (try? self.companionBenefitEngine.assignPassive(
-            generationID: generationID,
-            to: slot,
-            archivedCompanions: self.companionState.collection.archivedGenerations,
-            in: &state)) != nil
-        else { return }
-        self.companionBenefitState = state
-        self.saveCompanionBenefitState()
+        do {
+            try self.companionBenefitEngine.assignPassive(
+                generationID: generationID,
+                to: slot,
+                archivedCompanions:
+                    self.companionState.collection.archivedGenerations,
+                in: &state)
+            self.companionBenefitState = state
+            self.companionBenefitError = nil
+            self.saveCompanionBenefitState()
+        } catch let error as CompanionBenefitError {
+            self.companionBenefitError = error
+        } catch {
+            self.companionBenefitError = .archivedCompanionNotFound
+        }
     }
 
     func claimCompanionAttendance() {
@@ -883,6 +892,13 @@ final class UsageStore: ObservableObject {
         return definition
     }
 
+    var displayedCompanionBenefitDefinition: CompanionBenefitDefinition? {
+        guard let speciesID = self.displayedCompanionSpeciesID else {
+            return nil
+        }
+        return CompanionBenefitRegistry.definition(for: speciesID)
+    }
+
     var activeCompanionBenefitProgress: CompanionBenefitProgress? {
         guard let generationID = self.activeBenefitCompanion?.generationID else {
             return nil
@@ -913,6 +929,12 @@ final class UsageStore: ObservableObject {
                     self.companionBenefitState.passiveGenerationIDs[index]
             else { return nil }
             return archived[generationID]
+        }
+    }
+
+    func companionPassiveSlot(for generationID: UUID) -> Int? {
+        self.companionBenefitState.passiveGenerationIDs.firstIndex {
+            $0 == generationID
         }
     }
 

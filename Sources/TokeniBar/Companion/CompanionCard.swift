@@ -57,6 +57,10 @@ struct CompanionCard: View {
                     "companion.collection.open"))
             }
 
+            CompanionTraitSummaryView(
+                store: self.store,
+                compact: self.compact)
+
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
                     if self.store.isShowingArchivedCompanion {

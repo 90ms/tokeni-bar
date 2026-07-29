@@ -163,6 +163,7 @@
 "companion.archive.showCurrent" = "Show Growing Pet";
 "companion.archive.showcasedSummary" = "Archived Adult · %d bond";
 "companion.benefit.title" = "Traits & Passives";
+"companion.benefit.unique" = "Unique Trait";
 "companion.benefit.mode.active" = "Active";
 "companion.benefit.mode.passive" = "Passive";
 "companion.benefit.active.title" = "Stay Together Trait";
@@ -174,6 +175,9 @@
 "companion.benefit.passive.locked" = "Locked";
 "companion.benefit.passive.lockedProgress" = "Collection %d/%d";
 "companion.benefit.passive.empty" = "Choose a pet";
+"companion.benefit.passive.choose" = "Choose";
+"companion.benefit.passive.change" = "Change";
+"companion.benefit.passive.inUse" = "Used in another slot";
 "companion.benefit.passive.remove" = "Clear slot";
 "companion.benefit.passive.next" = "Next slot: meet %d collection forms (currently %d)";
 "companion.benefit.tokenOptimization.name" = "Token Optimization";
@@ -188,6 +192,16 @@
 "companion.benefit.stackOptimization.value" = "%.0f%% lower pet action-energy costs";
 "companion.benefit.luckyCheer.value" = "%.0f%% chance to gain one tier when rarity does not rise";
 "companion.benefit.rewardAbsorption.value" = "%.0f%% extra collection and journey Star Shards";
+"companion.benefit.status.activeTogether" = "Active while together";
+"companion.benefit.status.passiveSlot" = "Active in passive slot %d";
+"companion.benefit.status.notAssigned" = "Not assigned";
+"companion.benefit.status.completeRequired" = "Available after completing growth";
+"companion.benefit.status.applied" = "Active";
+"companion.benefit.error.slotLocked" = "This passive slot is still locked.";
+"companion.benefit.error.notFound" = "The completed pet could not be found.";
+"companion.benefit.error.passiveRequired" = "Only passive-type pets can be assigned here.";
+"companion.benefit.error.duplicateCompanion" = "The same pet cannot occupy multiple slots.";
+"companion.benefit.error.duplicateSpecies" = "The same species can occupy only one passive slot.";
 "companion.pity.title" = "Guarantees";
 "companion.pity.rare" = "Rare or higher within %d completed adult(s)";
 "companion.pity.epic" = "Epic or higher within %d completed adult(s)";
