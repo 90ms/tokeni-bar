@@ -2,9 +2,9 @@
 
 **English** | [한국어](companion-policy.ko.md)
 
-> Policy version: 1.0.0
+> Policy version: 1.0.1
 > Updated: 2026-07-29
-> Status: Tokeni Bar v0.14.0 release baseline
+> Status: Tokeni Bar v0.15.0 release
 
 This is the source of truth for companion generations, species, growth, rarity,
 active benefits, passive loadouts, and reward economy. Update this document before
@@ -95,6 +95,7 @@ and fractional reward basis points. It must contain no provider or content data.
 - [x] Active-benefit and passive-loadout UI
 - [x] Migration, targeted tests, and README synchronization
 - [x] Full test and build pass in the v0.14.0 macOS release CI
+- [x] v0.15.0 release-candidate Swift test, build, and app-bundle validation
 
 ## Policy and release-record rules
 
@@ -119,9 +120,9 @@ and test expectations in the same change.
 
 ## Policy release notes
 
-### 1.0.1 · 2026-07-29 · unreleased
+### 1.0.1 · 2026-07-29 · Tokeni Bar v0.15.0
 
-- Status: implementing
+- Status: released
 - Clarified current-companion traits and passive-slot assignments in the menu
   popover and collection UI.
 - Split the collection into Home, Collection, Pet Setup, and Rewards & Style.
@@ -132,6 +133,9 @@ and test expectations in the same change.
 - Added direct passive assignment to completed-pet cards.
 - Preserved behavior symbols and working props in their Normal colors while
   applying species-specific rarity palettes to pet sprites.
+- Kept the companion and benefit state schemas unchanged and added no persisted
+  provider, token, prompt, or response fields.
+- Passed macOS CI Swift tests, release build, and app-bundle validation.
 
 ### 1.0.0 · 2026-07-29 · Tokeni Bar v0.14.0
 

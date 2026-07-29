@@ -198,6 +198,8 @@ Completed archived pets can simultaneously occupy **passive slots**. One slot
 is available initially, and another unlocks permanently after meeting 30, 60,
 90, and 120 actual collection forms. The same species cannot occupy multiple
 passive slots.
+Assign, change, or remove a passive directly from a completed-pet card. Filter
+the collection by generation, discovery state, trait type, and rarity.
 
 | Pet | Mode | Generation-one benefit |
 |---|---|---|

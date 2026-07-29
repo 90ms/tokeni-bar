@@ -205,13 +205,14 @@ Spend Star Shards in the collection to permanently unlock:
 Purchased cosmetics can be equipped or removed at any time, with one item each
 in the Head, Aura, and Background slots. The selection appears in the menu
 popover, current-pet collection view, Settings preview, and on-screen pet.
+Each decoration scales with the selected Small, Medium, or Large pet size.
 Cosmetics are visual only and never affect energy, rarity, evolution odds, or
 pity.
 
-Rarity is expressed by the pet sprite itself: stronger body colors, markings,
-and species-specific silhouette details. The renderer does not add rarity
-circles, halos, particles, or backgrounds around a pet, so those visual layers
-remain reserved for equipped Aura and Background cosmetics.
+Rarity is expressed by the pet sprite itself through species-specific body
+colors and any body-form details supplied by its source art. The renderer does
+not add rarity circles, halos, particles, or backgrounds around a pet, so those
+visual layers remain reserved for equipped Aura and Background cosmetics.
 Generation, discovery state, trait type, and rarity filters keep the collection
 navigable as new species are registered. Completed passive pets can be assigned
 to an unlocked slot directly from their archive card.
