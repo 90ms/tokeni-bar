@@ -82,11 +82,71 @@ add_rarity_style() {
     local input="$1"
     local output="$2"
     local filter="$3"
+    local styled="$temporary_dir/$(basename "${output%.png}")-styled.png"
     ffmpeg -v error -y \
         -i "$input" \
         -vf "${filter},format=rgba" \
         -frames:v 1 \
+        "$styled"
+
+    # Keep behavioral symbols and the working prop in their original colors.
+    # Rarity belongs to the pet body; the outer eight pixels of each frame and
+    # the right-hand prop area in the working row are restored from Normal.
+    ffmpeg -v error -y \
+        -i "$styled" \
+        -i "$input" \
+        -filter_complex \
+        "[0:v]format=gbrap[styled];[1:v]format=gbrap[original];nullsrc=s=512x384,format=gray,geq=lum='if(lt(mod(X\\,64)\\,8)+gt(mod(X\\,64)\\,55)+lt(mod(Y\\,64)\\,8)+between(Y\\,88\\,127)*gt(mod(X\\,64)\\,28)\\,255\\,0)'[mask];[styled][original][mask]maskedmerge,format=rgba[out]" \
+        -map "[out]" \
+        -frames:v 1 \
         "$output"
+}
+
+rarity_filter() {
+    local species="$1"
+    local rarity="$2"
+
+    case "$species:$rarity" in
+        cachecat:rare)
+            echo "colorchannelmixer=rr=1.08:gg=0.78:gb=0.08:br=0.05:bb=1.18,eq=contrast=1.12:brightness=0.025:saturation=1.38"
+            ;;
+        cachecat:epic)
+            echo "colorchannelmixer=rr=0.90:rb=0.28:gg=0.78:gb=0.18:br=0.22:bb=1.25,eq=contrast=1.14:brightness=0.035:saturation=1.48"
+            ;;
+        cachecat:legendary)
+            echo "colorchannelmixer=rr=1.10:rg=0.12:gg=1.12:bb=0.68,eq=contrast=1.08:brightness=0.08:saturation=1.05"
+            ;;
+        stackfox:rare)
+            echo "colorchannelmixer=rr=1.22:gg=0.68:bb=0.82,eq=contrast=1.12:brightness=0.02:saturation=1.45"
+            ;;
+        stackfox:epic)
+            echo "colorchannelmixer=rr=0.98:rb=0.24:gg=0.88:gb=0.16:br=0.18:bg=0.08:bb=1.18,eq=contrast=1.14:brightness=0.035:saturation=1.48"
+            ;;
+        stackfox:legendary)
+            echo "colorchannelmixer=rr=1.10:rg=0.12:gg=1.12:bb=0.68,eq=contrast=1.08:brightness=0.08:saturation=1.05"
+            ;;
+        promptpup:rare)
+            echo "colorchannelmixer=rr=0.72:gg=1.08:gb=0.05:br=0.04:bg=0.12:bb=1.04,eq=contrast=1.12:brightness=0.02:saturation=1.42"
+            ;;
+        promptpup:epic)
+            echo "colorchannelmixer=rr=0.88:rb=0.22:gg=0.90:gb=0.16:br=0.20:bg=0.10:bb=1.22,eq=contrast=1.14:brightness=0.035:saturation=1.48"
+            ;;
+        promptpup:legendary)
+            echo "colorchannelmixer=rr=1.08:rg=0.10:gg=1.16:bb=0.72,eq=contrast=1.08:brightness=0.07:saturation=1.12"
+            ;;
+        nullslime:rare)
+            echo "colorchannelmixer=rr=1.18:gg=0.72:bb=0.92,eq=contrast=1.12:brightness=0.02:saturation=1.45"
+            ;;
+        nullslime:epic)
+            echo "colorchannelmixer=rr=0.82:rb=0.20:gg=0.86:gb=0.16:br=0.16:bg=0.12:bb=1.26,eq=contrast=1.16:brightness=0.035:saturation=1.52"
+            ;;
+        nullslime:legendary)
+            echo "colorchannelmixer=rr=1.14:rg=0.12:gg=1.06:gb=0.05:br=0.05:bg=0.10:bb=0.82,eq=contrast=1.10:brightness=0.07:saturation=1.18"
+            ;;
+        *)
+            echo "eq=contrast=1.10:brightness=0.02:saturation=1.35"
+            ;;
+    esac
 }
 
 write_manifest() {
@@ -123,11 +183,11 @@ for species in "${species_ids[@]}"; do
         normal="$asset_dir/${stage}-normal.png"
         render_sheet "$species" "$stage" "$normal"
         add_rarity_style "$normal" "$asset_dir/${stage}-rare.png" \
-            "colorchannelmixer=rr=1.22:gg=0.68:bb=0.82,eq=contrast=1.12:brightness=0.02:saturation=1.45"
+            "$(rarity_filter "$species" rare)"
         add_rarity_style "$normal" "$asset_dir/${stage}-epic.png" \
-            "colorchannelmixer=rr=0.98:rb=0.24:gg=0.88:gb=0.16:br=0.18:bg=0.08:bb=1.18,eq=contrast=1.14:brightness=0.035:saturation=1.48"
+            "$(rarity_filter "$species" epic)"
         add_rarity_style "$normal" "$asset_dir/${stage}-legendary.png" \
-            "colorchannelmixer=rr=1.10:rg=0.12:gg=1.12:bb=0.68,eq=contrast=1.08:brightness=0.08:saturation=1.05"
+            "$(rarity_filter "$species" legendary)"
     done
 done
 

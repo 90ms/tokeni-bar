@@ -212,6 +212,9 @@ Rarity is expressed by the pet sprite itself: stronger body colors, markings,
 and species-specific silhouette details. The renderer does not add rarity
 circles, halos, particles, or backgrounds around a pet, so those visual layers
 remain reserved for equipped Aura and Background cosmetics.
+Generation, discovery state, trait type, and rarity filters keep the collection
+navigable as new species are registered. Completed passive pets can be assigned
+to an unlocked slot directly from their archive card.
 
 ## Menu bar and on-screen display
 
