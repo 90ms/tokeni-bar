@@ -4,6 +4,7 @@ import TokeniCore
 struct CompanionTraitSummaryView: View {
     @ObservedObject var store: UsageStore
     var compact = false
+    var showsValue = true
 
     var body: some View {
         if let companion = self.store.activeBenefitCompanion,
@@ -35,12 +36,14 @@ struct CompanionTraitSummaryView: View {
                         ? .caption.weight(.semibold)
                         : .subheadline.weight(.semibold))
 
-                Text(CompanionBenefitPresentation.value(
-                    definition.id,
-                    rarity: companion.rarity))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(self.compact ? 1 : 2)
+                if self.showsValue {
+                    Text(CompanionBenefitPresentation.value(
+                        definition.id,
+                        rarity: companion.rarity))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(self.compact ? 1 : 2)
+                }
             }
             .padding(self.compact ? 7 : 9)
             .frame(maxWidth: .infinity, alignment: .leading)

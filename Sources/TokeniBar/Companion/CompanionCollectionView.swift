@@ -19,12 +19,52 @@ private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
     }
 }
 
+private enum CompanionAcquisitionFilter: String, CaseIterable, Identifiable {
+    case all
+    case discovered
+    case undiscovered
+
+    var id: Self { self }
+}
+
+private enum CompanionActivationFilter: String, CaseIterable, Identifiable {
+    case all
+    case active
+    case passive
+
+    var id: Self { self }
+}
+
+private enum CompanionRarityFilter: String, CaseIterable, Identifiable {
+    case all
+    case normal
+    case rare
+    case epic
+    case legendary
+
+    var id: Self { self }
+
+    var rarity: CompanionRarity? {
+        switch self {
+        case .all: nil
+        case .normal: .normal
+        case .rare: .rare
+        case .epic: .epic
+        case .legendary: .legendary
+        }
+    }
+}
+
 struct CompanionCollectionView: View {
     @ObservedObject var store: UsageStore
     @State private var selectedSection = CompanionCollectionSection.home
     @State private var confirmsNewEgg = false
     @State private var confirmsCompletion = false
     @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
+    @State private var selectedGeneration = 0
+    @State private var acquisitionFilter = CompanionAcquisitionFilter.all
+    @State private var activationFilter = CompanionActivationFilter.all
+    @State private var rarityFilter = CompanionRarityFilter.all
     @State private var showsGrowthBreakdown = false
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
 
@@ -139,6 +179,16 @@ struct CompanionCollectionView: View {
             }) {
                 self.selectedSpeciesID = discovered
             }
+            self.ensureSelectedSpeciesVisible()
+        }
+        .onChange(of: self.selectedGeneration) { _, _ in
+            self.ensureSelectedSpeciesVisible()
+        }
+        .onChange(of: self.acquisitionFilter) { _, _ in
+            self.ensureSelectedSpeciesVisible()
+        }
+        .onChange(of: self.activationFilter) { _, _ in
+            self.ensureSelectedSpeciesVisible()
         }
     }
 
@@ -232,6 +282,13 @@ struct CompanionCollectionView: View {
                     rarity: companion.rarity))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                if definition.activation == .active {
+                    Text(self.benefitProgress(
+                        definition.id,
+                        rarity: companion.rarity))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
             Spacer()
             CompanionRarityBadge(rarity: companion.rarity)
@@ -926,7 +983,9 @@ struct CompanionCollectionView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    CompanionTraitSummaryView(store: self.store)
+                    CompanionTraitSummaryView(
+                        store: self.store,
+                        showsValue: false)
                 }
                 Spacer()
             }
@@ -1023,48 +1082,70 @@ struct CompanionCollectionView: View {
     private var collectionGrid: some View {
         GroupBox(AppLocalization.string("companion.collection.title")) {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    ForEach(CompanionSpeciesID.allCases, id: \.self) { speciesID in
-                        self.speciesButton(speciesID)
-                    }
-                }
+                self.collectionFilters
 
-                HStack {
-                    Text(self.selectedSpeciesName)
-                        .font(.headline)
-                    if self.isSelectedSpeciesDiscovered {
-                        Text(AppLocalization.string(
-                            "companion.species.\(self.selectedSpeciesID.rawValue).personality"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(AppLocalization.format(
-                            "companion.collection.encounters",
-                            self.store.companionState.collection.encounterCount(
-                                for: self.selectedSpeciesID)))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-                    GridRow {
-                        Text("")
-                        ForEach(CompanionRarity.allCases, id: \.self) { rarity in
-                            CompanionRarityBadge(rarity: rarity)
+                if self.filteredSpeciesIDs.isEmpty {
+                    ContentUnavailableView(
+                        AppLocalization.string(
+                            "companion.collection.filter.empty"),
+                        systemImage: "line.3.horizontal.decrease.circle",
+                        description: Text(AppLocalization.string(
+                            "companion.collection.filter.emptyDescription")))
+                        .frame(maxWidth: .infinity, minHeight: 120)
+                } else {
+                    LazyVGrid(
+                        columns: [
+                            GridItem(
+                                .adaptive(minimum: 74, maximum: 90),
+                                spacing: 8),
+                        ],
+                        spacing: 8)
+                    {
+                        ForEach(self.filteredSpeciesIDs, id: \.self) {
+                            speciesID in
+                            self.speciesButton(speciesID)
                         }
                     }
-                    ForEach(self.stages, id: \.self) { stage in
-                        GridRow {
+
+                    HStack {
+                        Text(self.selectedSpeciesName)
+                            .font(.headline)
+                        if self.isSelectedSpeciesDiscovered {
                             Text(AppLocalization.string(
-                                "companion.stage.\(stage.rawValue)"))
-                                .font(.caption.weight(.semibold))
-                                .frame(width: 72, alignment: .leading)
-                            ForEach(CompanionRarity.allCases, id: \.self) { rarity in
-                                self.formCell(
-                                    speciesID: self.selectedSpeciesID,
-                                    stage: stage,
-                                    rarity: rarity)
+                                "companion.species.\(self.selectedSpeciesID.rawValue).personality"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(AppLocalization.format(
+                                "companion.collection.encounters",
+                                self.store.companionState.collection.encounterCount(
+                                    for: self.selectedSpeciesID)))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                        GridRow {
+                            Text("")
+                            ForEach(self.filteredRarities, id: \.self) {
+                                rarity in
+                                CompanionRarityBadge(rarity: rarity)
+                            }
+                        }
+                        ForEach(self.stages, id: \.self) { stage in
+                            GridRow {
+                                Text(AppLocalization.string(
+                                    "companion.stage.\(stage.rawValue)"))
+                                    .font(.caption.weight(.semibold))
+                                    .frame(width: 72, alignment: .leading)
+                                ForEach(self.filteredRarities, id: \.self) {
+                                    rarity in
+                                    self.formCell(
+                                        speciesID: self.selectedSpeciesID,
+                                        stage: stage,
+                                        rarity: rarity)
+                                }
                             }
                         }
                     }
@@ -1072,6 +1153,112 @@ struct CompanionCollectionView: View {
             }
             .padding(.vertical, 8)
         }
+    }
+
+    private var collectionFilters: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(
+                AppLocalization.string("companion.collection.filter.title"),
+                systemImage: "line.3.horizontal.decrease.circle")
+                .font(.caption.weight(.semibold))
+
+            HStack(spacing: 8) {
+                Picker(
+                    AppLocalization.string(
+                        "companion.collection.filter.generation"),
+                    selection: self.$selectedGeneration)
+                {
+                    Text(AppLocalization.string(
+                        "companion.collection.filter.all"))
+                        .tag(0)
+                    ForEach(self.registeredGenerations, id: \.self) {
+                        generation in
+                        Text(AppLocalization.format(
+                            "companion.collection.filter.generationValue",
+                            generation))
+                            .tag(generation)
+                    }
+                }
+
+                Picker(
+                    AppLocalization.string(
+                        "companion.collection.filter.acquisition"),
+                    selection: self.$acquisitionFilter)
+                {
+                    ForEach(CompanionAcquisitionFilter.allCases) { filter in
+                        Text(AppLocalization.string(
+                            "companion.collection.filter.acquisition.\(filter.rawValue)"))
+                            .tag(filter)
+                    }
+                }
+
+                Picker(
+                    AppLocalization.string(
+                        "companion.collection.filter.activation"),
+                    selection: self.$activationFilter)
+                {
+                    ForEach(CompanionActivationFilter.allCases) { filter in
+                        Text(AppLocalization.string(
+                            "companion.collection.filter.activation.\(filter.rawValue)"))
+                            .tag(filter)
+                    }
+                }
+
+                Picker(
+                    AppLocalization.string(
+                        "companion.collection.filter.rarity"),
+                    selection: self.$rarityFilter)
+                {
+                    ForEach(CompanionRarityFilter.allCases) { filter in
+                        Text(AppLocalization.string(
+                            "companion.collection.filter.rarity.\(filter.rawValue)"))
+                            .tag(filter)
+                    }
+                }
+            }
+            .labelsHidden()
+        }
+    }
+
+    private var registeredGenerations: [Int] {
+        Array(Set(CompanionSpeciesID.allCases.map(\.contentGeneration)))
+            .sorted()
+    }
+
+    private var filteredSpeciesIDs: [CompanionSpeciesID] {
+        CompanionSpeciesID.allCases.filter { speciesID in
+            let matchesGeneration = self.selectedGeneration == 0
+                || speciesID.contentGeneration == self.selectedGeneration
+            let isDiscovered = self.store.companionState.collection
+                .discoveredSpeciesIDs.contains(speciesID)
+            let matchesAcquisition = switch self.acquisitionFilter {
+            case .all: true
+            case .discovered: isDiscovered
+            case .undiscovered: !isDiscovered
+            }
+            let activation = CompanionBenefitRegistry.definition(
+                for: speciesID)?.activation
+            let matchesActivation = switch self.activationFilter {
+            case .all: true
+            case .active: activation == .active
+            case .passive: activation == .passive
+            }
+            return matchesGeneration
+                && matchesAcquisition
+                && matchesActivation
+        }
+    }
+
+    private var filteredRarities: [CompanionRarity] {
+        self.rarityFilter.rarity.map { [$0] }
+            ?? CompanionRarity.allCases
+    }
+
+    private func ensureSelectedSpeciesVisible() {
+        guard !self.filteredSpeciesIDs.contains(self.selectedSpeciesID),
+              let first = self.filteredSpeciesIDs.first
+        else { return }
+        self.selectedSpeciesID = first
     }
 
     @ViewBuilder
