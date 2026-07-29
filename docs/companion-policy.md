@@ -94,7 +94,7 @@ and fractional reward basis points. It must contain no provider or content data.
 - [x] Five generation-one benefits
 - [x] Active-benefit and passive-loadout UI
 - [x] Migration, targeted tests, and README synchronization
-- [ ] Full test and build pass in the v0.14.0 macOS release CI
+- [x] Full test and build pass in the v0.14.0 macOS release CI
 
 ## Policy and release-record rules
 
@@ -129,3 +129,5 @@ and test expectations in the same change.
 - Implemented the registry, dedicated state store, loadout engine, five benefits,
   and collection UI.
 - Added migration from lineage unlocks to actual encounters only.
+- Passed macOS CI Swift tests, release build, and app-bundle validation.
+- Published GitHub release and Homebrew Cask/Formula 0.14.0.
