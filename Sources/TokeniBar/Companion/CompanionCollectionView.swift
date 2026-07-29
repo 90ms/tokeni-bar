@@ -1,30 +1,60 @@
 import SwiftUI
 import TokeniCore
 
+private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
+    case home
+    case collection
+    case lineup
+    case rewards
+
+    var id: Self { self }
+
+    var systemImage: String {
+        switch self {
+        case .home: "house.fill"
+        case .collection: "square.grid.3x3.fill"
+        case .lineup: "person.3.fill"
+        case .rewards: "star.fill"
+        }
+    }
+}
+
 struct CompanionCollectionView: View {
     @ObservedObject var store: UsageStore
+    @State private var selectedSection = CompanionCollectionSection.home
     @State private var confirmsNewEgg = false
     @State private var confirmsCompletion = false
     @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
-    @State private var showsGrowthBreakdown = true
+    @State private var showsGrowthBreakdown = false
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
 
     private let stages: [CompanionGameStage] = [.hatchling, .junior, .adult]
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                self.currentCompanion
-                self.energyWallet
-                self.rewardWallet
-                self.companionBenefits
-                self.summary
-                self.pity
-                self.collectionGrid
-                self.companionArchive
-                self.journeyActions
+        VStack(spacing: 0) {
+            Picker(
+                AppLocalization.string("companion.section.title"),
+                selection: self.$selectedSection)
+            {
+                ForEach(CompanionCollectionSection.allCases) { section in
+                    Label(
+                        AppLocalization.string(
+                            "companion.section.\(section.rawValue)"),
+                        systemImage: section.systemImage)
+                        .tag(section)
+                }
             }
-            .padding(20)
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            ScrollView {
+                self.sectionContent
+                    .padding(20)
+            }
         }
         .confirmationDialog(
             AppLocalization.string("companion.newEgg.confirm.title"),
@@ -110,6 +140,115 @@ struct CompanionCollectionView: View {
                 self.selectedSpeciesID = discovered
             }
         }
+    }
+
+    @ViewBuilder
+    private var sectionContent: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            switch self.selectedSection {
+            case .home:
+                self.currentCompanion
+                self.appliedEffectsSummary
+                self.journeyActions
+                self.energyWallet
+            case .collection:
+                self.summary
+                self.pity
+                self.collectionGrid
+            case .lineup:
+                self.companionBenefits
+                self.companionArchive
+            case .rewards:
+                self.rewardWallet
+            }
+        }
+    }
+
+    private var appliedEffectsSummary: some View {
+        GroupBox(AppLocalization.string(
+            "companion.benefit.appliedEffects.title"))
+        {
+            VStack(alignment: .leading, spacing: 8) {
+                if let companion = self.store.activeBenefitCompanion,
+                   let definition =
+                       self.store.activeCompanionBenefitDefinition
+                {
+                    self.appliedEffectRow(
+                        companion: companion,
+                        definition: definition,
+                        source: AppLocalization.string(
+                            "companion.benefit.source.together"),
+                        systemImage: "figure.walk")
+                }
+
+                ForEach(self.store.companionActivePassives, id: \.generationID) {
+                    companion in
+                    if let definition = CompanionBenefitRegistry.definition(
+                        for: companion.speciesID)
+                    {
+                        self.appliedEffectRow(
+                            companion: companion,
+                            definition: definition,
+                            source: self.passiveSource(
+                                generationID: companion.generationID),
+                            systemImage: "square.stack.3d.up.fill")
+                    }
+                }
+
+                if self.store.activeCompanionBenefitDefinition == nil,
+                   self.store.companionActivePassives.isEmpty
+                {
+                    Text(AppLocalization.string(
+                        "companion.benefit.appliedEffects.empty"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func appliedEffectRow(
+        companion: CompanionBenefitCompanion,
+        definition: CompanionBenefitDefinition,
+        source: String,
+        systemImage: String) -> some View
+    {
+        HStack(spacing: 9) {
+            Image(systemName: systemImage)
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 5) {
+                    Text(CompanionBenefitPresentation.name(definition.id))
+                        .font(.caption.weight(.semibold))
+                    Text(source)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Text(CompanionBenefitPresentation.value(
+                    definition.id,
+                    rarity: companion.rarity))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            CompanionRarityBadge(rarity: companion.rarity)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func passiveSource(generationID: UUID) -> String {
+        guard let slot = self.store.companionPassiveSlot(
+            for: generationID)
+        else {
+            return AppLocalization.string(
+                "companion.benefit.mode.passive")
+        }
+        return AppLocalization.format(
+            "companion.benefit.source.passiveSlot",
+            slot + 1)
     }
 
     private var energyWallet: some View {
@@ -730,56 +869,101 @@ struct CompanionCollectionView: View {
     }
 
     private var currentCompanion: some View {
-        HStack(spacing: 18) {
-            ByteBotTransitionView(
-                speciesID: self.store.displayedCompanionSpeciesID,
-                stage: self.store.displayedCompanionStage,
-                rarity: self.store.displayedCompanionRarity,
-                behavior: self.store.companionBehavior,
-                cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
-                dimension: 104,
-                animationsEnabled: self.store.companionAnimationsEnabled,
-                interactionPulse: self.store.companionInteractionPulse,
-                growthPulse: self.store.companionGrowthPulse)
+        VStack(alignment: .leading, spacing: 12) {
+            Label(
+                AppLocalization.string(
+                    self.store.isShowingArchivedCompanion
+                        ? "companion.header.together"
+                        : "companion.header.growing"),
+                systemImage: self.store.isShowingArchivedCompanion
+                    ? "figure.2"
+                    : "leaf.fill")
+                .font(.headline)
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text(self.displayedCompanionTitle)
-                    .font(.title2.weight(.semibold))
-                HStack {
+            HStack(spacing: 18) {
+                ByteBotTransitionView(
+                    speciesID: self.store.displayedCompanionSpeciesID,
+                    stage: self.store.displayedCompanionStage,
+                    rarity: self.store.displayedCompanionRarity,
+                    behavior: self.store.companionBehavior,
+                    cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
+                    dimension: 104,
+                    animationsEnabled: self.store.companionAnimationsEnabled,
+                    interactionPulse: self.store.companionInteractionPulse,
+                    growthPulse: self.store.companionGrowthPulse)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(self.displayedCompanionTitle)
+                        .font(.title2.weight(.semibold))
+                    HStack {
+                        Text(AppLocalization.string(
+                            "companion.stage.\(self.store.displayedCompanionStage.rawValue)"))
+                        if let rarity = self.store.displayedCompanionRarity {
+                            CompanionRarityBadge(rarity: rarity)
+                        } else {
+                            Text(AppLocalization.string("companion.rarity.unhatched"))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    if self.store.isShowingArchivedCompanion {
+                        Text(AppLocalization.format(
+                            "companion.archive.showcasedSummary",
+                            self.store.displayedCompanionBondEnergy))
+                            .foregroundStyle(.secondary)
+                    } else if self.store.companionStage == .adult {
+                        Text(AppLocalization.format(
+                            "companion.collection.bond",
+                            self.store.companionState.bondEnergy))
+                            .foregroundStyle(.secondary)
+                    } else if let next = self.store.companionNextStageEnergy {
+                        ProgressView(value: self.store.companionStageProgress)
+                            .frame(width: 220)
+                        Text(AppLocalization.format(
+                            "companion.progress",
+                            self.store.companionState.growthEnergy,
+                            next))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    CompanionTraitSummaryView(store: self.store)
+                }
+                Spacer()
+            }
+
+            if self.store.isShowingArchivedCompanion {
+                Divider()
+                HStack(spacing: 8) {
+                    Label(
+                        AppLocalization.string(
+                            "companion.header.growingJourney"),
+                        systemImage: "leaf.fill")
+                        .font(.caption.weight(.semibold))
+                    Text(self.growingCompanionName)
+                        .font(.caption)
                     Text(AppLocalization.string(
-                        "companion.stage.\(self.store.displayedCompanionStage.rawValue)"))
-                    if let rarity = self.store.displayedCompanionRarity {
+                        "companion.stage.\(self.store.companionStage.rawValue)"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let rarity = self.store.companionState.rarity {
                         CompanionRarityBadge(rarity: rarity)
                     } else {
                         Text(AppLocalization.string("companion.rarity.unhatched"))
                             .foregroundStyle(.secondary)
                     }
-                }
-                if self.store.isShowingArchivedCompanion {
+                    Spacer()
                     Text(AppLocalization.format(
-                        "companion.archive.showcasedSummary",
-                        self.store.displayedCompanionBondEnergy))
-                        .foregroundStyle(.secondary)
-                } else if self.store.companionStage == .adult {
-                    Text(AppLocalization.format(
-                        "companion.collection.bond",
-                        self.store.companionState.bondEnergy))
-                        .foregroundStyle(.secondary)
-                } else if let next = self.store.companionNextStageEnergy {
-                    ProgressView(value: self.store.companionStageProgress)
-                        .frame(width: 220)
-                    Text(AppLocalization.format(
-                        "companion.progress",
-                        self.store.companionState.growthEnergy,
-                        next))
+                        "companion.energy.balanceValue",
+                        self.store.companionState.growthEnergy))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-
-                CompanionTraitSummaryView(store: self.store)
             }
-            Spacer()
         }
+        .padding(14)
+        .background(
+            Color.secondary.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: 11))
     }
 
     private var summary: some View {
@@ -985,6 +1169,14 @@ struct CompanionCollectionView: View {
             self.displayedCompanionName)
     }
 
+    private var growingCompanionName: String {
+        guard let speciesID = self.store.companionState.speciesID else {
+            return AppLocalization.string("companion.species.mystery.name")
+        }
+        return AppLocalization.string(
+            "companion.species.\(speciesID.rawValue).name")
+    }
+
     private var isSelectedSpeciesDiscovered: Bool {
         self.store.companionState.collection.discoveredSpeciesIDs
             .contains(self.selectedSpeciesID)
@@ -1012,7 +1204,7 @@ struct CompanionCollectionView: View {
                     LazyVGrid(
                         columns: Array(
                             repeating: GridItem(.flexible(), spacing: 8),
-                            count: 3),
+                            count: 2),
                         spacing: 8)
                     {
                         ForEach(Array(
@@ -1034,60 +1226,90 @@ struct CompanionCollectionView: View {
     {
         let isShowcased = self.store.companionState.showcasedGenerationID
             == generation.generationID
-        return VStack(spacing: 6) {
-            ByteBotSpriteView(
-                speciesID: generation.speciesID,
-                stage: .adult,
-                rarity: generation.finalRarity,
-                behavior: .idle,
-                dimension: 58,
-                animationsEnabled: false)
-            Text(AppLocalization.string(
-                "companion.species.\(generation.speciesID.rawValue).name"))
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-            CompanionRarityBadge(rarity: generation.finalRarity)
+        let passiveSlot = self.store.companionPassiveSlot(
+            for: generation.generationID)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                ByteBotSpriteView(
+                    speciesID: generation.speciesID,
+                    stage: .adult,
+                    rarity: generation.finalRarity,
+                    behavior: .idle,
+                    dimension: 52,
+                    animationsEnabled: false)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(AppLocalization.string(
+                        "companion.species.\(generation.speciesID.rawValue).name"))
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                    HStack(spacing: 5) {
+                        CompanionRarityBadge(rarity: generation.finalRarity)
+                        if isShowcased {
+                            Text(AppLocalization.string(
+                                "companion.archive.status.together"))
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.green)
+                        } else if let passiveSlot {
+                            Text(AppLocalization.format(
+                                "companion.archive.status.passiveSlot",
+                                passiveSlot + 1))
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    }
+                    Text(AppLocalization.format(
+                        "companion.archive.bond",
+                        generation.bondEnergy))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             if let definition = CompanionBenefitRegistry.definition(
                 for: generation.speciesID)
             {
-                Text(AppLocalization.string(
-                    "companion.benefit.mode.\(definition.activation.rawValue)"))
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text(self.benefitValue(
-                    definition.id,
-                    rarity: generation.finalRarity))
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text(CompanionBenefitPresentation.name(definition.id))
+                            .font(.caption2.weight(.semibold))
+                        Text(CompanionBenefitPresentation.mode(
+                            definition.activation))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(self.benefitValue(
+                        definition.id,
+                        rarity: generation.finalRarity))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(2)
+                }
+            }
+
+            HStack {
+                Text(AppLocalization.format(
+                    "companion.archive.record",
+                    generation.generationNumber,
+                    generation.completedAt.formatted(
+                        date: .abbreviated,
+                        time: .omitted)))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Button(AppLocalization.string(
+                    isShowcased
+                        ? "companion.archive.putAway"
+                        : "companion.archive.showcase"))
+                {
+                    self.store.showcaseArchivedCompanion(
+                        isShowcased ? nil : generation.generationID)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
-            Text(AppLocalization.format(
-                "companion.archive.bond",
-                generation.bondEnergy))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text(AppLocalization.format(
-                "companion.archive.record",
-                generation.generationNumber,
-                generation.completedAt.formatted(
-                    date: .abbreviated,
-                    time: .omitted)))
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .lineLimit(1)
-            Button(AppLocalization.string(
-                isShowcased
-                    ? "companion.archive.putAway"
-                    : "companion.archive.showcase"))
-            {
-                self.store.showcaseArchivedCompanion(
-                    isShowcased ? nil : generation.generationID)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(9)
         .background(
             isShowcased

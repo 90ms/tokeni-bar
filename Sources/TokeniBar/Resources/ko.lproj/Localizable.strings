@@ -140,6 +140,14 @@
 "companion.behavior.short.sleep" = "자는 중";
 "companion.collection.open" = "펫 도감 열기";
 "companion.collection.window" = "Tokeni 펫 도감";
+"companion.section.title" = "펫 화면";
+"companion.section.home" = "홈";
+"companion.section.collection" = "도감";
+"companion.section.lineup" = "펫 편성";
+"companion.section.rewards" = "보상·꾸미기";
+"companion.header.together" = "동행 중인 펫";
+"companion.header.growing" = "육성 중인 펫";
+"companion.header.growingJourney" = "현재 육성 여정";
 "companion.collection.title" = "펫 도감";
 "companion.collection.summary" = "도감 요약";
 "companion.collection.generation" = "%d세대 · %@";
@@ -162,7 +170,13 @@
 "companion.archive.putAway" = "보관하기";
 "companion.archive.showCurrent" = "성장 중인 펫 보기";
 "companion.archive.showcasedSummary" = "보관된 성체 · 친밀도 %d";
+"companion.archive.status.together" = "동행 중";
+"companion.archive.status.passiveSlot" = "패시브 %d";
 "companion.benefit.title" = "특성 및 패시브";
+"companion.benefit.appliedEffects.title" = "현재 적용 효과";
+"companion.benefit.appliedEffects.empty" = "현재 적용 중인 동행 특성이나 패시브가 없습니다.";
+"companion.benefit.source.together" = "동행";
+"companion.benefit.source.passiveSlot" = "패시브 슬롯 %d";
 "companion.benefit.unique" = "고유 특성";
 "companion.benefit.mode.active" = "동행형";
 "companion.benefit.mode.passive" = "패시브형";
@@ -210,6 +224,7 @@
 "companion.journey.title" = "여정";
 "companion.energy.title" = "행동 에너지";
 "companion.energy.balance" = "현재 잔액";
+"companion.energy.balanceValue" = "행동 에너지 %d";
 "companion.energy.earnedToday" = "오늘 획득";
 "companion.energy.carried" = "오늘 이월";
 "companion.energy.spentToday" = "오늘 사용";

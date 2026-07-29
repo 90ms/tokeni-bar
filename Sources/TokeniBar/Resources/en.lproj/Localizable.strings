@@ -140,6 +140,14 @@
 "companion.behavior.short.sleep" = "Sleeping";
 "companion.collection.open" = "Open pet collection";
 "companion.collection.window" = "Tokeni Pet Collection";
+"companion.section.title" = "Pet screen";
+"companion.section.home" = "Home";
+"companion.section.collection" = "Collection";
+"companion.section.lineup" = "Pet Setup";
+"companion.section.rewards" = "Rewards & Style";
+"companion.header.together" = "Current Companion";
+"companion.header.growing" = "Growing Pet";
+"companion.header.growingJourney" = "Current Growing Journey";
 "companion.collection.title" = "Pet collection";
 "companion.collection.summary" = "Collection summary";
 "companion.collection.generation" = "Generation %d · %@";
@@ -162,7 +170,13 @@
 "companion.archive.putAway" = "Put Away";
 "companion.archive.showCurrent" = "Show Growing Pet";
 "companion.archive.showcasedSummary" = "Archived Adult · %d bond";
+"companion.archive.status.together" = "Together";
+"companion.archive.status.passiveSlot" = "Passive %d";
 "companion.benefit.title" = "Traits & Passives";
+"companion.benefit.appliedEffects.title" = "Active Effects";
+"companion.benefit.appliedEffects.empty" = "No active companion traits or passives.";
+"companion.benefit.source.together" = "Together";
+"companion.benefit.source.passiveSlot" = "Passive slot %d";
 "companion.benefit.unique" = "Unique Trait";
 "companion.benefit.mode.active" = "Active";
 "companion.benefit.mode.passive" = "Passive";
@@ -210,6 +224,7 @@
 "companion.journey.title" = "Journey";
 "companion.energy.title" = "Action energy";
 "companion.energy.balance" = "Balance";
+"companion.energy.balanceValue" = "%d action energy";
 "companion.energy.earnedToday" = "Earned today";
 "companion.energy.carried" = "Carried today";
 "companion.energy.spentToday" = "Spent today";
