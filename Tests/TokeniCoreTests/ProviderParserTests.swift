@@ -424,8 +424,14 @@ struct ProviderParserTests {
         let interactive = ClaudeOAuthCredentialLoader.keychainQuery(interactive: true)
 
         let backgroundContext = background[kSecUseAuthenticationContext] as? LAContext
+        let backgroundAuthenticationUI = background[kSecUseAuthenticationUI]
         #expect(backgroundContext?.interactionNotAllowed == true)
-        #expect(background[kSecUseAuthenticationUI] as? CFString == kSecUseAuthenticationUISkip)
+        #expect(backgroundAuthenticationUI != nil)
+        if let backgroundAuthenticationUI {
+            #expect(CFEqual(
+                backgroundAuthenticationUI as CFTypeRef,
+                kSecUseAuthenticationUISkip))
+        }
         #expect(interactive[kSecUseAuthenticationContext] == nil)
         #expect(interactive[kSecUseAuthenticationUI] == nil)
     }

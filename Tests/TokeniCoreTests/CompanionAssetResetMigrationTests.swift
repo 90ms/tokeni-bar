@@ -67,9 +67,9 @@ struct CompanionAssetResetMigrationTests {
                     claimedAt: date),
             ],
             rewardedSpeciesIDs: [.cachecat],
+            latestObservedDateKey: "2027-01-15",
             unlockedCosmeticIDs: [.nightRing],
-            selectedCosmeticIDs: [.nightRing],
-            latestObservedDateKey: "2027-01-15")
+            selectedCosmeticIDs: [.nightRing])
 
         let journal = CompanionAssetResetEngine().prepare(
             companion: companion,
