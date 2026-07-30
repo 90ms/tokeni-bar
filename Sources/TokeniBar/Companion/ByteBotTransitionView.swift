@@ -371,17 +371,21 @@ struct ByteBotTransitionView: View {
     }
 
     private func message(for effect: Effect) -> String {
-        let rarity = AppLocalization.string(
-            "companion.rarity.\(effect.rarity.rawValue)")
+        let variantID = CompanionVariantRegistry.migrated(
+            from: effect.rarity)
+        let variant = AppLocalization.string(
+            "companion.variant.\(variantID.rawValue)")
         switch effect.kind {
         case .evolution:
             let stage = AppLocalization.string(
                 "companion.stage.\(effect.stage.rawValue)")
             return AppLocalization.format("companion.animation.evolved", stage)
         case .hatch:
-            return AppLocalization.format("companion.animation.hatched", rarity)
+            return AppLocalization.format("companion.animation.hatched", variant)
         case .rarityUp:
-            return AppLocalization.format("companion.animation.rarityUp", rarity)
+            return AppLocalization.format(
+                "companion.animation.variantChanged",
+                variant)
         }
     }
 }

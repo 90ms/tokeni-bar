@@ -38,6 +38,7 @@ struct CompanionCollectionView: View {
     @State private var showsGrowthBreakdown = false
     @State private var showsAdvancedBenefits = false
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
+    @State private var nicknameDraft = ""
 
     private let stages: [CompanionGameStage] = [.hatchling, .junior, .adult]
 
@@ -132,6 +133,7 @@ struct CompanionCollectionView: View {
             }) {
                 self.selectedSpeciesID = discovered
             }
+            self.nicknameDraft = self.store.companionState.nickname ?? ""
             self.ensureSelectedSpeciesVisible()
         }
         .onChange(of: self.selectedGeneration) { _, _ in
@@ -148,15 +150,14 @@ struct CompanionCollectionView: View {
             switch self.selectedSection {
             case .home:
                 self.currentCompanion
+                self.companionIdentity
                 self.journeyActions
                 self.energyWallet
-                self.appliedEffectsSummary
             case .collection:
                 self.summary
                 self.pity
                 self.collectionGrid
             case .lineup:
-                self.companionBenefits
                 self.companionArchive
             case .rewards:
                 self.rewardWallet
@@ -998,8 +999,10 @@ struct CompanionCollectionView: View {
                     HStack {
                         Text(AppLocalization.string(
                             "companion.stage.\(self.store.displayedCompanionStage.rawValue)"))
-                        if let rarity = self.store.displayedCompanionRarity {
-                            CompanionRarityBadge(rarity: rarity)
+                        if let variantID =
+                            self.store.displayedCompanionVariantID
+                        {
+                            CompanionVariantBadge(variantID: variantID)
                         } else {
                             Text(AppLocalization.string("companion.rarity.unhatched"))
                                 .foregroundStyle(.secondary)
@@ -1026,9 +1029,14 @@ struct CompanionCollectionView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    CompanionTraitSummaryView(
-                        store: self.store,
-                        showsValue: false)
+                    if let personalityID =
+                        self.store.displayedCompanionPersonalityID
+                    {
+                        Text(AppLocalization.string(
+                            "companion.personality.\(personalityID.rawValue)"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
             }
@@ -1047,8 +1055,10 @@ struct CompanionCollectionView: View {
                         "companion.stage.\(self.store.companionStage.rawValue)"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    if let rarity = self.store.companionState.rarity {
-                        CompanionRarityBadge(rarity: rarity)
+                    if let variantID =
+                        self.store.companionState.resolvedVariantID
+                    {
+                        CompanionVariantBadge(variantID: variantID)
                     } else {
                         Text(AppLocalization.string("companion.rarity.unhatched"))
                             .foregroundStyle(.secondary)
@@ -1068,25 +1078,77 @@ struct CompanionCollectionView: View {
             in: RoundedRectangle(cornerRadius: 11))
     }
 
+    private var companionIdentity: some View {
+        GroupBox(AppLocalization.string("companion.identity.title")) {
+            VStack(alignment: .leading, spacing: 10) {
+                if !self.store.isShowingArchivedCompanion,
+                   self.store.companionStage != .egg
+                {
+                    HStack {
+                        TextField(
+                            AppLocalization.string(
+                                "companion.identity.name.placeholder"),
+                            text: self.$nicknameDraft)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit {
+                                self.store.renameCompanion(
+                                    self.nicknameDraft)
+                            }
+                        Button(AppLocalization.string(
+                            "companion.identity.name.save"))
+                        {
+                            self.store.renameCompanion(
+                                self.nicknameDraft)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+
+                HStack {
+                    self.metric(
+                        AppLocalization.string(
+                            "companion.identity.personality"),
+                        value: self.personalityName)
+                    Divider()
+                    self.metric(
+                        AppLocalization.string(
+                            "companion.identity.bondLevel"),
+                        value: "\(self.store.displayedCompanionBondLevel)")
+                    Divider()
+                    self.metric(
+                        AppLocalization.string("companion.memories.title"),
+                        value: "\(self.displayedMemoryCount)")
+                }
+                .frame(height: 42)
+
+                Text(AppLocalization.string(
+                    "companion.identity.description"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
+        }
+    }
+
     private var summary: some View {
         GroupBox(AppLocalization.string("companion.collection.summary")) {
             HStack {
                     self.metric(
                         AppLocalization.string("companion.collection.unlocked"),
-                    value: "\(self.store.companionState.collection.unlockedFormCount) / \(CompanionSpeciesID.totalRegisteredFormCount)")
+                    value: "\(self.store.companionState.collection.discoveredCollectibleVariantCount) / \(CompanionSpeciesID.totalCollectibleVariantCount)")
                 Divider()
                 self.metric(
                     AppLocalization.string("companion.collection.species"),
                     value: "\(self.store.companionState.collection.discoveredSpeciesIDs.count) / \(CompanionSpeciesID.allCases.count)")
                 Divider()
                 self.metric(
-                    AppLocalization.string("companion.collection.bestRarity"),
-                    value: AppLocalization.string(
-                        "companion.rarity.\(self.store.companionState.collection.highestRarity.rawValue)"))
+                    AppLocalization.string("companion.collection.prismatic"),
+                    value: "\(self.prismaticSpeciesCount) / \(CompanionSpeciesID.allCases.count)")
                 Divider()
                 self.metric(
-                    AppLocalization.string("companion.collection.bestBond"),
-                    value: "\(self.store.companionState.collection.highestBondEnergy)")
+                    AppLocalization.string("companion.memories.title"),
+                    value: "\(self.store.companionState.memories.count)")
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
@@ -1116,22 +1178,10 @@ struct CompanionCollectionView: View {
         var guarantees: [(remaining: Int, key: String)] = [
             (
                 max(
-                    3 - self.store.companionState.pity
-                        .adultsWithoutRareOrHigher,
+                    self.store.companionPrismaticPityHatches
+                        - self.store.companionState.variantPity.standardHatches,
                     1),
-                "companion.pity.rare"),
-            (
-                max(
-                    7 - self.store.companionState.pity
-                        .adultsWithoutEpicOrHigher,
-                    1),
-                "companion.pity.epic"),
-            (
-                max(
-                    16 - self.store.companionState.pity
-                        .adultsWithoutLegendary,
-                    1),
-                "companion.pity.legendary"),
+                "companion.pity.prismatic"),
         ]
         if self.store.companionState.collection.discoveredSpeciesIDs.count
             < CompanionSpeciesID.allCases.count
@@ -1144,7 +1194,7 @@ struct CompanionCollectionView: View {
         }
         let nearest = guarantees.min {
             $0.remaining < $1.remaining
-        } ?? (1, "companion.pity.rare")
+        } ?? (1, "companion.pity.prismatic")
         return AppLocalization.format(nearest.key, nearest.remaining)
     }
 
@@ -1194,28 +1244,14 @@ struct CompanionCollectionView: View {
                         }
                     }
 
-                    Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-                        GridRow {
-                            Text("")
-                            ForEach(self.filteredRarities, id: \.self) {
-                                rarity in
-                                CompanionRarityBadge(rarity: rarity)
-                            }
-                        }
-                        ForEach(self.stages, id: \.self) { stage in
-                            GridRow {
-                                Text(AppLocalization.string(
-                                    "companion.stage.\(stage.rawValue)"))
-                                    .font(.caption.weight(.semibold))
-                                    .frame(width: 72, alignment: .leading)
-                                ForEach(self.filteredRarities, id: \.self) {
-                                    rarity in
-                                    self.formCell(
-                                        speciesID: self.selectedSpeciesID,
-                                        stage: stage,
-                                        rarity: rarity)
-                                }
-                            }
+                    HStack(alignment: .top, spacing: 12) {
+                        ForEach(
+                            CompanionVariantRegistry.collectibleIDs,
+                            id: \.self)
+                        { variantID in
+                            self.variantCell(
+                                speciesID: self.selectedSpeciesID,
+                                variantID: variantID)
                         }
                     }
                 }
@@ -1297,6 +1333,55 @@ struct CompanionCollectionView: View {
               let first = self.filteredSpeciesIDs.first
         else { return }
         self.selectedSpeciesID = first
+    }
+
+    @ViewBuilder
+    private func variantCell(
+        speciesID: CompanionSpeciesID,
+        variantID: CompanionVariantID) -> some View
+    {
+        let records = self.store.companionState.collection.forms.filter {
+            $0.speciesID == speciesID
+                && ($0.variantID
+                    ?? CompanionVariantRegistry.migrated(from: $0.rarity))
+                    == variantID
+        }
+        let record = self.stages.reversed().compactMap { stage in
+            records.first { $0.stage == stage }
+        }.first
+
+        VStack(spacing: 6) {
+            CompanionVariantBadge(variantID: variantID)
+            if let record {
+                ByteBotSpriteView(
+                    speciesID: record.speciesID,
+                    stage: record.stage,
+                    rarity: record.rarity,
+                    behavior: .idle,
+                    dimension: 76,
+                    animationsEnabled: false)
+                Text(AppLocalization.format(
+                    "companion.collection.journeyStages",
+                    Set(records.map(\.stage)).count,
+                    self.stages.count))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            } else {
+                Image(systemName: "questionmark")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 76, height: 76)
+                Text(AppLocalization.string(
+                    "companion.collection.locked"))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 118)
+        .background(
+            .quaternary.opacity(0.45),
+            in: RoundedRectangle(cornerRadius: 9))
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
@@ -1385,6 +1470,9 @@ struct CompanionCollectionView: View {
     }
 
     private var displayedCompanionTitle: String {
+        if let nickname = self.store.displayedCompanionNickname {
+            return nickname
+        }
         guard let speciesID = self.store.displayedCompanionSpeciesID else {
             return self.displayedCompanionName
         }
@@ -1392,6 +1480,33 @@ struct CompanionCollectionView: View {
             "companion.collection.generation",
             speciesID.contentGeneration,
             self.displayedCompanionName)
+    }
+
+    private var personalityName: String {
+        guard let personalityID =
+            self.store.displayedCompanionPersonalityID
+        else {
+            return AppLocalization.string(
+                "companion.identity.notAvailable")
+        }
+        return AppLocalization.string(
+            "companion.personality.\(personalityID.rawValue)")
+    }
+
+    private var displayedMemoryCount: Int {
+        let generationID = self.store.showcasedCompanion?.generationID
+            ?? self.store.companionState.generationID
+        return self.store.companionState.memories.count {
+            $0.generationID == generationID
+        }
+    }
+
+    private var prismaticSpeciesCount: Int {
+        CompanionSpeciesID.allCases.count { speciesID in
+            self.store.companionState.collection
+                .discoveredCollectibleVariantKeys
+                .contains("\(speciesID.rawValue).prismatic")
+        }
     }
 
     private var growingCompanionName: String {
@@ -1451,8 +1566,9 @@ struct CompanionCollectionView: View {
     {
         let isShowcased = self.store.companionState.showcasedGenerationID
             == generation.generationID
-        let passiveSlot = self.store.companionPassiveSlot(
-            for: generation.generationID)
+        let variantID = generation.variantID
+            ?? CompanionVariantRegistry.migrated(
+                from: generation.finalRarity)
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ByteBotSpriteView(
@@ -1463,52 +1579,33 @@ struct CompanionCollectionView: View {
                     dimension: 52,
                     animationsEnabled: false)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(AppLocalization.string(
+                    Text(generation.nickname ?? AppLocalization.string(
                         "companion.species.\(generation.speciesID.rawValue).name"))
                         .font(.caption.weight(.semibold))
                         .lineLimit(1)
                     HStack(spacing: 5) {
-                        CompanionRarityBadge(rarity: generation.finalRarity)
+                        CompanionVariantBadge(variantID: variantID)
                         if isShowcased {
                             Text(AppLocalization.string(
                                 "companion.archive.status.together"))
                                 .font(.caption2.weight(.semibold))
                                 .foregroundStyle(.green)
-                        } else if let passiveSlot {
-                            Text(AppLocalization.format(
-                                "companion.archive.status.passiveSlot",
-                                passiveSlot + 1))
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(Color.accentColor)
                         }
                     }
                     Text(AppLocalization.format(
-                        "companion.archive.bond",
-                        generation.bondEnergy))
+                        "companion.archive.identity",
+                        CompanionBond.level(for: generation.bondEnergy),
+                        self.memoryCount(for: generation.generationID)))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            if let definition = CompanionBenefitRegistry.definition(
-                for: generation.speciesID)
-            {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Text(CompanionBenefitPresentation.name(definition.id))
-                            .font(.caption2.weight(.semibold))
-                        Text(CompanionBenefitPresentation.mode(
-                            definition.activation))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text(self.benefitValue(
-                        definition.id,
-                        rarity: generation.finalRarity))
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(2)
-                }
+            if let personalityID = generation.personalityID {
+                Text(AppLocalization.string(
+                    "companion.personality.\(personalityID.rawValue)"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
 
             HStack {
@@ -1522,14 +1619,6 @@ struct CompanionCollectionView: View {
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
                 Spacer(minLength: 4)
-
-                if CompanionBenefitRegistry.definition(
-                    for: generation.speciesID)?.activation == .passive
-                {
-                    self.archivePassiveMenu(
-                        generation,
-                        assignedSlot: passiveSlot)
-                }
 
                 Button {
                     self.store.showcaseArchivedCompanion(
@@ -1555,6 +1644,12 @@ struct CompanionCollectionView: View {
                 ? Color.accentColor.opacity(0.14)
                 : Color.secondary.opacity(0.08),
             in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func memoryCount(for generationID: UUID) -> Int {
+        self.store.companionState.memories.count {
+            $0.generationID == generationID
+        }
     }
 
     private func archivePassiveMenu(

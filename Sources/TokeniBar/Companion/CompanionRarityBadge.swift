@@ -35,3 +35,32 @@ struct CompanionRarityBadge: View {
         }
     }
 }
+
+struct CompanionVariantBadge: View {
+    let variantID: CompanionVariantID
+
+    var body: some View {
+        let definition = CompanionVariantRegistry.definition(
+            for: self.variantID)
+        Label(
+            AppLocalization.string(
+                "companion.variant.\(self.variantID.rawValue)"),
+            systemImage: definition.isSpecial
+                ? "sparkles"
+                : "circle.fill")
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(self.color.opacity(0.14), in: Capsule())
+            .foregroundStyle(self.color)
+            .accessibilityLabel(AppLocalization.string(
+                "companion.variant.\(self.variantID.rawValue)"))
+    }
+
+    private var color: Color {
+        if self.variantID == .prismatic { return .pink }
+        if self.variantID == .legacyAzure { return .blue }
+        if self.variantID == .legacyViolet { return .purple }
+        return .secondary
+    }
+}

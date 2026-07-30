@@ -734,6 +734,8 @@ final class UsageStore: ObservableObject {
                 self.companionReveal = CompanionHatchReveal(
                     speciesID: speciesID,
                     rarity: rarity,
+                    variantID: state.resolvedVariantID ?? .standard,
+                    personalityID: state.personalityID ?? .calm,
                     isNewSpecies: isNewSpecies)
             }
         }
@@ -792,6 +794,8 @@ final class UsageStore: ObservableObject {
                 self.companionReveal = CompanionHatchReveal(
                     speciesID: speciesID,
                     rarity: rarity,
+                    variantID: state.resolvedVariantID ?? .standard,
+                    personalityID: state.personalityID ?? .calm,
                     isNewSpecies: isNewSpecies)
             }
         }
@@ -1146,6 +1150,10 @@ final class UsageStore: ObservableObject {
         self.companionGameEngine.discountedCost(
             self.companionGameEngine.rules.journeyCompletionCost,
             basisPoints: 0)
+    }
+
+    var companionPrismaticPityHatches: Int {
+        self.companionGameEngine.rules.prismaticPityHatches
     }
 
     var canPerformCompanionAction: Bool {

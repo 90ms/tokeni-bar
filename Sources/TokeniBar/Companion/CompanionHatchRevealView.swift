@@ -5,6 +5,8 @@ struct CompanionHatchReveal: Identifiable, Equatable {
     let id = UUID()
     let speciesID: CompanionSpeciesID
     let rarity: CompanionRarity
+    let variantID: CompanionVariantID
+    let personalityID: CompanionPersonalityID
     let isNewSpecies: Bool
 }
 
@@ -33,7 +35,13 @@ struct CompanionHatchRevealView: View {
             Text(self.speciesName)
                 .font(.largeTitle.bold())
 
-            CompanionRarityBadge(rarity: self.reveal.rarity)
+            HStack {
+                CompanionVariantBadge(variantID: self.reveal.variantID)
+                Text(AppLocalization.string(
+                    "companion.personality.\(self.reveal.personalityID.rawValue)"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Text(self.personality)
                 .multilineTextAlignment(.center)

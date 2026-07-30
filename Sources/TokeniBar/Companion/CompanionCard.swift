@@ -32,9 +32,11 @@ struct CompanionCard: View {
                     HStack(spacing: 5) {
                         self.metadataBadge(AppLocalization.string(
                             "companion.stage.\(self.store.displayedCompanionStage.rawValue)"))
-                        if let rarity = self.store.displayedCompanionRarity {
+                        if let variantID =
+                            self.store.displayedCompanionVariantID
+                        {
                             self.metadataBadge(AppLocalization.string(
-                                "companion.rarity.\(rarity.rawValue)"))
+                                "companion.variant.\(variantID.rawValue)"))
                         }
                     }
 
@@ -59,9 +61,22 @@ struct CompanionCard: View {
                     "companion.collection.open"))
             }
 
-            CompanionTraitSummaryView(
-                store: self.store,
-                compact: self.compact)
+            if let personalityID =
+                self.store.displayedCompanionPersonalityID
+            {
+                HStack {
+                    Label(
+                        AppLocalization.string(
+                            "companion.personality.\(personalityID.rawValue)"),
+                        systemImage: "heart.text.square")
+                    Spacer()
+                    Text(AppLocalization.format(
+                        "companion.identity.bondLevelValue",
+                        self.store.displayedCompanionBondLevel))
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
@@ -216,6 +231,9 @@ struct CompanionCard: View {
     }
 
     private var companionName: String {
+        if let nickname = self.store.displayedCompanionNickname {
+            return nickname
+        }
         guard let speciesID = self.store.displayedCompanionSpeciesID else {
             return AppLocalization.string("companion.species.mystery.name")
         }
