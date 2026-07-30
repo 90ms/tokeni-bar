@@ -27,6 +27,42 @@ private enum CompanionAcquisitionFilter: String, CaseIterable, Identifiable {
     var id: Self { self }
 }
 
+private enum CompanionCosmeticSlotFilter:
+    String,
+    CaseIterable,
+    Identifiable
+{
+    case all
+    case head
+    case aura
+    case background
+    case palette
+
+    var id: Self { self }
+
+    var slot: CompanionCosmeticSlot? {
+        switch self {
+        case .all: nil
+        case .head: .head
+        case .aura: .aura
+        case .background: .background
+        case .palette: .palette
+        }
+    }
+}
+
+private enum CompanionCosmeticOwnershipFilter:
+    String,
+    CaseIterable,
+    Identifiable
+{
+    case all
+    case owned
+    case unowned
+
+    var id: Self { self }
+}
+
 struct CompanionCollectionView: View {
     @ObservedObject var store: UsageStore
     @State private var selectedSection = CompanionCollectionSection.home
@@ -39,6 +75,10 @@ struct CompanionCollectionView: View {
     @State private var showsAdvancedBenefits = false
     @State private var showsIdentityDetails = false
     @State private var showsEnergyDetails = false
+    @State private var cosmeticSlotFilter =
+        CompanionCosmeticSlotFilter.all
+    @State private var cosmeticOwnershipFilter =
+        CompanionCosmeticOwnershipFilter.all
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
     @State private var nicknameDraft = ""
 
@@ -491,14 +531,57 @@ struct CompanionCollectionView: View {
                         .foregroundStyle(.tertiary)
                 }
 
-                LazyVGrid(
-                    columns: Array(
-                        repeating: GridItem(.flexible(), spacing: 8),
-                        count: 3),
-                    spacing: 8)
-                {
-                    ForEach(self.store.companionCosmetics) { cosmetic in
-                        self.cosmeticCard(cosmetic)
+                VStack(spacing: 8) {
+                    Picker(
+                        AppLocalization.string(
+                            "companion.cosmetic.filter.slot"),
+                        selection: self.$cosmeticSlotFilter)
+                    {
+                        ForEach(CompanionCosmeticSlotFilter.allCases) {
+                            filter in
+                            Text(AppLocalization.string(
+                                "companion.cosmetic.filter.slot."
+                                    + filter.rawValue))
+                                .tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+
+                    Picker(
+                        AppLocalization.string(
+                            "companion.cosmetic.filter.ownership"),
+                        selection: self.$cosmeticOwnershipFilter)
+                    {
+                        ForEach(
+                            CompanionCosmeticOwnershipFilter.allCases)
+                        { filter in
+                            Text(AppLocalization.string(
+                                "companion.cosmetic.filter.ownership."
+                                    + filter.rawValue))
+                                .tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+
+                if self.filteredCosmetics.isEmpty {
+                    ContentUnavailableView(
+                        AppLocalization.string(
+                            "companion.cosmetic.filter.empty"),
+                        systemImage: "paintpalette")
+                        .frame(maxWidth: .infinity, minHeight: 120)
+                } else {
+                    LazyVGrid(
+                        columns: Array(
+                            repeating: GridItem(.flexible(), spacing: 8),
+                            count: 3),
+                        spacing: 8)
+                    {
+                        ForEach(self.filteredCosmetics) { cosmetic in
+                            self.cosmeticCard(cosmetic)
+                        }
                     }
                 }
             }
@@ -886,6 +969,9 @@ struct CompanionCollectionView: View {
                     self.pendingCosmeticPurchaseID = nil
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(
+                    self.store.companionRewardState.starShards
+                        < cosmetic.cost)
             }
         }
         .padding(22)
@@ -931,15 +1017,32 @@ struct CompanionCollectionView: View {
         let canAfford = self.store.companionRewardState.starShards >= cosmetic.cost
 
         return VStack(spacing: 7) {
-            CompanionCosmeticDecoration(
-                cosmeticID: cosmetic.id,
-                dimension: 54,
-                animationsEnabled: self.store.companionAnimationsEnabled,
-                motionIntensity: self.store
-                    .companionAnimationIntensity.motionScale)
-                .saturation(isOwned ? 1 : 0.25)
-                .opacity(isOwned ? 1 : 0.72)
-                .frame(height: 54)
+            ZStack(alignment: .topTrailing) {
+                CompanionCosmeticDecoration(
+                    cosmeticID: cosmetic.id,
+                    dimension: 54,
+                    animationsEnabled: self.store.companionAnimationsEnabled,
+                    motionIntensity: self.store
+                        .companionAnimationIntensity.motionScale)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .help(AppLocalization.string(
+                            "companion.cosmetic.equipped"))
+                        .accessibilityLabel(AppLocalization.string(
+                            "companion.cosmetic.equipped"))
+                } else if isOwned {
+                    Image(systemName: "checkmark.circle")
+                        .foregroundStyle(.secondary)
+                        .help(AppLocalization.string(
+                            "companion.cosmetic.owned"))
+                        .accessibilityLabel(AppLocalization.string(
+                            "companion.cosmetic.owned"))
+                }
+            }
             Text(self.cosmeticName(cosmetic.id))
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
@@ -976,11 +1079,16 @@ struct CompanionCollectionView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
-            .disabled(!isOwned && !canAfford)
         }
         .frame(maxWidth: .infinity)
         .padding(9)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !isOwned {
+                self.pendingCosmeticPurchaseID = cosmetic.id
+            }
+        }
     }
 
     private func cosmeticName(_ cosmeticID: CompanionCosmeticID) -> String {
@@ -1005,7 +1113,39 @@ struct CompanionCollectionView: View {
         return AppLocalization.string(
             canAfford
                 ? "companion.cosmetic.buy"
-                : "companion.cosmetic.insufficient")
+                : "companion.cosmetic.preview")
+    }
+
+    private var filteredCosmetics: [CompanionCosmetic] {
+        self.store.companionCosmetics
+            .filter { cosmetic in
+                guard let slot = self.cosmeticSlotFilter.slot else {
+                    return true
+                }
+                return cosmetic.id.slot == slot
+            }
+            .filter { cosmetic in
+                let owned = self.store.companionRewardState
+                    .unlockedCosmeticIDs.contains(cosmetic.id)
+                switch self.cosmeticOwnershipFilter {
+                case .all: true
+                case .owned: owned
+                case .unowned: !owned
+                }
+            }
+            .sorted { lhs, rhs in
+                let lhsOwned = self.store.companionRewardState
+                    .unlockedCosmeticIDs.contains(lhs.id)
+                let rhsOwned = self.store.companionRewardState
+                    .unlockedCosmeticIDs.contains(rhs.id)
+                if lhsOwned != rhsOwned {
+                    return lhsOwned
+                }
+                if lhs.cost != rhs.cost {
+                    return lhs.cost < rhs.cost
+                }
+                return lhs.id.rawValue < rhs.id.rawValue
+            }
     }
 
     private var currentCompanion: some View {
