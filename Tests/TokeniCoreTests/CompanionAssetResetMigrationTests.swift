@@ -28,8 +28,12 @@ struct CompanionAssetResetMigrationTests {
         #expect(quote.completedPetCount == 3)
         #expect(quote.completedPetEnergyRefund == 8_100)
         #expect(quote.collectionDiscoveryCount == 0)
+        #expect(quote.existingAvailableGrowthEnergy == 350)
         #expect(quote.petEnergyRefund == 9_400)
         #expect(quote.cosmeticStarShardRefund == 180)
+        #expect(
+            quote.cosmeticRefunds.map(\.cosmeticID)
+                == [.sparkleAura, .starCrown])
         #expect(quote.resultingGrowthEnergy == 9_750)
         #expect(quote.resultingStarShards == 260)
         #expect(quote.requiresConfirmation)

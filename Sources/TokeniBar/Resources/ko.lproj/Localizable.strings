@@ -360,8 +360,13 @@
 "companion.migration.cosmetics" = "보유 꾸미기 %d개";
 "companion.migration.energy" = "에너지 +%d";
 "companion.migration.shards" = "별조각 +%d";
+"companion.migration.before" = "기존 재화";
+"companion.migration.refund" = "총 환급";
+"companion.migration.balanceValue" = "에너지 %d · 별조각 %d";
+"companion.migration.refundValue" = "에너지 +%d · 별조각 +%d";
 "companion.migration.after" = "환급 후 보유";
 "companion.migration.afterValue" = "에너지 %d · 별조각 %d";
+"companion.migration.details" = "자산별 환급 상세";
 "companion.migration.receipt.title" = "펫 자산 환급 완료";
 "companion.migration.receipt.description" = "기존 자산이 초기화되었고 아래 재화가 지급되었습니다. 이 영수증은 설정에서 다시 확인할 수 있습니다.";
 "companion.migration.receipt.dismiss" = "확인";

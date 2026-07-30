@@ -70,6 +70,12 @@ public struct CompanionAssetResetQuote: Codable, Hashable, Sendable {
             self.completedPetEnergyRefund)
     }
 
+    public var existingAvailableGrowthEnergy: Int {
+        Self.saturatedAdd(
+            self.existingGrowthEnergy,
+            self.existingMigrationEnergyReserve)
+    }
+
     public var cosmeticStarShardRefund: Int {
         self.cosmeticRefunds.reduce(0) {
             Self.saturatedAdd($0, $1.starShards)
@@ -78,9 +84,7 @@ public struct CompanionAssetResetQuote: Codable, Hashable, Sendable {
 
     public var resultingGrowthEnergy: Int {
         Self.saturatedAdd(
-            Self.saturatedAdd(
-                self.existingGrowthEnergy,
-                self.existingMigrationEnergyReserve),
+            self.existingAvailableGrowthEnergy,
             self.petEnergyRefund)
     }
 
@@ -175,7 +179,13 @@ public struct CompanionAssetResetEngine: Sendable {
                     cosmeticID: $0,
                     starShards: prices[$0, default: 0])
             }
-            .sorted { $0.cosmeticID.rawValue < $1.cosmeticID.rawValue }
+            .sorted {
+                if $0.starShards == $1.starShards {
+                    return $0.cosmeticID.rawValue
+                        < $1.cosmeticID.rawValue
+                }
+                return $0.starShards < $1.starShards
+            }
         let completedCount = companion.collection.totalCompletedGenerations
         return CompanionAssetResetQuote(
             migrationID: self.migrationID,

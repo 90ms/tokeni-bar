@@ -360,8 +360,13 @@
 "companion.migration.cosmetics" = "%d owned cosmetics";
 "companion.migration.energy" = "+%d Energy";
 "companion.migration.shards" = "+%d Star Shards";
+"companion.migration.before" = "Existing balance";
+"companion.migration.refund" = "Total refund";
+"companion.migration.balanceValue" = "%d Energy · %d Star Shards";
+"companion.migration.refundValue" = "+%d Energy · +%d Star Shards";
 "companion.migration.after" = "Balance after refund";
 "companion.migration.afterValue" = "%d Energy · %d Star Shards";
+"companion.migration.details" = "Refund details by asset";
 "companion.migration.receipt.title" = "Pet asset refund complete";
 "companion.migration.receipt.description" = "Existing assets were reset and the currency below was granted. This receipt remains available in Settings.";
 "companion.migration.receipt.dismiss" = "Done";

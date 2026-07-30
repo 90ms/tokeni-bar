@@ -6,6 +6,7 @@ struct CompanionMigrationCard: View {
     var showsReceiptDismissButton = false
 
     @State private var confirmsReset = false
+    @State private var showsRefundDetails = false
 
     var body: some View {
         if let quote = self.store.companionMigrationQuote {
@@ -94,32 +95,16 @@ struct CompanionMigrationCard: View {
     private func quoteRows(_ quote: CompanionAssetResetQuote) -> some View {
         VStack(spacing: 5) {
             self.row(
-                AppLocalization.format(
-                    "companion.migration.currentPet",
-                    AppLocalization.string(
-                        "companion.stage.\(quote.currentStage.rawValue)")),
+                AppLocalization.string("companion.migration.before"),
                 value: AppLocalization.format(
-                    "companion.migration.energy",
-                    quote.currentPetEnergyRefund))
+                    "companion.migration.balanceValue",
+                    quote.existingAvailableGrowthEnergy,
+                    quote.existingStarShards))
             self.row(
-                AppLocalization.format(
-                    "companion.migration.completedPets",
-                    quote.completedPetCount),
+                AppLocalization.string("companion.migration.refund"),
                 value: AppLocalization.format(
-                    "companion.migration.energy",
-                    quote.completedPetEnergyRefund))
-            self.row(
-                AppLocalization.format(
-                    "companion.migration.collection",
-                    quote.collectionDiscoveryCount),
-                value: AppLocalization.string(
-                    "companion.migration.collectionReset"))
-            self.row(
-                AppLocalization.format(
-                    "companion.migration.cosmetics",
-                    quote.cosmeticRefunds.count),
-                value: AppLocalization.format(
-                    "companion.migration.shards",
+                    "companion.migration.refundValue",
+                    quote.petEnergyRefund,
                     quote.cosmeticStarShardRefund))
             Divider()
             self.row(
@@ -129,6 +114,57 @@ struct CompanionMigrationCard: View {
                     quote.resultingGrowthEnergy,
                     quote.resultingStarShards),
                 emphasized: true)
+            DisclosureGroup(
+                AppLocalization.string("companion.migration.details"),
+                isExpanded: self.$showsRefundDetails)
+            {
+                VStack(spacing: 5) {
+                    self.row(
+                        AppLocalization.format(
+                            "companion.migration.currentPet",
+                            AppLocalization.string(
+                                "companion.stage.\(quote.currentStage.rawValue)")),
+                        value: AppLocalization.format(
+                            "companion.migration.energy",
+                            quote.currentPetEnergyRefund))
+                    self.row(
+                        AppLocalization.format(
+                            "companion.migration.completedPets",
+                            quote.completedPetCount),
+                        value: AppLocalization.format(
+                            "companion.migration.energy",
+                            quote.completedPetEnergyRefund))
+                    self.row(
+                        AppLocalization.format(
+                            "companion.migration.collection",
+                            quote.collectionDiscoveryCount),
+                        value: AppLocalization.string(
+                            "companion.migration.collectionReset"))
+                    ForEach(
+                        quote.cosmeticRefunds,
+                        id: \.cosmeticID)
+                    { refund in
+                        self.row(
+                            AppLocalization.string(
+                                "companion.cosmetic."
+                                    + refund.cosmeticID.rawValue),
+                            value: AppLocalization.format(
+                                "companion.migration.shards",
+                                refund.starShards))
+                    }
+                    if quote.cosmeticRefunds.isEmpty {
+                        self.row(
+                            AppLocalization.format(
+                                "companion.migration.cosmetics",
+                                0),
+                            value: AppLocalization.format(
+                                "companion.migration.shards",
+                                0))
+                    }
+                }
+                .padding(.top, 5)
+            }
+            .font(.caption)
         }
     }
 
