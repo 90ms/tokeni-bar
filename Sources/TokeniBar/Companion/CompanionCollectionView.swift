@@ -27,34 +27,6 @@ private enum CompanionAcquisitionFilter: String, CaseIterable, Identifiable {
     var id: Self { self }
 }
 
-private enum CompanionActivationFilter: String, CaseIterable, Identifiable {
-    case all
-    case active
-    case passive
-
-    var id: Self { self }
-}
-
-private enum CompanionRarityFilter: String, CaseIterable, Identifiable {
-    case all
-    case normal
-    case rare
-    case epic
-    case legendary
-
-    var id: Self { self }
-
-    var rarity: CompanionRarity? {
-        switch self {
-        case .all: nil
-        case .normal: .normal
-        case .rare: .rare
-        case .epic: .epic
-        case .legendary: .legendary
-        }
-    }
-}
-
 struct CompanionCollectionView: View {
     @ObservedObject var store: UsageStore
     @State private var selectedSection = CompanionCollectionSection.home
@@ -63,9 +35,8 @@ struct CompanionCollectionView: View {
     @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
     @State private var selectedGeneration = 0
     @State private var acquisitionFilter = CompanionAcquisitionFilter.all
-    @State private var activationFilter = CompanionActivationFilter.all
-    @State private var rarityFilter = CompanionRarityFilter.all
     @State private var showsGrowthBreakdown = false
+    @State private var showsGuarantees = false
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
 
     private let stages: [CompanionGameStage] = [.hatchling, .junior, .adult]
@@ -185,9 +156,6 @@ struct CompanionCollectionView: View {
             self.ensureSelectedSpeciesVisible()
         }
         .onChange(of: self.acquisitionFilter) { _, _ in
-            self.ensureSelectedSpeciesVisible()
-        }
-        .onChange(of: self.activationFilter) { _, _ in
             self.ensureSelectedSpeciesVisible()
         }
     }
@@ -861,10 +829,13 @@ struct CompanionCollectionView: View {
         let canAfford = self.store.companionRewardState.starShards >= cosmetic.cost
 
         return VStack(spacing: 7) {
-            Image(systemName: cosmetic.id.systemImage)
-                .font(.title2)
-                .foregroundStyle(isOwned ? Color.yellow : Color.secondary)
-                .frame(height: 26)
+            CompanionCosmeticDecoration(
+                cosmeticID: cosmetic.id,
+                dimension: 54,
+                animationsEnabled: self.store.companionAnimationsEnabled)
+                .saturation(isOwned ? 1 : 0.25)
+                .opacity(isOwned ? 1 : 0.72)
+                .frame(height: 54)
             Text(self.cosmeticName(cosmetic.id))
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
@@ -1051,7 +1022,10 @@ struct CompanionCollectionView: View {
     }
 
     private var pity: some View {
-        GroupBox(AppLocalization.string("companion.pity.title")) {
+        DisclosureGroup(
+            AppLocalization.string("companion.pity.title"),
+            isExpanded: self.$showsGuarantees)
+        {
             VStack(alignment: .leading, spacing: 6) {
                 Text(AppLocalization.format(
                     "companion.pity.rare",
@@ -1075,8 +1049,12 @@ struct CompanionCollectionView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
+            .padding(.top, 8)
         }
+        .padding(12)
+        .background(
+            Color.secondary.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: 9))
     }
 
     private var collectionGrid: some View {
@@ -1163,20 +1141,22 @@ struct CompanionCollectionView: View {
                 .font(.caption.weight(.semibold))
 
             HStack(spacing: 8) {
-                Picker(
-                    AppLocalization.string(
-                        "companion.collection.filter.generation"),
-                    selection: self.$selectedGeneration)
-                {
-                    Text(AppLocalization.string(
-                        "companion.collection.filter.all"))
-                        .tag(0)
-                    ForEach(self.registeredGenerations, id: \.self) {
-                        generation in
-                        Text(AppLocalization.format(
-                            "companion.collection.filter.generationValue",
-                            generation))
-                            .tag(generation)
+                if self.registeredGenerations.count > 1 {
+                    Picker(
+                        AppLocalization.string(
+                            "companion.collection.filter.generation"),
+                        selection: self.$selectedGeneration)
+                    {
+                        Text(AppLocalization.string(
+                            "companion.collection.filter.all"))
+                            .tag(0)
+                        ForEach(self.registeredGenerations, id: \.self) {
+                            generation in
+                            Text(AppLocalization.format(
+                                "companion.collection.filter.generationValue",
+                                generation))
+                                .tag(generation)
+                        }
                     }
                 }
 
@@ -1188,30 +1168,6 @@ struct CompanionCollectionView: View {
                     ForEach(CompanionAcquisitionFilter.allCases) { filter in
                         Text(AppLocalization.string(
                             "companion.collection.filter.acquisition.\(filter.rawValue)"))
-                            .tag(filter)
-                    }
-                }
-
-                Picker(
-                    AppLocalization.string(
-                        "companion.collection.filter.activation"),
-                    selection: self.$activationFilter)
-                {
-                    ForEach(CompanionActivationFilter.allCases) { filter in
-                        Text(AppLocalization.string(
-                            "companion.collection.filter.activation.\(filter.rawValue)"))
-                            .tag(filter)
-                    }
-                }
-
-                Picker(
-                    AppLocalization.string(
-                        "companion.collection.filter.rarity"),
-                    selection: self.$rarityFilter)
-                {
-                    ForEach(CompanionRarityFilter.allCases) { filter in
-                        Text(AppLocalization.string(
-                            "companion.collection.filter.rarity.\(filter.rawValue)"))
                             .tag(filter)
                     }
                 }
@@ -1236,22 +1192,13 @@ struct CompanionCollectionView: View {
             case .discovered: isDiscovered
             case .undiscovered: !isDiscovered
             }
-            let activation = CompanionBenefitRegistry.definition(
-                for: speciesID)?.activation
-            let matchesActivation = switch self.activationFilter {
-            case .all: true
-            case .active: activation == .active
-            case .passive: activation == .passive
-            }
             return matchesGeneration
                 && matchesAcquisition
-                && matchesActivation
         }
     }
 
     private var filteredRarities: [CompanionRarity] {
-        self.rarityFilter.rarity.map { [$0] }
-            ?? CompanionRarity.allCases
+        CompanionRarity.allCases
     }
 
     private func ensureSelectedSpeciesVisible() {

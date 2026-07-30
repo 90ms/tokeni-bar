@@ -62,7 +62,9 @@
 "settings.language.english" = "English";
 "settings.language.korean" = "한국어";
 "settings.notifications" = "Notifications";
-"settings.notifications.enabled" = "Low usage alerts";
+"settings.notifications.enabled" = "Usage notifications";
+"settings.notifications.reset" = "Alert one hour before quota reset";
+"settings.notifications.reset.description" = "Sent once only when the provider reports a verified reset time.";
 "settings.notifications.warning" = "Warning threshold";
 "settings.notifications.critical" = "Critical threshold";
 "settings.notifications.percentLeft" = "%d%% left";
@@ -376,8 +378,12 @@
 "settings.privacy.description" = "Usage is read from known local CLI session files and OpenCode's aggregate session columns. Codex and Claude quotas reuse their existing CLI sign-ins with account usage endpoints. Prompts, responses, cookies, and authentication tokens are not stored by this app.";
 "notification.usageLow.title" = "%@ usage is low";
 "notification.usageLow.body" = "%@: %d%% left";
+"notification.resetSoon.title" = "%@ quota resets soon";
+"notification.resetSoon.body" = "%@ resets in about %@. %d%% remains.";
+"notification.time.hours" = "%d hr";
+"notification.time.minutes" = "%d min";
 "notification.test.title" = "Tokeni Bar notifications are ready";
-"notification.test.body" = "You will be notified when an enabled quota reaches your thresholds.";
+"notification.test.body" = "You will be notified at your remaining-usage thresholds and one hour before quota reset.";
 "notification.budget.title" = "Monthly budget reached %d%%";
 "notification.budget.body" = "Estimated spend is %@ of %@.";
 "settings.budget.title" = "Monthly Budget";

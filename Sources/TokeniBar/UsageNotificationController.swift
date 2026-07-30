@@ -46,16 +46,29 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
         _ snapshots: [ProviderSnapshot],
         warningThreshold: Int,
         criticalThreshold: Int,
+        resetAlertsEnabled: Bool,
         enabledProviderIDs: Set<ProviderID>)
     {
         guard self.isEnabled else { return }
         let alreadyDelivered = Set(self.deliveredIdentifiers)
+        let resetCandidates = resetAlertsEnabled
+            ? UsageAlertEvaluator.resetCandidates(
+                in: snapshots,
+                enabledProviderIDs: enabledProviderIDs)
+            : []
+        let resettingWindows = Set(resetCandidates.map {
+            "\($0.providerID.rawValue).\($0.windowID)"
+        })
         let candidates = UsageAlertEvaluator.candidates(
             in: snapshots,
             warningThreshold: warningThreshold,
             criticalThreshold: criticalThreshold,
             enabledProviderIDs: enabledProviderIDs)
-            .filter { !alreadyDelivered.contains($0.identifier) }
+            .filter {
+                !alreadyDelivered.contains($0.identifier)
+                    && !resettingWindows.contains(
+                        "\($0.providerID.rawValue).\($0.windowID)")
+            }
 
         for candidate in candidates {
             let content = UNMutableNotificationContent()
@@ -73,10 +86,41 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
             self.deliveredIdentifiers.append(candidate.identifier)
         }
 
+        if resetAlertsEnabled {
+            for candidate in resetCandidates
+                where !alreadyDelivered.contains(candidate.identifier)
+            {
+                let content = UNMutableNotificationContent()
+                content.title = AppLocalization.format(
+                    "notification.resetSoon.title",
+                    candidate.providerName)
+                content.body = AppLocalization.format(
+                    "notification.resetSoon.body",
+                    candidate.windowLabel,
+                    self.timeRemainingText(candidate.timeRemaining),
+                    Int(candidate.remainingPercent.rounded()))
+                content.sound = .default
+                self.center.add(UNNotificationRequest(
+                    identifier: candidate.identifier,
+                    content: content,
+                    trigger: nil))
+                self.deliveredIdentifiers.append(candidate.identifier)
+            }
+        }
+
         if self.deliveredIdentifiers.count > 200 {
             self.deliveredIdentifiers = Array(self.deliveredIdentifiers.suffix(200))
         }
         self.defaults.set(self.deliveredIdentifiers, forKey: Self.deliveredIdentifiersKey)
+    }
+
+    private func timeRemainingText(_ interval: TimeInterval) -> String {
+        let minutes = max(Int(ceil(interval / 60)), 1)
+        if minutes >= 60 {
+            let hours = max(Int((Double(minutes) / 60).rounded()), 1)
+            return AppLocalization.format("notification.time.hours", hours)
+        }
+        return AppLocalization.format("notification.time.minutes", minutes)
     }
 
     func sendTest() {

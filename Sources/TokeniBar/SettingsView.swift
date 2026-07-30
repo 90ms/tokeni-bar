@@ -437,6 +437,18 @@ struct SettingsView: View {
                         .foregroundStyle(.orange)
                 }
                 if self.store.notificationsEnabled {
+                    Toggle(isOn: Binding(
+                        get: { self.store.resetNotificationsEnabled },
+                        set: { self.store.setResetNotificationsEnabled($0) }))
+                    {
+                        Text(AppLocalization.string(
+                            "settings.notifications.reset"))
+                    }
+                    Text(AppLocalization.string(
+                        "settings.notifications.reset.description"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
                     Picker(
                         AppLocalization.string("settings.notifications.warning"),
                         selection: Binding(

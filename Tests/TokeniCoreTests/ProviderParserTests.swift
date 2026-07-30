@@ -195,6 +195,56 @@ struct ProviderParserTests {
     }
 
     @Test
+    func resetAlertsUseVerifiedUpcomingResetAndDeduplicateByCycle() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let descriptor = ProviderDescriptor(
+            id: .claude,
+            displayName: "Claude Code",
+            shortName: "Claude",
+            systemImage: "sparkles",
+            capabilities: .init(supportsQuotaWindows: true))
+        let snapshot = ProviderSnapshot(
+            descriptor: descriptor,
+            availability: .available,
+            source: .officialAPI,
+            quotaWindows: [
+                QuotaWindow(
+                    id: "session",
+                    kind: .session,
+                    label: "5-hour",
+                    usedPercent: 75,
+                    resetsAt: now.addingTimeInterval(59 * 60)),
+                QuotaWindow(
+                    id: "weekly",
+                    kind: .weekly,
+                    label: "Weekly",
+                    usedPercent: 40,
+                    resetsAt: now.addingTimeInterval(2 * 60 * 60)),
+                QuotaWindow(
+                    id: "context",
+                    kind: .context,
+                    label: "Context",
+                    usedPercent: 90,
+                    resetsAt: now.addingTimeInterval(30 * 60)),
+            ])
+
+        let alerts = UsageAlertEvaluator.resetCandidates(
+            in: [snapshot],
+            now: now,
+            enabledProviderIDs: [.claude])
+
+        #expect(alerts.count == 1)
+        #expect(alerts[0].windowID == "session")
+        #expect(alerts[0].remainingPercent == 25)
+        #expect(alerts[0].timeRemaining == 59 * 60)
+        #expect(alerts[0].identifier == "reset.claude.session.1800003540")
+        #expect(UsageAlertEvaluator.resetCandidates(
+            in: [snapshot],
+            now: now,
+            enabledProviderIDs: [.codex]).isEmpty)
+    }
+
+    @Test
     func usageHistoryThrottlesSamplesAndPrunesOldRecords() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
@@ -338,7 +388,9 @@ struct ProviderParserTests {
 
         let backgroundContext = background[kSecUseAuthenticationContext] as? LAContext
         #expect(backgroundContext?.interactionNotAllowed == true)
+        #expect(background[kSecUseAuthenticationUI] as? CFString == kSecUseAuthenticationUISkip)
         #expect(interactive[kSecUseAuthenticationContext] == nil)
+        #expect(interactive[kSecUseAuthenticationUI] == nil)
     }
 
     @Test

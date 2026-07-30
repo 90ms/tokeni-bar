@@ -23,6 +23,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var notificationSettingsMessage: String?
     @Published private(set) var warningThreshold: Int
     @Published private(set) var criticalThreshold: Int
+    @Published private(set) var resetNotificationsEnabled: Bool
     @Published private(set) var notificationProviderIDs: Set<ProviderID>
     @Published private(set) var authorizingProviderIDs: Set<ProviderID>
     @Published private(set) var providerAuthorizationMessages: [ProviderID: String]
@@ -107,6 +108,8 @@ final class UsageStore: ObservableObject {
     private static let supportedActivityWindows = [10, 15, 30]
     private static let warningThresholdKey = "usageNotificationWarningThreshold"
     private static let criticalThresholdKey = "usageNotificationCriticalThreshold"
+    private static let resetNotificationsEnabledKey =
+        "usageResetNotificationsEnabled"
     private static let notificationProviderIDsKey = "usageNotificationProviderIDs"
     private static let costDisplayCurrencyKey = "costDisplayCurrency"
     private static let monthlyBudgetEnabledKey = "monthlyBudgetEnabled"
@@ -154,6 +157,8 @@ final class UsageStore: ObservableObject {
         self.providerAuthorizationMessages = [:]
         self.warningThreshold = UserDefaults.standard.object(forKey: Self.warningThresholdKey) as? Int ?? 30
         self.criticalThreshold = UserDefaults.standard.object(forKey: Self.criticalThresholdKey) as? Int ?? 10
+        self.resetNotificationsEnabled = UserDefaults.standard.object(
+            forKey: Self.resetNotificationsEnabledKey) as? Bool ?? true
         if let storedMode = UserDefaults.standard.string(forKey: Self.menuBarDisplayModeKey)
             .flatMap(MenuBarDisplayMode.init(rawValue:))
         {
@@ -333,6 +338,7 @@ final class UsageStore: ObservableObject {
             self.snapshots,
             warningThreshold: self.warningThreshold,
             criticalThreshold: self.criticalThreshold,
+            resetAlertsEnabled: self.resetNotificationsEnabled,
             enabledProviderIDs: self.notificationProviderIDs)
         self.lastRefresh = .now
         do {
@@ -387,6 +393,13 @@ final class UsageStore: ObservableObject {
     func setCriticalThreshold(_ threshold: Int) {
         self.criticalThreshold = threshold
         UserDefaults.standard.set(threshold, forKey: Self.criticalThresholdKey)
+    }
+
+    func setResetNotificationsEnabled(_ enabled: Bool) {
+        self.resetNotificationsEnabled = enabled
+        UserDefaults.standard.set(
+            enabled,
+            forKey: Self.resetNotificationsEnabledKey)
     }
 
     func isNotificationEnabled(for id: ProviderID) -> Bool {

@@ -33,13 +33,15 @@ struct ByteBotTransitionView: View {
             if let cosmeticID = self.cosmeticID(in: .background) {
                 CompanionCosmeticDecoration(
                     cosmeticID: cosmeticID,
-                    dimension: self.dimension)
+                    dimension: self.dimension,
+                    animationsEnabled: self.cosmeticMotionEnabled)
             }
 
             if let cosmeticID = self.cosmeticID(in: .aura) {
                 CompanionCosmeticDecoration(
                     cosmeticID: cosmeticID,
-                    dimension: self.dimension)
+                    dimension: self.dimension,
+                    animationsEnabled: self.cosmeticMotionEnabled)
             }
 
             if let effect {
@@ -63,7 +65,8 @@ struct ByteBotTransitionView: View {
             if let cosmeticID = self.cosmeticID(in: .head) {
                 CompanionCosmeticDecoration(
                     cosmeticID: cosmeticID,
-                    dimension: self.dimension)
+                    dimension: self.dimension,
+                    animationsEnabled: self.cosmeticMotionEnabled)
             }
 
             if let effect {
@@ -200,6 +203,12 @@ struct ByteBotTransitionView: View {
     private var ambientMotionEnabled: Bool {
         self.behavior == .idle
             && self.animationsEnabled
+            && !self.reduceMotion
+            && !self.lowPowerModeEnabled
+    }
+
+    private var cosmeticMotionEnabled: Bool {
+        self.animationsEnabled
             && !self.reduceMotion
             && !self.lowPowerModeEnabled
     }

@@ -90,6 +90,10 @@ struct ClaudeOAuthCredentialLoader: Sendable {
             let context = LAContext()
             context.interactionNotAllowed = true
             query[kSecUseAuthenticationContext] = context
+            // Silently ignore an item whose ACL would require a prompt. This
+            // keeps automatic refresh and wake-from-lock noninteractive; the
+            // explicit Connect action still uses the interactive query.
+            query[kSecUseAuthenticationUI] = kSecUseAuthenticationUISkip
         }
         return query
     }
