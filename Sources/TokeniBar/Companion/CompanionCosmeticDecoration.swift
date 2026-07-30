@@ -11,6 +11,8 @@ struct CompanionCosmeticDecoration: View {
     let cosmeticID: CompanionCosmeticID
     let dimension: CGFloat
     var animationsEnabled = true
+    var motionIntensity = 1.0
+    var lightBackground = false
     private let canvasDimension: CGFloat = 136
 
     var body: some View {
@@ -21,6 +23,7 @@ struct CompanionCosmeticDecoration: View {
             self.decoration(
                 time: self.motionEnabled
                     ? timeline.date.timeIntervalSinceReferenceDate
+                        * self.motionIntensity
                     : 0)
         }
         .frame(width: self.canvasDimension, height: self.canvasDimension)
@@ -54,9 +57,7 @@ struct CompanionCosmeticDecoration: View {
                                 size: self.canvasDimension
                                     * (0.065 + CGFloat(wave) * 0.055)))
                             .foregroundStyle(
-                                index.isMultiple(of: 2)
-                                    ? Color.yellow
-                                    : Color.white)
+                                self.sparkleColor(index: index))
                             .offset(
                                 x: point.x * self.canvasDimension,
                                 y: point.y * self.canvasDimension
@@ -232,8 +233,16 @@ struct CompanionCosmeticDecoration: View {
 
     private var motionEnabled: Bool {
         self.animationsEnabled
+            && self.motionIntensity > 0
             && !self.reduceMotion
             && !self.lowPowerModeEnabled
+    }
+
+    private func sparkleColor(index: Int) -> Color {
+        if self.lightBackground {
+            return index.isMultiple(of: 2) ? .orange : .purple
+        }
+        return index.isMultiple(of: 2) ? .yellow : .white
     }
 
     private static let sparklePoints: [CGPoint] = [

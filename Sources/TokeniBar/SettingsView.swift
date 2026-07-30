@@ -80,6 +80,8 @@ struct SettingsView: View {
                         cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                         dimension: self.store.companionOverlaySize.spriteDimension,
                         animationsEnabled: self.store.companionAnimationsEnabled,
+                        animationIntensity: self.store
+                            .companionAnimationIntensity.motionScale,
                         interactionPulse: self.store.companionInteractionPulse,
                         growthPulse: self.store.isShowingArchivedCompanion
                             ? 0
@@ -96,11 +98,22 @@ struct SettingsView: View {
                 }
 
                 if self.store.companionEnabled {
-                    Toggle(isOn: Binding(
-                        get: { self.store.companionAnimationsEnabled },
-                        set: { self.store.setCompanionAnimationsEnabled($0) }))
+                    Picker(
+                        AppLocalization.string(
+                            "settings.companion.animationIntensity"),
+                        selection: Binding(
+                            get: {
+                                self.store.companionAnimationIntensity
+                            },
+                            set: {
+                                self.store.setCompanionAnimationIntensity($0)
+                            }))
                     {
-                        Text(AppLocalization.string("settings.companion.animations"))
+                        ForEach(CompanionAnimationIntensity.allCases) {
+                            intensity in
+                            Text(intensity.localizedName)
+                                .tag(intensity)
+                        }
                     }
                     Text(AppLocalization.string("settings.companion.motion"))
                         .font(.caption)

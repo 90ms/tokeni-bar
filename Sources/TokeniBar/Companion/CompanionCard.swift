@@ -18,6 +18,8 @@ struct CompanionCard: View {
                     cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                     dimension: self.compact ? 50 : 62,
                     animationsEnabled: self.store.companionAnimationsEnabled,
+                    animationIntensity: self.store
+                        .companionAnimationIntensity.motionScale,
                     interactionPulse: self.store.companionInteractionPulse,
                     growthPulse: self.store.isShowingArchivedCompanion
                         ? 0

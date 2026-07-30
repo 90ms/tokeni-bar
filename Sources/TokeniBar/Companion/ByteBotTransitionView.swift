@@ -13,6 +13,7 @@ struct ByteBotTransitionView: View {
     var cosmeticIDs: Set<CompanionCosmeticID> = []
     var dimension: CGFloat = 64
     var animationsEnabled = true
+    var animationIntensity = 1.0
     var interactionPulse = 0
     var growthPulse = 0
 
@@ -34,14 +35,18 @@ struct ByteBotTransitionView: View {
                 CompanionCosmeticDecoration(
                     cosmeticID: cosmeticID,
                     dimension: self.dimension,
-                    animationsEnabled: self.cosmeticMotionEnabled)
+                    animationsEnabled: self.cosmeticMotionEnabled,
+                    motionIntensity: self.animationIntensity)
             }
 
             if let cosmeticID = self.cosmeticID(in: .aura) {
                 CompanionCosmeticDecoration(
                     cosmeticID: cosmeticID,
                     dimension: self.dimension,
-                    animationsEnabled: self.cosmeticMotionEnabled)
+                    animationsEnabled: self.cosmeticMotionEnabled,
+                    motionIntensity: self.animationIntensity,
+                    lightBackground: self.cosmeticID(in: .background)
+                        == .cloudGarden)
             }
 
             if let effect {
@@ -66,7 +71,8 @@ struct ByteBotTransitionView: View {
                 CompanionCosmeticDecoration(
                     cosmeticID: cosmeticID,
                     dimension: self.dimension,
-                    animationsEnabled: self.cosmeticMotionEnabled)
+                    animationsEnabled: self.cosmeticMotionEnabled,
+                    motionIntensity: self.animationIntensity)
             }
 
             if let effect {

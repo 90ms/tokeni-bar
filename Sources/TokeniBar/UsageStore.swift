@@ -63,6 +63,8 @@ final class UsageStore: ObservableObject {
     @Published private(set) var appUpdateRequiresFormulaMigration: Bool
     @Published private(set) var companionEnabled: Bool
     @Published private(set) var companionAnimationsEnabled: Bool
+    @Published private(set) var companionAnimationIntensity:
+        CompanionAnimationIntensity
     @Published private(set) var companionOverlayEnabled: Bool
     @Published private(set) var companionOverlaySize: CompanionOverlaySize
     @Published private(set) var companionOverlayPositionLocked: Bool
@@ -137,6 +139,8 @@ final class UsageStore: ObservableObject {
     private static let pricingCatalogLastCheckKey = "pricingCatalogLastCheck"
     private static let companionEnabledKey = "companionEnabled"
     private static let companionAnimationsEnabledKey = "companionAnimationsEnabled"
+    private static let companionAnimationIntensityKey =
+        "companionAnimationIntensity"
     private static let companionOverlayEnabledKey = "companionOverlayEnabled"
     private static let companionOverlaySizeKey = "companionOverlaySize"
     private static let companionOverlayPositionLockedKey =
@@ -253,8 +257,14 @@ final class UsageStore: ObservableObject {
         self.appUpdateRequiresFormulaMigration = false
         self.companionEnabled = UserDefaults.standard.object(
             forKey: Self.companionEnabledKey) as? Bool ?? true
-        self.companionAnimationsEnabled = UserDefaults.standard.object(
+        let legacyCompanionAnimationsEnabled = UserDefaults.standard.object(
             forKey: Self.companionAnimationsEnabledKey) as? Bool ?? true
+        self.companionAnimationIntensity = UserDefaults.standard.string(
+            forKey: Self.companionAnimationIntensityKey)
+            .flatMap(CompanionAnimationIntensity.init(rawValue:))
+            ?? (legacyCompanionAnimationsEnabled ? .full : .off)
+        self.companionAnimationsEnabled =
+            self.companionAnimationIntensity.isEnabled
         self.companionOverlayEnabled = UserDefaults.standard.bool(
             forKey: Self.companionOverlayEnabledKey)
         self.companionOverlaySize = UserDefaults.standard.string(
@@ -638,9 +648,17 @@ final class UsageStore: ObservableObject {
         }
     }
 
-    func setCompanionAnimationsEnabled(_ enabled: Bool) {
-        self.companionAnimationsEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: Self.companionAnimationsEnabledKey)
+    func setCompanionAnimationIntensity(
+        _ intensity: CompanionAnimationIntensity)
+    {
+        self.companionAnimationIntensity = intensity
+        self.companionAnimationsEnabled = intensity.isEnabled
+        UserDefaults.standard.set(
+            intensity.rawValue,
+            forKey: Self.companionAnimationIntensityKey)
+        UserDefaults.standard.set(
+            intensity.isEnabled,
+            forKey: Self.companionAnimationsEnabledKey)
     }
 
     func setCompanionOverlayEnabled(_ enabled: Bool) {

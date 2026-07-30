@@ -288,6 +288,7 @@
 "companion.rewards.received" = "Received %d Star Shards!";
 "companion.cosmetic.shop" = "Star Shard cosmetics";
 "companion.cosmetic.description" = "Purchased cosmetics are permanent and never affect growth or rarity.";
+"companion.cosmetic.earning" = "Earn Star Shards through verified activity and pet discovery or journey achievements.";
 "companion.cosmetic.sparkleAura" = "Sparkle Aura";
 "companion.cosmetic.starCrown" = "Star Crown";
 "companion.cosmetic.nightRing" = "Night Ring";
@@ -304,6 +305,10 @@
 "companion.cosmetic.equip" = "Equip";
 "companion.cosmetic.remove" = "Remove";
 "companion.cosmetic.insufficient" = "Need more shards";
+"companion.cosmetic.missing" = "Need %d more";
+"companion.cosmetic.preview.title" = "Preview on your pet";
+"companion.cosmetic.preview.current" = "Current";
+"companion.cosmetic.preview.new" = "After purchase";
 "companion.cosmetic.confirm.title" = "Buy this cosmetic?";
 "companion.cosmetic.confirm.action" = "Buy for %d shards";
 "companion.cosmetic.confirm.message" = "Buying %@ will spend %d Star Shards.";
@@ -344,6 +349,10 @@
 "settings.companion.title" = "Tokeni Pets";
 "settings.companion.enabled" = "Show and grow pets";
 "settings.companion.animations" = "Animate pets";
+"settings.companion.animationIntensity" = "Animation intensity";
+"settings.companion.animationIntensity.off" = "Off";
+"settings.companion.animationIntensity.gentle" = "Gentle";
+"settings.companion.animationIntensity.full" = "Full";
 "settings.companion.motion" = "Animations pause automatically with Reduce Motion or Low Power Mode.";
 "settings.companion.growth" = "Growth";
 "settings.companion.rules" = "Every 100,000 verified tokens grant one action energy. Remainder tokens and unspent energy carry across dates, while hatching and evolution require an explicit click. While pets remain undiscovered, five duplicate hatches guarantee a new species from the next egg.";

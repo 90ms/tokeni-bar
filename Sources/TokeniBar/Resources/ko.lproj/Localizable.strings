@@ -288,6 +288,7 @@
 "companion.rewards.received" = "별조각 %d개를 받았습니다!";
 "companion.cosmetic.shop" = "별조각 꾸미기";
 "companion.cosmetic.description" = "구매한 꾸미기는 영구 보관되며 펫의 성장이나 등급에는 영향을 주지 않습니다.";
+"companion.cosmetic.earning" = "별조각은 검증된 활동과 펫 발견·여정 성취로 얻습니다.";
 "companion.cosmetic.sparkleAura" = "반짝임 오라";
 "companion.cosmetic.starCrown" = "별 왕관";
 "companion.cosmetic.nightRing" = "밤하늘 링";
@@ -304,6 +305,10 @@
 "companion.cosmetic.equip" = "착용";
 "companion.cosmetic.remove" = "해제";
 "companion.cosmetic.insufficient" = "별조각 부족";
+"companion.cosmetic.missing" = "%d개 더 필요";
+"companion.cosmetic.preview.title" = "펫에게 미리 착용해 보기";
+"companion.cosmetic.preview.current" = "현재";
+"companion.cosmetic.preview.new" = "구매 후";
 "companion.cosmetic.confirm.title" = "꾸미기를 구매할까요?";
 "companion.cosmetic.confirm.action" = "별조각 %d개로 구매";
 "companion.cosmetic.confirm.message" = "%@을(를) 구매하면 별조각 %d개가 사용됩니다.";
@@ -344,6 +349,10 @@
 "settings.companion.title" = "Tokeni 펫";
 "settings.companion.enabled" = "펫 표시 및 성장";
 "settings.companion.animations" = "펫 애니메이션";
+"settings.companion.animationIntensity" = "애니메이션 강도";
+"settings.companion.animationIntensity.off" = "끔";
+"settings.companion.animationIntensity.gentle" = "잔잔하게";
+"settings.companion.animationIntensity.full" = "풍부하게";
 "settings.companion.motion" = "동작 줄이기 또는 저전력 모드에서는 애니메이션이 자동으로 멈춥니다.";
 "settings.companion.growth" = "성장";
 "settings.companion.rules" = "검증된 토큰 10만 개마다 행동 에너지 1을 얻습니다. 남은 토큰과 사용하지 않은 에너지는 날짜가 바뀌어도 유지되며, 부화와 진화는 직접 눌러야 진행됩니다. 미발견 펫이 있다면 중복 부화 5회 뒤 다음 알에서 새 펫을 보장합니다.";

@@ -1,5 +1,28 @@
 import Foundation
 
+enum CompanionAnimationIntensity: String, CaseIterable, Identifiable {
+    case off
+    case gentle
+    case full
+
+    var id: Self { self }
+
+    var isEnabled: Bool { self != .off }
+
+    var motionScale: Double {
+        switch self {
+        case .off: 0
+        case .gentle: 0.5
+        case .full: 1
+        }
+    }
+
+    var localizedName: String {
+        AppLocalization.string(
+            "settings.companion.animationIntensity.\(self.rawValue)")
+    }
+}
+
 enum MenuBarDisplayMode: String, CaseIterable, Identifiable {
     case iconOnly
     case lowestRemaining

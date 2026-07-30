@@ -175,6 +175,8 @@ private struct CompanionOverlayView: View {
             cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
             dimension: self.store.companionOverlaySize.spriteDimension,
             animationsEnabled: self.store.companionAnimationsEnabled,
+            animationIntensity: self.store
+                .companionAnimationIntensity.motionScale,
             interactionPulse: self.store.companionInteractionPulse,
             growthPulse: self.store.isShowingArchivedCompanion
                 ? 0
