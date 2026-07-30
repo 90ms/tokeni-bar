@@ -57,7 +57,7 @@ Main completion is `registered species × collectible variants`. Generation one
 is five species times Standard and Prismatic, for ten discoveries.
 
 Life stages form a journey album under that discovery instead of separate
-completion cells. Legacy colors remain preserved and displayable without
+completion cells. Legacy colors remain available as store cosmetics without
 inflating the new denominator.
 
 Only two guarantees remain:

@@ -56,6 +56,39 @@ Update checks are automatic; installation starts only after an explicit click.
 After a manual Terminal update, run `tokeni-bar --install-app` again so the app
 link points at the current version.
 
+<a id="migrating-from-the-cask"></a>
+
+## Migrating from the Cask
+
+When **Settings → General → App Updates** shows the Cask migration guide,
+perform this one-time transition. Do not use `--zap` if you want to retain pet
+state, usage history, and settings.
+
+```bash
+# Quit Tokeni Bar first.
+brew uninstall --cask tokeni-bar
+brew trust --formula 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
+```
+
+The Formula creates a managed link at `~/Applications/Tokeni Bar.app` pointing
+to the app in the Homebrew Cellar. Uninstalling the Cask removes its app bundle
+but, without `--zap`, does not delete
+`~/Library/Application Support/TokeniBar` or existing preferences.
+
+Verify the result with:
+
+```bash
+brew list --formula tokeni-bar
+tokeni-bar --print-app-path
+```
+
+The launcher refuses to overwrite a user-created app or unrelated symlink
+already present at `~/Applications/Tokeni Bar.app`. Verify and move that item
+yourself, then run `tokeni-bar --install-app` again.
+
 ## Direct installation from GitHub Releases
 
 GitHub Release ZIPs are published only when the complete Developer ID signing

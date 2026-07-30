@@ -24,6 +24,12 @@ counters from paying twice. Every 100,000 tokens grant one action energy.
 Unconverted remainder tokens carry across dates, and refreshing the same
 cumulative value never pays twice.
 
+**Migration refund Energy** from a pet-system redesign is not new growth. It
+returns Energy previously earned from verified usage and already spent on
+actions. The refund stays in a separate reserve outside the regular 100,000
+safety cap and is spent first. It does not count as Energy earned today and
+does not trigger attendance, first-growth rewards, or new bond progress.
+
 Counter scope differs by provider:
 
 - **Daily counters:** confirmed dated Codex and Claude totals credit that date.

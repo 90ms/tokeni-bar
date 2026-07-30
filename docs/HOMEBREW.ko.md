@@ -55,6 +55,39 @@ GitHub Releases 확인 결과 새 버전이 있으면 **설정 → 일반 → �
 터미널에서 직접 업데이트한 경우 `tokeni-bar --install-app`을 다시 실행해 앱
 링크를 최신 버전으로 맞추세요.
 
+<a id="migrating-from-the-cask"></a>
+
+## Cask에서 Formula로 이전하기
+
+앱의 **설정 → 일반 → 앱 업데이트**에 Cask 이전 안내가 나타나면 다음 작업을
+한 번만 수행합니다. 펫, 사용 기록과 설정을 유지하려면 `--zap`을 사용하지
+마세요.
+
+```bash
+# Tokeni Bar를 먼저 종료합니다.
+brew uninstall --cask tokeni-bar
+brew trust --formula 90ms/tap/tokeni-bar
+brew install --formula 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+tokeni-bar
+```
+
+Formula 앱은 `~/Applications/Tokeni Bar.app`에 Homebrew Cellar 앱을 가리키는
+관리형 링크를 만듭니다. Cask 제거 명령은 앱 번들만 제거하며 `--zap`을 붙이지
+않는 한 `~/Library/Application Support/TokeniBar`와 기존 설정을 지우지
+않습니다.
+
+설치 결과는 다음과 같이 확인할 수 있습니다.
+
+```bash
+brew list --formula tokeni-bar
+tokeni-bar --print-app-path
+```
+
+`~/Applications/Tokeni Bar.app`에 사용자가 직접 만든 앱이나 다른 링크가 이미
+있으면 런처는 덮어쓰지 않습니다. 해당 파일의 출처를 확인해 직접 옮긴 뒤
+`tokeni-bar --install-app`을 다시 실행하세요.
+
 ## GitHub 릴리스로 직접 설치
 
 GitHub Release ZIP은 Developer ID 서명과 Apple 공증 설정이 모두 확인된

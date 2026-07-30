@@ -180,5 +180,10 @@ and cosmetics remain on the Mac. Memories contain no provider name, token
 total, prompt, response, or credential. There is no analytics SDK or remote
 game server.
 
+The asset-migration journal also stays on the Mac. It contains only the
+migration ID, refund quote, source pet and reward state, fixed target state,
+and receipt—never provider names, raw token totals, work content, or
+credentials.
+
 Unavailable or stale usage never fabricates growth. See
 [Usage display and growth accounting](usage.md) for accounting details.

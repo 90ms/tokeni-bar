@@ -72,8 +72,10 @@ Growth energy = floor(T / 100,000)
 
 Every 100,000 verified tokens always grant one energy. A remainder below
 100,000 tokens and all unspent action energy carry across date changes. The
-wallet has a 100,000-energy safety limit to contain invalid data, and refreshing
-the same cumulative value never pays twice.
+regular wallet has a 100,000-energy safety limit to contain invalid data, and
+refreshing the same cumulative value never pays twice. Redesign refunds return
+previously spent Energy into a separate migration reserve, so that safety cap
+cannot discard them.
 
 The collection's **Action energy** section separates tokens reflected in
 growth by provider and shows their combined total, today's energy target, and the
@@ -315,6 +317,8 @@ analytics or remote game server.
 | Claude password prompt repeats after unlock | Update the app and connect once under **Settings → General → Provider Connections**. Background refreshes never open authentication UI |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Pet progress cannot be read | Restart the app to retry local recovery, then review diagnostics if the issue continues |
+| Pet controls are unavailable | Review the pending asset refund under **Settings → Tokeni → Data & Migration**. Existing pets are read-only until confirmation |
+| The app exits during a refund | Relaunch to resume toward the same journaled target balances, then review the receipt in Settings |
 
 ## Development
 
