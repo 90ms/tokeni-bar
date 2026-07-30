@@ -270,12 +270,13 @@ final class UsageStore: ObservableObject {
             forKey: Self.companionEnabledKey) as? Bool ?? true
         let legacyCompanionAnimationsEnabled = UserDefaults.standard.object(
             forKey: Self.companionAnimationsEnabledKey) as? Bool ?? true
-        self.companionAnimationIntensity = UserDefaults.standard.string(
+        let companionAnimationIntensity = UserDefaults.standard.string(
             forKey: Self.companionAnimationIntensityKey)
             .flatMap(CompanionAnimationIntensity.init(rawValue:))
             ?? (legacyCompanionAnimationsEnabled ? .full : .off)
+        self.companionAnimationIntensity = companionAnimationIntensity
         self.companionAnimationsEnabled =
-            self.companionAnimationIntensity.isEnabled
+            companionAnimationIntensity.isEnabled
         self.companionOverlayEnabled = UserDefaults.standard.bool(
             forKey: Self.companionOverlayEnabledKey)
         self.companionOverlaySize = UserDefaults.standard.string(

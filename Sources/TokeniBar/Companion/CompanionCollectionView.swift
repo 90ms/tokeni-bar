@@ -1145,9 +1145,9 @@ struct CompanionCollectionView: View {
                 let owned = self.store.companionRewardState
                     .unlockedCosmeticIDs.contains(cosmetic.id)
                 switch self.cosmeticOwnershipFilter {
-                case .all: true
-                case .owned: owned
-                case .unowned: !owned
+                case .all: return true
+                case .owned: return owned
+                case .unowned: return !owned
                 }
             }
             .sorted { lhs, rhs in
