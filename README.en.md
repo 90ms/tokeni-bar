@@ -45,8 +45,8 @@ brew install --formula tokeni-bar
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
-| Tokeni pets | Life stage, species, rarity, provider growth tokens, bond, behavior, and an optional desktop overlay |
-| Collection and rewards | Registered pets and forms, automatic activity check-in, animated Star Shard cosmetics, traits, passives, and the nearest guarantee |
+| Tokeni pets | Life stage, species, visual variant, name, personality, bond, memories, behavior, and an optional desktop overlay |
+| Collection and rewards | Ten core discoveries and journey albums, automatic activity check-in, animated Star Shard cosmetics, and the nearest guarantee |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -91,11 +91,11 @@ collection shows the usage date plus **Settled today** or **Today pending**.
 
 | Action | Energy spent | Result |
 |---|---:|---|
-| Hatch egg | 500 | Reveal the species and first rarity, then become a Hatchling |
-| Evolve to Juvenile | 800 | Keep or raise rarity and become a Juvenile |
-| Evolve to Adult | 1,400 | Keep or raise rarity and become an Adult |
+| Hatch egg | 500 | Reveal the species and Standard or Prismatic variant, then become a Hatchling |
+| Evolve to Juvenile | 800 | Keep the same variant and become a Juvenile |
+| Evolve to Adult | 1,400 | Keep the same variant and become an Adult |
 | Finish an Adult journey and hatch again | 800 | Archive the Adult and immediately hatch a new pet |
-| Receive a new egg before Adult | 300 | Restart with an ungraded egg |
+| Receive a new egg before Adult | 300 | Restart with a mystery egg |
 
 Having enough energy never hatches or evolves automatically. The user must
 click the action. Energy earned as an Adult fills action energy and also records
@@ -112,51 +112,40 @@ StackFox, PromptPup, or NullSlime at equal 20% base odds. While any species is
 still missing, five duplicate hatches guarantee an undiscovered species from
 the next egg.
 
-### 3. Rarity may rise at evolution
+### 3. Collect Standard and Prismatic variants
 
-Rarity advances through `Normal → Rare → Epic → Legendary` and never drops.
+A pet's variant is decided once at hatch and never changes while evolving.
 
-| Current rarity | Stay | Rare | Epic | Legendary |
-|---|---:|---:|---:|---:|
-| Normal | 75.0% | 21.0% | 3.8% | 0.2% |
-| Rare | 86.0% | - | 13.0% | 1.0% |
-| Epic | 97.0% | - | - | 3.0% |
-| Legendary | 100% | - | - | - |
+| Variant | Hatch odds | Rule |
+|---|---:|---|
+| Standard | 92% | Each species' signature look |
+| Prismatic | 8% | A special visual variant with no stat advantage |
 
-An Adult hatched from an ungraded egg has this final distribution without
-guarantees:
+After 11 consecutive Standard hatches, hatch 12 is Prismatic. This can combine
+with the missing-species guarantee, and the collection leads with whichever
+guarantee is nearer. Legacy Rare and Epic looks are preserved as body-color
+cosmetics; Legendary looks become Prismatic.
 
-| Normal | Rare | Epic | Legendary |
-|---:|---:|---:|---:|
-| 42.2% | 40.9% | 15.5% | 1.4% |
-
-### 4. Repeated low rarity activates guarantees
-
-| Guaranteed rarity | Maximum completed journeys |
-|---|---:|
-| Rare or higher | 3 |
-| Epic or higher | 7 |
-| Legendary | 16 |
-
-Only finishing an Adult journey advances these counters. Restarting before
-Adult keeps the existing guarantees but does not move them closer.
-
-### 5. Collection and new eggs
+### 4. Collection, individual records, and new eggs
 
 | Choice | Result | What remains |
 |---|---|---|
 | Stay with an Adult | New energy becomes bond | Current form and all records |
-| Finish an Adult journey | Spend 800 energy, archive it, and hatch immediately | Collection and guarantees |
+| Finish an Adult journey | Spend 800 energy, archive it, and hatch immediately | Collection and variant/species guarantees |
 | Leave before Adult | Spend 300 energy and start a new egg | Collection and existing guarantees |
 
-Generation one has 60 forms: five species, four rarities, and three visible
-life stages. Only the exact stage and rarity actually encountered is added to
-the collection; unseen earlier forms remain locked.
-Completed pets remain under **Completed Pets**, where they can be brought out
-with **Stay Together** or put away again. Action energy continues to feed the
-current journey, while the selected completed pet's active trait takes effect.
+Generation one has ten core discoveries: five species times Standard and
+Prismatic. Hatchling, Juvenile, and Adult forms actually encountered remain in
+a separate **journey album** under each discovery.
 
-### 6. Activity and collection achievements award Star Shards
+The current pet can have a local name up to 24 characters, a presentation-only
+personality, five bond levels, and memories for hatching, evolution, first pat,
+bond levels, and journey completion. Memories never contain work content or
+usage numbers. Completed pets remain under **Completed Pets**, where their
+identity is retained and they can be shown again. No pet grants numerical
+growth, cost, odds, or reward advantages.
+
+### 5. Activity and collection achievements award Star Shards
 
 Growth energy continues to come only from verified token usage. Attendance and
 collection activity award a separate currency called **Star Shards**.
@@ -168,9 +157,9 @@ collection activity award a separate currency called **Star Shards**.
 | 3 / 5 / 7 check-ins in a week | 10 / 20 / 30 |
 | 20 check-ins in a month | 50 |
 | First discovery of a species | 20 |
-| First Rare / Epic / Legendary encounter | 10 / 25 / 50 |
+| First Prismatic discovery | 50 |
 | Completed Adult journey | 25 |
-| 10 / 30 / 60 collection forms unlocked | 20 / 50 / 100 |
+| 5 / 10 variant discoveries | 20 / 100 |
 | First launch of a new stable release | 20 |
 
 There is no separate check-in button. The first verified growth observation of
@@ -186,6 +175,7 @@ Spend Star Shards on permanent cosmetics in the collection:
 | Aura | Sparkle Aura / Pixel Hearts / Night Ring | 60 / 80 / 200 |
 | Head | Developer Headphones / Star Crown / Wizard Hat | 100 / 120 / 140 |
 | Background | Terminal Night / Cloud Garden | 160 / 220 |
+| Body Color | Legacy Azure / Legacy Violet | 90 / 110 |
 
 The purchase sheet compares the current combination with the result before
 spending shards. The equipped cosmetic appears in the menu popover, collection, Settings
@@ -193,26 +183,9 @@ preview, and on-screen pet. One item per slot can be equipped at the same time.
 Its decoration scales with the Small, Medium, or Large pet size setting. Every
 item has its own motion; intensity can be Off, Gentle, or Full, and aura
 contrast adapts on bright backgrounds.
-Cosmetics never affect growth energy, rarity, or guarantees.
-
-### 7. Equip active traits and passives
-
-One **active trait** comes from the pet selected with **Stay Together**.
-Completed archived pets can simultaneously occupy **passive slots**. One slot
-is available initially, and another unlocks permanently after meeting 30, 60,
-90, and 120 actual collection forms. The same species cannot occupy multiple
-passive slots.
-Assign, change, or remove a passive directly from a completed-pet card.
-Advanced lineup controls stay collapsed until needed, and the collection leads
-with the acquisition-state filter.
-
-| Pet | Mode | Generation-one benefit |
-|---|---|---|
-| ByteBot | Active | Bonus energy from verified base action energy |
-| CacheCat | Active | Star Shards for time spent together |
-| StackFox | Passive | Lower pet action-energy costs |
-| PromptPup | Passive | A one-tier rarity chance when the base roll does not improve |
-| NullSlime | Passive | Bonus collection and journey Star Shards |
+Cosmetics never affect growth energy, variants, guarantees, or rewards. Pet
+play focuses on collecting, individual histories, animation, and styling
+combinations rather than numerical superiority.
 
 Open the grid button in the menu or choose
 **Settings → Tokeni → Open Pet Collection**. See
@@ -297,7 +270,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 | Stored locally | Never stored |
 |---|---|
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
-| Pet species, stage, rarity, collection, and guarantees | Access tokens, refresh tokens, and cookies |
+| Pet species, stage, variant, name, personality, bond, memories, collection, and guarantees | Access tokens, refresh tokens, and cookies |
 | Star Shards, attendance dates, purchased cosmetics, and awarded milestone IDs | Account secrets and server telemetry |
 | On-screen pet preferences and last position | Screen captures and input content |
 | Local progress-validation data | Remote game accounts and analytics telemetry |

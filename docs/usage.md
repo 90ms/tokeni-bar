@@ -51,7 +51,7 @@ The app uses local progress-validation data to keep the same usage from being
 credited again. If a write is interrupted or part of the data is damaged,
 retained recovery copies are checked first.
 
-See [Tokeni pet growth and collection](bytebot.md) for life stages and rarity.
+See [Tokeni pet growth and collection](bytebot.md) for life stages and variants.
 
 ## Codex account token activity
 
