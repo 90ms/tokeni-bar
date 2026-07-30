@@ -32,6 +32,7 @@ public struct CompanionAssetResetQuote: Codable, Hashable, Sendable {
     public let currentPetEnergyRefund: Int
     public let completedPetCount: Int
     public let completedPetEnergyRefund: Int
+    public let collectionDiscoveryCount: Int
     public let cosmeticRefunds: [CompanionCosmeticRefund]
     public let existingGrowthEnergy: Int
     public let existingMigrationEnergyReserve: Int
@@ -43,6 +44,7 @@ public struct CompanionAssetResetQuote: Codable, Hashable, Sendable {
         currentPetEnergyRefund: Int,
         completedPetCount: Int,
         completedPetEnergyRefund: Int,
+        collectionDiscoveryCount: Int,
         cosmeticRefunds: [CompanionCosmeticRefund],
         existingGrowthEnergy: Int,
         existingMigrationEnergyReserve: Int,
@@ -53,6 +55,7 @@ public struct CompanionAssetResetQuote: Codable, Hashable, Sendable {
         self.currentPetEnergyRefund = max(currentPetEnergyRefund, 0)
         self.completedPetCount = max(completedPetCount, 0)
         self.completedPetEnergyRefund = max(completedPetEnergyRefund, 0)
+        self.collectionDiscoveryCount = max(collectionDiscoveryCount, 0)
         self.cosmeticRefunds = cosmeticRefunds
         self.existingGrowthEnergy = max(existingGrowthEnergy, 0)
         self.existingMigrationEnergyReserve = max(
@@ -90,6 +93,7 @@ public struct CompanionAssetResetQuote: Codable, Hashable, Sendable {
     public var requiresConfirmation: Bool {
         self.currentStage != .egg
             || self.completedPetCount > 0
+            || self.collectionDiscoveryCount > 0
             || !self.cosmeticRefunds.isEmpty
     }
 
@@ -116,6 +120,7 @@ public struct CompanionAssetResetJournal: Codable, Hashable, Sendable {
     public let targetBenefitState: CompanionBenefitState
     public let preparedAt: Date
     public var completedAt: Date?
+    public var receiptAcknowledgedAt: Date?
 
     public init(
         migrationID: CompanionMigrationID,
@@ -128,7 +133,8 @@ public struct CompanionAssetResetJournal: Codable, Hashable, Sendable {
         targetRewardState: CompanionRewardState,
         targetBenefitState: CompanionBenefitState,
         preparedAt: Date,
-        completedAt: Date? = nil)
+        completedAt: Date? = nil,
+        receiptAcknowledgedAt: Date? = nil)
     {
         self.migrationID = migrationID
         self.status = status
@@ -141,6 +147,7 @@ public struct CompanionAssetResetJournal: Codable, Hashable, Sendable {
         self.targetBenefitState = targetBenefitState
         self.preparedAt = preparedAt
         self.completedAt = completedAt
+        self.receiptAcknowledgedAt = receiptAcknowledgedAt
     }
 }
 
@@ -178,6 +185,8 @@ public struct CompanionAssetResetEngine: Sendable {
             completedPetEnergyRefund: Self.saturatedMultiply(
                 completedCount,
                 2_700),
+            collectionDiscoveryCount:
+                companion.collection.unlockedFormCount,
             cosmeticRefunds: cosmeticRefunds,
             existingGrowthEnergy: companion.growthEnergy,
             existingMigrationEnergyReserve: companion.migrationEnergyReserve,
@@ -273,10 +282,16 @@ public actor CompanionAssetResetStore {
             .appending(path: "companion-migrations.json")
     }
 
-    public func load() throws -> CompanionAssetResetJournal? {
-        try RecoverableFileStorage.load(
+    public func load(
+        migrationID: CompanionMigrationID) throws
+        -> CompanionAssetResetJournal?
+    {
+        let archive: CompanionMigrationArchive? = try RecoverableFileStorage.load(
             from: self.fileURL,
             decode: Self.decode)
+        return archive?.journals.first {
+            $0.migrationID == migrationID
+        }
     }
 
     public func save(_ journal: CompanionAssetResetJournal) throws {
@@ -286,14 +301,27 @@ public actor CompanionAssetResetStore {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        var archive: CompanionMigrationArchive =
+            (try RecoverableFileStorage.load(
+                from: self.fileURL,
+                decode: Self.decode)) ?? CompanionMigrationArchive()
+        archive.journals.removeAll {
+            $0.migrationID == journal.migrationID
+        }
+        archive.journals.append(journal)
         try RecoverableFileStorage.write(
-            encoder.encode(journal),
+            encoder.encode(archive),
             to: self.fileURL)
     }
 
-    private static func decode(_ data: Data) throws -> CompanionAssetResetJournal {
+    private static func decode(_ data: Data) throws -> CompanionMigrationArchive {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(CompanionAssetResetJournal.self, from: data)
+        return try decoder.decode(CompanionMigrationArchive.self, from: data)
     }
+}
+
+private struct CompanionMigrationArchive: Codable {
+    var schemaVersion = 1
+    var journals: [CompanionAssetResetJournal] = []
 }

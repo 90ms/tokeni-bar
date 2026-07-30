@@ -579,6 +579,39 @@ struct CompanionGameEngineTests {
         #expect(state.memories.isEmpty)
     }
 
+    @Test("Version seven state gains an empty migration reserve")
+    func migratesVersionSevenReserve() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let file = directory.appending(path: "companion-state.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true)
+        let current = CompanionGameState(
+            speciesID: .promptpup,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .playful,
+            growthEnergy: 450)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let encoded = try encoder.encode(current)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        object["schemaVersion"] = 7
+        object.removeValue(forKey: "migrationEnergyReserve")
+        try JSONSerialization.data(withJSONObject: object).write(to: file)
+
+        let state = try await CompanionGameStateStore(fileURL: file).load()
+
+        #expect(state.schemaVersion == 8)
+        #expect(state.speciesID == .promptpup)
+        #expect(state.migrationEnergyReserve == 0)
+        #expect(state.availableGrowthEnergy == 450)
+    }
+
     @Test("Version four lineage forms are removed during migration")
     func migratesVersionFourLineageForms() async throws {
         let directory = FileManager.default.temporaryDirectory

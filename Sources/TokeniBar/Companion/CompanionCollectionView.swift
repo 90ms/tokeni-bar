@@ -147,6 +147,12 @@ struct CompanionCollectionView: View {
     @ViewBuilder
     private var sectionContent: some View {
         VStack(alignment: .leading, spacing: 18) {
+            if self.store.companionMigrationQuote != nil
+                || self.store.companionMigrationReceipt != nil
+            {
+                CompanionMigrationCard(store: self.store)
+            }
+
             switch self.selectedSection {
             case .home:
                 self.currentCompanion

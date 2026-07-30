@@ -16,6 +16,16 @@ struct MenuPopoverView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
+                    if self.store.companionMigrationQuote != nil
+                        || self.store.companionMigrationReceiptNoticeVisible
+                    {
+                        CompanionMigrationCard(
+                            store: self.store,
+                            showsReceiptDismissButton: true)
+                        Divider()
+                            .padding(.vertical, 10)
+                    }
+
                     if self.store.companionEnabled {
                         CompanionCard(
                             store: self.store,

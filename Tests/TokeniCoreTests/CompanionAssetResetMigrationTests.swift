@@ -27,6 +27,7 @@ struct CompanionAssetResetMigrationTests {
         #expect(quote.currentPetEnergyRefund == 1_300)
         #expect(quote.completedPetCount == 3)
         #expect(quote.completedPetEnergyRefund == 8_100)
+        #expect(quote.collectionDiscoveryCount == 0)
         #expect(quote.petEnergyRefund == 9_400)
         #expect(quote.cosmeticStarShardRefund == 180)
         #expect(quote.resultingGrowthEnergy == 9_750)
@@ -104,11 +105,24 @@ struct CompanionAssetResetMigrationTests {
         let store = CompanionAssetResetStore(fileURL: file)
 
         try await store.save(journal)
-        let loaded = try await store.load()
+        let loaded = try await store.load(migrationID: journal.migrationID)
         let restored = try #require(loaded)
 
         #expect(restored == journal)
         #expect(restored.sourceCompanionState == journal.sourceCompanionState)
         #expect(restored.targetCompanionState == journal.targetCompanionState)
+
+        let futureID = CompanionMigrationID(rawValue: "future-reset")
+        let future = CompanionAssetResetEngine(migrationID: futureID).prepare(
+            companion: CompanionGameState(),
+            rewards: CompanionRewardState(),
+            benefits: CompanionBenefitState())
+        try await store.save(future)
+        let originalReloaded = try await store.load(
+            migrationID: journal.migrationID)
+        let futureReloaded = try await store.load(migrationID: futureID)
+
+        #expect(originalReloaded == journal)
+        #expect(futureReloaded == future)
     }
 }
