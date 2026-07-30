@@ -443,7 +443,7 @@ public struct CompanionGameRules: Hashable, Sendable {
 }
 
 public struct CompanionGameState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 7
+    public static let currentSchemaVersion = 8
 
     public var schemaVersion: Int
     public var speciesID: CompanionSpeciesID?
@@ -455,6 +455,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var nickname: String?
     public var personalityID: CompanionPersonalityID?
     public var growthEnergy: Int
+    public var migrationEnergyReserve: Int
     public var growthDateKey: String
     public var growthEarnedToday: Int
     public var delayedGrowthEarnedToday: Int
@@ -485,6 +486,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         nickname: String? = nil,
         personalityID: CompanionPersonalityID? = nil,
         growthEnergy: Int = 0,
+        migrationEnergyReserve: Int = 0,
         growthDateKey: String? = nil,
         growthEarnedToday: Int = 0,
         delayedGrowthEarnedToday: Int = 0,
@@ -514,6 +516,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.nickname = nickname
         self.personalityID = personalityID
         self.growthEnergy = max(growthEnergy, 0)
+        self.migrationEnergyReserve = max(migrationEnergyReserve, 0)
         self.growthDateKey = growthDateKey
             ?? GrowthLocalDate.key(for: generationCreatedAt)
         self.growthEarnedToday = max(growthEarnedToday, 0)
@@ -557,6 +560,12 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.variantID ?? self.rarity.map(CompanionVariantRegistry.migrated)
     }
 
+    public var availableGrowthEnergy: Int {
+        let (total, overflow) = self.growthEnergy.addingReportingOverflow(
+            self.migrationEnergyReserve)
+        return overflow ? Int.max : total
+    }
+
     public func isValid(rules: CompanionGameRules = .standard) -> Bool {
         let archivedGenerationsAreValid =
             self.collection.archivedGenerations.allSatisfy { generation in
@@ -571,6 +580,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
               self.generationNumber >= 1,
               self.growthEnergy >= 0,
               self.growthEnergy <= rules.maximumEnergyBalance,
+              self.migrationEnergyReserve >= 0,
               !self.growthDateKey.isEmpty,
               self.growthEarnedToday >= 0,
               self.delayedGrowthEarnedToday >= 0,

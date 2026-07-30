@@ -1140,7 +1140,7 @@ final class UsageStore: ObservableObject {
     var companionStageProgress: Double {
         guard let cost = self.companionActionCost, cost > 0 else { return 1 }
         return min(
-            Double(self.companionState.growthEnergy) / Double(cost),
+            Double(self.companionState.availableGrowthEnergy) / Double(cost),
             1)
     }
 

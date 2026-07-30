@@ -198,6 +198,27 @@ struct CompanionGameEngineTests {
         #expect(state == original)
     }
 
+    @Test("Migration refund reserve is spent without the regular safety cap")
+    func migrationReserve() throws {
+        let engine = CompanionGameEngine(calendar: self.calendar)
+        var state = CompanionGameState(
+            growthEnergy: 100,
+            migrationEnergyReserve: 500,
+            growthDateKey: GrowthLocalDate.key(
+                for: .now,
+                calendar: self.calendar))
+
+        _ = try engine.hatch(
+            speciesUnitValue: 0,
+            variantUnitValue: 0,
+            in: &state)
+
+        #expect(state.stage == .hatchling)
+        #expect(state.growthEnergy == 100)
+        #expect(state.migrationEnergyReserve == 0)
+        #expect(state.availableGrowthEnergy == 100)
+    }
+
     @Test("Daily rollover preserves unspent energy across elapsed days")
     func dailyCarryover() throws {
         let first = try #require(self.date("2027-01-15T12:00:00Z"))
@@ -469,14 +490,14 @@ struct CompanionGameEngineTests {
         let versionThree = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":7"#,
+                    of: #""schemaVersion":8"#,
                     with: #""schemaVersion":3"#)
                 .data(using: .utf8))
         try versionThree.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 7)
+        #expect(state.schemaVersion == 8)
         #expect(state.speciesID == .bytebot)
         #expect(state.stage == .junior)
         #expect(state.rarity == .epic)
@@ -507,14 +528,14 @@ struct CompanionGameEngineTests {
         let versionFive = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":7"#,
+                    of: #""schemaVersion":8"#,
                     with: #""schemaVersion":5"#)
                 .data(using: .utf8))
         try versionFive.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 7)
+        #expect(state.schemaVersion == 8)
         #expect(state.speciesID == .cachecat)
         #expect(state.variantID == .legacyViolet)
         #expect(state.rarity == .epic)
@@ -552,7 +573,7 @@ struct CompanionGameEngineTests {
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 7)
+        #expect(state.schemaVersion == 8)
         #expect(state.variantID == .prismatic)
         #expect(state.personalityID == .calm)
         #expect(state.memories.isEmpty)
@@ -595,14 +616,14 @@ struct CompanionGameEngineTests {
         let versionFour = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":7"#,
+                    of: #""schemaVersion":8"#,
                     with: #""schemaVersion":4"#)
                 .data(using: .utf8))
         try versionFour.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 7)
+        #expect(state.schemaVersion == 8)
         #expect(state.collection.forms == [encountered])
         #expect(state.delayedGrowthEarnedToday == 0)
     }
@@ -620,7 +641,7 @@ struct CompanionGameEngineTests {
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 7)
+        #expect(state.schemaVersion == 8)
         #expect(state.stage == .egg)
         #expect(state.speciesID == nil)
         #expect(state.rarity == nil)

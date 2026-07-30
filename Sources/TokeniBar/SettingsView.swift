@@ -193,7 +193,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                 Text(AppLocalization.format(
                     "settings.companion.wallet",
-                    self.store.companionState.growthEnergy,
+                    self.store.companionState.availableGrowthEnergy,
                     self.store.companionState.growthCarriedToday))
                     .font(.caption)
                     .foregroundStyle(.secondary)

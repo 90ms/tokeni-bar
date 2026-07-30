@@ -48,6 +48,12 @@ public actor CompanionGameStateStore {
                       from: data)
         {
             state = legacy.migrated()
+        } else if version == 7,
+                  let legacy = try? decoder.decode(
+                      LegacyCompanionGameStateV7.self,
+                      from: data)
+        {
+            state = legacy.migrated()
         } else if version == CompanionGameState.currentSchemaVersion,
                   let current = try? decoder.decode(
             CompanionGameState.self,
@@ -86,6 +92,67 @@ public actor CompanionGameStateStore {
 
     public func clear() throws {
         try RecoverableFileStorage.removePrimaryAndBackups(for: self.fileURL)
+    }
+}
+
+private struct LegacyCompanionGameStateV7: Decodable {
+    let speciesID: CompanionSpeciesID?
+    let generationID: UUID
+    let generationNumber: Int
+    let stage: CompanionGameStage
+    let rarity: CompanionRarity?
+    let variantID: CompanionVariantID?
+    let nickname: String?
+    let personalityID: CompanionPersonalityID?
+    let growthEnergy: Int
+    let growthDateKey: String
+    let growthEarnedToday: Int
+    let delayedGrowthEarnedToday: Int
+    let growthCarriedToday: Int
+    let growthSpentToday: Int
+    let bondEnergy: Int
+    let memories: [CompanionMemoryRecord]
+    let collection: CompanionCollection
+    let consecutiveDuplicateHatches: Int
+    let pity: CompanionPityState
+    let variantPity: CompanionVariantPityState
+    let appliedGrowthAwardIDs: [UUID]
+    let lastActiveAt: Date?
+    let lastPattedAt: Date?
+    let celebrationUntil: Date?
+    let showcasedGenerationID: UUID?
+    let generationCreatedAt: Date
+    let updatedAt: Date
+
+    func migrated() -> CompanionGameState {
+        CompanionGameState(
+            speciesID: self.speciesID,
+            generationID: self.generationID,
+            generationNumber: self.generationNumber,
+            stage: self.stage,
+            rarity: self.rarity,
+            variantID: self.variantID,
+            nickname: self.nickname,
+            personalityID: self.personalityID,
+            growthEnergy: self.growthEnergy,
+            growthDateKey: self.growthDateKey,
+            growthEarnedToday: self.growthEarnedToday,
+            delayedGrowthEarnedToday: self.delayedGrowthEarnedToday,
+            growthCarriedToday: self.growthCarriedToday,
+            growthSpentToday: self.growthSpentToday,
+            bondEnergy: self.bondEnergy,
+            memories: self.memories,
+            collection: self.collection,
+            consecutiveDuplicateHatches: self.consecutiveDuplicateHatches,
+            pity: self.pity,
+            variantPity: self.variantPity,
+            appliedGrowthAwardIDs: self.appliedGrowthAwardIDs,
+            lastActiveAt: self.lastActiveAt,
+            lastPattedAt: self.lastPattedAt,
+            celebrationUntil: self.celebrationUntil,
+            showcasedGenerationID: self.showcasedGenerationID,
+            generationCreatedAt: self.generationCreatedAt,
+            updatedAt: self.updatedAt)
     }
 }
 

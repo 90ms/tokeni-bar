@@ -303,7 +303,7 @@ public struct CompanionGameEngine: Sendable {
         self.actionCost(
             for: state.stage,
             costDiscountBasisPoints: costDiscountBasisPoints).map {
-            state.growthEnergy >= $0
+            state.availableGrowthEnergy >= $0
         } ?? false
     }
 
@@ -393,12 +393,14 @@ public struct CompanionGameEngine: Sendable {
         _ amount: Int,
         in state: inout CompanionGameState) throws
     {
-        guard state.growthEnergy >= amount else {
+        guard state.availableGrowthEnergy >= amount else {
             throw CompanionGameError.insufficientEnergy(
                 required: amount,
-                available: state.growthEnergy)
+                available: state.availableGrowthEnergy)
         }
-        state.growthEnergy -= amount
+        let reserveSpent = min(state.migrationEnergyReserve, amount)
+        state.migrationEnergyReserve -= reserveSpent
+        state.growthEnergy -= amount - reserveSpent
         state.growthSpentToday = Self.saturatedAdd(
             state.growthSpentToday,
             amount)

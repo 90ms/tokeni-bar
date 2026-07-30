@@ -88,11 +88,11 @@ struct CompanionCard: View {
                         Text(AppLocalization.format(
                             "companion.progress.adult",
                             self.store.companionState.bondEnergy,
-                            self.store.companionState.growthEnergy))
+                            self.store.companionState.availableGrowthEnergy))
                     } else if let nextEnergy = self.store.companionNextStageEnergy {
                         Text(AppLocalization.format(
                             "companion.progress",
-                            self.store.companionState.growthEnergy,
+                            self.store.companionState.availableGrowthEnergy,
                             nextEnergy))
                     }
 

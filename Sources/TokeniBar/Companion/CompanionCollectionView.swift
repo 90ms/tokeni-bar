@@ -265,7 +265,7 @@ struct CompanionCollectionView: View {
                 HStack {
                     self.metric(
                         AppLocalization.string("companion.energy.balance"),
-                        value: "\(self.store.companionState.growthEnergy)")
+                        value: "\(self.store.companionState.availableGrowthEnergy)")
                     Divider()
                     self.metric(
                         AppLocalization.string("companion.energy.earnedToday"),
@@ -1034,7 +1034,7 @@ struct CompanionCollectionView: View {
                             .frame(width: 220)
                         Text(AppLocalization.format(
                             "companion.progress",
-                            self.store.companionState.growthEnergy,
+                            self.store.companionState.availableGrowthEnergy,
                             next))
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -1077,7 +1077,7 @@ struct CompanionCollectionView: View {
                     Spacer()
                     Text(AppLocalization.format(
                         "companion.energy.balanceValue",
-                        self.store.companionState.growthEnergy))
+                        self.store.companionState.availableGrowthEnergy))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1820,7 +1820,7 @@ struct CompanionCollectionView: View {
                         self.confirmsNewEgg = true
                     }
                     .disabled(
-                        self.store.companionState.growthEnergy
+                        self.store.companionState.availableGrowthEnergy
                             < self.store.companionNewEggCost)
                 }
 
@@ -1831,7 +1831,9 @@ struct CompanionCollectionView: View {
                 } else if let cost = self.store.companionActionCost {
                     Text(AppLocalization.format(
                         "companion.energy.insufficient",
-                        max(cost - self.store.companionState.growthEnergy, 0)))
+                        max(
+                            cost - self.store.companionState.availableGrowthEnergy,
+                            0)))
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
