@@ -44,9 +44,9 @@ brew install --formula tokeni-bar
 | Menu bar | Native monochrome status icon, lowest quota, selected provider, monthly cost or pet status, and a growth-ready badge |
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
-| Alerts | Low remaining quota and monthly budget |
+| Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
 | Tokeni pets | Life stage, species, rarity, provider growth tokens, bond, behavior, and an optional desktop overlay |
-| Collection and rewards | Registered pets and forms, attendance, Star Shard cosmetics, active traits, passives, and guarantees |
+| Collection and rewards | Registered pets and forms, automatic activity check-in, animated Star Shard cosmetics, traits, passives, and the nearest guarantee |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -156,14 +156,14 @@ Completed pets remain under **Completed Pets**, where they can be brought out
 with **Stay Together** or put away again. Action energy continues to feed the
 current journey, while the selected completed pet's active trait takes effect.
 
-### 6. Attendance and collection activity award Star Shards
+### 6. Activity and collection achievements award Star Shards
 
 Growth energy continues to come only from verified token usage. Attendance and
 collection activity award a separate currency called **Star Shards**.
 
 | Condition | Star Shards |
 |---|---:|
-| Daily check-in | 10 |
+| Automatic activity check-in with the first verified growth | 10 |
 | First verified growth of the day | 5 |
 | 3 / 5 / 7 check-ins in a week | 10 / 20 / 30 |
 | 20 check-ins in a month | 50 |
@@ -173,7 +173,8 @@ collection activity award a separate currency called **Star Shards**.
 | 10 / 30 / 60 collection forms unlocked | 20 / 50 / 100 |
 | First launch of a new stable release | 20 |
 
-Missing a day does not reset weekly or monthly cumulative progress. Duplicate
+There is no separate check-in button. The first verified growth observation of
+the day records activity attendance automatically. Missing a day does not reset weekly or monthly cumulative progress. Duplicate
 claims for the same local date are rejected. If the system date moves behind
 the latest claimed date, new attendance remains unavailable until the date is
 valid again.
@@ -186,9 +187,12 @@ Spend Star Shards on permanent cosmetics in the collection:
 | Head | Developer Headphones / Star Crown / Wizard Hat | 100 / 120 / 140 |
 | Background | Terminal Night / Cloud Garden | 160 / 220 |
 
-The equipped cosmetic appears in the menu popover, collection, Settings
+The purchase sheet compares the current combination with the result before
+spending shards. The equipped cosmetic appears in the menu popover, collection, Settings
 preview, and on-screen pet. One item per slot can be equipped at the same time.
-Its decoration scales with the Small, Medium, or Large pet size setting.
+Its decoration scales with the Small, Medium, or Large pet size setting. Every
+item has its own motion; intensity can be Off, Gentle, or Full, and aura
+contrast adapts on bright backgrounds.
 Cosmetics never affect growth energy, rarity, or guarantees.
 
 ### 7. Equip active traits and passives
@@ -198,8 +202,9 @@ Completed archived pets can simultaneously occupy **passive slots**. One slot
 is available initially, and another unlocks permanently after meeting 30, 60,
 90, and 120 actual collection forms. The same species cannot occupy multiple
 passive slots.
-Assign, change, or remove a passive directly from a completed-pet card. Filter
-the collection by generation, discovery state, trait type, and rarity.
+Assign, change, or remove a passive directly from a completed-pet card.
+Advanced lineup controls stay collapsed until needed, and the collection leads
+with the acquisition-state filter.
 
 | Pet | Mode | Generation-one benefit |
 |---|---|---|
@@ -260,7 +265,7 @@ not awarded as new growth. See
 | 2 | Start Tokeni Bar and open its status icon in the menu bar |
 | 3 | Choose providers and the menu-bar display under **Settings → General** |
 | 4 | For Claude account quotas, choose **Provider Connections → Connect** |
-| 5 | Use an agent, grow the pet, claim attendance, try Star Shard cosmetics, and optionally enable the on-screen pet |
+| 5 | Use an agent; the first growth activity checks in automatically, then grow the pet, try Star Shard cosmetics, and optionally enable the on-screen pet |
 
 ## Update and uninstall
 
@@ -276,10 +281,9 @@ The app checks for a stable release every six hours but never installs before
 an explicit click. See [Homebrew installation](docs/HOMEBREW.md) for
 installation-specific details.
 
-For a direct installation, download the ZIP from the
-[latest release](https://github.com/90ms/tokeni-bar/releases/latest). If macOS
-blocks the first launch, approve it under
-**System Settings → Privacy & Security**.
+GitHub ZIPs are published only after Developer ID signing and Apple
+notarization. For a direct installation, download the ZIP from the
+[latest release](https://github.com/90ms/tokeni-bar/releases/latest).
 
 Verify the build provenance and checksum of a directly downloaded release ZIP:
 

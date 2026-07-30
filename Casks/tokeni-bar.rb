@@ -18,8 +18,4 @@ cask "tokeni-bar" do
     "~/Library/Preferences/dev.agentsstatusbar.app.plist",
   ]
 
-  caveats <<~EOS
-    If macOS blocks the first launch of an ad-hoc signed release, approve
-    Tokeni Bar in System Settings > Privacy & Security.
-  EOS
 end

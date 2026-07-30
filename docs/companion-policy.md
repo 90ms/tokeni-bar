@@ -2,9 +2,9 @@
 
 **English** | [한국어](companion-policy.ko.md)
 
-> Policy version: 1.0.1
-> Updated: 2026-07-29
-> Status: Tokeni Bar v0.15.0 release
+> Policy version: 1.1.0
+> Updated: 2026-07-30
+> Status: implemented for the next Tokeni Bar release
 
 This is the source of truth for companion generations, species, growth, rarity,
 active benefits, passive loadouts, and reward economy. Update this document before
@@ -119,6 +119,22 @@ A value change must update both policy languages, registry data, localized copy,
 and test expectations in the same change.
 
 ## Policy release notes
+
+### 1.1.0 · 2026-07-30 · next Tokeni Bar release
+
+- Status: implemented
+- Replaced manual attendance claiming with automatic attendance on the first
+  applied verified-growth observation of a local date.
+- Preserved attendance records, weekly and monthly milestones, Star Shard
+  balances, purchased cosmetics, and reward-state schema compatibility.
+- Simplified the collection to the nearest guarantee and acquisition-first
+  filtering; moved passive lineup controls behind an advanced disclosure.
+- Added animated cosmetic previews, Off/Gentle/Full motion intensity, bright
+  background contrast adjustment, and exact shard-shortfall guidance.
+- Kept growth provider-neutral: attendance and cosmetic motion never create
+  growth energy.
+- Added no provider names, token totals, prompts, responses, or credentials to
+  companion state.
 
 ### 1.0.1 · 2026-07-29 · Tokeni Bar v0.15.0
 

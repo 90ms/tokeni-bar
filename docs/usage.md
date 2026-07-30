@@ -118,6 +118,29 @@ Unlocking the Mac alone does not initiate interactive authentication. When
 connection approval is unavailable, the app leaves account quotas unavailable
 rather than inventing values and continues showing local-session usage.
 
+The connection row distinguishes **Connected to account usage**, **Using local
+usage only**, **Keychain approval required**, **Session expired**, and
+**Connection status unavailable**.
+
+## Usage notifications
+
+Under **Settings → Alerts**, low remaining usage, one-hour reset reminders,
+monthly budget alerts, and provider connection failures can be enabled
+independently.
+
+- Multiple provider warnings from one refresh are grouped into one
+  notification.
+- A quota that is about to reset does not also send a duplicate low-remaining
+  alert.
+- Quiet hours retain the banner and silence only its sound.
+- Depletion risk is included only after an actual decrease has been observed
+  for at least 15 minutes. Insufficient history produces no prediction.
+- Clicking an alert opens the Alerts settings tab. **Recent notification
+  decisions** explains recent delivery or exclusion reasons.
+
+No reset reminder is created when the provider does not report a reset time.
+Each provider, quota window, and reset cycle can notify only once.
+
 ## Cost estimates, exchange rates, and history
 
 Cost is an API-price-equivalent reference for the available token data. It is

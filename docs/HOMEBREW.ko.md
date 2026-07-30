@@ -57,6 +57,9 @@ GitHub Releases 확인 결과 새 버전이 있으면 **설정 → 일반 → �
 
 ## GitHub 릴리스로 직접 설치
 
+GitHub Release ZIP은 Developer ID 서명과 Apple 공증 설정이 모두 확인된
+경우에만 게시됩니다. Formula의 로컬 ad-hoc 빌드와 배포용 ZIP을 구분합니다.
+
 ```bash
 gh attestation verify TokeniBar-<version>.zip --repo 90ms/tokeni-bar
 shasum -a 256 -c TokeniBar-<version>.zip.sha256
@@ -64,8 +67,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 
 [최신 GitHub 릴리스](https://github.com/90ms/tokeni-bar/releases/latest)에서
 ZIP과 체크섬을 받을 수 있습니다. 위 명령으로 빌드 출처와 파일 무결성을
-확인한 뒤 앱을 실행하세요. 첫 실행이 차단되면 **시스템 설정 → 개인정보 보호
-및 보안**에서 허용할 수 있습니다.
+확인한 뒤 앱을 실행하세요.
 
 ## 문제 해결
 

@@ -168,7 +168,7 @@ minutes never create growth energy.
 
 | Condition | Star Shards |
 |---|---:|
-| Daily check-in | 10 |
+| Automatic activity check-in with the first verified growth | 10 |
 | First verified growth energy of the day | 5 |
 | 3 / 5 / 7 check-ins in the same week | 10 / 20 / 30 |
 | 20 check-ins in the same month | 50 |
@@ -178,7 +178,8 @@ minutes never create growth energy.
 | 10 / 30 / 60 collection forms unlocked | 20 / 50 / 100 |
 | First launch of a new stable release | 20 |
 
-Attendance uses weekly and monthly cumulative counts rather than a fragile
+There is no separate check-in button. Attendance is recorded automatically
+when the first verified growth observation is applied. Attendance uses weekly and monthly cumulative counts rather than a fragile
 streak. Missing a day does not reset existing progress. A local date can pay
 only once. If the system date moves behind the latest claimed date, attendance
 remains unavailable until the date is valid again.
@@ -206,6 +207,10 @@ Purchased cosmetics can be equipped or removed at any time, with one item each
 in the Head, Aura, and Background slots. The selection appears in the menu
 popover, current-pet collection view, Settings preview, and on-screen pet.
 Each decoration scales with the selected Small, Medium, or Large pet size.
+Before purchase, the sheet compares the current combination with the result and
+shows the exact shard shortfall and verified earning paths. Each item has
+distinct motion, with Off, Gentle, and Full intensity choices. Aura contrast
+adapts automatically on a bright background.
 Cosmetics are visual only and never affect energy, rarity, evolution odds, or
 pity.
 
@@ -213,9 +218,11 @@ Rarity is expressed by the pet sprite itself through species-specific body
 colors and any body-form details supplied by its source art. The renderer does
 not add rarity circles, halos, particles, or backgrounds around a pet, so those
 visual layers remain reserved for equipped Aura and Background cosmetics.
-Generation, discovery state, trait type, and rarity filters keep the collection
-navigable as new species are registered. Completed passive pets can be assigned
-to an unlocked slot directly from their archive card.
+The acquisition-state filter is shown first, and the generation filter stays
+hidden while only one generation exists. Passive lineup controls are an
+advanced disclosure. Completed passive pets can be assigned to an unlocked
+slot directly from their archive card. The collection summarizes only the
+nearest guarantee.
 
 ## Menu bar and on-screen display
 

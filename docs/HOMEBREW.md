@@ -58,6 +58,10 @@ link points at the current version.
 
 ## Direct installation from GitHub Releases
 
+GitHub Release ZIPs are published only when the complete Developer ID signing
+and Apple notarization configuration is available. This is distinct from the
+Formula's local ad-hoc build.
+
 ```bash
 gh attestation verify TokeniBar-<version>.zip --repo 90ms/tokeni-bar
 shasum -a 256 -c TokeniBar-<version>.zip.sha256
@@ -66,8 +70,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 Download the ZIP and checksum from the
 [latest GitHub release](https://github.com/90ms/tokeni-bar/releases/latest).
 Use the commands above to verify build provenance and file integrity before
-launching it. If macOS blocks the first launch, approve it under **System
-Settings → Privacy & Security**.
+launching it.
 
 ## Troubleshooting
 
