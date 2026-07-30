@@ -245,6 +245,41 @@ struct ProviderParserTests {
     }
 
     @Test
+    func depletionPredictionRequiresSustainedVerifiedHistory() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let candidate = UsageAlertCandidate(
+            providerID: .claude,
+            providerName: "Claude Code",
+            windowID: "session",
+            windowLabel: "5-hour",
+            remainingPercent: 20,
+            threshold: 30,
+            resetsAt: now.addingTimeInterval(2 * 60 * 60))
+        let history = [UsageHistoryRecord(
+            timestamp: now.addingTimeInterval(-30 * 60),
+            providerID: .claude,
+            providerName: "Claude Code",
+            windows: [.init(
+                id: "session",
+                label: "5-hour",
+                remainingPercent: 40)],
+            tokenTotal: nil)]
+
+        let prediction = UsageAlertEvaluator.depletionPrediction(
+            for: candidate,
+            history: history,
+            now: now)
+
+        #expect(prediction?.exhaustsBeforeReset == true)
+        #expect(prediction?.estimatedExhaustionAt
+            == now.addingTimeInterval(30 * 60))
+        #expect(UsageAlertEvaluator.depletionPrediction(
+            for: candidate,
+            history: history,
+            now: now.addingTimeInterval(-20 * 60)) == nil)
+    }
+
+    @Test
     func usageHistoryThrottlesSamplesAndPrunesOldRecords() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)

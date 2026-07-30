@@ -23,7 +23,14 @@ final class UsageStore: ObservableObject {
     @Published private(set) var notificationSettingsMessage: String?
     @Published private(set) var warningThreshold: Int
     @Published private(set) var criticalThreshold: Int
+    @Published private(set) var lowUsageNotificationsEnabled: Bool
     @Published private(set) var resetNotificationsEnabled: Bool
+    @Published private(set) var connectionIssueNotificationsEnabled: Bool
+    @Published private(set) var budgetNotificationsEnabled: Bool
+    @Published private(set) var notificationQuietHoursEnabled: Bool
+    @Published private(set) var notificationQuietHoursStart: Int
+    @Published private(set) var notificationQuietHoursEnd: Int
+    @Published private(set) var notificationDiagnostics: [String]
     @Published private(set) var notificationProviderIDs: Set<ProviderID>
     @Published private(set) var authorizingProviderIDs: Set<ProviderID>
     @Published private(set) var providerAuthorizationMessages: [ProviderID: String]
@@ -108,8 +115,20 @@ final class UsageStore: ObservableObject {
     private static let supportedActivityWindows = [10, 15, 30]
     private static let warningThresholdKey = "usageNotificationWarningThreshold"
     private static let criticalThresholdKey = "usageNotificationCriticalThreshold"
+    private static let lowUsageNotificationsEnabledKey =
+        "usageLowNotificationsEnabled"
     private static let resetNotificationsEnabledKey =
         "usageResetNotificationsEnabled"
+    private static let connectionIssueNotificationsEnabledKey =
+        "usageConnectionIssueNotificationsEnabled"
+    private static let budgetNotificationsEnabledKey =
+        "usageBudgetNotificationsEnabled"
+    private static let notificationQuietHoursEnabledKey =
+        "usageNotificationQuietHoursEnabled"
+    private static let notificationQuietHoursStartKey =
+        "usageNotificationQuietHoursStart"
+    private static let notificationQuietHoursEndKey =
+        "usageNotificationQuietHoursEnd"
     private static let notificationProviderIDsKey = "usageNotificationProviderIDs"
     private static let costDisplayCurrencyKey = "costDisplayCurrency"
     private static let monthlyBudgetEnabledKey = "monthlyBudgetEnabled"
@@ -157,8 +176,21 @@ final class UsageStore: ObservableObject {
         self.providerAuthorizationMessages = [:]
         self.warningThreshold = UserDefaults.standard.object(forKey: Self.warningThresholdKey) as? Int ?? 30
         self.criticalThreshold = UserDefaults.standard.object(forKey: Self.criticalThresholdKey) as? Int ?? 10
+        self.lowUsageNotificationsEnabled = UserDefaults.standard.object(
+            forKey: Self.lowUsageNotificationsEnabledKey) as? Bool ?? true
         self.resetNotificationsEnabled = UserDefaults.standard.object(
             forKey: Self.resetNotificationsEnabledKey) as? Bool ?? true
+        self.connectionIssueNotificationsEnabled = UserDefaults.standard.object(
+            forKey: Self.connectionIssueNotificationsEnabledKey) as? Bool ?? false
+        self.budgetNotificationsEnabled = UserDefaults.standard.object(
+            forKey: Self.budgetNotificationsEnabledKey) as? Bool ?? true
+        self.notificationQuietHoursEnabled = UserDefaults.standard.bool(
+            forKey: Self.notificationQuietHoursEnabledKey)
+        self.notificationQuietHoursStart = UserDefaults.standard.object(
+            forKey: Self.notificationQuietHoursStartKey) as? Int ?? 22
+        self.notificationQuietHoursEnd = UserDefaults.standard.object(
+            forKey: Self.notificationQuietHoursEndKey) as? Int ?? 8
+        self.notificationDiagnostics = []
         if let storedMode = UserDefaults.standard.string(forKey: Self.menuBarDisplayModeKey)
             .flatMap(MenuBarDisplayMode.init(rawValue:))
         {
@@ -334,11 +366,12 @@ final class UsageStore: ObservableObject {
 
         let order = Dictionary(uniqueKeysWithValues: activeProviders.enumerated().map { ($1.descriptor.id, $0) })
         self.snapshots = results.sorted { order[$0.id, default: .max] < order[$1.id, default: .max] }
-        self.notificationController.process(
+        self.notificationDiagnostics = self.notificationController.process(
             self.snapshots,
+            history: self.historyRecords,
             warningThreshold: self.warningThreshold,
             criticalThreshold: self.criticalThreshold,
-            resetAlertsEnabled: self.resetNotificationsEnabled,
+            preferences: self.notificationPreferences,
             enabledProviderIDs: self.notificationProviderIDs)
         self.lastRefresh = .now
         do {
@@ -400,6 +433,46 @@ final class UsageStore: ObservableObject {
         UserDefaults.standard.set(
             enabled,
             forKey: Self.resetNotificationsEnabledKey)
+    }
+
+    func setLowUsageNotificationsEnabled(_ enabled: Bool) {
+        self.lowUsageNotificationsEnabled = enabled
+        UserDefaults.standard.set(
+            enabled,
+            forKey: Self.lowUsageNotificationsEnabledKey)
+    }
+
+    func setConnectionIssueNotificationsEnabled(_ enabled: Bool) {
+        self.connectionIssueNotificationsEnabled = enabled
+        UserDefaults.standard.set(
+            enabled,
+            forKey: Self.connectionIssueNotificationsEnabledKey)
+    }
+
+    func setBudgetNotificationsEnabled(_ enabled: Bool) {
+        self.budgetNotificationsEnabled = enabled
+        UserDefaults.standard.set(
+            enabled,
+            forKey: Self.budgetNotificationsEnabledKey)
+        self.processBudgetAlert()
+    }
+
+    func setNotificationQuietHoursEnabled(_ enabled: Bool) {
+        self.notificationQuietHoursEnabled = enabled
+        UserDefaults.standard.set(
+            enabled,
+            forKey: Self.notificationQuietHoursEnabledKey)
+    }
+
+    func setNotificationQuietHours(start: Int, end: Int) {
+        self.notificationQuietHoursStart = min(max(start, 0), 23)
+        self.notificationQuietHoursEnd = min(max(end, 0), 23)
+        UserDefaults.standard.set(
+            self.notificationQuietHoursStart,
+            forKey: Self.notificationQuietHoursStartKey)
+        UserDefaults.standard.set(
+            self.notificationQuietHoursEnd,
+            forKey: Self.notificationQuietHoursEndKey)
     }
 
     func isNotificationEnabled(for id: ProviderID) -> Bool {
@@ -1188,7 +1261,19 @@ final class UsageStore: ObservableObject {
             spentUSD: self.monthlyEstimatedSpendUSD,
             budgetUSD: budgetUSD,
             spentText: spent,
-            budgetText: budget)
+            budgetText: budget,
+            enabled: self.budgetNotificationsEnabled,
+            preferences: self.notificationPreferences)
+    }
+
+    private var notificationPreferences: UsageNotificationPreferences {
+        UsageNotificationPreferences(
+            lowUsageEnabled: self.lowUsageNotificationsEnabled,
+            resetEnabled: self.resetNotificationsEnabled,
+            connectionIssuesEnabled: self.connectionIssueNotificationsEnabled,
+            quietHoursEnabled: self.notificationQuietHoursEnabled,
+            quietHoursStart: self.notificationQuietHoursStart,
+            quietHoursEnd: self.notificationQuietHoursEnd)
     }
 
     private func startActivityLoopIfNeeded() {

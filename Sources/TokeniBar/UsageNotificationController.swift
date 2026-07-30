@@ -1,6 +1,16 @@
 import TokeniCore
+import AppKit
 import Foundation
 @preconcurrency import UserNotifications
+
+struct UsageNotificationPreferences {
+    let lowUsageEnabled: Bool
+    let resetEnabled: Bool
+    let connectionIssuesEnabled: Bool
+    let quietHoursEnabled: Bool
+    let quietHoursStart: Int
+    let quietHoursEnd: Int
+}
 
 @MainActor
 final class UsageNotificationController: NSObject, UNUserNotificationCenterDelegate {
@@ -44,14 +54,19 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
 
     func process(
         _ snapshots: [ProviderSnapshot],
+        history: [UsageHistoryRecord],
         warningThreshold: Int,
         criticalThreshold: Int,
-        resetAlertsEnabled: Bool,
+        preferences: UsageNotificationPreferences,
         enabledProviderIDs: Set<ProviderID>)
+        -> [String]
     {
-        guard self.isEnabled else { return }
+        guard self.isEnabled else {
+            return [AppLocalization.string(
+                "settings.notifications.diagnostics.masterDisabled")]
+        }
         let alreadyDelivered = Set(self.deliveredIdentifiers)
-        let resetCandidates = resetAlertsEnabled
+        let resetCandidates = preferences.resetEnabled
             ? UsageAlertEvaluator.resetCandidates(
                 in: snapshots,
                 enabledProviderIDs: enabledProviderIDs)
@@ -59,59 +74,111 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
         let resettingWindows = Set(resetCandidates.map {
             "\($0.providerID.rawValue).\($0.windowID)"
         })
-        let candidates = UsageAlertEvaluator.candidates(
-            in: snapshots,
-            warningThreshold: warningThreshold,
-            criticalThreshold: criticalThreshold,
-            enabledProviderIDs: enabledProviderIDs)
-            .filter {
-                !alreadyDelivered.contains($0.identifier)
-                    && !resettingWindows.contains(
-                        "\($0.providerID.rawValue).\($0.windowID)")
-            }
+        let candidates = preferences.lowUsageEnabled
+            ? UsageAlertEvaluator.candidates(
+                in: snapshots,
+                warningThreshold: warningThreshold,
+                criticalThreshold: criticalThreshold,
+                enabledProviderIDs: enabledProviderIDs)
+                .filter {
+                    !alreadyDelivered.contains($0.identifier)
+                        && !resettingWindows.contains(
+                            "\($0.providerID.rawValue).\($0.windowID)")
+                }
+            : []
+        var pending: [PendingAlert] = []
+        var diagnostics: [String] = []
 
         for candidate in candidates {
-            let content = UNMutableNotificationContent()
-            content.title = AppLocalization.format("notification.usageLow.title", candidate.providerName)
-            content.body = AppLocalization.format(
+            var body = AppLocalization.format(
                 "notification.usageLow.body",
                 candidate.windowLabel,
                 Int(candidate.remainingPercent.rounded()))
-            content.sound = .default
-            let request = UNNotificationRequest(
+            if let prediction = UsageAlertEvaluator.depletionPrediction(
+                for: candidate,
+                history: history),
+               prediction.exhaustsBeforeReset
+            {
+                body += " " + AppLocalization.string(
+                    "notification.usageLow.depletionRisk")
+            }
+            pending.append(PendingAlert(
                 identifier: candidate.identifier,
-                content: content,
-                trigger: nil)
-            self.center.add(request)
-            self.deliveredIdentifiers.append(candidate.identifier)
+                title: AppLocalization.format(
+                    "notification.usageLow.title",
+                    candidate.providerName),
+                body: body))
         }
 
-        if resetAlertsEnabled {
+        if preferences.resetEnabled {
             for candidate in resetCandidates
                 where !alreadyDelivered.contains(candidate.identifier)
             {
-                let content = UNMutableNotificationContent()
-                content.title = AppLocalization.format(
-                    "notification.resetSoon.title",
-                    candidate.providerName)
-                content.body = AppLocalization.format(
-                    "notification.resetSoon.body",
-                    candidate.windowLabel,
-                    self.timeRemainingText(candidate.timeRemaining),
-                    Int(candidate.remainingPercent.rounded()))
-                content.sound = .default
-                self.center.add(UNNotificationRequest(
+                pending.append(PendingAlert(
                     identifier: candidate.identifier,
-                    content: content,
-                    trigger: nil))
-                self.deliveredIdentifiers.append(candidate.identifier)
+                    title: AppLocalization.format(
+                        "notification.resetSoon.title",
+                        candidate.providerName),
+                    body: AppLocalization.format(
+                        "notification.resetSoon.body",
+                        candidate.windowLabel,
+                        self.timeRemainingText(candidate.timeRemaining),
+                        Int(candidate.remainingPercent.rounded()))))
             }
+        }
+
+        if preferences.connectionIssuesEnabled {
+            let day = Calendar.current.startOfDay(for: .now)
+            let dayKey = Int(day.timeIntervalSince1970)
+            for snapshot in snapshots
+                where enabledProviderIDs.contains(snapshot.id)
+                    && snapshot.availability == .failed
+            {
+                let identifier =
+                    "connection.\(snapshot.id.rawValue).\(dayKey)"
+                guard !alreadyDelivered.contains(identifier) else { continue }
+                pending.append(PendingAlert(
+                    identifier: identifier,
+                    title: AppLocalization.format(
+                        "notification.connection.title",
+                        snapshot.descriptor.displayName),
+                    body: AppLocalization.string(
+                        "notification.connection.body")))
+            }
+        }
+
+        if pending.isEmpty {
+            diagnostics.append(AppLocalization.string(
+                "settings.notifications.diagnostics.noCandidate"))
+        } else {
+            self.deliver(
+                pending,
+                quietly: self.isQuietHour(preferences: preferences))
+            self.deliveredIdentifiers.append(
+                contentsOf: pending.map(\.identifier))
+            diagnostics = pending.map {
+                AppLocalization.format(
+                    "settings.notifications.diagnostics.sent",
+                    $0.title)
+            }
+        }
+
+        for snapshot in snapshots
+            where enabledProviderIDs.contains(snapshot.id)
+                && snapshot.availability == .available
+                && snapshot.descriptor.capabilities.supportsQuotaWindows
+                && snapshot.quotaWindows.allSatisfy({ $0.resetsAt == nil })
+        {
+            diagnostics.append(AppLocalization.format(
+                "settings.notifications.diagnostics.noReset",
+                snapshot.descriptor.displayName))
         }
 
         if self.deliveredIdentifiers.count > 200 {
             self.deliveredIdentifiers = Array(self.deliveredIdentifiers.suffix(200))
         }
         self.defaults.set(self.deliveredIdentifiers, forKey: Self.deliveredIdentifiersKey)
+        return Array(diagnostics.prefix(8))
     }
 
     private func timeRemainingText(_ interval: TimeInterval) -> String {
@@ -138,9 +205,11 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
         spentUSD: Double,
         budgetUSD: Double,
         spentText: String,
-        budgetText: String)
+        budgetText: String,
+        enabled: Bool,
+        preferences: UsageNotificationPreferences)
     {
-        guard self.isEnabled, budgetUSD > 0 else { return }
+        guard self.isEnabled, enabled, budgetUSD > 0 else { return }
         let ratio = spentUSD / budgetUSD
         let components = Calendar.current.dateComponents([.year, .month], from: .now)
         let monthKey = String(format: "%04d-%02d", components.year ?? 0, components.month ?? 0)
@@ -155,7 +224,11 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
                 "notification.budget.body",
                 spentText,
                 budgetText)
-            content.sound = .default
+            content.sound = self.isQuietHour(preferences: preferences)
+                ? nil
+                : .default
+            content.threadIdentifier = "usage-alerts"
+            content.userInfo = ["destination": "notifications"]
             self.center.add(UNNotificationRequest(
                 identifier: identifier,
                 content: content,
@@ -172,4 +245,73 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
     {
         completionHandler([.banner, .sound])
     }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void)
+    {
+        completionHandler()
+        Task { @MainActor in
+            NSApplication.shared.activate(ignoringOtherApps: true)
+            NSApplication.shared.sendAction(
+                Selector(("showSettingsWindow:")),
+                to: nil,
+                from: nil)
+            NotificationCenter.default.post(
+                name: .openNotificationSettings,
+                object: nil)
+        }
+    }
+
+    private func deliver(_ alerts: [PendingAlert], quietly: Bool) {
+        guard let first = alerts.first else { return }
+        let content = UNMutableNotificationContent()
+        if alerts.count == 1 {
+            content.title = first.title
+            content.body = first.body
+        } else {
+            content.title = AppLocalization.format(
+                "notification.summary.title",
+                alerts.count)
+            content.body = alerts.prefix(3)
+                .map { "• \($0.body)" }
+                .joined(separator: "\n")
+        }
+        content.sound = quietly ? nil : .default
+        content.threadIdentifier = "usage-alerts"
+        content.userInfo = ["destination": "notifications"]
+        self.center.add(UNNotificationRequest(
+            identifier: alerts.count == 1
+                ? first.identifier
+                : "\(first.identifier).summary",
+            content: content,
+            trigger: nil))
+    }
+
+    private func isQuietHour(
+        preferences: UsageNotificationPreferences,
+        date: Date = .now) -> Bool
+    {
+        guard preferences.quietHoursEnabled else { return false }
+        let hour = Calendar.current.component(.hour, from: date)
+        let start = min(max(preferences.quietHoursStart, 0), 23)
+        let end = min(max(preferences.quietHoursEnd, 0), 23)
+        if start == end { return true }
+        if start < end {
+            return hour >= start && hour < end
+        }
+        return hour >= start || hour < end
+    }
+}
+
+private struct PendingAlert {
+    let identifier: String
+    let title: String
+    let body: String
+}
+
+extension Notification.Name {
+    static let openNotificationSettings =
+        Notification.Name("openNotificationSettings")
 }

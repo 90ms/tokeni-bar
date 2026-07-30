@@ -9,7 +9,9 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
         shortName: "Claude",
         systemImage: "sparkles",
         iconAssetName: "claude",
-        capabilities: .init(supportsTokenUsage: true))
+        capabilities: .init(
+            supportsQuotaWindows: true,
+            supportsTokenUsage: true))
 
     private let projectsDirectory: URL
     private let calendar: Calendar

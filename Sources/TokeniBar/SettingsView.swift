@@ -1,14 +1,25 @@
 import AppKit
+import Combine
 import TokeniCore
 import SwiftUI
+
+private enum SettingsTab: Hashable {
+    case general
+    case notifications
+    case companion
+    case usage
+    case privacy
+}
 
 struct SettingsView: View {
     @ObservedObject var store: UsageStore
     @Environment(\.openWindow) private var openWindow
+    @State private var selectedTab = SettingsTab.general
 
     var body: some View {
-        TabView {
+        TabView(selection: self.$selectedTab) {
             self.generalTab
+                .tag(SettingsTab.general)
                 .tabItem {
                     Label(
                         AppLocalization.string("settings.tab.general"),
@@ -16,6 +27,7 @@ struct SettingsView: View {
                 }
 
             self.notificationsTab
+                .tag(SettingsTab.notifications)
                 .tabItem {
                     Label(
                         AppLocalization.string("settings.tab.notifications"),
@@ -23,6 +35,7 @@ struct SettingsView: View {
                 }
 
             self.companionTab
+                .tag(SettingsTab.companion)
                 .tabItem {
                     Label(
                         AppLocalization.string("settings.tab.companion"),
@@ -30,6 +43,7 @@ struct SettingsView: View {
                 }
 
             self.usageTab
+                .tag(SettingsTab.usage)
                 .tabItem {
                     Label(
                         AppLocalization.string("settings.tab.usage"),
@@ -37,6 +51,7 @@ struct SettingsView: View {
                 }
 
             self.privacyTab
+                .tag(SettingsTab.privacy)
                 .tabItem {
                     Label(
                         AppLocalization.string("settings.tab.privacy"),
@@ -45,6 +60,11 @@ struct SettingsView: View {
         }
         .frame(width: 520, height: 470)
         .padding()
+        .onReceive(NotificationCenter.default.publisher(
+            for: .openNotificationSettings))
+        { _ in
+            self.selectedTab = .notifications
+        }
     }
 
     private var companionTab: some View {
@@ -438,6 +458,14 @@ struct SettingsView: View {
                 }
                 if self.store.notificationsEnabled {
                     Toggle(isOn: Binding(
+                        get: { self.store.lowUsageNotificationsEnabled },
+                        set: { self.store.setLowUsageNotificationsEnabled($0) }))
+                    {
+                        Text(AppLocalization.string(
+                            "settings.notifications.lowUsage"))
+                    }
+
+                    Toggle(isOn: Binding(
                         get: { self.store.resetNotificationsEnabled },
                         set: { self.store.setResetNotificationsEnabled($0) }))
                     {
@@ -449,30 +477,102 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    Picker(
-                        AppLocalization.string("settings.notifications.warning"),
-                        selection: Binding(
-                            get: { self.store.warningThreshold },
-                            set: { self.store.setWarningThreshold($0) }))
-                    {
-                        ForEach([50, 40, 30, 20], id: \.self) { value in
-                            Text(AppLocalization.format(
-                                "settings.notifications.percentLeft",
-                                value))
-                                .tag(value)
+                    if self.store.lowUsageNotificationsEnabled {
+                        Picker(
+                            AppLocalization.string("settings.notifications.warning"),
+                            selection: Binding(
+                                get: { self.store.warningThreshold },
+                                set: { self.store.setWarningThreshold($0) }))
+                        {
+                            ForEach([50, 40, 30, 20], id: \.self) { value in
+                                Text(AppLocalization.format(
+                                    "settings.notifications.percentLeft",
+                                    value))
+                                    .tag(value)
+                            }
+                        }
+                        Picker(
+                            AppLocalization.string("settings.notifications.critical"),
+                            selection: Binding(
+                                get: { self.store.criticalThreshold },
+                                set: { self.store.setCriticalThreshold($0) }))
+                        {
+                            ForEach([15, 10, 5], id: \.self) { value in
+                                Text(AppLocalization.format(
+                                    "settings.notifications.percentLeft",
+                                    value))
+                                    .tag(value)
+                            }
                         }
                     }
-                    Picker(
-                        AppLocalization.string("settings.notifications.critical"),
-                        selection: Binding(
-                            get: { self.store.criticalThreshold },
-                            set: { self.store.setCriticalThreshold($0) }))
+
+                    Toggle(isOn: Binding(
+                        get: { self.store.budgetNotificationsEnabled },
+                        set: { self.store.setBudgetNotificationsEnabled($0) }))
                     {
-                        ForEach([15, 10, 5], id: \.self) { value in
-                            Text(AppLocalization.format(
-                                "settings.notifications.percentLeft",
-                                value))
-                                .tag(value)
+                        Text(AppLocalization.string(
+                            "settings.notifications.budget"))
+                    }
+
+                    Toggle(isOn: Binding(
+                        get: { self.store.connectionIssueNotificationsEnabled },
+                        set: {
+                            self.store.setConnectionIssueNotificationsEnabled($0)
+                        }))
+                    {
+                        Text(AppLocalization.string(
+                            "settings.notifications.connection"))
+                    }
+
+                    Toggle(isOn: Binding(
+                        get: { self.store.notificationQuietHoursEnabled },
+                        set: {
+                            self.store.setNotificationQuietHoursEnabled($0)
+                        }))
+                    {
+                        Text(AppLocalization.string(
+                            "settings.notifications.quietHours"))
+                    }
+                    if self.store.notificationQuietHoursEnabled {
+                        HStack {
+                            Picker(
+                                AppLocalization.string(
+                                    "settings.notifications.quietStart"),
+                                selection: Binding(
+                                    get: {
+                                        self.store.notificationQuietHoursStart
+                                    },
+                                    set: {
+                                        self.store.setNotificationQuietHours(
+                                            start: $0,
+                                            end: self.store
+                                                .notificationQuietHoursEnd)
+                                    }))
+                            {
+                                ForEach(0..<24, id: \.self) {
+                                    Text(String(format: "%02d:00", $0))
+                                        .tag($0)
+                                }
+                            }
+                            Picker(
+                                AppLocalization.string(
+                                    "settings.notifications.quietEnd"),
+                                selection: Binding(
+                                    get: {
+                                        self.store.notificationQuietHoursEnd
+                                    },
+                                    set: {
+                                        self.store.setNotificationQuietHours(
+                                            start: self.store
+                                                .notificationQuietHoursStart,
+                                            end: $0)
+                                    }))
+                            {
+                                ForEach(0..<24, id: \.self) {
+                                    Text(String(format: "%02d:00", $0))
+                                        .tag($0)
+                                }
+                            }
                         }
                     }
                 }
@@ -499,6 +599,25 @@ struct SettingsView: View {
                 Section {
                     Button(AppLocalization.string("settings.notifications.test")) {
                         self.store.sendTestNotification()
+                    }
+                }
+
+                Section(AppLocalization.string(
+                    "settings.notifications.diagnostics"))
+                {
+                    if self.store.notificationDiagnostics.isEmpty {
+                        Text(AppLocalization.string(
+                            "settings.notifications.diagnostics.empty"))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(
+                            Array(self.store.notificationDiagnostics.enumerated()),
+                            id: \.offset)
+                        { _, message in
+                            Text(message)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }

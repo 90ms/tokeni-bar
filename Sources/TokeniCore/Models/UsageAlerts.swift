@@ -39,6 +39,22 @@ public struct UsageResetAlertCandidate: Hashable, Sendable {
     }
 }
 
+public struct UsageDepletionPrediction: Hashable, Sendable {
+    public let exhaustsBeforeReset: Bool
+    public let estimatedExhaustionAt: Date
+    public let observedInterval: TimeInterval
+
+    public init(
+        exhaustsBeforeReset: Bool,
+        estimatedExhaustionAt: Date,
+        observedInterval: TimeInterval)
+    {
+        self.exhaustsBeforeReset = exhaustsBeforeReset
+        self.estimatedExhaustionAt = estimatedExhaustionAt
+        self.observedInterval = observedInterval
+    }
+}
+
 public enum UsageAlertEvaluator {
     public static func candidates(
         in snapshots: [ProviderSnapshot],
@@ -97,5 +113,44 @@ public enum UsageAlertEvaluator {
                     timeRemaining: timeRemaining)
             }
         }
+    }
+
+    public static func depletionPrediction(
+        for candidate: UsageAlertCandidate,
+        history: [UsageHistoryRecord],
+        now: Date = .now,
+        minimumObservationInterval: TimeInterval = 15 * 60)
+        -> UsageDepletionPrediction?
+    {
+        guard let resetsAt = candidate.resetsAt, resetsAt > now else {
+            return nil
+        }
+        guard let last = history
+            .filter {
+                $0.providerID == candidate.providerID
+                    && $0.timestamp <= now
+                    && $0.timestamp >= now.addingTimeInterval(-24 * 60 * 60)
+                    && $0.windows.contains { $0.id == candidate.windowID }
+            }
+            .last,
+              let lastRemaining = last.windows.first(where: {
+                  $0.id == candidate.windowID
+              })?.remainingPercent
+        else { return nil }
+
+        let interval = now.timeIntervalSince(last.timestamp)
+        let consumed = lastRemaining - candidate.remainingPercent
+        guard interval >= minimumObservationInterval, consumed >= 1 else {
+            return nil
+        }
+        let consumptionPerSecond = consumed / interval
+        let secondsToExhaustion =
+            max(candidate.remainingPercent, 0) / consumptionPerSecond
+        let estimatedExhaustionAt =
+            now.addingTimeInterval(secondsToExhaustion)
+        return UsageDepletionPrediction(
+            exhaustsBeforeReset: estimatedExhaustionAt < resetsAt,
+            estimatedExhaustionAt: estimatedExhaustionAt,
+            observedInterval: interval)
     }
 }
