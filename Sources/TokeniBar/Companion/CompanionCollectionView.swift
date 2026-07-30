@@ -1962,8 +1962,8 @@ struct CompanionCollectionView: View {
                 TokeniMetricTile(
                     title: AppLocalization.string(
                         "companion.identity.bondLevel"),
-                    value: "\(CompanionBond.level(
-                        for: generation.bondEnergy))",
+                    value: String(CompanionBond.level(
+                        for: generation.bondEnergy)),
                     systemImage: "heart.fill",
                     tint: .pink)
                 TokeniMetricTile(
