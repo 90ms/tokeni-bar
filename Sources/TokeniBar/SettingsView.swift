@@ -330,14 +330,13 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     if result.isStale {
-                        Text(AppLocalization.string("settings.updates.stale"))
-                            .font(.caption)
-                            .foregroundStyle(.orange)
+                        TokeniStatusBanner(
+                            text: AppLocalization.string(
+                                "settings.updates.stale"),
+                            kind: .warning)
                     }
                 } else if let message = self.store.appUpdateMessage {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    TokeniStatusBanner(text: message, kind: .error)
                 }
 
                 if self.store.isInstallingAppUpdate,
@@ -354,9 +353,7 @@ struct SettingsView: View {
                         }
                     }
                 } else if let message = self.store.appUpdateInstallationMessage {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    TokeniStatusBanner(text: message, kind: .warning)
                 }
 
                 if self.store.appUpdateRequiresFormulaMigration {
@@ -724,9 +721,7 @@ struct SettingsView: View {
                     }
                 }
                 if let message = self.store.pricingUpdateMessage {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    TokeniStatusBanner(text: message, kind: .error)
                 }
             }
 

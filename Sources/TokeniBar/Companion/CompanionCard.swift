@@ -107,9 +107,15 @@ struct CompanionCard: View {
                 .monospacedDigit()
 
                 if !self.store.isShowingArchivedCompanion,
-                   self.store.companionStage != .adult
+                   let nextEnergy = self.store.companionNextStageEnergy
                 {
                     ProgressView(value: self.store.companionStageProgress)
+                        .accessibilityLabel(AppLocalization.string(
+                            "companion.progress.accessibility.label"))
+                        .accessibilityValue(AppLocalization.format(
+                            "companion.progress.accessibility.value",
+                            self.store.companionState.availableGrowthEnergy,
+                            nextEnergy))
                 }
             }
 

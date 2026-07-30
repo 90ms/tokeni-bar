@@ -486,6 +486,12 @@ struct CompanionCollectionView: View {
                         ProgressView(
                             value: Double(self.store.companionAttendanceWeekCount),
                             total: Double(self.store.companionAttendanceWeeklyGoal))
+                            .accessibilityLabel(AppLocalization.string(
+                                "companion.attendance.week.accessibility"))
+                            .accessibilityValue(AppLocalization.format(
+                                "companion.progress.accessibility.value",
+                                self.store.companionAttendanceWeekCount,
+                                self.store.companionAttendanceWeeklyGoal))
                     }
                     VStack(alignment: .leading, spacing: 3) {
                         Text(AppLocalization.format(
@@ -495,6 +501,12 @@ struct CompanionCollectionView: View {
                         ProgressView(
                             value: Double(self.store.companionAttendanceMonthCount),
                             total: Double(self.store.companionAttendanceMonthlyGoal))
+                            .accessibilityLabel(AppLocalization.string(
+                                "companion.attendance.month.accessibility"))
+                            .accessibilityValue(AppLocalization.format(
+                                "companion.progress.accessibility.value",
+                                self.store.companionAttendanceMonthCount,
+                                self.store.companionAttendanceMonthlyGoal))
                     }
                 }
                 .font(.caption)
@@ -1053,7 +1065,7 @@ struct CompanionCollectionView: View {
                 .lineLimit(1)
             Text(self.cosmeticSlotName(cosmetic.id.slot))
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
             Text(AppLocalization.format(
                 "companion.cosmetic.price",
                 cosmetic.cost))
@@ -1207,6 +1219,13 @@ struct CompanionCollectionView: View {
                     } else if let next = self.store.companionNextStageEnergy {
                         ProgressView(value: self.store.companionStageProgress)
                             .frame(width: 220)
+                            .accessibilityLabel(AppLocalization.string(
+                                "companion.progress.accessibility.label"))
+                            .accessibilityValue(AppLocalization.format(
+                                "companion.progress.accessibility.value",
+                                self.store.companionState
+                                    .availableGrowthEnergy,
+                                next))
                         Text(AppLocalization.format(
                             "companion.progress",
                             self.store.companionState.availableGrowthEnergy,

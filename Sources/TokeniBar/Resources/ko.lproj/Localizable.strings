@@ -139,6 +139,8 @@
 "companion.species.nullslime.name" = "NullSlime";
 "companion.species.nullslime.personality" = "빈 값도 느긋하게 받아들이는 디지털 슬라임";
 "companion.progress" = "에너지 %d / %d";
+"companion.progress.accessibility.label" = "다음 성장 진행률";
+"companion.progress.accessibility.value" = "%d / %d";
 "companion.progress.adult" = "친밀도 %d · 행동 에너지 %d";
 "companion.today.short" = "오늘 에너지 +%d";
 "companion.stage.egg" = "알";
@@ -401,6 +403,8 @@
 "companion.attendance.unavailable" = "출석 확인 불가";
 "companion.attendance.week" = "이번 주 %d/%d일";
 "companion.attendance.month" = "이번 달 %d/%d일";
+"companion.attendance.week.accessibility" = "주간 활동 출석";
+"companion.attendance.month.accessibility" = "월간 활동 출석";
 "companion.attendance.clockRollback" = "시스템 날짜가 이전 출석일보다 과거입니다. 날짜를 확인한 뒤 다시 시도하세요.";
 "companion.energy.insufficient" = "에너지가 %d만큼 더 필요합니다.";
 "companion.action.withCost" = "%@ · 에너지 %d";
@@ -537,6 +541,8 @@
 "diagnostics.open" = "제공자 진단 열기…";
 "diagnostics.description" = "문제 해결을 위해 복사하기 전에 집계된 제공자 상태를 확인합니다.";
 "diagnostics.report" = "민감정보가 제거된 진단 보고서";
+"diagnostics.report.hint" = "선택하고 복사할 수 있는 읽기 전용 진단 내용입니다.";
+"diagnostics.tokenDetailsWarning" = "토큰 사용량 상세가 보고서에 포함됩니다. 공유하기 전에 내용을 확인하세요.";
 "diagnostics.copy" = "진단 정보 복사";
 "diagnostics.copied" = "복사됨";
 "diagnostics.includeTokenDetails" = "토큰 합계와 모델 ID 포함";

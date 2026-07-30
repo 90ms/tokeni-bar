@@ -139,6 +139,8 @@
 "companion.species.nullslime.name" = "NullSlime";
 "companion.species.nullslime.personality" = "A laid-back digital slime comfortable with empty values";
 "companion.progress" = "%d / %d energy";
+"companion.progress.accessibility.label" = "Progress to next growth stage";
+"companion.progress.accessibility.value" = "%d of %d";
 "companion.progress.adult" = "%d bond · %d action energy";
 "companion.today.short" = "Today +%d energy";
 "companion.stage.egg" = "Egg";
@@ -401,6 +403,8 @@
 "companion.attendance.unavailable" = "Check-in unavailable";
 "companion.attendance.week" = "This week: %d/%d days";
 "companion.attendance.month" = "This month: %d/%d days";
+"companion.attendance.week.accessibility" = "Weekly activity attendance";
+"companion.attendance.month.accessibility" = "Monthly activity attendance";
 "companion.attendance.clockRollback" = "The system date is earlier than the latest check-in. Check the date and try again.";
 "companion.energy.insufficient" = "%d more energy required.";
 "companion.action.withCost" = "%@ · %d energy";
@@ -537,6 +541,8 @@
 "diagnostics.open" = "Open Provider Diagnostics…";
 "diagnostics.description" = "Review aggregated provider status before copying it for troubleshooting.";
 "diagnostics.report" = "Sanitized diagnostics report";
+"diagnostics.report.hint" = "Read-only diagnostic content that can be selected and copied.";
+"diagnostics.tokenDetailsWarning" = "Token usage details are included in this report. Review it before sharing.";
 "diagnostics.copy" = "Copy Diagnostics";
 "diagnostics.copied" = "Copied";
 "diagnostics.includeTokenDetails" = "Include token totals and model IDs";

@@ -28,6 +28,8 @@ struct DiagnosticsView: View {
                 .font(.system(.caption, design: .monospaced))
                 .textSelection(.enabled)
                 .accessibilityLabel(AppLocalization.string("diagnostics.report"))
+                .accessibilityHint(AppLocalization.string(
+                    "diagnostics.report.hint"))
 
             Toggle(
                 AppLocalization.string("diagnostics.includeTokenDetails"),
@@ -36,18 +38,31 @@ struct DiagnosticsView: View {
                     self.copied = false
                 }
 
+            if self.includeTokenDetails {
+                TokeniStatusBanner(
+                    text: AppLocalization.string(
+                        "diagnostics.tokenDetailsWarning"),
+                    kind: .warning)
+            }
+
             HStack {
                 Text(AppLocalization.string("diagnostics.privacy"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button(self.copied
-                    ? AppLocalization.string("diagnostics.copied")
-                    : AppLocalization.string("diagnostics.copy"))
-                {
+                Button {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(self.report, forType: .string)
                     self.copied = true
+                } label: {
+                    Label(
+                        AppLocalization.string(
+                            self.copied
+                                ? "diagnostics.copied"
+                                : "diagnostics.copy"),
+                        systemImage: self.copied
+                            ? "checkmark"
+                            : "doc.on.doc")
                 }
             }
         }
