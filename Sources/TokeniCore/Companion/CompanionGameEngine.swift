@@ -43,17 +43,27 @@ public struct CompanionGameEngine: Sendable {
             events.append(.energyApplied(credited))
         }
         if state.stage == .adult {
+            let previousLevel = CompanionBond.level(for: state.bondEnergy)
             state.bondEnergy = Self.saturatedAdd(state.bondEnergy, award.energy)
             events.append(.bondIncreased(award.energy))
+            let newLevel = CompanionBond.level(for: state.bondEnergy)
+            if newLevel > previousLevel {
+                for level in (previousLevel + 1)...newLevel {
+                    self.recordMemory(
+                        .bondLevel,
+                        bondLevel: level,
+                        at: award.createdAt,
+                        in: &state)
+                }
+            }
         }
         return events
     }
 
     public func hatch(
         speciesUnitValue: Double,
-        rarityUnitValue: Double,
-        luckyCheerUnitValue: Double? = nil,
-        luckyCheerBasisPoints: Int = 0,
+        variantUnitValue: Double,
+        personalityUnitValue: Double = 0,
         costDiscountBasisPoints: Int = 0,
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
@@ -66,18 +76,16 @@ public struct CompanionGameEngine: Sendable {
         try self.spend(cost, in: &state)
         return [.energySpent(cost)] + self.revealHatch(
             speciesUnitValue: speciesUnitValue,
-            rarityUnitValue: rarityUnitValue,
-            luckyCheerUnitValue: luckyCheerUnitValue,
-            luckyCheerBasisPoints: luckyCheerBasisPoints,
+            variantUnitValue: variantUnitValue,
+            personalityUnitValue: personalityUnitValue,
             at: now,
             in: &state)
     }
 
     private func revealHatch(
         speciesUnitValue: Double,
-        rarityUnitValue: Double,
-        luckyCheerUnitValue: Double?,
-        luckyCheerBasisPoints: Int,
+        variantUnitValue: Double,
+        personalityUnitValue: Double,
         at now: Date,
         in state: inout CompanionGameState) -> [CompanionGameEvent]
     {
@@ -93,7 +101,7 @@ public struct CompanionGameEngine: Sendable {
             unitValue: speciesUnitValue)
         let isNewSpecies = !discoveredSpecies.contains(speciesID)
         let variantID = self.rollVariant(
-            unitValue: rarityUnitValue,
+            unitValue: variantUnitValue,
             pity: state.variantPity)
         let rarity = CompanionVariantRegistry.definition(
             for: variantID).assetRarity
@@ -101,6 +109,9 @@ public struct CompanionGameEngine: Sendable {
         state.stage = .hatchling
         state.rarity = rarity
         state.variantID = variantID
+        state.nickname = nil
+        state.personalityID = self.rollPersonality(
+            unitValue: personalityUnitValue)
         state.variantPity.standardHatches = variantID == .prismatic
             ? 0
             : Self.saturatedAdd(state.variantPity.standardHatches, 1)
@@ -112,6 +123,7 @@ public struct CompanionGameEngine: Sendable {
             rarity: rarity,
             at: now,
             in: &state)
+        self.recordMemory(.hatched, at: now, in: &state)
         state.celebrationUntil = now.addingTimeInterval(6)
         return [
             .hatched(
@@ -124,8 +136,6 @@ public struct CompanionGameEngine: Sendable {
 
     public func evolve(
         unitValue: Double,
-        luckyCheerUnitValue: Double? = nil,
-        luckyCheerBasisPoints: Int = 0,
         costDiscountBasisPoints: Int = 0,
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
@@ -153,6 +163,7 @@ public struct CompanionGameEngine: Sendable {
             rarity: rarity,
             at: now,
             in: &state)
+        self.recordMemory(.evolved, at: now, in: &state)
         return [
             .energySpent(cost),
             .evolved(
@@ -166,9 +177,8 @@ public struct CompanionGameEngine: Sendable {
 
     public func completeGeneration(
         speciesUnitValue: Double,
-        rarityUnitValue: Double,
-        luckyCheerUnitValue: Double? = nil,
-        luckyCheerBasisPoints: Int = 0,
+        variantUnitValue: Double,
+        personalityUnitValue: Double = 0,
         costDiscountBasisPoints: Int = 0,
         at now: Date = .now,
         in state: inout CompanionGameState) throws -> [CompanionGameEvent]
@@ -185,21 +195,23 @@ public struct CompanionGameEngine: Sendable {
             basisPoints: costDiscountBasisPoints)
         try self.spend(completionCost, in: &state)
 
+        self.recordMemory(.journeyCompleted, at: now, in: &state)
         let completion = CompletedCompanionGeneration(
             generationID: state.generationID,
             generationNumber: state.generationNumber,
             speciesID: speciesID,
             finalRarity: rarity,
             variantID: state.resolvedVariantID,
+            nickname: state.nickname,
+            personalityID: state.personalityID,
             bondEnergy: state.bondEnergy,
             completedAt: now)
         self.recordCompletion(completion, in: &state)
         self.startNewEgg(at: now, in: &state)
         let hatchEvents = self.revealHatch(
             speciesUnitValue: speciesUnitValue,
-            rarityUnitValue: rarityUnitValue,
-            luckyCheerUnitValue: luckyCheerUnitValue,
-            luckyCheerBasisPoints: luckyCheerBasisPoints,
+            variantUnitValue: variantUnitValue,
+            personalityUnitValue: personalityUnitValue,
             at: now,
             in: &state)
         return [
@@ -310,6 +322,11 @@ public struct CompanionGameEngine: Sendable {
         celebrationDuration: TimeInterval = 4,
         in state: inout CompanionGameState)
     {
+        if !state.memories.contains(where: {
+            $0.generationID == state.generationID && $0.kind == .firstPat
+        }) {
+            self.recordMemory(.firstPat, at: now, in: &state)
+        }
         state.lastPattedAt = now
         state.celebrationUntil = now.addingTimeInterval(max(celebrationDuration, 0))
         state.updatedAt = now
@@ -323,28 +340,6 @@ public struct CompanionGameEngine: Sendable {
         guard isActive else { return }
         state.lastActiveAt = now
         state.updatedAt = now
-    }
-
-    public func rollRarity(
-        from rarity: CompanionRarity,
-        unitValue requestedValue: Double) -> CompanionRarity
-    {
-        let value = min(max(requestedValue, 0), 0.999_999_999_999)
-        switch rarity {
-        case .normal:
-            if value < 0.75 { return .normal }
-            if value < 0.96 { return .rare }
-            if value < 0.998 { return .epic }
-            return .legendary
-        case .rare:
-            if value < 0.86 { return .rare }
-            if value < 0.99 { return .epic }
-            return .legendary
-        case .epic:
-            return value < 0.97 ? .epic : .legendary
-        case .legendary:
-            return .legendary
-        }
     }
 
     public func rollSpecies(
@@ -371,24 +366,27 @@ public struct CompanionGameEngine: Sendable {
         return value >= 1 - self.rules.prismaticChance ? .prismatic : .standard
     }
 
-    private func applyLuckyCheer(
-        to rolledRarity: CompanionRarity,
-        from previousRarity: CompanionRarity,
-        unitValue: Double?,
-        basisPoints: Int) -> CompanionRarity
+    public func rollPersonality(
+        unitValue requestedValue: Double) -> CompanionPersonalityID
     {
-        guard rolledRarity == previousRarity,
-              rolledRarity != .legendary,
-              let unitValue,
-              min(max(unitValue, 0), 0.999_999_999_999)
-                < Double(min(max(basisPoints, 0), 10_000)) / 10_000
-        else { return rolledRarity }
-        return switch rolledRarity {
-        case .normal: .rare
-        case .rare: .epic
-        case .epic: .legendary
-        case .legendary: .legendary
-        }
+        let personalities = CompanionPersonalityRegistry.allIDs
+        let value = min(max(requestedValue, 0), 0.999_999_999_999)
+        let index = min(
+            Int(floor(value * Double(personalities.count))),
+            personalities.count - 1)
+        return personalities[index]
+    }
+
+    public func rename(
+        _ requestedName: String?,
+        at now: Date = .now,
+        in state: inout CompanionGameState)
+    {
+        let trimmed = requestedName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        state.nickname = trimmed.map { String($0.prefix(24)) }
+            .flatMap { $0.isEmpty ? nil : $0 }
+        state.updatedAt = now
     }
 
     private func spend(
@@ -537,12 +535,29 @@ public struct CompanionGameEngine: Sendable {
         state.stage = .egg
         state.rarity = nil
         state.variantID = nil
+        state.nickname = nil
+        state.personalityID = nil
         state.bondEnergy = 0
         state.lastPattedAt = nil
         state.celebrationUntil = nil
         state.showcasedGenerationID = nil
         state.generationCreatedAt = now
         state.updatedAt = now
+    }
+
+    private func recordMemory(
+        _ kind: CompanionMemoryKind,
+        bondLevel: Int? = nil,
+        at date: Date,
+        in state: inout CompanionGameState)
+    {
+        state.memories.append(CompanionMemoryRecord(
+            generationID: state.generationID,
+            kind: kind,
+            stage: state.stage,
+            bondLevel: bondLevel,
+            occurredAt: date))
+        state.memories = Array(state.memories.suffix(400))
     }
 
     private func dayDistance(from startKey: String, to endKey: String) -> Int {

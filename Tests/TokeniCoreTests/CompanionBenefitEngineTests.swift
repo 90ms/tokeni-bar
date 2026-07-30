@@ -181,7 +181,7 @@ struct CompanionBenefitEngineTests {
 
         _ = try engine.hatch(
             speciesUnitValue: 0,
-            rarityUnitValue: 0,
+            variantUnitValue: 0,
             costDiscountBasisPoints: 1_200,
             at: self.date("2027-01-15T12:00:00Z"),
             in: &discounted)
@@ -192,9 +192,7 @@ struct CompanionBenefitEngineTests {
             growthDateKey: "2027-01-15")
         _ = try engine.hatch(
             speciesUnitValue: 0,
-            rarityUnitValue: 0,
-            luckyCheerUnitValue: 0,
-            luckyCheerBasisPoints: 300,
+            variantUnitValue: 0,
             at: self.date("2027-01-15T12:00:00Z"),
             in: &cheered)
         #expect(cheered.rarity == .normal)

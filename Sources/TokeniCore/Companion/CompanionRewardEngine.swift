@@ -7,9 +7,9 @@ public struct CompanionRewardRules: Sendable {
         monthlyAttendanceDays: 20,
         monthlyAttendanceReward: 50,
         speciesDiscovery: 20,
-        rarityDiscovery: [.rare: 10, .epic: 25, .legendary: 50],
+        variantDiscovery: [.prismatic: 50],
         journeyCompletion: 25,
-        collectionForms: [10: 20, 30: 50, 60: 100],
+        collectionVariants: [5: 20, 10: 100],
         dailyVerifiedGrowth: 5,
         releaseGift: 20)
 
@@ -18,9 +18,9 @@ public struct CompanionRewardRules: Sendable {
     public let monthlyAttendanceDays: Int
     public let monthlyAttendanceReward: Int
     public let speciesDiscovery: Int
-    public let rarityDiscovery: [CompanionRarity: Int]
+    public let variantDiscovery: [CompanionVariantID: Int]
     public let journeyCompletion: Int
-    public let collectionForms: [Int: Int]
+    public let collectionVariants: [Int: Int]
     public let dailyVerifiedGrowth: Int
     public let releaseGift: Int
 
@@ -30,9 +30,9 @@ public struct CompanionRewardRules: Sendable {
         monthlyAttendanceDays: Int,
         monthlyAttendanceReward: Int,
         speciesDiscovery: Int,
-        rarityDiscovery: [CompanionRarity: Int],
+        variantDiscovery: [CompanionVariantID: Int],
         journeyCompletion: Int,
-        collectionForms: [Int: Int],
+        collectionVariants: [Int: Int],
         dailyVerifiedGrowth: Int,
         releaseGift: Int)
     {
@@ -45,9 +45,10 @@ public struct CompanionRewardRules: Sendable {
         self.monthlyAttendanceDays = max(monthlyAttendanceDays, 1)
         self.monthlyAttendanceReward = max(monthlyAttendanceReward, 0)
         self.speciesDiscovery = max(speciesDiscovery, 0)
-        self.rarityDiscovery = rarityDiscovery.mapValues { max($0, 0) }
+        self.variantDiscovery = variantDiscovery.mapValues { max($0, 0) }
         self.journeyCompletion = max(journeyCompletion, 0)
-        self.collectionForms = collectionForms.reduce(into: [:]) { result, entry in
+        self.collectionVariants = collectionVariants.reduce(into: [:]) {
+            result, entry in
             if entry.key > 0, entry.value >= 0 {
                 result[entry.key] = entry.value
             }
@@ -175,17 +176,14 @@ public struct CompanionRewardEngine: Sendable {
                 reason: .speciesDiscovered(speciesID)))
         }
 
-        let encounteredRarities = Set(collection.forms.compactMap { form in
-            form.unlockKind == .encountered ? form.rarity : nil
-        })
-        for rarity in self.rules.rarityDiscovery.keys.sorted(by: {
-            $0.rank < $1.rank
-        }) where encounteredRarities.contains(rarity)
-            && state.rewardedRarities.insert(rarity).inserted
+        for variantID in self.rules.variantDiscovery.keys.sorted(by: {
+            $0.rawValue < $1.rawValue
+        }) where collection.discoveredVariantIDs.contains(variantID)
+            && state.rewardedVariantIDs.insert(variantID).inserted
         {
             grants.append(CompanionRewardGrant(
-                amount: self.rules.rarityDiscovery[rarity, default: 0],
-                reason: .rarityDiscovered(rarity)))
+                amount: self.rules.variantDiscovery[variantID, default: 0],
+                reason: .variantDiscovered(variantID)))
         }
 
         if collection.totalCompletedGenerations > state.rewardedJourneyCount {
@@ -196,14 +194,14 @@ public struct CompanionRewardEngine: Sendable {
                 reason: .journeysCompleted(count)))
         }
 
-        for threshold in self.rules.collectionForms.keys.sorted()
-            where collection.unlockedFormCount >= threshold
+        for threshold in self.rules.collectionVariants.keys.sorted()
+            where collection.discoveredCollectibleVariantCount >= threshold
                 && !state.rewardedFormMilestones.contains(threshold)
         {
             state.rewardedFormMilestones.insert(threshold)
             grants.append(CompanionRewardGrant(
-                amount: self.rules.collectionForms[threshold, default: 0],
-                reason: .collectionForms(threshold)))
+                amount: self.rules.collectionVariants[threshold, default: 0],
+                reason: .collectionVariants(threshold)))
         }
 
         self.apply(grants, at: date, to: &state)

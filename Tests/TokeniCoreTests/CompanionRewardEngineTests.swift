@@ -104,11 +104,12 @@ struct CompanionRewardEngineTests {
             at: now,
             in: &state)
 
-        #expect(first.reduce(0) { $0 + $1.amount } == 120)
-        #expect(state.starShards == 120)
-        #expect(state.rewardedSpeciesIDs == [.bytebot, .cachecat])
+        #expect(first.reduce(0) { $0 + $1.amount } == 220)
+        #expect(state.starShards == 220)
+        #expect(state.rewardedSpeciesIDs == Set(CompanionSpeciesID.allCases))
+        #expect(state.rewardedVariantIDs == [.prismatic])
         #expect(state.rewardedJourneyCount == 2)
-        #expect(state.rewardedFormMilestones == [10])
+        #expect(state.rewardedFormMilestones == [5])
         #expect(repeated.isEmpty)
     }
 
@@ -201,6 +202,7 @@ struct CompanionRewardEngineTests {
         #expect(state.unlockedCosmeticIDs.isEmpty)
         #expect(state.selectedCosmeticIDs.isEmpty)
         #expect(state.rewardedRarities.isEmpty)
+        #expect(state.rewardedVariantIDs.isEmpty)
         #expect(state.rewardedGrowthDateKeys.isEmpty)
         #expect(state.latestRewardedAppVersion == nil)
     }
@@ -292,28 +294,27 @@ struct CompanionRewardEngineTests {
     }
 
     private func forms(at date: Date) -> [CompanionFormRecord] {
-        let combinations: [(CompanionSpeciesID, CompanionGameStage, CompanionRarity)] = [
-            (.bytebot, .hatchling, .normal),
-            (.bytebot, .hatchling, .rare),
-            (.bytebot, .junior, .normal),
-            (.bytebot, .junior, .rare),
-            (.bytebot, .adult, .normal),
-            (.cachecat, .hatchling, .normal),
-            (.cachecat, .hatchling, .rare),
-            (.cachecat, .junior, .normal),
-            (.cachecat, .junior, .rare),
-            (.cachecat, .adult, .normal),
+        let combinations: [(CompanionSpeciesID, CompanionVariantID)] = [
+            (.bytebot, .standard),
+            (.bytebot, .prismatic),
+            (.cachecat, .standard),
+            (.stackfox, .standard),
+            (.promptpup, .standard),
+            (.nullslime, .standard),
         ]
         return combinations.map { combination in
-            let (speciesID, stage, rarity) = combination
+            let (speciesID, variantID) = combination
+            let rarity = CompanionVariantRegistry.definition(
+                for: variantID).assetRarity
             return CompanionFormRecord(
-                formID: CompanionGameState.formID(
+                formID: CompanionGameState.variantFormID(
                     speciesID: speciesID,
-                    stage: stage,
-                    rarity: rarity),
+                    stage: .adult,
+                    variantID: variantID),
                 speciesID: speciesID,
-                stage: stage,
+                stage: .adult,
                 rarity: rarity,
+                variantID: variantID,
                 unlockKind: .encountered,
                 firstUnlockedAt: date,
                 lastEncounteredAt: date,

@@ -303,8 +303,8 @@ public struct CompanionBenefitEngine: Sendable {
 extension CompanionRewardReason {
     var isEligibleForRewardAbsorption: Bool {
         switch self {
-        case .speciesDiscovered, .rarityDiscovered, .journeysCompleted,
-             .collectionForms:
+        case .speciesDiscovered, .rarityDiscovered, .variantDiscovered,
+             .journeysCompleted, .collectionForms, .collectionVariants:
             true
         case .dailyAttendance, .weeklyAttendance, .monthlyAttendance,
              .verifiedGrowth, .releaseGift, .benefit:

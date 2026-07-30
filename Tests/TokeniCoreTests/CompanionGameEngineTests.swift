@@ -59,13 +59,16 @@ struct CompanionGameEngineTests {
 
         let events = try engine.hatch(
             speciesUnitValue: 0,
-            rarityUnitValue: 0.99,
+            variantUnitValue: 0.99,
+            personalityUnitValue: 0.5,
             at: now,
             in: &state)
 
         #expect(state.stage == .hatchling)
         #expect(state.rarity == .legendary)
         #expect(state.variantID == .prismatic)
+        #expect(state.personalityID == .playful)
+        #expect(state.memories.map(\.kind) == [.hatched])
         #expect(state.growthEnergy == 300)
         #expect(state.growthSpentToday == 500)
         #expect(events.contains {
@@ -119,7 +122,7 @@ struct CompanionGameEngineTests {
 
         let events = try engine.hatch(
             speciesUnitValue: 0,
-            rarityUnitValue: 0,
+            variantUnitValue: 0,
             in: &state)
 
         #expect(state.speciesID == .cachecat)
@@ -189,7 +192,7 @@ struct CompanionGameEngineTests {
         {
             try engine.hatch(
                 speciesUnitValue: 0,
-                rarityUnitValue: 0,
+                variantUnitValue: 0,
                 in: &state)
         }
         #expect(state == original)
@@ -283,7 +286,7 @@ struct CompanionGameEngineTests {
 
         let events = try engine.completeGeneration(
             speciesUnitValue: 0.25,
-            rarityUnitValue: 0,
+            variantUnitValue: 0,
             in: &state)
 
         #expect(state.stage == .hatchling)
@@ -329,7 +332,7 @@ struct CompanionGameEngineTests {
             state.growthEnergy = 800
             _ = try engine.completeGeneration(
                 speciesUnitValue: 0,
-                rarityUnitValue: 0,
+                variantUnitValue: 0,
                 in: &state)
         }
 
@@ -402,6 +405,46 @@ struct CompanionGameEngineTests {
 
         #expect(state.bondEnergy == 120)
         #expect(state.growthEnergy == 120)
+        #expect(state.memories.compactMap(\.bondLevel) == [2])
+    }
+
+    @Test("Names and content-free memories make journeys individual")
+    func identityAndMemories() throws {
+        let now = try #require(self.date("2027-01-15T12:00:00Z"))
+        let engine = CompanionGameEngine(calendar: self.calendar)
+        var state = CompanionGameState(
+            speciesID: .cachecat,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .curious,
+            growthEnergy: 800,
+            growthDateKey: "2027-01-15")
+
+        engine.rename("  Moka  ", at: now, in: &state)
+        engine.pat(at: now, in: &state)
+        engine.pat(at: now, in: &state)
+        _ = try engine.completeGeneration(
+            speciesUnitValue: 0,
+            variantUnitValue: 0,
+            personalityUnitValue: 0.9,
+            at: now,
+            in: &state)
+
+        let archived = try #require(
+            state.collection.archivedGenerations.first)
+        #expect(archived.nickname == "Moka")
+        #expect(archived.personalityID == .curious)
+        #expect(state.memories.count {
+            $0.generationID == archived.generationID
+                && $0.kind == .firstPat
+        } == 1)
+        #expect(state.memories.contains {
+            $0.generationID == archived.generationID
+                && $0.kind == .journeyCompleted
+        })
+        #expect(state.personalityID == .brave)
+        #expect(state.nickname == nil)
     }
 
     @Test("Version three state migrates without discarding the companion")
@@ -426,14 +469,14 @@ struct CompanionGameEngineTests {
         let versionThree = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":6"#,
+                    of: #""schemaVersion":7"#,
                     with: #""schemaVersion":3"#)
                 .data(using: .utf8))
         try versionThree.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 6)
+        #expect(state.schemaVersion == 7)
         #expect(state.speciesID == .bytebot)
         #expect(state.stage == .junior)
         #expect(state.rarity == .epic)
@@ -464,17 +507,55 @@ struct CompanionGameEngineTests {
         let versionFive = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":6"#,
+                    of: #""schemaVersion":7"#,
                     with: #""schemaVersion":5"#)
                 .data(using: .utf8))
         try versionFive.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 6)
+        #expect(state.schemaVersion == 7)
         #expect(state.speciesID == .cachecat)
         #expect(state.variantID == .legacyViolet)
         #expect(state.rarity == .epic)
+    }
+
+    @Test("Version six variant state gains an empty private memory album")
+    func migratesVersionSixMemories() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let file = directory.appending(path: "companion-state.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true)
+        let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
+        let current = CompanionGameState(
+            speciesID: .stackfox,
+            stage: .junior,
+            rarity: .legendary,
+            variantID: .prismatic,
+            personalityID: .brave,
+            growthDateKey: "2027-01-15",
+            generationCreatedAt: timestamp,
+            updatedAt: timestamp)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let encoded = try encoder.encode(current)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        object["schemaVersion"] = 6
+        object.removeValue(forKey: "nickname")
+        object.removeValue(forKey: "personalityID")
+        object.removeValue(forKey: "memories")
+        try JSONSerialization.data(withJSONObject: object).write(to: file)
+
+        let state = try await CompanionGameStateStore(fileURL: file).load()
+
+        #expect(state.schemaVersion == 7)
+        #expect(state.variantID == .prismatic)
+        #expect(state.personalityID == .calm)
+        #expect(state.memories.isEmpty)
     }
 
     @Test("Version four lineage forms are removed during migration")
@@ -514,14 +595,14 @@ struct CompanionGameEngineTests {
         let versionFour = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":6"#,
+                    of: #""schemaVersion":7"#,
                     with: #""schemaVersion":4"#)
                 .data(using: .utf8))
         try versionFour.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 6)
+        #expect(state.schemaVersion == 7)
         #expect(state.collection.forms == [encountered])
         #expect(state.delayedGrowthEarnedToday == 0)
     }
@@ -539,7 +620,7 @@ struct CompanionGameEngineTests {
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 6)
+        #expect(state.schemaVersion == 7)
         #expect(state.stage == .egg)
         #expect(state.speciesID == nil)
         #expect(state.rarity == nil)
@@ -564,6 +645,8 @@ struct CompanionGameEngineTests {
             speciesID: .bytebot,
             stage: .junior,
             rarity: .epic,
+            variantID: .legacyViolet,
+            personalityID: .dreamy,
             growthEnergy: 120,
             growthDateKey: "2027-01-15",
             growthEarnedToday: 100,

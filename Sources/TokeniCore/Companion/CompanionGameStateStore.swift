@@ -42,6 +42,12 @@ public actor CompanionGameStateStore {
                       from: data)
         {
             state = legacy.migrated()
+        } else if version == 6,
+                  let legacy = try? decoder.decode(
+                      LegacyCompanionGameStateV6.self,
+                      from: data)
+        {
+            state = legacy.migrated()
         } else if version == CompanionGameState.currentSchemaVersion,
                   let current = try? decoder.decode(
             CompanionGameState.self,
@@ -80,6 +86,63 @@ public actor CompanionGameStateStore {
 
     public func clear() throws {
         try RecoverableFileStorage.removePrimaryAndBackups(for: self.fileURL)
+    }
+}
+
+private struct LegacyCompanionGameStateV6: Decodable {
+    let speciesID: CompanionSpeciesID?
+    let generationID: UUID
+    let generationNumber: Int
+    let stage: CompanionGameStage
+    let rarity: CompanionRarity?
+    let variantID: CompanionVariantID?
+    let growthEnergy: Int
+    let growthDateKey: String
+    let growthEarnedToday: Int
+    let delayedGrowthEarnedToday: Int
+    let growthCarriedToday: Int
+    let growthSpentToday: Int
+    let bondEnergy: Int
+    let collection: CompanionCollection
+    let consecutiveDuplicateHatches: Int
+    let pity: CompanionPityState
+    let variantPity: CompanionVariantPityState
+    let appliedGrowthAwardIDs: [UUID]
+    let lastActiveAt: Date?
+    let lastPattedAt: Date?
+    let celebrationUntil: Date?
+    let showcasedGenerationID: UUID?
+    let generationCreatedAt: Date
+    let updatedAt: Date
+
+    func migrated() -> CompanionGameState {
+        CompanionGameState(
+            speciesID: self.speciesID,
+            generationID: self.generationID,
+            generationNumber: self.generationNumber,
+            stage: self.stage,
+            rarity: self.rarity,
+            variantID: self.variantID
+                ?? self.rarity.map(CompanionVariantRegistry.migrated),
+            personalityID: self.stage == .egg ? nil : .calm,
+            growthEnergy: self.growthEnergy,
+            growthDateKey: self.growthDateKey,
+            growthEarnedToday: self.growthEarnedToday,
+            delayedGrowthEarnedToday: self.delayedGrowthEarnedToday,
+            growthCarriedToday: self.growthCarriedToday,
+            growthSpentToday: self.growthSpentToday,
+            bondEnergy: self.bondEnergy,
+            collection: self.collection,
+            consecutiveDuplicateHatches: self.consecutiveDuplicateHatches,
+            pity: self.pity,
+            variantPity: self.variantPity,
+            appliedGrowthAwardIDs: self.appliedGrowthAwardIDs,
+            lastActiveAt: self.lastActiveAt,
+            lastPattedAt: self.lastPattedAt,
+            celebrationUntil: self.celebrationUntil,
+            showcasedGenerationID: self.showcasedGenerationID,
+            generationCreatedAt: self.generationCreatedAt,
+            updatedAt: self.updatedAt)
     }
 }
 
@@ -123,6 +186,7 @@ private struct LegacyCompanionGameStateV5: Decodable {
             stage: self.stage,
             rarity: self.rarity,
             variantID: self.rarity.map(CompanionVariantRegistry.migrated),
+            personalityID: self.stage == .egg ? nil : .calm,
             growthEnergy: self.growthEnergy,
             growthDateKey: self.growthDateKey,
             growthEarnedToday: self.growthEarnedToday,
@@ -188,6 +252,7 @@ private struct LegacyCompanionGameStateV2: Decodable {
             variantID: self.stage == .egg
                 ? nil
                 : CompanionVariantRegistry.migrated(from: self.rarity),
+            personalityID: self.stage == .egg ? nil : .calm,
             growthEnergy: balance,
             growthDateKey: GrowthLocalDate.key(for: now),
             growthCarriedToday: balance,
@@ -237,6 +302,7 @@ private struct LegacyCompanionGameStateV4: Decodable {
             stage: self.stage,
             rarity: self.rarity,
             variantID: self.rarity.map(CompanionVariantRegistry.migrated),
+            personalityID: self.stage == .egg ? nil : .calm,
             growthEnergy: self.growthEnergy,
             growthDateKey: self.growthDateKey,
             growthEarnedToday: self.growthEarnedToday,
@@ -292,6 +358,7 @@ private struct LegacyCompanionGameStateV3: Decodable {
             variantID: self.stage == .egg
                 ? nil
                 : self.rarity.map(CompanionVariantRegistry.migrated),
+            personalityID: self.stage == .egg ? nil : .calm,
             growthEnergy: self.growthEnergy,
             growthDateKey: self.growthDateKey,
             growthEarnedToday: self.growthEarnedToday,
