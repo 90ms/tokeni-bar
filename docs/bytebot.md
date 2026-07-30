@@ -119,7 +119,7 @@ Star Shards are a styling currency separate from growth energy.
 | First launch of a stable release | 20 |
 
 Cosmetic slots are Head, Aura, Background, and Body Color. Equipped cosmetics
-appear in the menu popover, collection, Settings preview, and on-screen pet.
+appear in the menu popover, pet-management window, and on-screen pet.
 
 | Slot | Items | Cost |
 |---|---|---:|
@@ -129,9 +129,15 @@ appear in the menu popover, collection, Settings preview, and on-screen pet.
 | Background | Terminal Night / Cloud Garden | 160 / 220 |
 | Aura | Night Ring | 200 |
 
-The purchase sheet compares the current and resulting full pet. Every cosmetic
-and body color is visual only and never affects growth, rewards, or variant
-odds.
+The Customize screen filters by slot and ownership and distinguishes owned from
+equipped items with explicit icons. The purchase sheet compares the current and
+resulting full pet. Every cosmetic and body color is visual only and never
+affects growth, rewards, or variant odds.
+
+Pet management is organized as **My Pet, Collection, Companions, and
+Customize**. Identity and Energy ledgers expand on demand. A completed
+companion's detail sheet shows its name, personality, bond, and full memory
+history.
 
 ## Pet asset reset and refund
 

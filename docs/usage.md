@@ -9,6 +9,8 @@ time by default. Expand **Show details** for additional quota windows, token
 totals, API-equivalent reference costs, data source, and update time. The
 header and footer actions stay fixed while the center scrolls when many
 providers or expanded details need more room.
+Usage cards come first, while the companion starts as a collapsed summary row.
+Compact mode keeps the same path to expanded provider details.
 
 **Usage History** in the footer opens the 30-day local aggregate window
 directly; settings and quit remain available as right-side icon actions.
@@ -113,7 +115,7 @@ token.
   the Mac is locked, the app falls back to local Claude usage without opening a
   password prompt.
 - Start the initial connection explicitly under **Settings → General →
-  Provider Connections → Connect Claude Code**. Choosing **Always Allow** in
+  Providers → Connect Claude Code**. Choosing **Always Allow** in
   the macOS dialog prevents repeat prompts while the same app identity and
   Keychain item remain in place.
 - A source-built Formula update can change the app signature, and Claude Code
@@ -130,9 +132,9 @@ usage only**, **Keychain approval required**, **Session expired**, and
 
 ## Usage notifications
 
-Under **Settings → Alerts**, low remaining usage, one-hour reset reminders,
-monthly budget alerts, and provider connection failures can be enabled
-independently.
+**Settings → Alerts** separates usage, reset, system-status, and delivery
+settings. Low remaining usage, one-hour reset reminders, monthly budget alerts,
+and provider connection failures can be enabled independently.
 
 - Multiple provider warnings from one refresh are grouped into one
   notification.
@@ -141,8 +143,8 @@ independently.
 - Quiet hours retain the banner and silence only its sound.
 - Depletion risk is included only after an actual decrease has been observed
   for at least 15 minutes. Insufficient history produces no prediction.
-- Clicking an alert opens the Alerts settings tab. **Recent notification
-  decisions** explains recent delivery or exclusion reasons.
+- Clicking an alert opens the Alerts settings tab. The collapsed **Recent
+  notification decisions** section explains delivery or exclusion reasons.
 
 No reset reminder is created when the provider does not report a reset time.
 Each provider, quota window, and reset cycle can notify only once.
@@ -165,9 +167,14 @@ with the app. Token totals remain authoritative.
   15 minutes and retained for 30 days.
 - Unknown models remain without a cost instead of receiving a guessed price.
 
+The history window shows its sample count and latest timestamp and gives the
+chart a VoiceOver summary. Clearing history requires confirmation of the local
+record count.
+
 ## Diagnostics
 
 Open **Settings → Privacy → Provider Diagnostics** to review a report before
 copying it. Token totals and model identifiers are excluded by default and
-appear only when explicitly enabled. Prompts, responses, credentials, cookies,
-and file paths are always excluded.
+appear only when explicitly enabled; an on-screen warning then asks the user to
+review before sharing. Prompts, responses, credentials, cookies, and file paths
+are always excluded.

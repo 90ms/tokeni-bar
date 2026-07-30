@@ -182,8 +182,10 @@ Spend Star Shards on permanent cosmetics in the collection:
 | Body Color | Legacy Azure / Legacy Violet | 90 / 110 |
 
 The purchase sheet compares the current combination with the result before
-spending shards. The equipped cosmetic appears in the menu popover, collection, Settings
-preview, and on-screen pet. One item per slot can be equipped at the same time.
+spending shards. Cosmetics appear in the menu popover, pet-management window,
+and on-screen pet and can be filtered by slot and ownership. One item per slot
+can be equipped at the same time. A completed companion's detail sheet shows
+its full identity and memory history.
 Its decoration scales with the Small, Medium, or Large pet size setting. Every
 item has its own motion; intensity can be Off, Gentle, or Full, and aura
 contrast adapts on bright backgrounds.
@@ -224,9 +226,10 @@ appears when there is enough energy to hatch an egg or evolve a Hatchling or
 Juvenile. Adult journey completion is not included in this badge.
 
 The menu popover keeps its header and history, settings, and quit actions
-fixed while the center content scrolls. Each provider card leads with its
-primary quota and reset time; expand **Show details** for additional quotas,
-tokens, reference costs, and source information.
+fixed while the center content scrolls. Usage appears before the collapsed pet
+summary. Each provider card leads with its primary quota and reset time;
+expand **Show details** for additional quotas, tokens, reference costs, and
+source information, including in compact mode.
 
 Enable **Settings → Tokeni → Show pet on screen** to keep a transparent pet
 panel above other apps.
@@ -261,7 +264,7 @@ not awarded as new growth. See
 | 1 | Run and sign in to each CLI you want to use |
 | 2 | Start Tokeni Bar and open its status icon in the menu bar |
 | 3 | Choose providers and the menu-bar display under **Settings → General** |
-| 4 | For Claude account quotas, choose **Provider Connections → Connect** |
+| 4 | For Claude account quotas, choose **Providers → Connect** |
 | 5 | Use an agent; the first growth activity checks in automatically, then grow the pet, try Star Shard cosmetics, and optionally enable the on-screen pet |
 
 ## Update and uninstall
@@ -314,7 +317,7 @@ analytics or remote game server.
 | Cannot move the on-screen pet | Turn off position lock and click-through under **Settings → Tokeni** |
 | Cannot find the on-screen pet | Choose **Settings → Tokeni → Reset pet position** |
 | Provider unavailable | Confirm the CLI is installed and signed in, then run it once |
-| Claude password prompt repeats after unlock | Update the app and connect once under **Settings → General → Provider Connections**. Background refreshes never open authentication UI |
+| Claude password prompt repeats after unlock | Update the app and connect once under **Settings → General → Providers**. Background refreshes never open authentication UI |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Pet progress cannot be read | Restart the app to retry local recovery, then review diagnostics if the issue continues |
 | Pet controls are unavailable | Review the pending asset refund under **Settings → Tokeni → Data & Migration**. Existing pets are read-only until confirmation |
