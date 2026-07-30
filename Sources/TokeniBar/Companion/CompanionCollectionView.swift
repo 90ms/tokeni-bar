@@ -1136,6 +1136,29 @@ struct CompanionCollectionView: View {
                     "companion.identity.description"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if !self.displayedMemories.isEmpty {
+                    Divider()
+                    VStack(alignment: .leading, spacing: 7) {
+                        ForEach(Array(
+                            self.displayedMemories.suffix(4).reversed()))
+                        { memory in
+                            HStack(spacing: 8) {
+                                Image(systemName: self.memoryIcon(memory.kind))
+                                    .foregroundStyle(Color.accentColor)
+                                    .frame(width: 18)
+                                Text(self.memoryText(memory))
+                                    .font(.caption)
+                                Spacer()
+                                Text(memory.occurredAt.formatted(
+                                    date: .abbreviated,
+                                    time: .omitted))
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 4)
@@ -1505,11 +1528,35 @@ struct CompanionCollectionView: View {
     }
 
     private var displayedMemoryCount: Int {
+        self.displayedMemories.count
+    }
+
+    private var displayedMemories: [CompanionMemoryRecord] {
         let generationID = self.store.showcasedCompanion?.generationID
             ?? self.store.companionState.generationID
-        return self.store.companionState.memories.count {
-            $0.generationID == generationID
+        return self.store.companionState.memories
+            .filter { $0.generationID == generationID }
+            .sorted { $0.occurredAt < $1.occurredAt }
+    }
+
+    private func memoryIcon(_ kind: CompanionMemoryKind) -> String {
+        switch kind {
+        case .hatched: "sparkles"
+        case .evolved: "arrow.up.circle.fill"
+        case .firstPat: "hand.point.up.left.fill"
+        case .bondLevel: "heart.fill"
+        case .journeyCompleted: "book.closed.fill"
         }
+    }
+
+    private func memoryText(_ memory: CompanionMemoryRecord) -> String {
+        if memory.kind == .bondLevel, let level = memory.bondLevel {
+            return AppLocalization.format(
+                "companion.memory.bondLevel",
+                level)
+        }
+        return AppLocalization.string(
+            "companion.memory.\(memory.kind.rawValue)")
     }
 
     private var prismaticSpeciesCount: Int {

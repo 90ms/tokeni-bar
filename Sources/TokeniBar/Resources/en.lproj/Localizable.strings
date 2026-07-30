@@ -220,6 +220,11 @@
 "companion.identity.notAvailable" = "Revealed after hatch";
 "companion.identity.description" = "Names and personalities never change stats. Bond memories store no provider, token total, or work content.";
 "companion.memories.title" = "Memories";
+"companion.memory.hatched" = "The day you first met";
+"companion.memory.evolved" = "Grew into a new form";
+"companion.memory.firstPat" = "The first gentle pat";
+"companion.memory.bondLevel" = "Reached bond level %d";
+"companion.memory.journeyCompleted" = "Completed an adult journey together";
 "companion.archive.title" = "Completed Pets";
 "companion.archive.description" = "Keep each completed friend's name, personality, and memories, or bring one back to stay with you.";
 "companion.archive.empty" = "No completed pets yet.";
