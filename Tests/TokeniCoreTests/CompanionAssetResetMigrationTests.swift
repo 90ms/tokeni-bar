@@ -97,15 +97,19 @@ struct CompanionAssetResetMigrationTests {
 
     @Test("Migration journal round-trips as a recovery backup")
     func journalPersistence() async throws {
+        let preparedAt = Date(timeIntervalSince1970: 1_800_000_000)
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         let file = directory.appending(path: "companion-migrations.json")
         defer { try? FileManager.default.removeItem(at: directory) }
         let engine = CompanionAssetResetEngine()
         let journal = engine.prepare(
-            companion: CompanionGameState(),
-            rewards: CompanionRewardState(),
-            benefits: CompanionBenefitState())
+            companion: CompanionGameState(
+                generationCreatedAt: preparedAt,
+                updatedAt: preparedAt),
+            rewards: CompanionRewardState(updatedAt: preparedAt),
+            benefits: CompanionBenefitState(updatedAt: preparedAt),
+            at: preparedAt)
         let store = CompanionAssetResetStore(fileURL: file)
 
         try await store.save(journal)
@@ -117,10 +121,14 @@ struct CompanionAssetResetMigrationTests {
         #expect(restored.targetCompanionState == journal.targetCompanionState)
 
         let futureID = CompanionMigrationID(rawValue: "future-reset")
+        let futurePreparedAt = preparedAt.addingTimeInterval(60)
         let future = CompanionAssetResetEngine(migrationID: futureID).prepare(
-            companion: CompanionGameState(),
-            rewards: CompanionRewardState(),
-            benefits: CompanionBenefitState())
+            companion: CompanionGameState(
+                generationCreatedAt: futurePreparedAt,
+                updatedAt: futurePreparedAt),
+            rewards: CompanionRewardState(updatedAt: futurePreparedAt),
+            benefits: CompanionBenefitState(updatedAt: futurePreparedAt),
+            at: futurePreparedAt)
         try await store.save(future)
         let originalReloaded = try await store.load(
             migrationID: journal.migrationID)
