@@ -11,7 +11,7 @@ struct ProviderRow: View {
     @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: self.compact ? 7 : 9) {
             self.providerHeader
 
             if let primaryQuota = self.snapshot.quotaWindows.first {
@@ -25,7 +25,7 @@ struct ProviderRow: View {
 
             self.accountTokenStatus
 
-            if !self.compact, self.hasExpandableDetails {
+            if self.hasExpandableDetails {
                 DisclosureGroup(isExpanded: self.$isExpanded) {
                     self.providerDetails
                         .padding(.top, 7)
@@ -40,7 +40,7 @@ struct ProviderRow: View {
                 .tint(.secondary)
             }
         }
-        .padding(10)
+        .padding(self.compact ? 8 : 10)
         .background(
             .quaternary.opacity(0.38),
             in: RoundedRectangle(cornerRadius: 10))
@@ -91,14 +91,19 @@ struct ProviderRow: View {
 
             ProgressView(value: window.remainingPercent, total: 100)
                 .tint(self.tint(forRemainingPercent: window.remainingPercent))
+                .accessibilityLabel(window.label)
+                .accessibilityValue(AppLocalization.format(
+                    "settings.notifications.percentLeft",
+                    Int(window.remainingPercent.rounded())))
 
             if let reset = window.resetsAt {
-                HStack(spacing: 3) {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.arrow.circlepath")
                     Text(AppLocalization.string("usage.resets"))
                     Text(reset, style: .relative)
                 }
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
             }
         }
     }
@@ -256,9 +261,9 @@ struct ProviderRow: View {
     private var availabilityBadge: some View {
         switch self.snapshot.availability {
         case .available:
-            Circle()
-                .fill(.green)
-                .frame(width: 7, height: 7)
+            Image(systemName: "checkmark.circle.fill")
+                .font(.caption2)
+                .foregroundStyle(.green)
                 .help(AppLocalization.string("provider.status.available"))
                 .accessibilityLabel(AppLocalization.string(
                     "provider.status.available"))

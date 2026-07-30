@@ -5,6 +5,7 @@ struct MenuPopoverView: View {
     @ObservedObject var store: UsageStore
     @Environment(\.openSettings) private var openSettings
     @Environment(\.openWindow) private var openWindow
+    @State private var showsCompanionDetails = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -15,33 +16,17 @@ struct MenuPopoverView: View {
             Divider()
 
             ScrollView {
-                VStack(spacing: 0) {
-                    if self.store.companionMigrationQuote != nil
-                        || self.store.companionMigrationReceiptNoticeVisible
-                    {
+                VStack(alignment: .leading, spacing: 12) {
+                    if self.store.companionMigrationQuote != nil {
                         CompanionMigrationCard(
                             store: self.store,
                             showsReceiptDismissButton: true)
-                        Divider()
-                            .padding(.vertical, 10)
-                    }
-
-                    if self.store.companionEnabled {
-                        CompanionCard(
-                            store: self.store,
-                            compact: self.store.compactModeEnabled)
-                        Divider()
-                            .padding(.vertical, 10)
                     }
 
                     if !self.store.snapshots.isEmpty {
-                        HStack {
-                            Text(AppLocalization.string("settings.tab.usage"))
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                        }
-                        .padding(.bottom, 7)
+                        Text(AppLocalization.string("settings.tab.usage"))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
 
                     self.providerContent
@@ -52,7 +37,18 @@ struct MenuPopoverView: View {
                         self.updateBanner(
                             version: result.latestRelease.version.description,
                             destination: result.latestRelease.pageURL)
-                            .padding(.top, 10)
+                    }
+
+                    if self.store.companionMigrationQuote == nil,
+                       self.store.companionMigrationReceiptNoticeVisible
+                    {
+                        CompanionMigrationCard(
+                            store: self.store,
+                            showsReceiptDismissButton: true)
+                    }
+
+                    if self.store.companionEnabled {
+                        self.companionSummary
                     }
                 }
                 .padding(.horizontal, 14)
@@ -117,6 +113,7 @@ struct MenuPopoverView: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 .buttonStyle(.borderless)
+                .tokeniIconButtonTarget()
                 .help(AppLocalization.string("action.refresh"))
                 .accessibilityLabel(AppLocalization.string("action.refresh"))
             }
@@ -126,10 +123,18 @@ struct MenuPopoverView: View {
     @ViewBuilder
     private var providerContent: some View {
         if self.store.snapshots.isEmpty {
-            ContentUnavailableView(
-                AppLocalization.string("empty.title"),
-                systemImage: "chart.bar",
-                description: Text(AppLocalization.string("empty.description")))
+            ContentUnavailableView {
+                Label(
+                    AppLocalization.string("empty.title"),
+                    systemImage: "chart.bar")
+            } description: {
+                Text(AppLocalization.string("empty.description"))
+            } actions: {
+                Button(AppLocalization.string("action.settings")) {
+                    self.openSettings()
+                    self.activateApplication()
+                }
+            }
                 .frame(height: 130)
         } else {
             VStack(spacing: 8) {
@@ -144,6 +149,68 @@ struct MenuPopoverView: View {
                 }
             }
         }
+    }
+
+    private var companionSummary: some View {
+        DisclosureGroup(isExpanded: self.$showsCompanionDetails) {
+            CompanionCard(
+                store: self.store,
+                compact: self.store.compactModeEnabled)
+                .padding(.top, 8)
+        } label: {
+            HStack(spacing: 9) {
+                ByteBotTransitionView(
+                    speciesID: self.store.displayedCompanionSpeciesID,
+                    stage: self.store.displayedCompanionStage,
+                    rarity: self.store.displayedCompanionRarity,
+                    behavior: .idle,
+                    cosmeticIDs: self.store.companionRewardState
+                        .selectedCosmeticIDs,
+                    dimension: 36,
+                    animationsEnabled: false)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(self.companionSummaryName)
+                        .font(.caption.weight(.semibold))
+                    Text(AppLocalization.string(
+                        "companion.stage."
+                            + self.store.displayedCompanionStage.rawValue))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if self.store.hasReadyCompanionGrowthAction {
+                    Label(
+                        AppLocalization.string("companion.action.ready"),
+                        systemImage: "bolt.fill")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.orange)
+                } else {
+                    Text(AppLocalization.format(
+                        "companion.energy.balanceValue",
+                        self.store.companionState.availableGrowthEnergy))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .tint(.secondary)
+        .padding(TokeniLayout.cardPadding)
+        .background(
+            .quaternary.opacity(0.38),
+            in: RoundedRectangle(cornerRadius: TokeniLayout.cornerRadius))
+    }
+
+    private var companionSummaryName: String {
+        if let nickname = self.store.displayedCompanionNickname {
+            return nickname
+        }
+        guard let speciesID = self.store.displayedCompanionSpeciesID else {
+            return AppLocalization.string("companion.species.mystery.name")
+        }
+        return AppLocalization.string(
+            "companion.species.\(speciesID.rawValue).name")
     }
 
     private var footer: some View {
@@ -167,6 +234,7 @@ struct MenuPopoverView: View {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(.borderless)
+            .tokeniIconButtonTarget()
             .help(AppLocalization.string("action.settings"))
             .accessibilityLabel(AppLocalization.string("action.settings"))
 
@@ -176,6 +244,7 @@ struct MenuPopoverView: View {
                 Image(systemName: "power")
             }
             .buttonStyle(.borderless)
+            .tokeniIconButtonTarget()
             .help(AppLocalization.string("action.quit"))
             .accessibilityLabel(AppLocalization.string("action.quit"))
         }
