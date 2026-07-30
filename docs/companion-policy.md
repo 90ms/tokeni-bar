@@ -2,7 +2,7 @@
 
 [한국어](companion-policy.ko.md) | **English**
 
-- Policy version: 2.0.0
+- Policy version: 2.1.0
 - Updated: 2026-07-30
 - Status: implemented
 
@@ -100,18 +100,30 @@ Cosmetic slots are Head, Aura, Background, and Body Color. One item per slot
 can be active. All cosmetics are visual. Do not add paid random boxes or expiry
 dates.
 
-Legacy Rare and Epic sprites migrate to Legacy Azure and Legacy Violet body
-colors. Previous owners unlock those colors automatically. Legendary sprites
-migrate to Prismatic.
+Legacy Rare and Epic sprites become new Legacy Azure and Legacy Violet store
+assets. Legendary art can serve Prismatic. Pre-redesign ownership settles
+through the refund policy below rather than forced appearance mapping.
 
 ## 7. Migration and compatibility
 
-- Companion schemas v2 through v6 migrate to the current schema.
-- Species, stage, energy, bond, collection, and completed pets are preserved.
-- Original looks map to a variant or body-color cosmetic.
-- Nameless individuals remain nameless; migrated personalities use a safe
-  default.
-- Legacy benefit-state files do not participate in new growth or rewards.
+- Companion schemas v2 through v7 migrate to the current schema.
+- Compatible field and ID changes apply automatically when no asset is removed.
+- A destructive redesign calculates a quote and waits for user confirmation.
+- Current pets refund 0/500/1,300/2,700 Energy by stage; completed pets refund
+  2,700 Energy each.
+- Owned cosmetics refund their full registered Star Shard price.
+- Existing Energy, Star Shards, attendance, and verified-growth settlements
+  remain.
+- Confirmation resets pets, identities, collection, guarantees, legacy
+  benefits, and cosmetic state.
+- Refund Energy uses a separate reserve outside the normal safety cap and is
+  spent first.
+- A local journal stores the migration ID, source state, fixed target state,
+  progress, and receipt.
+- Interrupted prepared migrations resume toward the same target; completed IDs
+  never pay again.
+- Users with no resettable assets migrate silently. Otherwise play remains
+  read-only with no refund deadline until confirmation.
 - Damaged state uses recoverable backups or is quarantined.
 
 ## 8. Adding content
@@ -126,7 +138,13 @@ migrate to Prismatic.
 Differentiate new content through silhouette, motion, personality expression,
 and cosmetic compatibility—not numerical superiority.
 
-## 9. Version 2.0.0 redesign
+## 9. Version 2.1.0 migration policy
+
+- Added confirmed resets, full-price refunds, recovery journals, and receipts.
+- Preserved every refunded Energy unit outside the normal safety cap.
+- Limited silent completion to users with no resettable assets.
+
+## 10. Version 2.0.0 redesign
 
 - Removed the Normal/Rare/Epic/Legendary hierarchy and evolution rank rolls.
 - Added Standard/Prismatic variants and one transparent Prismatic guarantee.
@@ -134,4 +152,4 @@ and cosmetic compatibility—not numerical superiority.
   and journey albums.
 - Disabled growth, cost, odds, and reward effects from traits and passives.
 - Added names, personalities, five bond levels, and private memories.
-- Preserved legacy grade assets as variants and body-color cosmetics.
+- Reused legacy grade assets as variants and body-color cosmetics.

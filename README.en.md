@@ -124,7 +124,9 @@ A pet's variant is decided once at hatch and never changes while evolving.
 After 11 consecutive Standard hatches, hatch 12 is Prismatic. This can combine
 with the missing-species guarantee, and the collection leads with whichever
 guarantee is nearer. Legacy Rare and Epic looks are preserved as body-color
-cosmetics; Legendary looks become Prismatic.
+cosmetic options, and Legendary maps visually to Prismatic. Pets and cosmetics
+owned before the redesign are refunded through the one-time asset migration
+below before the new collection begins.
 
 ### 4. Collection, individual records, and new eggs
 
@@ -186,6 +188,26 @@ contrast adapts on bright backgrounds.
 Cosmetics never affect growth energy, variants, guarantees, or rewards. Pet
 play focuses on collecting, individual histories, animation, and styling
 combinations rather than numerical superiority.
+
+### 6. Major redesigns reset only after a reviewed refund
+
+After updating, users with existing pet assets first see a refund quote in the
+menu popover or under **Settings → Tokeni → Data & Migration**. The current pet
+is valued at 0 Energy for an Egg, 500 for a Hatchling, 1,300 for a Juvenile,
+and 2,700 for an Adult. Every completed pet returns 2,700 Energy. Owned
+cosmetics return their full registered price in Star Shards.
+
+Existing pets remain read-only until the user chooses **Reset and receive
+refund**. Confirmation resets pets, names, memories, collection progress,
+guarantees, legacy benefit state, and cosmetics. Existing Energy, Star Shards,
+attendance, and verified-growth accounting remain intact. Refunded Energy uses
+a separate migration reserve, so the normal 100,000 safety cap cannot discard
+it.
+
+The app creates a local recovery record first and applies each migration ID
+once. If the app exits midway, it resumes toward the recorded final balances
+instead of paying twice. The completed receipt remains in Settings. Users with
+no resettable assets migrate silently.
 
 Open the grid button in the menu or choose
 **Settings → Tokeni → Open Pet Collection**. See
@@ -272,6 +294,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
 | Pet species, stage, variant, name, personality, bond, memories, collection, and guarantees | Access tokens, refresh tokens, and cookies |
 | Star Shards, attendance dates, purchased cosmetics, and awarded milestone IDs | Account secrets and server telemetry |
+| Pet migration quotes, local recovery records, and receipts | Remote migration services and payment data |
 | On-screen pet preferences and last position | Screen captures and input content |
 | Local progress-validation data | Remote game accounts and analytics telemetry |
 

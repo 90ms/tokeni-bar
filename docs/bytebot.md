@@ -58,9 +58,9 @@ After 11 consecutive Standard hatches, hatch 12 is guaranteed Prismatic.
 Prismatic is a visual discovery and never improves growth, rewards, or odds.
 
 Pre-update Rare and Epic sprites remain available as **Legacy Azure** and
-**Legacy Violet** body-color cosmetics. Legendary sprites migrate to
-Prismatic. Players who previously encountered those looks automatically keep
-the corresponding body colors.
+**Legacy Violet** body colors that can be purchased again. Legendary maps
+visually to Prismatic. Pre-redesign assets are settled through the reset and
+refund flow below instead of being forced into the new collection.
 
 Variant definitions use string IDs and a registry so future looks can be added
 without provider switches in shared UI or a new save format.
@@ -132,6 +132,36 @@ appear in the menu popover, collection, Settings preview, and on-screen pet.
 The purchase sheet compares the current and resulting full pet. Every cosmetic
 and body color is visual only and never affects growth, rewards, or variant
 odds.
+
+## Pet asset reset and refund
+
+A major pet-policy change never deletes owned assets silently. When pets,
+collection records, or cosmetics need resetting, a refund card appears in the
+menu popover, collection, and **Settings → Tokeni → Data & Migration**.
+
+| Asset | Refund |
+|---|---:|
+| Egg | 0 Energy |
+| Hatchling | 500 Energy |
+| Juvenile | 1,300 Energy |
+| Adult | 2,700 Energy |
+| Completed pet | 2,700 Energy each |
+| Owned cosmetic | Full registered price in Star Shards |
+
+Collection records are shown in the quote but do not add separate currency.
+Bond accumulated alongside growth Energy, while the journey-completion action
+already granted a new hatch and rewards, so neither is paid twice.
+
+Existing pets remain read-only until confirmation. Confirming resets pets,
+names, personalities, bonds, memories, collection progress, guarantees, legacy
+benefit state, and cosmetic ownership and selection. Unspent Energy, Star
+Shards, attendance, and verified-growth settlement records remain.
+
+The app first stores a local recovery record containing the source state and
+fixed target balances. Each migration ID applies once; an interrupted write
+resumes toward the same target instead of paying twice. Refunded Energy lives
+in a separate migration reserve and is spent first, so the normal safety cap
+cannot discard it. Receipts remain available in Settings and never expire.
 
 ## Behavior and on-screen pet
 
