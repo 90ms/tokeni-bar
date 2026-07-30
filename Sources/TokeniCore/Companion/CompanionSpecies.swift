@@ -27,4 +27,10 @@ public enum CompanionSpeciesID: String, Codable, CaseIterable, Hashable, Sendabl
             * CompanionRarity.allCases.count
             * CompanionGameStage.allCases.filter { $0 != .egg }.count
     }
+
+    /// The player-facing collection target. Lifecycle sprites belong to a
+    /// journey album and do not inflate the number of companions to discover.
+    public static var totalCollectibleVariantCount: Int {
+        Self.allCases.count * CompanionVariantRegistry.collectibleIDs.count
+    }
 }

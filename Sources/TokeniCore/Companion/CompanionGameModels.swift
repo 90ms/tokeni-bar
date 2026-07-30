@@ -27,6 +27,92 @@ public enum CompanionRarity: String, Codable, CaseIterable, Hashable, Sendable {
     }
 }
 
+/// A visual-only appearance carried by one companion for its entire journey.
+///
+/// `CompanionRarity` remains in persisted models as a compatibility bridge for
+/// releases that ranked the four original sprite palettes. New game rules and
+/// UI must use variants instead: variants have no rank and grant no power.
+public struct CompanionVariantID: RawRepresentable, Codable, Hashable, Sendable {
+    public let rawValue: String
+
+    public init(rawValue: String) {
+        self.rawValue = rawValue
+    }
+
+    public static let standard = Self(rawValue: "standard")
+    public static let prismatic = Self(rawValue: "prismatic")
+    public static let legacyAzure = Self(rawValue: "legacy-azure")
+    public static let legacyViolet = Self(rawValue: "legacy-violet")
+}
+
+public struct CompanionVariantDefinition: Identifiable, Hashable, Sendable {
+    public let id: CompanionVariantID
+    public let assetRarity: CompanionRarity
+    public let isCollectible: Bool
+    public let isSpecial: Bool
+
+    public init(
+        id: CompanionVariantID,
+        assetRarity: CompanionRarity,
+        isCollectible: Bool,
+        isSpecial: Bool)
+    {
+        self.id = id
+        self.assetRarity = assetRarity
+        self.isCollectible = isCollectible
+        self.isSpecial = isSpecial
+    }
+}
+
+public enum CompanionVariantRegistry {
+    public static let definitions: [CompanionVariantDefinition] = [
+        CompanionVariantDefinition(
+            id: .standard,
+            assetRarity: .normal,
+            isCollectible: true,
+            isSpecial: false),
+        CompanionVariantDefinition(
+            id: .prismatic,
+            assetRarity: .legendary,
+            isCollectible: true,
+            isSpecial: true),
+        CompanionVariantDefinition(
+            id: .legacyAzure,
+            assetRarity: .rare,
+            isCollectible: false,
+            isSpecial: true),
+        CompanionVariantDefinition(
+            id: .legacyViolet,
+            assetRarity: .epic,
+            isCollectible: false,
+            isSpecial: true),
+    ]
+
+    public static var collectibleIDs: [CompanionVariantID] {
+        self.definitions.filter(\.isCollectible).map(\.id)
+    }
+
+    public static func definition(
+        for id: CompanionVariantID) -> CompanionVariantDefinition
+    {
+        self.definitions.first { $0.id == id }
+            ?? CompanionVariantDefinition(
+                id: id,
+                assetRarity: .normal,
+                isCollectible: false,
+                isSpecial: false)
+    }
+
+    public static func migrated(from rarity: CompanionRarity) -> CompanionVariantID {
+        switch rarity {
+        case .normal: .standard
+        case .rare: .legacyAzure
+        case .epic: .legacyViolet
+        case .legendary: .prismatic
+        }
+    }
+}
+
 public enum CompanionFormUnlockKind: String, Codable, Hashable, Sendable {
     case lineage
     case encountered
@@ -37,6 +123,7 @@ public struct CompanionFormRecord: Codable, Hashable, Sendable {
     public let speciesID: CompanionSpeciesID
     public let stage: CompanionGameStage
     public let rarity: CompanionRarity
+    public var variantID: CompanionVariantID?
     public var unlockKind: CompanionFormUnlockKind
     public let firstUnlockedAt: Date
     public var lastEncounteredAt: Date?
@@ -47,6 +134,7 @@ public struct CompanionFormRecord: Codable, Hashable, Sendable {
         speciesID: CompanionSpeciesID = .bytebot,
         stage: CompanionGameStage,
         rarity: CompanionRarity,
+        variantID: CompanionVariantID? = nil,
         unlockKind: CompanionFormUnlockKind,
         firstUnlockedAt: Date,
         lastEncounteredAt: Date?,
@@ -56,6 +144,7 @@ public struct CompanionFormRecord: Codable, Hashable, Sendable {
         self.speciesID = speciesID
         self.stage = stage
         self.rarity = rarity
+        self.variantID = variantID
         self.unlockKind = unlockKind
         self.firstUnlockedAt = firstUnlockedAt
         self.lastEncounteredAt = lastEncounteredAt
@@ -67,6 +156,7 @@ public struct CompanionFormRecord: Codable, Hashable, Sendable {
         case speciesID
         case stage
         case rarity
+        case variantID
         case unlockKind
         case firstUnlockedAt
         case lastEncounteredAt
@@ -81,6 +171,9 @@ public struct CompanionFormRecord: Codable, Hashable, Sendable {
             forKey: .speciesID) ?? .bytebot
         self.stage = try container.decode(CompanionGameStage.self, forKey: .stage)
         self.rarity = try container.decode(CompanionRarity.self, forKey: .rarity)
+        self.variantID = try container.decodeIfPresent(
+            CompanionVariantID.self,
+            forKey: .variantID)
         self.unlockKind = try container.decode(
             CompanionFormUnlockKind.self,
             forKey: .unlockKind)
@@ -97,6 +190,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
     public let generationNumber: Int
     public let speciesID: CompanionSpeciesID
     public let finalRarity: CompanionRarity
+    public var variantID: CompanionVariantID?
     public let bondEnergy: Int
     public let completedAt: Date
 
@@ -107,6 +201,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         generationNumber: Int,
         speciesID: CompanionSpeciesID = .bytebot,
         finalRarity: CompanionRarity,
+        variantID: CompanionVariantID? = nil,
         bondEnergy: Int,
         completedAt: Date)
     {
@@ -114,6 +209,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         self.generationNumber = generationNumber
         self.speciesID = speciesID
         self.finalRarity = finalRarity
+        self.variantID = variantID
         self.bondEnergy = bondEnergy
         self.completedAt = completedAt
     }
@@ -123,6 +219,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         case generationNumber
         case speciesID
         case finalRarity
+        case variantID
         case bondEnergy
         case completedAt
     }
@@ -137,6 +234,9 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         self.finalRarity = try container.decode(
             CompanionRarity.self,
             forKey: .finalRarity)
+        self.variantID = try container.decodeIfPresent(
+            CompanionVariantID.self,
+            forKey: .variantID)
         self.bondEnergy = try container.decode(Int.self, forKey: .bondEnergy)
         self.completedAt = try container.decode(Date.self, forKey: .completedAt)
     }
@@ -220,6 +320,14 @@ public struct CompanionPityState: Codable, Hashable, Sendable {
     }
 }
 
+public struct CompanionVariantPityState: Codable, Hashable, Sendable {
+    public var standardHatches: Int
+
+    public init(standardHatches: Int = 0) {
+        self.standardHatches = max(standardHatches, 0)
+    }
+}
+
 public struct CompanionGameRules: Hashable, Sendable {
     public static let standard = CompanionGameRules(
         newEggCost: 300,
@@ -228,7 +336,9 @@ public struct CompanionGameRules: Hashable, Sendable {
         adultEvolutionCost: 1_400,
         dailyCarryoverRate: 1,
         maximumEnergyBalance: 100_000,
-        duplicateSpeciesPityHatches: 5)
+        duplicateSpeciesPityHatches: 5,
+        prismaticChance: 0.08,
+        prismaticPityHatches: 12)
 
     public let newEggCost: Int
     public let hatchCost: Int
@@ -237,6 +347,8 @@ public struct CompanionGameRules: Hashable, Sendable {
     public let dailyCarryoverRate: Double
     public let maximumEnergyBalance: Int
     public let duplicateSpeciesPityHatches: Int
+    public let prismaticChance: Double
+    public let prismaticPityHatches: Int
 
     public var journeyCompletionCost: Int {
         Self.saturatedAdd(self.newEggCost, self.hatchCost)
@@ -249,7 +361,9 @@ public struct CompanionGameRules: Hashable, Sendable {
         adultEvolutionCost: Int,
         dailyCarryoverRate: Double,
         maximumEnergyBalance: Int,
-        duplicateSpeciesPityHatches: Int = 5)
+        duplicateSpeciesPityHatches: Int = 5,
+        prismaticChance: Double = 0.08,
+        prismaticPityHatches: Int = 12)
     {
         self.newEggCost = max(newEggCost, 0)
         self.hatchCost = max(hatchCost, 0)
@@ -258,6 +372,8 @@ public struct CompanionGameRules: Hashable, Sendable {
         self.dailyCarryoverRate = min(max(dailyCarryoverRate, 0), 1)
         self.maximumEnergyBalance = max(maximumEnergyBalance, 0)
         self.duplicateSpeciesPityHatches = max(duplicateSpeciesPityHatches, 1)
+        self.prismaticChance = min(max(prismaticChance, 0), 1)
+        self.prismaticPityHatches = max(prismaticPityHatches, 1)
     }
 
     public func actionCost(to stage: CompanionGameStage) -> Int {
@@ -289,7 +405,7 @@ public struct CompanionGameRules: Hashable, Sendable {
 }
 
 public struct CompanionGameState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 5
+    public static let currentSchemaVersion = 6
 
     public var schemaVersion: Int
     public var speciesID: CompanionSpeciesID?
@@ -297,6 +413,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var generationNumber: Int
     public var stage: CompanionGameStage
     public var rarity: CompanionRarity?
+    public var variantID: CompanionVariantID?
     public var growthEnergy: Int
     public var growthDateKey: String
     public var growthEarnedToday: Int
@@ -307,6 +424,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var collection: CompanionCollection
     public var consecutiveDuplicateHatches: Int
     public var pity: CompanionPityState
+    public var variantPity: CompanionVariantPityState
     public var appliedGrowthAwardIDs: [UUID]
     public var lastActiveAt: Date?
     public var lastPattedAt: Date?
@@ -322,6 +440,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         generationNumber: Int = 1,
         stage: CompanionGameStage = .egg,
         rarity: CompanionRarity? = nil,
+        variantID: CompanionVariantID? = nil,
         growthEnergy: Int = 0,
         growthDateKey: String? = nil,
         growthEarnedToday: Int = 0,
@@ -332,6 +451,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         collection: CompanionCollection? = nil,
         consecutiveDuplicateHatches: Int = 0,
         pity: CompanionPityState = CompanionPityState(),
+        variantPity: CompanionVariantPityState = CompanionVariantPityState(),
         appliedGrowthAwardIDs: [UUID] = [],
         lastActiveAt: Date? = nil,
         lastPattedAt: Date? = nil,
@@ -346,6 +466,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.generationNumber = max(generationNumber, 1)
         self.stage = stage
         self.rarity = rarity
+        self.variantID = variantID
         self.growthEnergy = max(growthEnergy, 0)
         self.growthDateKey = growthDateKey
             ?? GrowthLocalDate.key(for: generationCreatedAt)
@@ -359,6 +480,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.collection = collection ?? CompanionCollection()
         self.consecutiveDuplicateHatches = max(consecutiveDuplicateHatches, 0)
         self.pity = pity
+        self.variantPity = variantPity
         self.appliedGrowthAwardIDs = Array(appliedGrowthAwardIDs.suffix(256))
         self.lastActiveAt = lastActiveAt
         self.lastPattedAt = lastPattedAt
@@ -374,6 +496,18 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         rarity: CompanionRarity) -> String
     {
         "\(speciesID.rawValue).\(stage.rawValue).\(rarity.rawValue)"
+    }
+
+    public static func variantFormID(
+        speciesID: CompanionSpeciesID,
+        stage: CompanionGameStage,
+        variantID: CompanionVariantID) -> String
+    {
+        "\(speciesID.rawValue).\(stage.rawValue).\(variantID.rawValue)"
+    }
+
+    public var resolvedVariantID: CompanionVariantID? {
+        self.variantID ?? self.rarity.map(CompanionVariantRegistry.migrated)
     }
 
     public func isValid(rules: CompanionGameRules = .standard) -> Bool {
@@ -399,8 +533,12 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
               self.bondEnergy >= 0,
               self.consecutiveDuplicateHatches >= 0,
               (self.stage == .egg
-                  ? self.rarity == nil && self.speciesID == nil
-                  : self.rarity != nil && self.speciesID != nil),
+                  ? self.rarity == nil
+                      && self.variantID == nil
+                      && self.speciesID == nil
+                  : self.rarity != nil
+                      && self.resolvedVariantID != nil
+                      && self.speciesID != nil),
               Set(self.appliedGrowthAwardIDs).count == self.appliedGrowthAwardIDs.count,
               Set(self.collection.archivedGenerations.map(\.generationID)).count
                 == self.collection.archivedGenerations.count,
@@ -415,11 +553,17 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         let formIDs = self.collection.forms.map(\.formID)
         guard Set(formIDs).count == formIDs.count else { return false }
         return self.collection.forms.allSatisfy { form in
-            form.stage != .egg
-                && form.formID == Self.formID(
+            let expectedFormID = form.variantID.map {
+                Self.variantFormID(
                     speciesID: form.speciesID,
                     stage: form.stage,
-                    rarity: form.rarity)
+                    variantID: $0)
+            } ?? Self.formID(
+                speciesID: form.speciesID,
+                stage: form.stage,
+                rarity: form.rarity)
+            return form.stage != .egg
+                && form.formID == expectedFormID
                 && form.unlockKind == .encountered
                 && form.encounterCount > 0
                 && form.lastEncounteredAt != nil

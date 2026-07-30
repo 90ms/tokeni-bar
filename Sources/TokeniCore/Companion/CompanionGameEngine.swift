@@ -92,17 +92,18 @@ public struct CompanionGameEngine: Sendable {
             from: pityApplies ? missingSpecies : CompanionSpeciesID.allCases,
             unitValue: speciesUnitValue)
         let isNewSpecies = !discoveredSpecies.contains(speciesID)
-        var rarity = self.rollRarity(
-            from: .normal,
-            unitValue: rarityUnitValue)
-        rarity = self.applyLuckyCheer(
-            to: rarity,
-            from: .normal,
-            unitValue: luckyCheerUnitValue,
-            basisPoints: luckyCheerBasisPoints)
+        let variantID = self.rollVariant(
+            unitValue: rarityUnitValue,
+            pity: state.variantPity)
+        let rarity = CompanionVariantRegistry.definition(
+            for: variantID).assetRarity
         state.speciesID = speciesID
         state.stage = .hatchling
         state.rarity = rarity
+        state.variantID = variantID
+        state.variantPity.standardHatches = variantID == .prismatic
+            ? 0
+            : Self.saturatedAdd(state.variantPity.standardHatches, 1)
         state.consecutiveDuplicateHatches = isNewSpecies
             ? 0
             : Self.saturatedAdd(state.consecutiveDuplicateHatches, 1)
@@ -133,7 +134,9 @@ public struct CompanionGameEngine: Sendable {
         guard state.stage == .hatchling || state.stage == .junior,
               let nextStage = self.rules.nextStage(after: state.stage)
         else { throw CompanionGameError.evolutionUnavailable }
-        guard let fromRarity = state.rarity else {
+        guard let rarity = state.rarity,
+              state.resolvedVariantID != nil
+        else {
             throw CompanionGameError.rarityMissing
         }
 
@@ -141,28 +144,13 @@ public struct CompanionGameEngine: Sendable {
             self.rules.actionCost(to: nextStage),
             basisPoints: costDiscountBasisPoints)
         try self.spend(cost, in: &state)
-        var nextRarity = self.rollRarity(
-            from: fromRarity,
-            unitValue: unitValue)
-        nextRarity = self.applyLuckyCheer(
-            to: nextRarity,
-            from: fromRarity,
-            unitValue: luckyCheerUnitValue,
-            basisPoints: luckyCheerBasisPoints)
-        if nextStage == .adult {
-            nextRarity = CompanionRarity.max(
-                nextRarity,
-                state.pity.nextAdultMinimumRarity)
-        }
-
         let fromStage = state.stage
         state.stage = nextStage
-        state.rarity = nextRarity
         state.updatedAt = now
         state.celebrationUntil = now.addingTimeInterval(6)
         let unlocked = self.recordEvolution(
             stage: nextStage,
-            rarity: nextRarity,
+            rarity: rarity,
             at: now,
             in: &state)
         return [
@@ -170,8 +158,8 @@ public struct CompanionGameEngine: Sendable {
             .evolved(
                 fromStage: fromStage,
                 toStage: nextStage,
-                fromRarity: fromRarity,
-                toRarity: nextRarity,
+                fromRarity: rarity,
+                toRarity: rarity,
                 unlockedFormIDs: unlocked),
         ]
     }
@@ -202,6 +190,7 @@ public struct CompanionGameEngine: Sendable {
             generationNumber: state.generationNumber,
             speciesID: speciesID,
             finalRarity: rarity,
+            variantID: state.resolvedVariantID,
             bondEnergy: state.bondEnergy,
             completedAt: now)
         self.recordCompletion(completion, in: &state)
@@ -370,6 +359,18 @@ public struct CompanionGameEngine: Sendable {
         return available[index]
     }
 
+    public func rollVariant(
+        unitValue requestedValue: Double,
+        pity: CompanionVariantPityState = CompanionVariantPityState())
+        -> CompanionVariantID
+    {
+        if pity.standardHatches >= self.rules.prismaticPityHatches - 1 {
+            return .prismatic
+        }
+        let value = min(max(requestedValue, 0), 0.999_999_999_999)
+        return value >= 1 - self.rules.prismaticChance ? .prismatic : .standard
+    }
+
     private func applyLuckyCheer(
         to rolledRarity: CompanionRarity,
         from previousRarity: CompanionRarity,
@@ -418,10 +419,11 @@ public struct CompanionGameEngine: Sendable {
             at: date,
             in: &state)
         else { return [] }
-        return [CompanionGameState.formID(
+        return [self.formID(
             speciesID: speciesID,
             stage: .hatchling,
-            rarity: rarity)]
+            rarity: rarity,
+            variantID: state.resolvedVariantID)]
     }
 
     private func recordEvolution(
@@ -438,10 +440,11 @@ public struct CompanionGameEngine: Sendable {
             at: date,
             in: &state)
         else { return [] }
-        return [CompanionGameState.formID(
+        return [self.formID(
             speciesID: speciesID,
             stage: stage,
-            rarity: rarity)]
+            rarity: rarity,
+            variantID: state.resolvedVariantID)]
     }
 
     @discardableResult
@@ -453,12 +456,14 @@ public struct CompanionGameEngine: Sendable {
         in state: inout CompanionGameState) -> Bool
     {
         guard let speciesID = state.speciesID else { return false }
-        let formID = CompanionGameState.formID(
+        let variantID = state.resolvedVariantID
+        let currentFormID = self.formID(
             speciesID: speciesID,
             stage: stage,
-            rarity: rarity)
+            rarity: rarity,
+            variantID: variantID)
         if let index = state.collection.forms.firstIndex(where: {
-            $0.formID == formID
+            $0.formID == currentFormID
         }) {
             if kind == .encountered {
                 state.collection.forms[index].unlockKind = .encountered
@@ -468,15 +473,33 @@ public struct CompanionGameEngine: Sendable {
             return false
         }
         state.collection.forms.append(CompanionFormRecord(
-            formID: formID,
+            formID: currentFormID,
             speciesID: speciesID,
             stage: stage,
             rarity: rarity,
+            variantID: variantID,
             unlockKind: kind,
             firstUnlockedAt: date,
             lastEncounteredAt: kind == .encountered ? date : nil,
             encounterCount: kind == .encountered ? 1 : 0))
         return true
+    }
+
+    private func formID(
+        speciesID: CompanionSpeciesID,
+        stage: CompanionGameStage,
+        rarity: CompanionRarity,
+        variantID: CompanionVariantID?) -> String
+    {
+        variantID.map {
+            CompanionGameState.variantFormID(
+                speciesID: speciesID,
+                stage: stage,
+                variantID: $0)
+        } ?? CompanionGameState.formID(
+            speciesID: speciesID,
+            stage: stage,
+            rarity: rarity)
     }
 
     private func recordCompletion(
@@ -513,6 +536,7 @@ public struct CompanionGameEngine: Sendable {
         state.speciesID = nil
         state.stage = .egg
         state.rarity = nil
+        state.variantID = nil
         state.bondEnergy = 0
         state.lastPattedAt = nil
         state.celebrationUntil = nil

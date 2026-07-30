@@ -19,6 +19,7 @@ struct CompanionBenefitEngineTests {
             Set(CompanionBenefitRegistry.definitions.map(\.id)).count
                 == CompanionBenefitRegistry.definitions.count)
         #expect(CompanionSpeciesID.totalRegisteredFormCount == 60)
+        #expect(CompanionSpeciesID.totalCollectibleVariantCount == 10)
     }
 
     @Test("Passive slots unlock permanently at collection thresholds")
@@ -171,7 +172,7 @@ struct CompanionBenefitEngineTests {
             in: &state) == 0)
     }
 
-    @Test("Cost discount rounds up and Lucky Cheer raises only a failed roll")
+    @Test("Legacy cost discount rounds up without changing a visual variant")
     func actionBenefits() throws {
         let engine = CompanionGameEngine(calendar: self.calendar)
         var discounted = CompanionGameState(
@@ -196,7 +197,8 @@ struct CompanionBenefitEngineTests {
             luckyCheerBasisPoints: 300,
             at: self.date("2027-01-15T12:00:00Z"),
             in: &cheered)
-        #expect(cheered.rarity == .rare)
+        #expect(cheered.rarity == .normal)
+        #expect(cheered.variantID == .standard)
     }
 
     @Test("Benefit state persists only companion-safe progress")

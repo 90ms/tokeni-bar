@@ -49,7 +49,7 @@ struct CompanionGameEngineTests {
         #expect(state.growthEarnedToday == 80)
     }
 
-    @Test("Hatching is manual, spends energy, and reveals the first rarity")
+    @Test("Hatching is manual, spends energy, and reveals a stable variant")
     func manualHatch() throws {
         let now = try #require(self.date("2027-01-15T12:00:00Z"))
         let engine = CompanionGameEngine(calendar: self.calendar)
@@ -59,18 +59,19 @@ struct CompanionGameEngineTests {
 
         let events = try engine.hatch(
             speciesUnitValue: 0,
-            rarityUnitValue: 0.80,
+            rarityUnitValue: 0.99,
             at: now,
             in: &state)
 
         #expect(state.stage == .hatchling)
-        #expect(state.rarity == .rare)
+        #expect(state.rarity == .legendary)
+        #expect(state.variantID == .prismatic)
         #expect(state.growthEnergy == 300)
         #expect(state.growthSpentToday == 500)
         #expect(events.contains {
             if case .hatched(
                 speciesID: .bytebot,
-                rarity: .rare,
+                rarity: .legendary,
                 isNewSpecies: true,
                 unlockedFormIDs: _) = $0
             {
@@ -79,7 +80,7 @@ struct CompanionGameEngineTests {
             return false
         })
         #expect(state.collection.forms.contains {
-            $0.formID == "bytebot.hatchling.rare"
+            $0.formID == "bytebot.hatchling.prismatic"
                 && $0.unlockKind == .encountered
         })
     }
@@ -122,6 +123,7 @@ struct CompanionGameEngineTests {
             in: &state)
 
         #expect(state.speciesID == .cachecat)
+        #expect(state.variantID == .standard)
         #expect(state.consecutiveDuplicateHatches == 0)
         #expect(events.contains {
             if case .hatched(
@@ -136,7 +138,7 @@ struct CompanionGameEngineTests {
         })
     }
 
-    @Test("Evolution waits for a click and rarity never decreases")
+    @Test("Evolution waits for a click and keeps the hatch variant")
     func manualEvolution() throws {
         let now = try #require(self.date("2027-01-15T12:00:00Z"))
         let engine = CompanionGameEngine(calendar: self.calendar)
@@ -144,6 +146,7 @@ struct CompanionGameEngineTests {
             speciesID: .bytebot,
             stage: .hatchling,
             rarity: .rare,
+            variantID: .legacyAzure,
             growthEnergy: 2_200,
             growthDateKey: "2027-01-15")
 
@@ -151,20 +154,22 @@ struct CompanionGameEngineTests {
         #expect(state.stage == .junior)
         #expect(state.speciesID == .bytebot)
         #expect(state.rarity == .rare)
+        #expect(state.variantID == .legacyAzure)
         #expect(state.growthEnergy == 1_400)
 
         _ = try engine.evolve(unitValue: 0.90, at: now, in: &state)
         #expect(state.stage == .adult)
         #expect(state.speciesID == .bytebot)
-        #expect(state.rarity == .epic)
+        #expect(state.rarity == .rare)
+        #expect(state.variantID == .legacyAzure)
         #expect(state.growthEnergy == 0)
         #expect(state.growthSpentToday == 2_200)
         #expect(state.collection.forms.map(\.formID).sorted() == [
-            "bytebot.adult.epic",
-            "bytebot.junior.rare",
+            "bytebot.adult.legacy-azure",
+            "bytebot.junior.legacy-azure",
         ])
         #expect(!state.collection.forms.contains {
-            $0.rarity == .epic && $0.stage != .adult
+            $0.variantID != .legacyAzure
         })
     }
 
@@ -253,26 +258,16 @@ struct CompanionGameEngineTests {
         #expect(state.growthEarnedToday == 50)
     }
 
-    @Test("Adult pity guarantees the promised minimum rarity")
-    func adultPity() throws {
+    @Test("Prismatic variants use a single transparent guarantee")
+    func prismaticPity() {
         let engine = CompanionGameEngine(calendar: self.calendar)
-        let dateKey = GrowthLocalDate.key(for: .now, calendar: self.calendar)
 
-        for (pity, expected) in [
-            (CompanionPityState(adultsWithoutRareOrHigher: 2), CompanionRarity.rare),
-            (CompanionPityState(adultsWithoutEpicOrHigher: 6), CompanionRarity.epic),
-            (CompanionPityState(adultsWithoutLegendary: 15), CompanionRarity.legendary),
-        ] {
-            var state = CompanionGameState(
-                speciesID: .bytebot,
-                stage: .junior,
-                rarity: .normal,
-                growthEnergy: 1_400,
-                growthDateKey: dateKey,
-                pity: pity)
-            _ = try engine.evolve(unitValue: 0, in: &state)
-            #expect(state.rarity == expected)
-        }
+        #expect(engine.rollVariant(unitValue: 0.91) == .standard)
+        #expect(engine.rollVariant(unitValue: 0.92) == .prismatic)
+        #expect(engine.rollVariant(
+            unitValue: 0,
+            pity: CompanionVariantPityState(standardHatches: 11))
+            == .prismatic)
     }
 
     @Test("Completing an adult spends egg and hatch energy, then hatches again")
@@ -294,10 +289,11 @@ struct CompanionGameEngineTests {
         #expect(state.stage == .hatchling)
         #expect(state.speciesID == .cachecat)
         #expect(state.rarity == .normal)
+        #expect(state.variantID == .standard)
         #expect(state.generationNumber == 2)
         #expect(state.growthEnergy == 100)
         #expect(state.growthSpentToday == 800)
-        #expect(state.pity.adultsWithoutRareOrHigher == 1)
+        #expect(state.variantPity.standardHatches == 1)
         #expect(state.collection.completedCount(for: .normal) == 1)
         #expect(state.collection.archivedGenerations.count == 1)
         #expect(engine.actionCost(for: .adult) == 800)
@@ -357,7 +353,7 @@ struct CompanionGameEngineTests {
         #expect(CompanionSpeciesID.latestContentGeneration == 1)
     }
 
-    @Test("Restarting spends energy but preserves collection and pity")
+    @Test("Restarting spends energy but preserves collection and variant pity")
     func abandon() throws {
         let engine = CompanionGameEngine(calendar: self.calendar)
         let dateKey = GrowthLocalDate.key(for: .now, calendar: self.calendar)
@@ -376,14 +372,14 @@ struct CompanionGameEngineTests {
             growthEnergy: 375,
             growthDateKey: dateKey,
             collection: CompanionCollection(forms: [form]),
-            pity: CompanionPityState(adultsWithoutEpicOrHigher: 4))
+            variantPity: CompanionVariantPityState(standardHatches: 4))
 
         _ = try engine.abandonForNewEgg(in: &state)
 
         #expect(state.stage == .egg)
         #expect(state.rarity == nil)
         #expect(state.growthEnergy == 75)
-        #expect(state.pity.adultsWithoutEpicOrHigher == 4)
+        #expect(state.variantPity.standardHatches == 4)
         #expect(state.collection.forms == [form])
     }
 
@@ -430,18 +426,55 @@ struct CompanionGameEngineTests {
         let versionThree = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":5"#,
+                    of: #""schemaVersion":6"#,
                     with: #""schemaVersion":3"#)
                 .data(using: .utf8))
         try versionThree.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 5)
+        #expect(state.schemaVersion == 6)
         #expect(state.speciesID == .bytebot)
         #expect(state.stage == .junior)
         #expect(state.rarity == .epic)
         #expect(state.growthEnergy == 320)
+    }
+
+    @Test("Version five rarity migrates to a non-ranked visual variant")
+    func migratesVersionFiveVariant() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let file = directory.appending(path: "companion-state.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true)
+        let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
+        let current = CompanionGameState(
+            speciesID: .cachecat,
+            stage: .adult,
+            rarity: .epic,
+            growthEnergy: 320,
+            growthDateKey: "2027-01-15",
+            generationCreatedAt: timestamp,
+            updatedAt: timestamp)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let encoded = try encoder.encode(current)
+        let versionFive = try #require(
+            String(data: encoded, encoding: .utf8)?
+                .replacingOccurrences(
+                    of: #""schemaVersion":6"#,
+                    with: #""schemaVersion":5"#)
+                .data(using: .utf8))
+        try versionFive.write(to: file)
+
+        let state = try await CompanionGameStateStore(fileURL: file).load()
+
+        #expect(state.schemaVersion == 6)
+        #expect(state.speciesID == .cachecat)
+        #expect(state.variantID == .legacyViolet)
+        #expect(state.rarity == .epic)
     }
 
     @Test("Version four lineage forms are removed during migration")
@@ -481,14 +514,14 @@ struct CompanionGameEngineTests {
         let versionFour = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":5"#,
+                    of: #""schemaVersion":6"#,
                     with: #""schemaVersion":4"#)
                 .data(using: .utf8))
         try versionFour.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 5)
+        #expect(state.schemaVersion == 6)
         #expect(state.collection.forms == [encountered])
         #expect(state.delayedGrowthEarnedToday == 0)
     }
@@ -506,7 +539,7 @@ struct CompanionGameEngineTests {
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 5)
+        #expect(state.schemaVersion == 6)
         #expect(state.stage == .egg)
         #expect(state.speciesID == nil)
         #expect(state.rarity == nil)
@@ -603,33 +636,21 @@ struct CompanionGameEngineTests {
         #expect(!ungradedAdult.isValid())
     }
 
-    @Test("Published rarity transitions produce the expected adult distribution")
-    func finalRarityDistribution() {
+    @Test("Published variant roll produces the expected prismatic frequency")
+    func variantDistribution() {
         let engine = CompanionGameEngine(calendar: self.calendar)
         var generator = SplitMix64(state: 0x746f_6b65_6e69)
-        var counts = [CompanionRarity: Int]()
+        var prismaticCount = 0
         let samples = 200_000
 
         for _ in 0..<samples {
-            var rarity = CompanionRarity.normal
-            for _ in 0..<3 {
-                rarity = engine.rollRarity(
-                    from: rarity,
-                    unitValue: generator.nextUnit())
+            if engine.rollVariant(unitValue: generator.nextUnit()) == .prismatic {
+                prismaticCount += 1
             }
-            counts[rarity, default: 0] += 1
         }
 
-        let expected: [CompanionRarity: Double] = [
-            .normal: 0.42188,
-            .rare: 0.40889,
-            .epic: 0.15521,
-            .legendary: 0.01403,
-        ]
-        for (rarity, probability) in expected {
-            let actual = Double(counts[rarity, default: 0]) / Double(samples)
-            #expect(abs(actual - probability) < 0.006)
-        }
+        let actual = Double(prismaticCount) / Double(samples)
+        #expect(abs(actual - 0.08) < 0.004)
     }
 
     private func date(_ value: String) -> Date? {
