@@ -125,14 +125,13 @@ public enum UsageAlertEvaluator {
         guard let resetsAt = candidate.resetsAt, resetsAt > now else {
             return nil
         }
-        guard let last = history
-            .filter {
-                $0.providerID == candidate.providerID
-                    && $0.timestamp <= now
-                    && $0.timestamp >= now.addingTimeInterval(-24 * 60 * 60)
-                    && $0.windows.contains { $0.id == candidate.windowID }
-            }
-            .last,
+        let matchingHistory = history.filter {
+            $0.providerID == candidate.providerID
+                && $0.timestamp <= now
+                && $0.timestamp >= now.addingTimeInterval(-24 * 60 * 60)
+                && $0.windows.contains { $0.id == candidate.windowID }
+        }
+        guard let last = matchingHistory.last,
               let lastRemaining = last.windows.first(where: {
                   $0.id == candidate.windowID
               })?.remainingPercent

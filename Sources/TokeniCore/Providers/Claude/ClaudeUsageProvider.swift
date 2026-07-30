@@ -174,11 +174,11 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
         }
         switch error {
         case .authorizationRequired, .credentialsUnavailable:
-            .authorizationRequired
+            return .authorizationRequired
         case .expiredCredentials, .unauthorized:
-            .sessionExpired
+            return .sessionExpired
         default:
-            .localOnly
+            return .localOnly
         }
     }
 }

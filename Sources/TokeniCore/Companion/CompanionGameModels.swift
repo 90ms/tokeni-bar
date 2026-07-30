@@ -576,6 +576,16 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                 generation.generationID == generationID
             }
         } != false
+        let nicknameIsValid = self.nickname.map {
+            !$0.isEmpty && $0.count <= 24
+        } != false
+        let memoryIDsAreUnique =
+            Set(self.memories.map(\.id)).count == self.memories.count
+        let memoriesAreValid = self.memories.allSatisfy { memory in
+            memory.bondLevel.map {
+                (1...CompanionBond.levelThresholds.count).contains($0)
+            } != false
+        }
         guard self.schemaVersion == Self.currentSchemaVersion,
               self.generationNumber >= 1,
               self.growthEnergy >= 0,
@@ -601,12 +611,9 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                           CompanionPersonalityRegistry.allIDs.contains($0)
                       } == true
                       && self.speciesID != nil),
-              self.nickname.map { !$0.isEmpty && $0.count <= 24 } != false,
-              Set(self.memories.map(\.id)).count == self.memories.count,
-              self.memories.allSatisfy {
-                  $0.bondLevel.map { (1...CompanionBond.levelThresholds.count)
-                      .contains($0) } != false
-              },
+              nicknameIsValid,
+              memoryIDsAreUnique,
+              memoriesAreValid,
               Set(self.appliedGrowthAwardIDs).count == self.appliedGrowthAwardIDs.count,
               Set(self.collection.archivedGenerations.map(\.generationID)).count
                 == self.collection.archivedGenerations.count,
