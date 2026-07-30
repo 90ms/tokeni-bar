@@ -15,6 +15,7 @@ struct SettingsView: View {
     @ObservedObject var store: UsageStore
     @Environment(\.openWindow) private var openWindow
     @State private var selectedTab = SettingsTab.general
+    @State private var showsNotificationDiagnostics = false
 
     var body: some View {
         TabView(selection: self.$selectedTab) {
@@ -58,7 +59,7 @@ struct SettingsView: View {
                         systemImage: "hand.raised")
                 }
         }
-        .frame(width: 520, height: 470)
+        .frame(width: 560, height: 520)
         .padding()
         .onReceive(NotificationCenter.default.publisher(
             for: .openNotificationSettings))
@@ -80,26 +81,6 @@ struct SettingsView: View {
             }
 
             Section(AppLocalization.string("settings.companion.title")) {
-                HStack {
-                    Spacer()
-                    ByteBotTransitionView(
-                        speciesID: self.store.displayedCompanionSpeciesID,
-                        stage: self.store.displayedCompanionStage,
-                        rarity: self.store.displayedCompanionRarity,
-                        behavior: self.store.companionBehavior,
-                        cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
-                        dimension: self.store.companionOverlaySize.spriteDimension,
-                        animationsEnabled: self.store.companionAnimationsEnabled,
-                        animationIntensity: self.store
-                            .companionAnimationIntensity.motionScale,
-                        interactionPulse: self.store.companionInteractionPulse,
-                        growthPulse: self.store.isShowingArchivedCompanion
-                            ? 0
-                            : self.store.companionGrowthPulse)
-                    Spacer()
-                }
-                .frame(height: CompanionOverlaySize.large.spriteDimension)
-
                 Toggle(isOn: Binding(
                     get: { self.store.companionEnabled },
                     set: { self.store.setCompanionEnabled($0) }))
@@ -191,35 +172,6 @@ struct SettingsView: View {
                     }
                 }
             }
-
-            Section(AppLocalization.string("settings.companion.growth")) {
-                Text(AppLocalization.string("settings.companion.rules"))
-                    .font(.callout)
-                Text(AppLocalization.format(
-                    "settings.companion.today",
-                    self.store.companionTodayTokens,
-                    self.store.companionTodayEnergy))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(AppLocalization.format(
-                    "settings.companion.wallet",
-                    self.store.companionState.availableGrowthEnergy,
-                    self.store.companionState.growthCarriedToday))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(AppLocalization.format(
-                    "settings.companion.providers",
-                    self.store.companionGrowthProviderStatus.available,
-                    self.store.companionGrowthProviderStatus.total))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section(AppLocalization.string("settings.companion.privacy.title")) {
-                Text(AppLocalization.string("settings.companion.privacy"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
         .formStyle(.grouped)
     }
@@ -244,58 +196,9 @@ struct SettingsView: View {
 
             Section(AppLocalization.string("settings.providers")) {
                 ForEach(self.store.descriptors) { descriptor in
-                    Toggle(isOn: Binding(
-                        get: { self.store.isEnabled(descriptor.id) },
-                        set: { self.store.setEnabled($0, for: descriptor.id) }))
-                    {
-                        Label {
-                            Text(descriptor.displayName)
-                        } icon: {
-                            ProviderIcon(descriptor: descriptor)
-                        }
-                    }
+                    self.providerSettingsRow(descriptor)
                 }
-            }
-
-            if !self.store.authorizationDescriptors.isEmpty {
-                Section(AppLocalization.string("settings.connections")) {
-                    ForEach(self.store.authorizationDescriptors) { descriptor in
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Label {
-                                    Text(descriptor.displayName)
-                                } icon: {
-                                    ProviderIcon(descriptor: descriptor)
-                                }
-                                Spacer()
-                                if self.store.authorizingProviderIDs.contains(descriptor.id) {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                } else {
-                                    Button(AppLocalization.string("settings.connections.connect")) {
-                                        self.store.requestUsageAuthorization(for: descriptor.id)
-                                    }
-                                }
-                            }
-                            if let message = self.store.providerAuthorizationMessages[descriptor.id] {
-                                Text(message)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                let state = self.store.connectionState(
-                                    for: descriptor.id)
-                                Label(
-                                    AppLocalization.string(
-                                        "settings.connections.state.\(state.rawValue)"),
-                                    systemImage: self.connectionStateIcon(state))
-                                    .font(.caption)
-                                    .foregroundStyle(
-                                        state == .connected
-                                            ? Color.green
-                                            : Color.secondary)
-                            }
-                        }
-                    }
+                if !self.store.authorizationDescriptors.isEmpty {
                     Text(AppLocalization.string("settings.connections.description"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -473,6 +376,66 @@ struct SettingsView: View {
         .formStyle(.grouped)
     }
 
+    private func providerSettingsRow(
+        _ descriptor: ProviderDescriptor) -> some View
+    {
+        let requiresAuthorization = self.store.authorizationDescriptors
+            .contains { $0.id == descriptor.id }
+        let state = self.store.connectionState(for: descriptor.id)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Toggle(isOn: Binding(
+                    get: { self.store.isEnabled(descriptor.id) },
+                    set: {
+                        self.store.setEnabled($0, for: descriptor.id)
+                    }))
+                {
+                    Label {
+                        Text(descriptor.displayName)
+                    } icon: {
+                        ProviderIcon(descriptor: descriptor)
+                    }
+                }
+
+                if requiresAuthorization {
+                    if self.store.authorizingProviderIDs
+                        .contains(descriptor.id)
+                    {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Button(AppLocalization.string(
+                            "settings.connections.connect"))
+                        {
+                            self.store.requestUsageAuthorization(
+                                for: descriptor.id)
+                        }
+                        .disabled(!self.store.isEnabled(descriptor.id))
+                    }
+                }
+            }
+
+            if requiresAuthorization {
+                if let message =
+                    self.store.providerAuthorizationMessages[descriptor.id]
+                {
+                    TokeniStatusBanner(
+                        text: message,
+                        kind: state == .connected ? .success : .warning)
+                } else {
+                    Label(
+                        AppLocalization.string(
+                            "settings.connections.state.\(state.rawValue)"),
+                        systemImage: self.connectionStateIcon(state))
+                        .font(.caption)
+                        .foregroundStyle(self.connectionStateColor(state))
+                        .accessibilityElement(children: .combine)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
     private func connectionStateIcon(
         _ state: ProviderConnectionState) -> String
     {
@@ -482,6 +445,16 @@ struct SettingsView: View {
         case .authorizationRequired: "key.fill"
         case .sessionExpired: "clock.badge.exclamationmark"
         case .stale: "exclamationmark.triangle.fill"
+        }
+    }
+
+    private func connectionStateColor(
+        _ state: ProviderConnectionState) -> Color
+    {
+        switch state {
+        case .connected: .green
+        case .localOnly: .secondary
+        case .authorizationRequired, .sessionExpired, .stale: .orange
         }
     }
 
@@ -499,11 +472,14 @@ struct SettingsView: View {
                     Text(AppLocalization.string("settings.notifications.enabled"))
                 }
                 if let message = self.store.notificationSettingsMessage {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    TokeniStatusBanner(text: message, kind: .warning)
                 }
-                if self.store.notificationsEnabled {
+            }
+
+            if self.store.notificationsEnabled {
+                Section(AppLocalization.string(
+                    "settings.notifications.usageAlerts"))
+                {
                     Toggle(isOn: Binding(
                         get: { self.store.lowUsageNotificationsEnabled },
                         set: { self.store.setLowUsageNotificationsEnabled($0) }))
@@ -511,18 +487,6 @@ struct SettingsView: View {
                         Text(AppLocalization.string(
                             "settings.notifications.lowUsage"))
                     }
-
-                    Toggle(isOn: Binding(
-                        get: { self.store.resetNotificationsEnabled },
-                        set: { self.store.setResetNotificationsEnabled($0) }))
-                    {
-                        Text(AppLocalization.string(
-                            "settings.notifications.reset"))
-                    }
-                    Text(AppLocalization.string(
-                        "settings.notifications.reset.description"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
 
                     if self.store.lowUsageNotificationsEnabled {
                         Picker(
@@ -560,7 +524,29 @@ struct SettingsView: View {
                         Text(AppLocalization.string(
                             "settings.notifications.budget"))
                     }
+                }
 
+                Section(AppLocalization.string(
+                    "settings.notifications.resetAlerts"))
+                {
+                    Toggle(isOn: Binding(
+                        get: { self.store.resetNotificationsEnabled },
+                        set: { self.store.setResetNotificationsEnabled($0) }))
+                    {
+                        Text(AppLocalization.string(
+                            "settings.notifications.reset"))
+                    }
+                    if self.store.resetNotificationsEnabled {
+                        Text(AppLocalization.string(
+                            "settings.notifications.reset.description"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section(AppLocalization.string(
+                    "settings.notifications.systemAlerts"))
+                {
                     Toggle(isOn: Binding(
                         get: { self.store.connectionIssueNotificationsEnabled },
                         set: {
@@ -570,7 +556,11 @@ struct SettingsView: View {
                         Text(AppLocalization.string(
                             "settings.notifications.connection"))
                     }
+                }
 
+                Section(AppLocalization.string(
+                    "settings.notifications.delivery"))
+                {
                     Toggle(isOn: Binding(
                         get: { self.store.notificationQuietHoursEnabled },
                         set: {
@@ -622,15 +612,20 @@ struct SettingsView: View {
                             }
                         }
                     }
-                }
-            }
 
-            if self.store.notificationsEnabled {
-                Section(AppLocalization.string("settings.providers")) {
+                    Divider()
+
                     ForEach(self.store.descriptors) { descriptor in
                         Toggle(isOn: Binding(
-                            get: { self.store.isNotificationEnabled(for: descriptor.id) },
-                            set: { self.store.setNotificationEnabled($0, for: descriptor.id) }))
+                            get: {
+                                self.store.isNotificationEnabled(
+                                    for: descriptor.id)
+                            },
+                            set: {
+                                self.store.setNotificationEnabled(
+                                    $0,
+                                    for: descriptor.id)
+                            }))
                         {
                             Label {
                                 Text(AppLocalization.format(
@@ -643,27 +638,36 @@ struct SettingsView: View {
                     }
                 }
 
-                Section {
+                Section(AppLocalization.string(
+                    "settings.notifications.testAndDiagnostics"))
+                {
                     Button(AppLocalization.string("settings.notifications.test")) {
                         self.store.sendTestNotification()
                     }
-                }
 
-                Section(AppLocalization.string(
-                    "settings.notifications.diagnostics"))
-                {
-                    if self.store.notificationDiagnostics.isEmpty {
-                        Text(AppLocalization.string(
-                            "settings.notifications.diagnostics.empty"))
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(
-                            Array(self.store.notificationDiagnostics.enumerated()),
-                            id: \.offset)
-                        { _, message in
-                            Text(message)
-                                .font(.caption)
+                    DisclosureGroup(
+                        AppLocalization.string(
+                            "settings.notifications.diagnostics"),
+                        isExpanded: self.$showsNotificationDiagnostics)
+                    {
+                        if self.store.notificationDiagnostics.isEmpty {
+                            Text(AppLocalization.string(
+                                "settings.notifications.diagnostics.empty"))
                                 .foregroundStyle(.secondary)
+                                .padding(.top, 5)
+                        } else {
+                            VStack(alignment: .leading, spacing: 5) {
+                                ForEach(
+                                    Array(self.store.notificationDiagnostics
+                                        .enumerated()),
+                                    id: \.offset)
+                                { _, message in
+                                    Text(message)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.top, 5)
                         }
                     }
                 }

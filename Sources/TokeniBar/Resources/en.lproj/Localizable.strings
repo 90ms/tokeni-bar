@@ -67,7 +67,12 @@
 "settings.language.english" = "English";
 "settings.language.korean" = "한국어";
 "settings.notifications" = "Notifications";
-"settings.notifications.enabled" = "Usage notifications";
+"settings.notifications.enabled" = "Enable notifications";
+"settings.notifications.usageAlerts" = "Usage alerts";
+"settings.notifications.resetAlerts" = "Reset alerts";
+"settings.notifications.systemAlerts" = "System status alerts";
+"settings.notifications.delivery" = "Delivery";
+"settings.notifications.testAndDiagnostics" = "Testing & diagnostics";
 "settings.notifications.lowUsage" = "Low remaining usage";
 "settings.notifications.reset" = "Alert one hour before quota reset";
 "settings.notifications.reset.description" = "Sent once only when the provider reports a verified reset time.";

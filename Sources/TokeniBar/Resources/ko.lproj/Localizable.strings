@@ -67,7 +67,12 @@
 "settings.language.english" = "English";
 "settings.language.korean" = "한국어";
 "settings.notifications" = "알림";
-"settings.notifications.enabled" = "사용량 알림";
+"settings.notifications.enabled" = "알림 사용";
+"settings.notifications.usageAlerts" = "사용량 알림";
+"settings.notifications.resetAlerts" = "갱신 알림";
+"settings.notifications.systemAlerts" = "시스템 상태 알림";
+"settings.notifications.delivery" = "전달 설정";
+"settings.notifications.testAndDiagnostics" = "테스트 및 진단";
 "settings.notifications.lowUsage" = "잔여량 부족 알림";
 "settings.notifications.reset" = "쿼터 갱신 1시간 전 알림";
 "settings.notifications.reset.description" = "제공자가 확인 가능한 갱신 시각을 제공할 때만 한 번 알립니다.";
