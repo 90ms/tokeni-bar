@@ -81,7 +81,7 @@ struct HistoryView: View {
                         AppLocalization.format(
                             "history.summary.samples",
                             self.visibleSampleCount),
-                        systemImage: "point.3.connected.trianglepath.dotted")
+                        systemImage: "chart.xyaxis.line")
                     Spacer()
                     if let latestTimestamp = self.latestVisibleTimestamp {
                         Text(AppLocalization.format(
