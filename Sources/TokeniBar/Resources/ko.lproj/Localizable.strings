@@ -174,10 +174,10 @@
 "companion.collection.open" = "펫 도감 열기";
 "companion.collection.window" = "Tokeni 펫 도감";
 "companion.section.title" = "펫 화면";
-"companion.section.home" = "홈";
+"companion.section.home" = "내 펫";
 "companion.section.collection" = "도감";
-"companion.section.lineup" = "함께한 친구";
-"companion.section.rewards" = "보상·꾸미기";
+"companion.section.lineup" = "동료";
+"companion.section.rewards" = "꾸미기";
 "companion.header.together" = "동행 중인 펫";
 "companion.header.growing" = "육성 중인 펫";
 "companion.header.growingJourney" = "현재 육성 여정";

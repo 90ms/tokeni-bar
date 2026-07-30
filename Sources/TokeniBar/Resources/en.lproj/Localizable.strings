@@ -174,10 +174,10 @@
 "companion.collection.open" = "Open pet collection";
 "companion.collection.window" = "Tokeni Pet Collection";
 "companion.section.title" = "Pet screen";
-"companion.section.home" = "Home";
+"companion.section.home" = "My Pet";
 "companion.section.collection" = "Collection";
-"companion.section.lineup" = "Past Friends";
-"companion.section.rewards" = "Rewards & Style";
+"companion.section.lineup" = "Companions";
+"companion.section.rewards" = "Customize";
 "companion.header.together" = "Current Companion";
 "companion.header.growing" = "Growing Pet";
 "companion.header.growingJourney" = "Current Growing Journey";

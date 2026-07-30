@@ -37,6 +37,8 @@ struct CompanionCollectionView: View {
     @State private var acquisitionFilter = CompanionAcquisitionFilter.all
     @State private var showsGrowthBreakdown = false
     @State private var showsAdvancedBenefits = false
+    @State private var showsIdentityDetails = false
+    @State private var showsEnergyDetails = false
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
     @State private var nicknameDraft = ""
 
@@ -156,9 +158,8 @@ struct CompanionCollectionView: View {
             switch self.selectedSection {
             case .home:
                 self.currentCompanion
-                self.companionIdentity
                 self.journeyActions
-                self.energyWallet
+                self.homeDetails
             case .collection:
                 self.summary
                 self.pity
@@ -169,6 +170,29 @@ struct CompanionCollectionView: View {
                 self.rewardWallet
             }
         }
+    }
+
+    private var homeDetails: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            DisclosureGroup(
+                AppLocalization.string("companion.identity.title"),
+                isExpanded: self.$showsIdentityDetails)
+            {
+                self.companionIdentity
+                    .padding(.top, 8)
+            }
+            DisclosureGroup(
+                AppLocalization.string("companion.energy.title"),
+                isExpanded: self.$showsEnergyDetails)
+            {
+                self.energyWallet
+                    .padding(.top, 8)
+            }
+        }
+        .padding(TokeniLayout.cardPadding)
+        .background(
+            .quaternary.opacity(0.38),
+            in: RoundedRectangle(cornerRadius: TokeniLayout.cornerRadius))
     }
 
     private var appliedEffectsSummary: some View {
