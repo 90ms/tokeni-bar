@@ -401,6 +401,13 @@ final class UsageStore: ObservableObject {
         self.enabledProviderIDs.contains(id)
     }
 
+    func connectionState(for id: ProviderID) -> ProviderConnectionState {
+        guard let snapshot = self.snapshots.first(where: { $0.id == id })
+        else { return .stale }
+        return snapshot.connectionState
+            ?? (snapshot.availability == .available ? .localOnly : .stale)
+    }
+
     func setEnabled(_ enabled: Bool, for id: ProviderID) {
         if enabled {
             self.enabledProviderIDs.insert(id)

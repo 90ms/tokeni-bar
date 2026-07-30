@@ -73,6 +73,14 @@ public enum ProviderAvailability: String, Codable, Hashable, Sendable {
     case failed
 }
 
+public enum ProviderConnectionState: String, Hashable, Sendable {
+    case connected
+    case localOnly
+    case authorizationRequired
+    case sessionExpired
+    case stale
+}
+
 public enum UsageDataSource: String, Codable, Hashable, Sendable {
     case localSessionLog
     case localProtocol
@@ -229,6 +237,7 @@ public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
     public let credits: CreditBalance?
     public let quotaResetCredits: QuotaResetCreditSummary?
     public let growthUsageObservation: GrowthUsageObservation?
+    public let connectionState: ProviderConnectionState?
     public let detail: String?
     public let updatedAt: Date
 
@@ -246,6 +255,7 @@ public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
         credits: CreditBalance? = nil,
         quotaResetCredits: QuotaResetCreditSummary? = nil,
         growthUsageObservation: GrowthUsageObservation? = nil,
+        connectionState: ProviderConnectionState? = nil,
         detail: String? = nil,
         updatedAt: Date = .now)
     {
@@ -260,6 +270,7 @@ public struct ProviderSnapshot: Identifiable, Hashable, Sendable {
         self.credits = credits
         self.quotaResetCredits = quotaResetCredits
         self.growthUsageObservation = growthUsageObservation
+        self.connectionState = connectionState
         self.detail = detail
         self.updatedAt = updatedAt
     }

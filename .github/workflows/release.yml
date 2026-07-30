@@ -32,8 +32,7 @@ jobs:
           fi
           echo "value=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Determine distribution mode
-        id: distribution
+      - name: Require signed distribution configuration
         shell: bash
         env:
           CERTIFICATE_P12_BASE64: ${{ secrets.CERTIFICATE_P12_BASE64 }}
@@ -60,19 +59,13 @@ jobs:
               configured=$((configured + 1))
             fi
           done
-          if [[ "$configured" -eq 0 ]]; then
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-            echo "Building an ad-hoc signed release."
-          elif [[ "$configured" -eq "${#values[@]}" ]]; then
-            echo "signed=true" >> "$GITHUB_OUTPUT"
-            echo "Building a Developer ID signed and notarized release."
-          else
+          if [[ "$configured" -ne "${#values[@]}" ]]; then
             echo "Signing configuration is incomplete ($configured/${#values[@]} secrets)." >&2
             exit 1
           fi
+          echo "Building a Developer ID signed and notarized release."
 
       - name: Import Developer ID certificate
-        if: ${{ steps.distribution.outputs.signed == 'true' }}
         shell: bash
         env:
           CERTIFICATE_P12_BASE64: ${{ secrets.CERTIFICATE_P12_BASE64 }}
@@ -102,7 +95,7 @@ jobs:
       - name: Build application
         env:
           APP_VERSION: ${{ steps.version.outputs.value }}
-          APP_SIGN_IDENTITY: ${{ steps.distribution.outputs.signed == 'true' && secrets.DEVELOPER_ID_APPLICATION || '-' }}
+          APP_SIGN_IDENTITY: ${{ secrets.DEVELOPER_ID_APPLICATION }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: ./Scripts/package_app.sh
 
@@ -117,7 +110,6 @@ jobs:
             "dist/TokeniBar-$VERSION.zip"
 
       - name: Notarize and staple
-        if: ${{ steps.distribution.outputs.signed == 'true' }}
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.value }}
@@ -172,19 +164,13 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          SIGNED: ${{ steps.distribution.outputs.signed }}
           VERSION: ${{ steps.version.outputs.value }}
         run: |
-          if [[ "$SIGNED" == "true" ]]; then
-            security_note="Developer ID signed and Apple-notarized build."
-          else
-            security_note="Ad-hoc signed build. macOS may require explicit approval in Privacy & Security."
-          fi
           gh release create "$GITHUB_REF_NAME" \
             "dist/TokeniBar-$VERSION.zip" \
             "dist/TokeniBar-$VERSION.zip.sha256" \
             --generate-notes \
-            --notes "$security_note" \
+            --notes "Developer ID signed and Apple-notarized build." \
             --verify-tag
 
       - name: Open Homebrew distribution update pull request

@@ -73,6 +73,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
                 tokenUsage: localTokenUsage,
                 costEstimate: localTokenUsage == nil ? nil : aggregate?.costEstimate,
                 growthUsageObservation: growthObservation,
+                connectionState: .connected,
                 detail: detail.isEmpty ? "Claude Code OAuth" : detail,
                 updatedAt: result.fetchedAt)
         } catch {
@@ -119,11 +120,15 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
         oauthError: Error) -> ProviderSnapshot
     {
         let errorMessage = (oauthError as? LocalizedError)?.errorDescription
+        let connectionState = Self.connectionState(for: oauthError)
+        let staleConnectionState: ProviderConnectionState =
+            connectionState == .localOnly ? .stale : connectionState
         guard !files.isEmpty else {
             return .init(
                 descriptor: self.descriptor,
                 availability: .stale,
                 source: .localSessionLog,
+                connectionState: staleConnectionState,
                 detail: errorMessage ?? "Claude Code is installed, but no local session was updated today")
         }
 
@@ -132,6 +137,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
                 descriptor: self.descriptor,
                 availability: .stale,
                 source: .localSessionLog,
+                connectionState: staleConnectionState,
                 detail: errorMessage
                     ?? "Claude local usage logs are too large or could not be read safely")
         }
@@ -143,6 +149,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
                 source: .localSessionLog,
                 tokenUsage: TokenUsage(label: "Today", totalTokens: 0),
                 growthUsageObservation: growthObservation,
+                connectionState: connectionState,
                 detail: errorMessage.map { "Connected · \($0)" }
                     ?? "Connected · no token usage record in today's session yet")
         }
@@ -154,8 +161,25 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
             tokenUsage: usage,
             costEstimate: aggregate.costEstimate,
             growthUsageObservation: growthObservation,
+            connectionState: connectionState,
             detail: errorMessage.map { "Local usage fallback · \($0)" }
                 ?? "Today across local Claude Code sessions")
+    }
+
+    private static func connectionState(
+        for error: Error) -> ProviderConnectionState
+    {
+        guard let error = error as? ClaudeOAuthUsageError else {
+            return .localOnly
+        }
+        switch error {
+        case .authorizationRequired, .credentialsUnavailable:
+            .authorizationRequired
+        case .expiredCredentials, .unauthorized:
+            .sessionExpired
+        default:
+            .localOnly
+        }
     }
 }
 

@@ -271,6 +271,18 @@ struct SettingsView: View {
                                 Text(message)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                            } else {
+                                let state = self.store.connectionState(
+                                    for: descriptor.id)
+                                Label(
+                                    AppLocalization.string(
+                                        "settings.connections.state.\(state.rawValue)"),
+                                    systemImage: self.connectionStateIcon(state))
+                                    .font(.caption)
+                                    .foregroundStyle(
+                                        state == .connected
+                                            ? Color.green
+                                            : Color.secondary)
                             }
                         }
                     }
@@ -449,6 +461,18 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private func connectionStateIcon(
+        _ state: ProviderConnectionState) -> String
+    {
+        switch state {
+        case .connected: "checkmark.circle.fill"
+        case .localOnly: "doc.text.magnifyingglass"
+        case .authorizationRequired: "key.fill"
+        case .sessionExpired: "clock.badge.exclamationmark"
+        case .stale: "exclamationmark.triangle.fill"
+        }
     }
 
     private func updateOperationText(_ operation: HomebrewUpdateOperation) -> String {

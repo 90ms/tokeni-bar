@@ -52,6 +52,11 @@
 "settings.connections.connected" = "%@ connected.";
 "settings.connections.failed" = "Could not connect %@. Open its CLI once, then try again.";
 "settings.connections.description" = "Keychain approval is requested only when you choose Connect. Background refreshes never open an approval dialog.";
+"settings.connections.state.connected" = "Connected to account usage";
+"settings.connections.state.localOnly" = "Using local usage only";
+"settings.connections.state.authorizationRequired" = "Keychain approval required";
+"settings.connections.state.sessionExpired" = "Session expired · sign in with the CLI again";
+"settings.connections.state.stale" = "Connection status unavailable";
 "settings.tab.general" = "General";
 "settings.tab.notifications" = "Alerts";
 "settings.tab.companion" = "Tokeni";
