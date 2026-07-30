@@ -17,10 +17,11 @@ grep -q 'attestations: write' "$release"
 grep -q 'id-token: write' "$release"
 grep -q 'uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6' "$release"
 grep -q 'subject-path: dist/TokeniBar-${{ steps.version.outputs.value }}.zip' "$release"
-grep -q 'Require signed distribution configuration' "$release"
-grep -q 'APP_SIGN_IDENTITY: ${{ secrets.DEVELOPER_ID_APPLICATION }}' "$release"
-if grep -q 'Ad-hoc signed build' "$release"; then
-    echo "GitHub releases must never publish ad-hoc signed builds" >&2
+grep -q 'workflow_dispatch:' "$release"
+grep -q 'APP_SIGN_IDENTITY: "-"' "$release"
+grep -q 'Ad-hoc signed build' "$release"
+if grep -Eq 'notarytool|CERTIFICATE_P12_BASE64|DEVELOPER_ID_APPLICATION' "$release"; then
+    echo "GitHub releases must not require Apple signing or notarization" >&2
     exit 1
 fi
 

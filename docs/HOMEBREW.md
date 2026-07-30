@@ -91,9 +91,9 @@ yourself, then run `tokeni-bar --install-app` again.
 
 ## Direct installation from GitHub Releases
 
-GitHub Release ZIPs are published only when the complete Developer ID signing
-and Apple notarization configuration is available. This is distinct from the
-Formula's local ad-hoc build.
+GitHub Release ZIPs are also published as ad-hoc signed builds without Apple
+Developer ID signing or notarization. If macOS blocks the first launch, you may
+need to allow it explicitly in **System Settings → Privacy & Security**.
 
 ```bash
 gh attestation verify TokeniBar-<version>.zip --repo 90ms/tokeni-bar

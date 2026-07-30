@@ -281,8 +281,8 @@ The app checks for a stable release every six hours but never installs before
 an explicit click. See [Homebrew installation](docs/HOMEBREW.md) for
 installation-specific details.
 
-GitHub ZIPs are published only after Developer ID signing and Apple
-notarization. For a direct installation, download the ZIP from the
+GitHub ZIPs are published as ad-hoc signed builds without Apple Developer ID
+signing or notarization. For a direct installation, download the ZIP from the
 [latest release](https://github.com/90ms/tokeni-bar/releases/latest).
 
 Verify the build provenance and checksum of a directly downloaded release ZIP:

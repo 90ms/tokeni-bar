@@ -270,7 +270,7 @@ StackFox, PromptPup, NullSlime 중 하나가 각각 20% 확률로 공개됩니�
 시작하지 않습니다. 설치 형태별 자세한 내용은
 [Homebrew 설치 안내](docs/HOMEBREW.ko.md)를 참고하세요.
 
-GitHub ZIP은 Developer ID로 서명하고 Apple 공증을 통과한 빌드만 게시합니다.
+GitHub ZIP은 Apple Developer ID나 공증 없이 ad-hoc 서명된 빌드로 게시됩니다.
 직접 설치하려면
 [최신 릴리스](https://github.com/90ms/tokeni-bar/releases/latest)를 이용할 수
 있습니다. 첫 실행이 차단되면 **시스템 설정 → 개인정보 보호 및 보안**에서

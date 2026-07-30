@@ -90,8 +90,9 @@ tokeni-bar --print-app-path
 
 ## GitHub 릴리스로 직접 설치
 
-GitHub Release ZIP은 Developer ID 서명과 Apple 공증 설정이 모두 확인된
-경우에만 게시됩니다. Formula의 로컬 ad-hoc 빌드와 배포용 ZIP을 구분합니다.
+GitHub Release ZIP도 Apple Developer ID 서명이나 공증 없이 ad-hoc
+서명된 빌드로 게시됩니다. macOS가 첫 실행을 차단하면 **시스템 설정 →
+개인정보 보호 및 보안**에서 직접 허용해야 할 수 있습니다.
 
 ```bash
 gh attestation verify TokeniBar-<version>.zip --repo 90ms/tokeni-bar
