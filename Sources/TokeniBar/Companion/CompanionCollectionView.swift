@@ -36,7 +36,7 @@ struct CompanionCollectionView: View {
     @State private var selectedGeneration = 0
     @State private var acquisitionFilter = CompanionAcquisitionFilter.all
     @State private var showsGrowthBreakdown = false
-    @State private var showsGuarantees = false
+    @State private var showsAdvancedBenefits = false
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
 
     private let stages: [CompanionGameStage] = [.hatchling, .junior, .adult]
@@ -166,9 +166,9 @@ struct CompanionCollectionView: View {
             switch self.selectedSection {
             case .home:
                 self.currentCompanion
-                self.appliedEffectsSummary
                 self.journeyActions
                 self.energyWallet
+                self.appliedEffectsSummary
             case .collection:
                 self.summary
                 self.pity
@@ -404,11 +404,19 @@ struct CompanionCollectionView: View {
                         .font(.headline)
                         .foregroundStyle(.yellow)
                     Spacer()
-                    Button(self.attendanceButtonTitle) {
-                        self.store.claimCompanionAttendance()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(self.store.companionAttendanceStatus != .available)
+                    Label(
+                        AppLocalization.string(
+                            self.store.companionAttendanceStatus == .claimed
+                                ? "companion.attendance.automaticComplete"
+                                : "companion.attendance.automaticPending"),
+                        systemImage: self.store.companionAttendanceStatus == .claimed
+                            ? "checkmark.circle.fill"
+                            : "clock")
+                        .font(.caption)
+                        .foregroundStyle(
+                            self.store.companionAttendanceStatus == .claimed
+                                ? Color.green
+                                : Color.secondary)
                 }
 
                 HStack(spacing: 16) {
@@ -445,12 +453,14 @@ struct CompanionCollectionView: View {
                         .font(.caption)
                         .foregroundStyle(.orange)
                 } else {
-                    Text(AppLocalization.string("companion.rewards.description"))
+                    Text(AppLocalization.string(
+                        "companion.rewards.description.simplified"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
-                Text(AppLocalization.string("companion.rewards.sources"))
+                Text(AppLocalization.string(
+                    "companion.rewards.sources.simplified"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
 
@@ -532,47 +542,52 @@ struct CompanionCollectionView: View {
                     }
                 }
 
-                Divider()
+                DisclosureGroup(
+                    AppLocalization.string(
+                        "companion.benefit.passive.advanced"),
+                    isExpanded: self.$showsAdvancedBenefits)
+                {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Label(
+                                AppLocalization.string(
+                                    "companion.benefit.passive.title"),
+                                systemImage: "square.stack.3d.up.fill")
+                                .font(.subheadline.weight(.semibold))
+                            Spacer()
+                            Text(AppLocalization.format(
+                                "companion.benefit.passive.count",
+                                self.store.companionUnlockedPassiveSlotCount,
+                                5))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Label(
-                            AppLocalization.string(
-                                "companion.benefit.passive.title"),
-                            systemImage: "square.stack.3d.up.fill")
-                            .font(.subheadline.weight(.semibold))
-                        Spacer()
-                        Text(AppLocalization.format(
-                            "companion.benefit.passive.count",
-                            self.store.companionUnlockedPassiveSlotCount,
-                            5))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                        ForEach(0..<5, id: \.self) { slot in
+                            self.passiveSlot(slot)
+                        }
 
-                    ForEach(0..<5, id: \.self) { slot in
-                        self.passiveSlot(slot)
-                    }
+                        if let error = self.store.companionBenefitError {
+                            Label(
+                                self.passiveErrorText(error),
+                                systemImage: "exclamationmark.triangle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
 
-                    if let error = self.store.companionBenefitError {
-                        Label(
-                            self.passiveErrorText(error),
-                            systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
+                        if let threshold =
+                            self.store.companionNextPassiveSlotThreshold
+                        {
+                            Text(AppLocalization.format(
+                                "companion.benefit.passive.next",
+                                threshold,
+                                self.store.companionState.collection
+                                    .unlockedFormCount))
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
-
-                    if let threshold =
-                        self.store.companionNextPassiveSlotThreshold
-                    {
-                        Text(AppLocalization.format(
-                            "companion.benefit.passive.next",
-                            threshold,
-                            self.store.companionState.collection
-                                .unlockedFormCount))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
+                    .padding(.top, 8)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -803,17 +818,6 @@ struct CompanionCollectionView: View {
         }
     }
 
-    private var attendanceButtonTitle: String {
-        switch self.store.companionAttendanceStatus {
-        case .available:
-            AppLocalization.string("companion.attendance.claim")
-        case .claimed:
-            AppLocalization.string("companion.attendance.claimed")
-        case .clockRollback:
-            AppLocalization.string("companion.attendance.unavailable")
-        }
-    }
-
     private var pendingCosmeticPurchase: CompanionCosmetic? {
         guard let pendingCosmeticPurchaseID else { return nil }
         return self.store.companionCosmetics.first {
@@ -1022,39 +1026,58 @@ struct CompanionCollectionView: View {
     }
 
     private var pity: some View {
-        DisclosureGroup(
-            AppLocalization.string("companion.pity.title"),
-            isExpanded: self.$showsGuarantees)
-        {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(AppLocalization.format(
-                    "companion.pity.rare",
-                    max(3 - self.store.companionState.pity.adultsWithoutRareOrHigher, 1)))
-                Text(AppLocalization.format(
-                    "companion.pity.epic",
-                    max(7 - self.store.companionState.pity.adultsWithoutEpicOrHigher, 1)))
-                Text(AppLocalization.format(
-                    "companion.pity.legendary",
-                    max(16 - self.store.companionState.pity.adultsWithoutLegendary, 1)))
-                if self.store.companionState.collection.discoveredSpeciesIDs.count
-                    < CompanionSpeciesID.allCases.count
-                {
-                    Text(AppLocalization.format(
-                        "companion.pity.species",
-                        max(
-                            6 - self.store.companionState.consecutiveDuplicateHatches,
-                            1)))
-                }
+        HStack(spacing: 8) {
+            Image(systemName: "shield.checkered")
+                .foregroundStyle(Color.accentColor)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(AppLocalization.string("companion.pity.next"))
+                    .font(.caption.weight(.semibold))
+                Text(self.nearestGuaranteeText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 8)
+            Spacer()
         }
         .padding(12)
         .background(
             Color.secondary.opacity(0.06),
             in: RoundedRectangle(cornerRadius: 9))
+    }
+
+    private var nearestGuaranteeText: String {
+        var guarantees: [(remaining: Int, key: String)] = [
+            (
+                max(
+                    3 - self.store.companionState.pity
+                        .adultsWithoutRareOrHigher,
+                    1),
+                "companion.pity.rare"),
+            (
+                max(
+                    7 - self.store.companionState.pity
+                        .adultsWithoutEpicOrHigher,
+                    1),
+                "companion.pity.epic"),
+            (
+                max(
+                    16 - self.store.companionState.pity
+                        .adultsWithoutLegendary,
+                    1),
+                "companion.pity.legendary"),
+        ]
+        if self.store.companionState.collection.discoveredSpeciesIDs.count
+            < CompanionSpeciesID.allCases.count
+        {
+            guarantees.append((
+                max(
+                    6 - self.store.companionState.consecutiveDuplicateHatches,
+                    1),
+                "companion.pity.species"))
+        }
+        let nearest = guarantees.min {
+            $0.remaining < $1.remaining
+        } ?? (1, "companion.pity.rare")
+        return AppLocalization.format(nearest.key, nearest.remaining)
     }
 
     private var collectionGrid: some View {

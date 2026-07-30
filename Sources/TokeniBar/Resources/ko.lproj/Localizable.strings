@@ -223,6 +223,7 @@
 "companion.benefit.active.empty" = "알을 부화시키거나 완료한 액티브 펫과 함께 지내면 특성이 발동합니다.";
 "companion.benefit.active.passiveSpecies" = "이 펫의 특성은 패시브 슬롯에 배치할 때 발동합니다.";
 "companion.benefit.passive.title" = "패시브 슬롯";
+"companion.benefit.passive.advanced" = "고급 패시브 편성";
 "companion.benefit.passive.count" = "%d / %d 슬롯 해금";
 "companion.benefit.passive.slot" = "%d번 슬롯";
 "companion.benefit.passive.locked" = "잠김";
@@ -256,6 +257,7 @@
 "companion.benefit.error.duplicateCompanion" = "같은 펫은 여러 슬롯에 편성할 수 없습니다.";
 "companion.benefit.error.duplicateSpecies" = "같은 종은 한 패시브 슬롯에만 편성할 수 있습니다.";
 "companion.pity.title" = "보장 현황";
+"companion.pity.next" = "가장 가까운 보장";
 "companion.pity.rare" = "앞으로 최대 %d번의 성체 완성 안에 희귀 이상";
 "companion.pity.epic" = "앞으로 최대 %d번의 성체 완성 안에 영웅 이상";
 "companion.pity.legendary" = "앞으로 최대 %d번의 성체 완성 안에 전설";
@@ -280,7 +282,9 @@
 "companion.rewards.title" = "별조각 보상";
 "companion.rewards.balance" = "별조각 %d개";
 "companion.rewards.description" = "출석, 검증된 성장, 새로운 펫·등급 발견, 여정 완료와 도감 달성으로 별조각을 얻습니다.";
+"companion.rewards.description.simplified" = "검증된 활동과 펫 발견·여정 성취로 별조각을 얻습니다.";
 "companion.rewards.sources" = "새 안정 버전의 첫 실행에도 릴리스 선물이 한 번 지급됩니다.";
+"companion.rewards.sources.simplified" = "활동 보상 · 발견 및 여정 보상";
 "companion.rewards.received" = "별조각 %d개를 받았습니다!";
 "companion.cosmetic.shop" = "별조각 꾸미기";
 "companion.cosmetic.description" = "구매한 꾸미기는 영구 보관되며 펫의 성장이나 등급에는 영향을 주지 않습니다.";
@@ -305,6 +309,8 @@
 "companion.cosmetic.confirm.message" = "%@을(를) 구매하면 별조각 %d개가 사용됩니다.";
 "companion.attendance.claim" = "오늘 출석하기";
 "companion.attendance.claimed" = "오늘 출석 완료";
+"companion.attendance.automaticComplete" = "오늘 활동 확인됨";
+"companion.attendance.automaticPending" = "첫 성장 활동을 기다리는 중";
 "companion.attendance.unavailable" = "출석 확인 불가";
 "companion.attendance.week" = "이번 주 %d/%d일";
 "companion.attendance.month" = "이번 달 %d/%d일";

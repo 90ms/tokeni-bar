@@ -814,11 +814,17 @@ final class UsageStore: ObservableObject {
         }
     }
 
-    func claimCompanionAttendance() {
+    private func recordAutomaticCompanionAttendance(at date: Date) {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionRewardState
+        guard self.companionRewardEngine.attendanceStatus(
+            at: date,
+            in: state) == .available
+        else { return }
         do {
-            let grants = try self.companionRewardEngine.checkIn(in: &state)
+            let grants = try self.companionRewardEngine.checkIn(
+                at: date,
+                in: &state)
             self.companionRewardState = state
             self.companionRewardNoticeAmount = grants.reduce(0) { $0 + $1.amount }
             self.companionAttendanceError = nil
@@ -1406,6 +1412,7 @@ final class UsageStore: ObservableObject {
                 return
             }
             self.companionState = companion
+            self.recordAutomaticCompanionAttendance(at: award.createdAt)
             if events.contains(where: { event in
                 if case let .energyApplied(amount) = event {
                     return amount > 0

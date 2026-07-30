@@ -223,6 +223,7 @@
 "companion.benefit.active.empty" = "Hatch the egg or stay with a completed active pet to enable its trait.";
 "companion.benefit.active.passiveSpecies" = "This pet's trait takes effect when assigned to a passive slot.";
 "companion.benefit.passive.title" = "Passive Slots";
+"companion.benefit.passive.advanced" = "Advanced passive lineup";
 "companion.benefit.passive.count" = "%d / %d slots unlocked";
 "companion.benefit.passive.slot" = "Slot %d";
 "companion.benefit.passive.locked" = "Locked";
@@ -256,6 +257,7 @@
 "companion.benefit.error.duplicateCompanion" = "The same pet cannot occupy multiple slots.";
 "companion.benefit.error.duplicateSpecies" = "The same species can occupy only one passive slot.";
 "companion.pity.title" = "Guarantees";
+"companion.pity.next" = "Nearest guarantee";
 "companion.pity.rare" = "Rare or higher within %d completed adult(s)";
 "companion.pity.epic" = "Epic or higher within %d completed adult(s)";
 "companion.pity.legendary" = "Legendary within %d completed adult(s)";
@@ -280,7 +282,9 @@
 "companion.rewards.title" = "Star Shard Rewards";
 "companion.rewards.balance" = "%d Star Shards";
 "companion.rewards.description" = "Earn Star Shards from attendance, verified growth, new pet and rarity discoveries, journeys, and collection milestones.";
+"companion.rewards.description.simplified" = "Earn Star Shards from verified activity and pet discovery or journey achievements.";
 "companion.rewards.sources" = "Each stable release also includes a one-time gift on first launch.";
+"companion.rewards.sources.simplified" = "Activity rewards · Discovery and journey rewards";
 "companion.rewards.received" = "Received %d Star Shards!";
 "companion.cosmetic.shop" = "Star Shard cosmetics";
 "companion.cosmetic.description" = "Purchased cosmetics are permanent and never affect growth or rarity.";
@@ -305,6 +309,8 @@
 "companion.cosmetic.confirm.message" = "Buying %@ will spend %d Star Shards.";
 "companion.attendance.claim" = "Check in today";
 "companion.attendance.claimed" = "Checked in today";
+"companion.attendance.automaticComplete" = "Today's activity confirmed";
+"companion.attendance.automaticPending" = "Waiting for the first growth activity";
 "companion.attendance.unavailable" = "Check-in unavailable";
 "companion.attendance.week" = "This week: %d/%d days";
 "companion.attendance.month" = "This month: %d/%d days";
