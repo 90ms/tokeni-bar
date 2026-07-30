@@ -241,6 +241,9 @@
 "companion.archive.showCurrent" = "Show Growing Pet";
 "companion.archive.showcasedSummary" = "Archived Adult · %d bond";
 "companion.archive.status.together" = "Together";
+"companion.archive.details" = "View companion details";
+"companion.archive.bondEnergy" = "Bond energy";
+"companion.archive.memories.empty" = "No memories were recorded.";
 "companion.archive.status.passiveSlot" = "Passive %d";
 "companion.archive.passive.choose" = "Assign Passive";
 "companion.archive.passive.change" = "Change Passive";
@@ -426,6 +429,7 @@
 "companion.newEgg.confirm.message" = "%d action energy will be spent. Collection discoveries and existing pity remain.";
 "companion.newEgg.confirm.action" = "Part ways and restart";
 "action.cancel" = "Cancel";
+"action.done" = "Done";
 "settings.companion.title" = "Tokeni Pets";
 "settings.companion.enabled" = "Show and grow pets";
 "settings.companion.animations" = "Animate pets";

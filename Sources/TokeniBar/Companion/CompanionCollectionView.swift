@@ -79,6 +79,8 @@ struct CompanionCollectionView: View {
         CompanionCosmeticSlotFilter.all
     @State private var cosmeticOwnershipFilter =
         CompanionCosmeticOwnershipFilter.all
+    @State private var selectedArchivedGeneration:
+        CompletedCompanionGeneration?
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
     @State private var nicknameDraft = ""
 
@@ -153,6 +155,9 @@ struct CompanionCollectionView: View {
             if let cosmetic = self.pendingCosmeticPurchase {
                 self.cosmeticPurchasePreview(cosmetic)
             }
+        }
+        .sheet(item: self.$selectedArchivedGeneration) { generation in
+            self.archivedCompanionDetail(generation)
         }
         .sheet(item: Binding(
             get: { self.store.companionReveal },
@@ -1849,6 +1854,18 @@ struct CompanionCollectionView: View {
                 Spacer(minLength: 4)
 
                 Button {
+                    self.selectedArchivedGeneration = generation
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help(AppLocalization.string(
+                    "companion.archive.details"))
+                .accessibilityLabel(AppLocalization.string(
+                    "companion.archive.details"))
+
+                Button {
                     self.store.showcaseArchivedCompanion(
                         isShowcased ? nil : generation.generationID)
                 } label: {
@@ -1872,6 +1889,146 @@ struct CompanionCollectionView: View {
                 ? Color.accentColor.opacity(0.14)
                 : Color.secondary.opacity(0.08),
             in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func archivedCompanionDetail(
+        _ generation: CompletedCompanionGeneration) -> some View
+    {
+        let memories = self.store.companionState.memories
+            .filter { $0.generationID == generation.generationID }
+            .sorted { $0.occurredAt > $1.occurredAt }
+        let variantID = generation.variantID
+            ?? CompanionVariantRegistry.migrated(
+                from: generation.finalRarity)
+        let isShowcased = self.store.companionState.showcasedGenerationID
+            == generation.generationID
+
+        return VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 18) {
+                ByteBotSpriteView(
+                    speciesID: generation.speciesID,
+                    stage: .adult,
+                    rarity: generation.finalRarity,
+                    behavior: .idle,
+                    dimension: 112,
+                    animationsEnabled: false)
+
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(generation.nickname ?? AppLocalization.string(
+                        "companion.species."
+                            + generation.speciesID.rawValue
+                            + ".name"))
+                        .font(.title2.weight(.semibold))
+                    CompanionVariantBadge(variantID: variantID)
+                    if let personalityID = generation.personalityID {
+                        Label(
+                            AppLocalization.string(
+                                "companion.personality."
+                                    + personalityID.rawValue),
+                            systemImage: "heart.text.square")
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(AppLocalization.format(
+                        "companion.archive.record",
+                        generation.generationNumber,
+                        generation.completedAt.formatted(
+                            date: .abbreviated,
+                            time: .omitted)))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            HStack(spacing: 8) {
+                TokeniMetricTile(
+                    title: AppLocalization.string(
+                        "companion.identity.bondLevel"),
+                    value: "\(CompanionBond.level(
+                        for: generation.bondEnergy))",
+                    systemImage: "heart.fill",
+                    tint: .pink)
+                TokeniMetricTile(
+                    title: AppLocalization.string(
+                        "companion.archive.bondEnergy"),
+                    value: generation.bondEnergy.formatted(),
+                    systemImage: "bolt.heart.fill",
+                    tint: .orange)
+                TokeniMetricTile(
+                    title: AppLocalization.string(
+                        "companion.memories.title"),
+                    value: memories.count.formatted(),
+                    systemImage: "book.closed.fill",
+                    tint: .accentColor)
+            }
+
+            Text(AppLocalization.string("companion.memories.title"))
+                .font(.headline)
+
+            if memories.isEmpty {
+                ContentUnavailableView(
+                    AppLocalization.string(
+                        "companion.archive.memories.empty"),
+                    systemImage: "book.closed")
+                    .frame(maxWidth: .infinity, minHeight: 160)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 9) {
+                        ForEach(memories) { memory in
+                            HStack(spacing: 9) {
+                                Image(systemName: self.memoryIcon(
+                                    memory.kind))
+                                    .foregroundStyle(Color.accentColor)
+                                    .frame(width: 20)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(self.memoryText(memory))
+                                        .font(.caption.weight(.semibold))
+                                    Text(AppLocalization.string(
+                                        "companion.stage."
+                                            + memory.stage.rawValue))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(memory.occurredAt.formatted(
+                                    date: .abbreviated,
+                                    time: .omitted))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(8)
+                            .background(
+                                .quaternary.opacity(0.4),
+                                in: RoundedRectangle(cornerRadius: 8))
+                            .accessibilityElement(children: .combine)
+                        }
+                    }
+                }
+            }
+
+            HStack {
+                Button(AppLocalization.string("action.done")) {
+                    self.selectedArchivedGeneration = nil
+                }
+                Spacer()
+                Button {
+                    self.store.showcaseArchivedCompanion(
+                        isShowcased ? nil : generation.generationID)
+                    self.selectedArchivedGeneration = nil
+                } label: {
+                    Label(
+                        AppLocalization.string(
+                            isShowcased
+                                ? "companion.archive.putAway"
+                                : "companion.archive.showcase"),
+                        systemImage: isShowcased
+                            ? "archivebox"
+                            : "figure.2")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(22)
+        .frame(width: 480, height: 560)
     }
 
     private func memoryCount(for generationID: UUID) -> Int {

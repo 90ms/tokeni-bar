@@ -241,6 +241,9 @@
 "companion.archive.showCurrent" = "성장 중인 펫 보기";
 "companion.archive.showcasedSummary" = "보관된 성체 · 친밀도 %d";
 "companion.archive.status.together" = "동행 중";
+"companion.archive.details" = "동료 상세 보기";
+"companion.archive.bondEnergy" = "친밀도 에너지";
+"companion.archive.memories.empty" = "기록된 추억이 없습니다.";
 "companion.archive.status.passiveSlot" = "패시브 %d";
 "companion.archive.passive.choose" = "패시브 배치";
 "companion.archive.passive.change" = "패시브 변경";
@@ -426,6 +429,7 @@
 "companion.newEgg.confirm.message" = "행동 에너지 %d를 사용합니다. 도감 발견과 기존 천장은 유지됩니다.";
 "companion.newEgg.confirm.action" = "이별하고 다시 시작";
 "action.cancel" = "취소";
+"action.done" = "완료";
 "settings.companion.title" = "Tokeni 펫";
 "settings.companion.enabled" = "펫 표시 및 성장";
 "settings.companion.animations" = "펫 애니메이션";
