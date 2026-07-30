@@ -224,7 +224,7 @@ public struct CompanionAssetResetEngine: Sendable {
                 rewards,
                 refund: quote.cosmeticStarShardRefund,
                 at: now),
-            targetBenefitState: CompanionBenefitState(),
+            targetBenefitState: CompanionBenefitState(updatedAt: now),
             preparedAt: now)
     }
 
