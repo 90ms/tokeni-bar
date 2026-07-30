@@ -2,7 +2,7 @@
 
 [한국어](companion-policy.ko.md) | **English**
 
-- Policy version: 2.1.0
+- Policy version: 2.1.1
 - Updated: 2026-07-30
 - Status: implemented
 
@@ -126,6 +126,31 @@ through the refund policy below rather than forced appearance mapping.
   read-only with no refund deadline until confirmation.
 - Damaged state uses recoverable backups or is quarantined.
 
+### Legacy compatibility lifecycle
+
+The current release retains pre-redesign rarity, trait, and passive state and
+calculation code as a compatibility layer so refunds can finish safely. This
+layer does not apply effects to the new game rules or create new legacy data.
+
+The next release removes these legacy runtime elements:
+
+- trait and passive effect calculation and daily settlement;
+- passive lineup and slot-unlock APIs;
+- unused trait/passive UI, presentation models, and localized strings;
+- tests that only verify those retired runtime behaviors.
+
+The following minimal compatibility layer remains so users can update directly
+after skipping a release:
+
+- read-only decoders for old companion, reward, and benefit save files;
+- legacy-field conversion needed to calculate the refund quote;
+- migration IDs, source backups, apply-once journals, and receipts.
+
+The minimal layer never executes legacy effects or writes legacy state back.
+It can be removed only when the oldest supported direct-upgrade version changes,
+with a separate policy update and save-fixture tests. Current cosmetics such as
+Legacy Azure and Legacy Violet body colors are not part of this removal.
+
 ## 8. Adding content
 
 1. Register a stable species or variant ID.
@@ -138,13 +163,20 @@ through the refund policy below rather than forced appearance mapping.
 Differentiate new content through silhouette, motion, personality expression,
 and cosmetic compatibility—not numerical superiority.
 
-## 9. Version 2.1.0 migration policy
+## 9. Version 2.1.1 compatibility policy
+
+- Kept legacy runtime paths through the current release and scheduled their
+  removal for the next release.
+- Retained minimum read/refund compatibility for users who skip a version.
+- Distinguished current Legacy Color cosmetics from retired runtime code.
+
+## 10. Version 2.1.0 migration policy
 
 - Added confirmed resets, full-price refunds, recovery journals, and receipts.
 - Preserved every refunded Energy unit outside the normal safety cap.
 - Limited silent completion to users with no resettable assets.
 
-## 10. Version 2.0.0 redesign
+## 11. Version 2.0.0 redesign
 
 - Removed the Normal/Rare/Epic/Legendary hierarchy and evolution rank rolls.
 - Added Standard/Prismatic variants and one transparent Prismatic guarantee.
