@@ -30,9 +30,7 @@ struct CompanionMigrationCard: View {
                         .controlSize(.small)
                 }
                 if let error = self.store.companionMigrationError {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                    TokeniStatusBanner(text: error, kind: .error)
                 }
             }
             .confirmationDialog(
