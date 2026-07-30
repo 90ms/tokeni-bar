@@ -527,6 +527,12 @@
 "history.percentLeft" = "Percent left";
 "history.retention" = "Local aggregate history is retained for %d days.";
 "history.clear" = "Clear History";
+"history.clear.confirm.title" = "Clear all usage history?";
+"history.clear.confirm.message" = "This permanently deletes %d records stored on this Mac.";
+"history.clear.confirm.action" = "Clear History";
+"history.summary.samples" = "%d samples";
+"history.summary.latest" = "Latest %@";
+"history.chart.accessibility" = "%1$d samples from the last %2$d days";
 "diagnostics.title" = "Provider Diagnostics";
 "diagnostics.open" = "Open Provider Diagnostics…";
 "diagnostics.description" = "Review aggregated provider status before copying it for troubleshooting.";

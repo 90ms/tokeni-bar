@@ -527,6 +527,12 @@
 "history.percentLeft" = "남은 비율";
 "history.retention" = "로컬 집계 기록을 %d일 동안 보관합니다.";
 "history.clear" = "기록 삭제";
+"history.clear.confirm.title" = "사용량 기록을 모두 삭제할까요?";
+"history.clear.confirm.message" = "이 Mac에 저장된 기록 %d개가 삭제되며 되돌릴 수 없습니다.";
+"history.clear.confirm.action" = "기록 삭제";
+"history.summary.samples" = "표본 %d개";
+"history.summary.latest" = "최근 %@";
+"history.chart.accessibility" = "최근 %2$d일 동안 표본 %1$d개";
 "diagnostics.title" = "제공자 진단";
 "diagnostics.open" = "제공자 진단 열기…";
 "diagnostics.description" = "문제 해결을 위해 복사하기 전에 집계된 제공자 상태를 확인합니다.";
