@@ -68,7 +68,9 @@ public struct CompanionRewardEngine: Sendable {
         cosmetics: [CompanionCosmetic] = [
             CompanionCosmetic(id: .sparkleAura, cost: 60),
             CompanionCosmetic(id: .pixelHearts, cost: 80),
+            CompanionCosmetic(id: .azurePalette, cost: 90),
             CompanionCosmetic(id: .developerHeadphones, cost: 100),
+            CompanionCosmetic(id: .violetPalette, cost: 110),
             CompanionCosmetic(id: .starCrown, cost: 120),
             CompanionCosmetic(id: .wizardHat, cost: 140),
             CompanionCosmetic(id: .terminalNight, cost: 160),

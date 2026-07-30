@@ -227,6 +227,36 @@ struct CompanionCosmeticDecoration: View {
                         y: self.canvasDimension * 0.30)
                 }
                 .padding(self.canvasDimension * 0.03)
+            case .azurePalette:
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [.cyan, .blue, .indigo],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing))
+                    .frame(
+                        width: self.canvasDimension * 0.64,
+                        height: self.canvasDimension * 0.64)
+                    .overlay {
+                        Image(systemName: "paintpalette.fill")
+                            .font(.system(size: self.canvasDimension * 0.24))
+                            .foregroundStyle(.white)
+                    }
+                    .rotationEffect(.degrees(Double(slowWave) * 2))
+            case .violetPalette:
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [.pink, .purple, .indigo],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing))
+                    .frame(
+                        width: self.canvasDimension * 0.64,
+                        height: self.canvasDimension * 0.64)
+                    .overlay {
+                        Image(systemName: "paintpalette.fill")
+                            .font(.system(size: self.canvasDimension * 0.24))
+                            .foregroundStyle(.white)
+                    }
+                    .scaleEffect(1 + slowWave * 0.015)
             }
         }
     }

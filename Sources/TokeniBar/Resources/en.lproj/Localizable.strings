@@ -324,9 +324,12 @@
 "companion.cosmetic.wizardHat" = "Wizard Hat";
 "companion.cosmetic.terminalNight" = "Terminal Night";
 "companion.cosmetic.cloudGarden" = "Cloud Garden";
+"companion.cosmetic.azurePalette" = "Legacy Azure Color";
+"companion.cosmetic.violetPalette" = "Legacy Violet Color";
 "companion.cosmetic.slot.head" = "Head";
 "companion.cosmetic.slot.aura" = "Aura";
 "companion.cosmetic.slot.background" = "Background";
+"companion.cosmetic.slot.palette" = "Body Color";
 "companion.cosmetic.price" = "%d Star Shards";
 "companion.cosmetic.buy" = "Buy";
 "companion.cosmetic.equip" = "Equip";

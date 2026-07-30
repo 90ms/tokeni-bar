@@ -185,6 +185,18 @@ struct CompanionRewardEngineTests {
         #expect(state.selectedCosmeticIDs == [.starCrown, .sparkleAura])
         try engine.purchase(cosmeticID: .pixelHearts, at: now, in: &state)
         #expect(state.selectedCosmeticIDs == [.starCrown, .pixelHearts])
+        try engine.purchase(cosmeticID: .azurePalette, at: now, in: &state)
+        #expect(state.selectedCosmeticIDs == [
+            .starCrown,
+            .pixelHearts,
+            .azurePalette,
+        ])
+        try engine.purchase(cosmeticID: .violetPalette, at: now, in: &state)
+        #expect(state.selectedCosmeticIDs == [
+            .starCrown,
+            .pixelHearts,
+            .violetPalette,
+        ])
     }
 
     @Test("Cosmetics reject insufficient balances and locked selections")

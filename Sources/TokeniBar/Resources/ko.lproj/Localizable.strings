@@ -324,9 +324,12 @@
 "companion.cosmetic.wizardHat" = "마법사 모자";
 "companion.cosmetic.terminalNight" = "터미널 나이트";
 "companion.cosmetic.cloudGarden" = "구름 정원";
+"companion.cosmetic.azurePalette" = "레거시 블루 컬러";
+"companion.cosmetic.violetPalette" = "레거시 바이올렛 컬러";
 "companion.cosmetic.slot.head" = "머리";
 "companion.cosmetic.slot.aura" = "오라";
 "companion.cosmetic.slot.background" = "배경";
+"companion.cosmetic.slot.palette" = "바디 컬러";
 "companion.cosmetic.price" = "별조각 %d개";
 "companion.cosmetic.buy" = "구매";
 "companion.cosmetic.equip" = "착용";

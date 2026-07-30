@@ -872,7 +872,7 @@ struct CompanionCollectionView: View {
             ByteBotTransitionView(
                 speciesID: self.store.displayedCompanionSpeciesID,
                 stage: self.store.displayedCompanionStage,
-                rarity: self.store.displayedCompanionRarity,
+                rarity: self.previewRarity(for: cosmeticIDs),
                 behavior: .idle,
                 cosmeticIDs: cosmeticIDs,
                 dimension: 104,
@@ -880,6 +880,17 @@ struct CompanionCollectionView: View {
                 animationIntensity: self.store
                     .companionAnimationIntensity.motionScale)
         }
+    }
+
+    private func previewRarity(
+        for cosmeticIDs: Set<CompanionCosmeticID>) -> CompanionRarity?
+    {
+        if cosmeticIDs.contains(.azurePalette) { return .rare }
+        if cosmeticIDs.contains(.violetPalette) { return .epic }
+        let variantID = self.store.displayedCompanionVariantID
+        return variantID.map {
+            CompanionVariantRegistry.definition(for: $0).assetRarity
+        } ?? self.store.displayedCompanionRarity
     }
 
     private func cosmeticCard(_ cosmetic: CompanionCosmetic) -> some View {

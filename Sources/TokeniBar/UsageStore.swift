@@ -309,6 +309,7 @@ final class UsageStore: ObservableObject {
             self.companionRewardState =
                 (try? await self.companionRewardStateStore.load())
                     ?? CompanionRewardState()
+            self.reconcileLegacyCompanionPalettes()
             self.companionBenefitState =
                 (try? await self.companionBenefitStateStore.load())
                     ?? CompanionBenefitState()
@@ -982,7 +983,18 @@ final class UsageStore: ObservableObject {
     }
 
     var displayedCompanionRarity: CompanionRarity? {
-        self.showcasedCompanion?.finalRarity ?? self.companionState.rarity
+        if self.companionRewardState.selectedCosmeticIDs.contains(
+            .azurePalette)
+        {
+            return .rare
+        }
+        if self.companionRewardState.selectedCosmeticIDs.contains(
+            .violetPalette)
+        {
+            return .epic
+        }
+        return self.showcasedCompanion?.finalRarity
+            ?? self.companionState.rarity
     }
 
     var displayedCompanionVariantID: CompanionVariantID? {
@@ -1554,6 +1566,7 @@ final class UsageStore: ObservableObject {
     }
 
     private func reconcileCompanionRewards() {
+        self.reconcileLegacyCompanionPalettes()
         var state = self.companionRewardState
         var grants = self.companionRewardEngine.reconcile(
             collection: self.companionState.collection,
@@ -1583,6 +1596,21 @@ final class UsageStore: ObservableObject {
         Task {
             try? await self.companionRewardStateStore.save(state, revision: revision)
         }
+    }
+
+    private func reconcileLegacyCompanionPalettes() {
+        var state = self.companionRewardState
+        let legacyVariants = self.companionState.collection.discoveredVariantIDs
+        if legacyVariants.contains(.legacyAzure) {
+            state.unlockedCosmeticIDs.insert(.azurePalette)
+        }
+        if legacyVariants.contains(.legacyViolet) {
+            state.unlockedCosmeticIDs.insert(.violetPalette)
+        }
+        guard state != self.companionRewardState else { return }
+        state.updatedAt = .now
+        self.companionRewardState = state
+        self.saveCompanionRewardState()
     }
 
     private func refreshPricingCatalogIfNeeded(force: Bool = false) async {
