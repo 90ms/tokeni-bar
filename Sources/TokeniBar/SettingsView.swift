@@ -70,16 +70,6 @@ struct SettingsView: View {
 
     private var companionTab: some View {
         Form {
-            if self.store.companionMigrationQuote != nil
-                || self.store.companionMigrationReceipt != nil
-            {
-                Section(AppLocalization.string(
-                    "settings.companion.migration"))
-                {
-                    CompanionMigrationCard(store: self.store)
-                }
-            }
-
             Section(AppLocalization.string("settings.companion.title")) {
                 Toggle(isOn: Binding(
                     get: { self.store.companionEnabled },

@@ -66,26 +66,6 @@ struct CompanionCosmeticDecoration: View {
                             .rotationEffect(.degrees(time * 18 + Double(index) * 29))
                     }
                 }
-            case .starCrown:
-                ZStack {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: max(self.canvasDimension * 0.27, 12)))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.orange, .yellow, .white, .yellow],
-                                startPoint: .leading,
-                                endPoint: .trailing))
-                        .shadow(color: .orange.opacity(0.45), radius: 2, y: 1)
-                    Image(systemName: "sparkle")
-                        .font(.system(size: self.canvasDimension * 0.09))
-                        .foregroundStyle(.white)
-                        .offset(
-                            x: slowWave * self.canvasDimension * 0.12,
-                            y: -self.canvasDimension * 0.08)
-                        .opacity(0.35 + abs(slowWave) * 0.65)
-                }
-                .rotationEffect(.degrees(Double(slowWave) * 2.5))
-                .offset(y: -self.canvasDimension * 0.39 + slowWave * 2)
             case .nightRing:
                 Circle()
                     .stroke(
@@ -125,51 +105,35 @@ struct CompanionCosmeticDecoration: View {
                             .opacity(sin(progress * .pi))
                     }
                 }
-            case .developerHeadphones:
+            case .fireflyAura:
                 ZStack {
-                    Image(systemName: "headphones")
-                        .font(.system(
-                            size: max(self.canvasDimension * 0.34, 15),
-                            weight: .bold))
-                        .foregroundStyle(.cyan)
-                        .shadow(color: .blue.opacity(0.55), radius: 2)
-                    ForEach(0..<3, id: \.self) { index in
-                        Capsule()
-                            .fill(index.isMultiple(of: 2) ? .cyan : .mint)
-                            .frame(
-                                width: 3,
-                                height: self.canvasDimension
-                                    * (0.05 + 0.035 * CGFloat(
-                                        (sin(time * 5 + Double(index) * 1.4) + 1) / 2)))
+                    ForEach(0..<8, id: \.self) { index in
+                        let angle = time * 0.55 + Double(index) * .pi / 4
+                        Circle()
+                            .fill(index.isMultiple(of: 2) ? .yellow : .mint)
+                            .frame(width: 5, height: 5)
+                            .shadow(color: .yellow, radius: 3)
                             .offset(
-                                x: (CGFloat(index) - 1) * 7,
-                                y: self.canvasDimension * 0.17)
+                                x: cos(angle) * self.canvasDimension * 0.4,
+                                y: sin(angle * 1.3) * self.canvasDimension * 0.35)
                     }
                 }
-                .scaleEffect(x: 1, y: 1 + slowWave * 0.025)
-                .offset(y: -self.canvasDimension * 0.22)
-            case .wizardHat:
+            case .orbitAura:
                 ZStack {
-                    PixelHatTriangle()
-                        .fill(.purple)
+                    Circle()
+                        .stroke(.cyan.opacity(0.55), lineWidth: 2)
                         .frame(
-                            width: self.canvasDimension * 0.42,
-                            height: self.canvasDimension * 0.32)
-                    Rectangle()
-                        .fill(.indigo)
-                        .frame(
-                            width: self.canvasDimension * 0.52,
-                            height: max(self.canvasDimension * 0.07, 3))
-                        .offset(y: self.canvasDimension * 0.14)
-                    Image(systemName: "star.fill")
-                        .font(.system(size: max(self.canvasDimension * 0.09, 6)))
-                        .foregroundStyle(.yellow)
-                        .offset(y: -self.canvasDimension * 0.02)
-                        .scaleEffect(0.8 + abs(slowWave) * 0.35)
-                        .rotationEffect(.degrees(time * 45))
+                            width: self.canvasDimension * 0.9,
+                            height: self.canvasDimension * 0.42)
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .fill([Color.cyan, .purple, .orange][index])
+                            .frame(width: 8, height: 8)
+                            .offset(x: self.canvasDimension * 0.45)
+                            .rotationEffect(.degrees(
+                                time * 40 + Double(index) * 120))
+                    }
                 }
-                .rotationEffect(.degrees(Double(slowWave) * 2))
-                .offset(y: -self.canvasDimension * 0.39)
             case .terminalNight:
                 ZStack {
                     RoundedRectangle(cornerRadius: self.canvasDimension * 0.12)
@@ -227,6 +191,35 @@ struct CompanionCosmeticDecoration: View {
                         y: self.canvasDimension * 0.30)
                 }
                 .padding(self.canvasDimension * 0.03)
+            case .sunsetGrid:
+                RoundedRectangle(cornerRadius: self.canvasDimension * 0.16)
+                    .fill(LinearGradient(
+                        colors: [.purple.opacity(0.45), .orange.opacity(0.35)],
+                        startPoint: .top,
+                        endPoint: .bottom))
+                    .overlay {
+                        Image(systemName: "sun.horizon.fill")
+                            .font(.system(size: self.canvasDimension * 0.5))
+                            .foregroundStyle(.orange.opacity(0.55))
+                    }
+                    .padding(self.canvasDimension * 0.03)
+            case .pixelForest:
+                RoundedRectangle(cornerRadius: self.canvasDimension * 0.16)
+                    .fill(LinearGradient(
+                        colors: [.indigo.opacity(0.35), .green.opacity(0.4)],
+                        startPoint: .top,
+                        endPoint: .bottom))
+                    .overlay {
+                        HStack(spacing: 5) {
+                            ForEach(0..<4, id: \.self) { _ in
+                                Image(systemName: "tree.fill")
+                            }
+                        }
+                        .font(.system(size: self.canvasDimension * 0.22))
+                        .foregroundStyle(.green.opacity(0.55))
+                        .offset(y: self.canvasDimension * 0.28)
+                    }
+                    .padding(self.canvasDimension * 0.03)
             case .azurePalette:
                 Circle()
                     .fill(LinearGradient(
@@ -286,15 +279,4 @@ struct CompanionCosmeticDecoration: View {
         CGPoint(x: 0.48, y: -0.09),
     ]
     private static let heartX: [CGFloat] = [-0.40, -0.22, 0.04, 0.32, 0.43, -0.05]
-}
-
-private struct PixelHatTriangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.closeSubpath()
-        return path
-    }
 }

@@ -33,7 +33,6 @@ private enum CompanionCosmeticSlotFilter:
     Identifiable
 {
     case all
-    case head
     case aura
     case background
     case palette
@@ -43,7 +42,6 @@ private enum CompanionCosmeticSlotFilter:
     var slot: CompanionCosmeticSlot? {
         switch self {
         case .all: nil
-        case .head: .head
         case .aura: .aura
         case .background: .background
         case .palette: .palette
@@ -194,12 +192,6 @@ struct CompanionCollectionView: View {
     @ViewBuilder
     private var sectionContent: some View {
         VStack(alignment: .leading, spacing: 18) {
-            if self.store.companionMigrationQuote != nil
-                || self.store.companionMigrationReceipt != nil
-            {
-                CompanionMigrationCard(store: self.store)
-            }
-
             switch self.selectedSection {
             case .home:
                 self.currentCompanion
@@ -533,6 +525,62 @@ struct CompanionCollectionView: View {
                     "companion.rewards.sources.simplified"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(AppLocalization.string("companion.booster.title"))
+                        .font(.subheadline.weight(.semibold))
+                    if let active = self.store.companionActiveEnergyBooster {
+                        Text(AppLocalization.format(
+                            "companion.booster.active",
+                            active.id.multiplier,
+                            active.expiresAt.formatted(
+                                date: .omitted,
+                                time: .shortened)))
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
+                    HStack(spacing: 8) {
+                        ForEach(CompanionEnergyBoosterID.allCases, id: \.self) {
+                            boosterID in
+                            let count = self.store.companionRewardState
+                                .energyBoosterInventory[boosterID, default: 0]
+                            Button {
+                                if count > 0 {
+                                    self.store.activateCompanionEnergyBooster(
+                                        boosterID)
+                                } else {
+                                    self.store.purchaseCompanionEnergyBooster(
+                                        boosterID)
+                                }
+                            } label: {
+                                VStack(spacing: 2) {
+                                    Text("×\(boosterID.multiplier)")
+                                        .font(.caption.weight(.bold))
+                                    Text(count > 0
+                                        ? AppLocalization.format(
+                                            "companion.booster.count",
+                                            count)
+                                        : AppLocalization.format(
+                                            "companion.booster.price",
+                                            boosterID.cost))
+                                        .font(.caption2)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(
+                                self.store.companionActiveEnergyBooster != nil
+                                    || (count == 0
+                                        && self.store.companionRewardState
+                                            .starShards < boosterID.cost))
+                        }
+                    }
+                    Text(AppLocalization.string(
+                        "companion.booster.bondDescription"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
 
                 Divider()
 

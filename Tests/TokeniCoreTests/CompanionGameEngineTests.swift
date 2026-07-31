@@ -198,27 +198,6 @@ struct CompanionGameEngineTests {
         #expect(state == original)
     }
 
-    @Test("Migration refund reserve is spent without the regular safety cap")
-    func migrationReserve() throws {
-        let engine = CompanionGameEngine(calendar: self.calendar)
-        var state = CompanionGameState(
-            growthEnergy: 100,
-            migrationEnergyReserve: 500,
-            growthDateKey: GrowthLocalDate.key(
-                for: .now,
-                calendar: self.calendar))
-
-        _ = try engine.hatch(
-            speciesUnitValue: 0,
-            variantUnitValue: 0,
-            in: &state)
-
-        #expect(state.stage == .hatchling)
-        #expect(state.growthEnergy == 100)
-        #expect(state.migrationEnergyReserve == 0)
-        #expect(state.availableGrowthEnergy == 100)
-    }
-
     @Test("Daily rollover preserves unspent energy across elapsed days")
     func dailyCarryover() throws {
         let first = try #require(self.date("2027-01-15T12:00:00Z"))
@@ -429,6 +408,26 @@ struct CompanionGameEngineTests {
         #expect(state.memories.compactMap(\.bondLevel) == [2])
     }
 
+    @Test("Boosted action energy can preserve verified base bond growth")
+    func boostedEnergyUsesBaseBondValue() {
+        let engine = CompanionGameEngine(calendar: self.calendar)
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm)
+        let award = GrowthEnergyAward(
+            dateKey: state.growthDateKey,
+            energy: 50,
+            createdAt: .now)
+
+        _ = engine.apply(award: award, bondEnergy: 10, to: &state)
+
+        #expect(state.growthEnergy == 50)
+        #expect(state.bondEnergy == 10)
+    }
+
     @Test("Names and content-free memories make journeys individual")
     func identityAndMemories() throws {
         let now = try #require(self.date("2027-01-15T12:00:00Z"))
@@ -577,39 +576,6 @@ struct CompanionGameEngineTests {
         #expect(state.variantID == .prismatic)
         #expect(state.personalityID == .calm)
         #expect(state.memories.isEmpty)
-    }
-
-    @Test("Version seven state gains an empty migration reserve")
-    func migratesVersionSevenReserve() async throws {
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
-        let file = directory.appending(path: "companion-state.json")
-        defer { try? FileManager.default.removeItem(at: directory) }
-        try FileManager.default.createDirectory(
-            at: directory,
-            withIntermediateDirectories: true)
-        let current = CompanionGameState(
-            speciesID: .promptpup,
-            stage: .adult,
-            rarity: .normal,
-            variantID: .standard,
-            personalityID: .playful,
-            growthEnergy: 450)
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        let encoded = try encoder.encode(current)
-        var object = try #require(
-            JSONSerialization.jsonObject(with: encoded) as? [String: Any])
-        object["schemaVersion"] = 7
-        object.removeValue(forKey: "migrationEnergyReserve")
-        try JSONSerialization.data(withJSONObject: object).write(to: file)
-
-        let state = try await CompanionGameStateStore(fileURL: file).load()
-
-        #expect(state.schemaVersion == 8)
-        #expect(state.speciesID == .promptpup)
-        #expect(state.migrationEnergyReserve == 0)
-        #expect(state.availableGrowthEnergy == 450)
     }
 
     @Test("Version four lineage forms are removed during migration")

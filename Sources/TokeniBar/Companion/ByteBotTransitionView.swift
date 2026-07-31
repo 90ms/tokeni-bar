@@ -65,15 +65,8 @@ struct ByteBotTransitionView: View {
                 behavior: self.behavior,
                 dimension: self.dimension,
                 animationsEnabled: self.animationsEnabled)
+                .scaleEffect(self.displayedKey.stage == .adult ? 0.9 : 1)
                 .scaleEffect(self.effect == nil ? 1 : (self.expanded ? 1.08 : 0.72))
-
-            if let cosmeticID = self.cosmeticID(in: .head) {
-                CompanionCosmeticDecoration(
-                    cosmeticID: cosmeticID,
-                    dimension: self.dimension,
-                    animationsEnabled: self.cosmeticMotionEnabled,
-                    motionIntensity: self.animationIntensity)
-            }
 
             if let effect {
                 Text(self.message(for: effect))

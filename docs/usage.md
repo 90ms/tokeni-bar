@@ -9,8 +9,8 @@ time by default. Expand **Show details** for additional quota windows, token
 totals, API-equivalent reference costs, data source, and update time. The
 header and footer actions stay fixed while the center scrolls when many
 providers or expanded details need more room.
-Usage cards come first, while the companion starts as a collapsed summary row.
-Compact mode keeps the same path to expanded provider details.
+Usage cards come first, followed by an always-visible companion card. Compact
+mode keeps the same path to expanded provider details.
 
 **Usage History** in the footer opens the 30-day local aggregate window
 directly; settings and quit remain available as right-side icon actions.
@@ -22,15 +22,15 @@ providers. Usage-file modification times drive working and sleeping animation
 only; they never create growth energy.
 
 Verified increases across providers are combined after preventing replayed
-counters from paying twice. Every 100,000 tokens grant one action energy.
+counters from paying twice. Every 50,000 tokens grant one action energy.
 Unconverted remainder tokens carry across dates, and refreshing the same
 cumulative value never pays twice.
 
-**Migration refund Energy** from a pet-system redesign is not new growth. It
-returns Energy previously earned from verified usage and already spent on
-actions. The refund stays in a separate reserve outside the regular 100,000
-safety cap and is spent first. It does not count as Energy earned today and
-does not trigger attendance, first-growth rewards, or new bond progress.
+When a booster is active, its 2x, 3x, or 5x multiplier applies to the base
+action energy produced by the ledger. The award creation time determines
+whether the booster is active, and an already-applied award ID never pays
+again. Booster-added Energy does not become extra bond and does not multiply
+other bonus Energy again.
 
 Counter scope differs by provider:
 

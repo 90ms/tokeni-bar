@@ -5,7 +5,6 @@ struct MenuPopoverView: View {
     @ObservedObject var store: UsageStore
     @Environment(\.openSettings) private var openSettings
     @Environment(\.openWindow) private var openWindow
-    @State private var showsCompanionDetails = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,12 +16,6 @@ struct MenuPopoverView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    if self.store.companionMigrationQuote != nil {
-                        CompanionMigrationCard(
-                            store: self.store,
-                            showsReceiptDismissButton: true)
-                    }
-
                     if !self.store.snapshots.isEmpty {
                         Text(AppLocalization.string("settings.tab.usage"))
                             .font(.caption.weight(.semibold))
@@ -37,14 +30,6 @@ struct MenuPopoverView: View {
                         self.updateBanner(
                             version: result.latestRelease.version.description,
                             destination: result.latestRelease.pageURL)
-                    }
-
-                    if self.store.companionMigrationQuote == nil,
-                       self.store.companionMigrationReceiptNoticeVisible
-                    {
-                        CompanionMigrationCard(
-                            store: self.store,
-                            showsReceiptDismissButton: true)
                     }
 
                     if self.store.companionEnabled {
@@ -152,65 +137,9 @@ struct MenuPopoverView: View {
     }
 
     private var companionSummary: some View {
-        DisclosureGroup(isExpanded: self.$showsCompanionDetails) {
-            CompanionCard(
-                store: self.store,
-                compact: self.store.compactModeEnabled)
-                .padding(.top, 8)
-        } label: {
-            HStack(spacing: 9) {
-                ByteBotTransitionView(
-                    speciesID: self.store.displayedCompanionSpeciesID,
-                    stage: self.store.displayedCompanionStage,
-                    rarity: self.store.displayedCompanionRarity,
-                    behavior: .idle,
-                    cosmeticIDs: self.store.companionRewardState
-                        .selectedCosmeticIDs,
-                    dimension: 36,
-                    animationsEnabled: false)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(self.companionSummaryName)
-                        .font(.caption.weight(.semibold))
-                    Text(AppLocalization.string(
-                        "companion.stage."
-                            + self.store.displayedCompanionStage.rawValue))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if self.store.hasReadyCompanionGrowthAction {
-                    Label(
-                        AppLocalization.string("companion.action.ready"),
-                        systemImage: "bolt.fill")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.orange)
-                } else {
-                    Text(AppLocalization.format(
-                        "companion.energy.balanceValue",
-                        self.store.companionState.availableGrowthEnergy))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-            }
-            .contentShape(Rectangle())
-        }
-        .tint(.secondary)
-        .padding(TokeniLayout.cardPadding)
-        .background(
-            .quaternary.opacity(0.38),
-            in: RoundedRectangle(cornerRadius: TokeniLayout.cornerRadius))
-    }
-
-    private var companionSummaryName: String {
-        if let nickname = self.store.displayedCompanionNickname {
-            return nickname
-        }
-        guard let speciesID = self.store.displayedCompanionSpeciesID else {
-            return AppLocalization.string("companion.species.mystery.name")
-        }
-        return AppLocalization.string(
-            "companion.species.\(speciesID.rawValue).name")
+        CompanionCard(
+            store: self.store,
+            compact: self.store.compactModeEnabled)
     }
 
     private var footer: some View {

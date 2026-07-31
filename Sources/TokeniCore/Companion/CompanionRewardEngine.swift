@@ -69,13 +69,14 @@ public struct CompanionRewardEngine: Sendable {
             CompanionCosmetic(id: .sparkleAura, cost: 60),
             CompanionCosmetic(id: .pixelHearts, cost: 80),
             CompanionCosmetic(id: .azurePalette, cost: 90),
-            CompanionCosmetic(id: .developerHeadphones, cost: 100),
             CompanionCosmetic(id: .violetPalette, cost: 110),
-            CompanionCosmetic(id: .starCrown, cost: 120),
-            CompanionCosmetic(id: .wizardHat, cost: 140),
+            CompanionCosmetic(id: .fireflyAura, cost: 130),
             CompanionCosmetic(id: .terminalNight, cost: 160),
+            CompanionCosmetic(id: .orbitAura, cost: 180),
             CompanionCosmetic(id: .nightRing, cost: 200),
             CompanionCosmetic(id: .cloudGarden, cost: 220),
+            CompanionCosmetic(id: .sunsetGrid, cost: 240),
+            CompanionCosmetic(id: .pixelForest, cost: 260),
         ],
         calendar: Calendar = .current)
     {
@@ -301,6 +302,76 @@ public struct CompanionRewardEngine: Sendable {
         state.selectedCosmeticIDs = Set(state.selectedCosmeticIDs.filter {
             $0.slot != slot
         })
+        state.updatedAt = date
+    }
+
+    public func activateEnergyBooster(
+        _ boosterID: CompanionEnergyBoosterID,
+        at date: Date = .now,
+        in state: inout CompanionRewardState) throws
+    {
+        guard state.activeEnergyBooster?.isActive(at: date) != true else {
+            throw CompanionRewardError.energyBoosterAlreadyActive
+        }
+        guard state.energyBoosterInventory[boosterID, default: 0] > 0 else {
+            throw CompanionRewardError.energyBoosterNotOwned
+        }
+        state.energyBoosterInventory[boosterID, default: 0] -= 1
+        state.activeEnergyBooster = CompanionActiveEnergyBooster(
+            id: boosterID,
+            activatedAt: date)
+        state.updatedAt = date
+    }
+
+    public func purchaseEnergyBooster(
+        _ boosterID: CompanionEnergyBoosterID,
+        at date: Date = .now,
+        in state: inout CompanionRewardState) throws
+    {
+        guard state.starShards >= boosterID.cost else {
+            throw CompanionRewardError.insufficientStarShards
+        }
+        state.starShards -= boosterID.cost
+        state.energyBoosterInventory[boosterID, default: 0] += 1
+        state.updatedAt = date
+    }
+
+    public func energyMultiplier(
+        at date: Date,
+        in state: CompanionRewardState) -> Int
+    {
+        guard let booster = state.activeEnergyBooster,
+              booster.isActive(at: date)
+        else { return 1 }
+        return booster.id.multiplier
+    }
+
+    public func reconcileBondMilestones(
+        generationID: UUID,
+        bondEnergy: Int,
+        at date: Date = .now,
+        in state: inout CompanionRewardState)
+    {
+        let level = CompanionBond.level(for: bondEnergy)
+        guard level >= 2 else { return }
+        for milestone in 2...level {
+            let milestoneID = "\(generationID.uuidString).bond.\(milestone)"
+            guard state.rewardedBondMilestoneIDs.insert(milestoneID).inserted
+            else { continue }
+            switch milestone {
+            case 2:
+                state.energyBoosterInventory[.double30Minutes, default: 0] += 1
+            case 3:
+                state.energyBoosterInventory[.triple20Minutes, default: 0] += 1
+            case 4:
+                state.unlockedCosmeticIDs.insert(.fireflyAura)
+            case 5:
+                state.energyBoosterInventory[.quintuple10Minutes, default: 0] += 1
+                state.unlockedCosmeticIDs.insert(.orbitAura)
+            default:
+                break
+            }
+        }
         state.updatedAt = date
     }
 

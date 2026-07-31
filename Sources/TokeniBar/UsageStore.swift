@@ -80,13 +80,6 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionBenefitError: CompanionBenefitError?
     @Published private(set) var companionRewardNoticeAmount: Int?
     @Published private(set) var companionAttendanceError: CompanionRewardError?
-    @Published private(set) var companionMigrationQuote:
-        CompanionAssetResetQuote?
-    @Published private(set) var companionMigrationReceipt:
-        CompanionAssetResetJournal?
-    @Published private(set) var companionMigrationReceiptNoticeVisible: Bool
-    @Published private(set) var isApplyingCompanionMigration: Bool
-    @Published private(set) var companionMigrationError: String?
 
     private let providers: [any UsageProviding]
     private var refreshLoop: Task<Void, Never>?
@@ -101,12 +94,10 @@ final class UsageStore: ObservableObject {
     private let companionStateStore: CompanionGameStateStore
     private let companionRewardStateStore: CompanionRewardStateStore
     private let companionBenefitStateStore: CompanionBenefitStateStore
-    private let companionMigrationStore: CompanionAssetResetStore
     private let tokenGrowthLedgerStore: TokenGrowthLedgerStore
     private let companionGameEngine = CompanionGameEngine()
     private let companionRewardEngine = CompanionRewardEngine()
     private let companionBenefitEngine = CompanionBenefitEngine()
-    private let companionMigrationEngine = CompanionAssetResetEngine()
     private let tokenGrowthLedgerEngine = TokenGrowthLedgerEngine()
     private var tokenGrowthLedgerState: TokenGrowthLedgerState
     private var companionStateLoaded = false
@@ -170,7 +161,6 @@ final class UsageStore: ObservableObject {
         let companionStateStore = CompanionGameStateStore()
         let companionRewardStateStore = CompanionRewardStateStore()
         let companionBenefitStateStore = CompanionBenefitStateStore()
-        let companionMigrationStore = CompanionAssetResetStore()
         let tokenGrowthLedgerStore = TokenGrowthLedgerStore()
         self.notificationController = notificationController
         self.launchAtLoginController = launchAtLoginController
@@ -182,7 +172,6 @@ final class UsageStore: ObservableObject {
         self.companionStateStore = companionStateStore
         self.companionRewardStateStore = companionRewardStateStore
         self.companionBenefitStateStore = companionBenefitStateStore
-        self.companionMigrationStore = companionMigrationStore
         self.tokenGrowthLedgerStore = tokenGrowthLedgerStore
         self.tokenGrowthLedgerState = TokenGrowthLedgerState()
         self.notificationsEnabled = notificationController.isEnabled
@@ -297,11 +286,6 @@ final class UsageStore: ObservableObject {
         self.companionBenefitError = nil
         self.companionRewardNoticeAmount = nil
         self.companionAttendanceError = nil
-        self.companionMigrationQuote = nil
-        self.companionMigrationReceipt = nil
-        self.companionMigrationReceiptNoticeVisible = false
-        self.isApplyingCompanionMigration = false
-        self.companionMigrationError = nil
         let enabledIDs: Set<ProviderID>
         if let stored = UserDefaults.standard.stringArray(forKey: Self.enabledProvidersKey) {
             enabledIDs = Set(stored.map { ProviderID(rawValue: $0) }).intersection(knownIDs)
@@ -329,19 +313,15 @@ final class UsageStore: ObservableObject {
             self.companionBenefitState =
                 (try? await self.companionBenefitStateStore.load())
                     ?? CompanionBenefitState()
-            let migrationAllowsPlay =
-                await self.prepareCompanionAssetResetIfNeeded()
-            if migrationAllowsPlay {
-                self.reconcileLegacyCompanionPalettes()
-                self.companionBenefitEngine.reconcileSlots(
-                    unlockedFormCount:
-                        self.companionState.collection.unlockedFormCount,
-                    in: &self.companionBenefitState)
-                self.reconcileCompanionRewards()
-                self.companionStateLoaded = true
-                self.saveCompanionState()
-                self.saveCompanionBenefitState()
-            }
+            self.reconcileLegacyCompanionPalettes()
+            self.companionBenefitEngine.reconcileSlots(
+                unlockedFormCount:
+                    self.companionState.collection.unlockedFormCount,
+                in: &self.companionBenefitState)
+            self.reconcileCompanionRewards()
+            self.companionStateLoaded = true
+            self.saveCompanionState()
+            self.saveCompanionBenefitState()
             self.tokenGrowthLedgerState = (try? await self.tokenGrowthLedgerStore.load())
                 ?? TokenGrowthLedgerState()
             if self.companionStateLoaded {
@@ -721,39 +701,6 @@ final class UsageStore: ObservableObject {
         self.companionOverlayPositionResetPulse &+= 1
     }
 
-    func applyCompanionAssetReset() {
-        guard self.companionMigrationQuote != nil,
-              !self.isApplyingCompanionMigration
-        else { return }
-        self.isApplyingCompanionMigration = true
-        self.companionMigrationError = nil
-        Task { [weak self] in
-            guard let self else { return }
-            do {
-                let journal = self.companionMigrationEngine.prepare(
-                    companion: self.companionState,
-                    rewards: self.companionRewardState,
-                    benefits: self.companionBenefitState)
-                try await self.applyCompanionAssetReset(journal)
-            } catch {
-                self.companionMigrationError = AppLocalization.string(
-                    "companion.migration.error")
-            }
-            self.isApplyingCompanionMigration = false
-        }
-    }
-
-    func acknowledgeCompanionMigrationReceipt() {
-        guard var receipt = self.companionMigrationReceipt else { return }
-        self.companionMigrationReceiptNoticeVisible = false
-        guard receipt.receiptAcknowledgedAt == nil else { return }
-        receipt.receiptAcknowledgedAt = .now
-        self.companionMigrationReceipt = receipt
-        Task {
-            try? await self.companionMigrationStore.save(receipt)
-        }
-    }
-
     func patCompanion() {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionState
@@ -952,6 +899,26 @@ final class UsageStore: ObservableObject {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionRewardState
         self.companionRewardEngine.unequip(slot: slot, in: &state)
+        self.companionRewardState = state
+        self.saveCompanionRewardState()
+    }
+
+    func activateCompanionEnergyBooster(_ boosterID: CompanionEnergyBoosterID) {
+        var state = self.companionRewardState
+        guard (try? self.companionRewardEngine.activateEnergyBooster(
+            boosterID,
+            in: &state)) != nil
+        else { return }
+        self.companionRewardState = state
+        self.saveCompanionRewardState()
+    }
+
+    func purchaseCompanionEnergyBooster(_ boosterID: CompanionEnergyBoosterID) {
+        var state = self.companionRewardState
+        guard (try? self.companionRewardEngine.purchaseEnergyBooster(
+            boosterID,
+            in: &state)) != nil
+        else { return }
         self.companionRewardState = state
         self.saveCompanionRewardState()
     }
@@ -1340,6 +1307,13 @@ final class UsageStore: ObservableObject {
         self.companionRewardEngine.cosmetics
     }
 
+    var companionActiveEnergyBooster: CompanionActiveEnergyBooster? {
+        guard let booster = self.companionRewardState.activeEnergyBooster,
+              booster.isActive(at: .now)
+        else { return nil }
+        return booster
+    }
+
     var companionGrowthProviderStatus: (available: Int, total: Int) {
         let enabled = self.snapshots.filter {
             $0.availability == .available
@@ -1477,83 +1451,6 @@ final class UsageStore: ObservableObject {
         self.saveCompanionState()
     }
 
-    private func prepareCompanionAssetResetIfNeeded() async -> Bool {
-        do {
-            if let stored = try await self.companionMigrationStore.load(
-                migrationID: self.companionMigrationEngine.migrationID)
-            {
-                if stored.status == .prepared {
-                    try await self.applyCompanionAssetReset(stored)
-                } else if stored.quote.requiresConfirmation {
-                    self.companionMigrationReceipt = stored
-                    self.companionMigrationReceiptNoticeVisible =
-                        stored.receiptAcknowledgedAt == nil
-                }
-                return true
-            }
-
-            let quote = self.companionMigrationEngine.quote(
-                companion: self.companionState,
-                rewards: self.companionRewardState)
-            if quote.requiresConfirmation {
-                self.companionMigrationQuote = quote
-                return false
-            }
-
-            let journal = self.companionMigrationEngine.prepare(
-                companion: self.companionState,
-                rewards: self.companionRewardState,
-                benefits: self.companionBenefitState)
-            try await self.applyCompanionAssetReset(
-                journal,
-                presentsReceipt: false)
-            return true
-        } catch {
-            self.companionMigrationError = AppLocalization.string(
-                "companion.migration.error")
-            return false
-        }
-    }
-
-    private func applyCompanionAssetReset(
-        _ preparedJournal: CompanionAssetResetJournal,
-        presentsReceipt: Bool = true) async throws
-    {
-        var journal = preparedJournal
-        try await self.companionMigrationStore.save(journal)
-
-        self.companionStateSaveRevision &+= 1
-        try await self.companionStateStore.save(
-            journal.targetCompanionState,
-            revision: self.companionStateSaveRevision)
-        self.companionRewardSaveRevision &+= 1
-        try await self.companionRewardStateStore.save(
-            journal.targetRewardState,
-            revision: self.companionRewardSaveRevision)
-        self.companionBenefitSaveRevision &+= 1
-        try await self.companionBenefitStateStore.save(
-            journal.targetBenefitState,
-            revision: self.companionBenefitSaveRevision)
-
-        journal.status = .completed
-        journal.completedAt = .now
-        try await self.companionMigrationStore.save(journal)
-
-        self.companionState = journal.targetCompanionState
-        self.companionRewardState = journal.targetRewardState
-        self.companionBenefitState = journal.targetBenefitState
-        self.companionMigrationQuote = nil
-        self.companionMigrationError = nil
-        self.companionMigrationReceipt =
-            presentsReceipt && journal.quote.requiresConfirmation
-                ? journal
-                : nil
-        self.companionMigrationReceiptNoticeVisible =
-            presentsReceipt && journal.quote.requiresConfirmation
-        self.companionStateLoaded = true
-        await self.applyPendingCompanionGrowthAwards()
-    }
-
     private func processCompanionGrowth(at now: Date) async {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var ledger = self.tokenGrowthLedgerState
@@ -1577,10 +1474,21 @@ final class UsageStore: ObservableObject {
         guard self.companionStateLoaded else { return }
         for award in self.tokenGrowthLedgerState.pendingAwards {
             var companion = self.companionState
+            let multiplier = self.companionRewardEngine.energyMultiplier(
+                at: award.createdAt,
+                in: self.companionRewardState)
+            let (boostedEnergy, overflow) = award.energy
+                .multipliedReportingOverflow(by: multiplier)
+            let effectiveAward = GrowthEnergyAward(
+                id: award.id,
+                dateKey: award.dateKey,
+                energy: overflow ? Int.max : boostedEnergy,
+                createdAt: award.createdAt)
             let events: [CompanionGameEvent]
             do {
                 events = self.companionGameEngine.apply(
-                    award: award,
+                    award: effectiveAward,
+                    bondEnergy: award.energy,
                     to: &companion)
                 self.companionStateSaveRevision &+= 1
                 try await self.companionStateStore.save(
@@ -1590,6 +1498,16 @@ final class UsageStore: ObservableObject {
                 return
             }
             self.companionState = companion
+            var rewards = self.companionRewardState
+            self.companionRewardEngine.reconcileBondMilestones(
+                generationID: companion.generationID,
+                bondEnergy: companion.bondEnergy,
+                at: award.createdAt,
+                in: &rewards)
+            if rewards != self.companionRewardState {
+                self.companionRewardState = rewards
+                self.saveCompanionRewardState()
+            }
             self.recordAutomaticCompanionAttendance(at: award.createdAt)
             if events.contains(where: { event in
                 if case let .energyApplied(amount) = event {
@@ -1718,9 +1636,16 @@ final class UsageStore: ObservableObject {
         {
             grants.append(grant)
         }
-        guard !grants.isEmpty else { return }
+        if self.companionState.stage == .adult {
+            self.companionRewardEngine.reconcileBondMilestones(
+                generationID: self.companionState.generationID,
+                bondEnergy: self.companionState.bondEnergy,
+                in: &state)
+        }
+        guard state != self.companionRewardState else { return }
         self.companionRewardState = state
-        self.companionRewardNoticeAmount = grants.reduce(0) { $0 + $1.amount }
+        let shardAmount = grants.reduce(0) { $0 + $1.amount }
+        self.companionRewardNoticeAmount = shardAmount > 0 ? shardAmount : nil
         self.saveCompanionRewardState()
     }
 

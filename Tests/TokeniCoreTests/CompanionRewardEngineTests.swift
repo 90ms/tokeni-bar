@@ -163,37 +163,37 @@ struct CompanionRewardEngineTests {
         var state = CompanionRewardState(starShards: 250)
 
         try engine.purchase(
-            cosmeticID: .starCrown,
+            cosmeticID: .terminalNight,
             at: now,
             in: &state)
 
-        #expect(state.starShards == 130)
-        #expect(state.unlockedCosmeticIDs == [.starCrown])
-        #expect(state.selectedCosmeticIDs == [.starCrown])
+        #expect(state.starShards == 90)
+        #expect(state.unlockedCosmeticIDs == [.terminalNight])
+        #expect(state.selectedCosmeticIDs == [.terminalNight])
         #expect(state.updatedAt == now)
         #expect(throws: CompanionRewardError.cosmeticAlreadyOwned) {
-            try engine.purchase(cosmeticID: .starCrown, in: &state)
+            try engine.purchase(cosmeticID: .terminalNight, in: &state)
         }
 
-        engine.unequip(slot: .head, at: now, in: &state)
+        engine.unequip(slot: .background, at: now, in: &state)
         #expect(state.selectedCosmeticIDs.isEmpty)
-        try engine.select(cosmeticID: .starCrown, at: now, in: &state)
-        #expect(state.selectedCosmeticIDs == [.starCrown])
+        try engine.select(cosmeticID: .terminalNight, at: now, in: &state)
+        #expect(state.selectedCosmeticIDs == [.terminalNight])
 
         state.starShards = 500
         try engine.purchase(cosmeticID: .sparkleAura, at: now, in: &state)
-        #expect(state.selectedCosmeticIDs == [.starCrown, .sparkleAura])
+        #expect(state.selectedCosmeticIDs == [.terminalNight, .sparkleAura])
         try engine.purchase(cosmeticID: .pixelHearts, at: now, in: &state)
-        #expect(state.selectedCosmeticIDs == [.starCrown, .pixelHearts])
+        #expect(state.selectedCosmeticIDs == [.terminalNight, .pixelHearts])
         try engine.purchase(cosmeticID: .azurePalette, at: now, in: &state)
         #expect(state.selectedCosmeticIDs == [
-            .starCrown,
+            .terminalNight,
             .pixelHearts,
             .azurePalette,
         ])
         try engine.purchase(cosmeticID: .violetPalette, at: now, in: &state)
         #expect(state.selectedCosmeticIDs == [
-            .starCrown,
+            .terminalNight,
             .pixelHearts,
             .violetPalette,
         ])
@@ -217,6 +217,59 @@ struct CompanionRewardEngineTests {
         #expect(state.rewardedVariantIDs.isEmpty)
         #expect(state.rewardedGrowthDateKeys.isEmpty)
         #expect(state.latestRewardedAppVersion == nil)
+    }
+
+    @Test("Bond milestones grant each booster and cosmetic once")
+    func bondMilestones() {
+        let engine = CompanionRewardEngine(calendar: self.calendar)
+        let generationID = UUID()
+        var state = CompanionRewardState()
+
+        engine.reconcileBondMilestones(
+            generationID: generationID,
+            bondEnergy: 800,
+            in: &state)
+        engine.reconcileBondMilestones(
+            generationID: generationID,
+            bondEnergy: 800,
+            in: &state)
+
+        #expect(state.energyBoosterInventory[.double30Minutes] == 1)
+        #expect(state.energyBoosterInventory[.triple20Minutes] == 1)
+        #expect(state.energyBoosterInventory[.quintuple10Minutes] == 1)
+        #expect(state.unlockedCosmeticIDs.contains(.fireflyAura))
+        #expect(state.unlockedCosmeticIDs.contains(.orbitAura))
+        #expect(state.rewardedBondMilestoneIDs.count == 4)
+    }
+
+    @Test("Energy boosters are consumed once and expire")
+    func energyBoosterActivation() throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let engine = CompanionRewardEngine(calendar: self.calendar)
+        var state = CompanionRewardState(starShards: 150)
+
+        try engine.purchaseEnergyBooster(
+            .triple20Minutes,
+            at: now,
+            in: &state)
+
+        try engine.activateEnergyBooster(
+            .triple20Minutes,
+            at: now,
+            in: &state)
+
+        #expect(state.energyBoosterInventory[.triple20Minutes] == 0)
+        #expect(state.starShards == 0)
+        #expect(engine.energyMultiplier(at: now, in: state) == 3)
+        #expect(engine.energyMultiplier(
+            at: now.addingTimeInterval(20 * 60),
+            in: state) == 1)
+        #expect(throws: CompanionRewardError.energyBoosterAlreadyActive) {
+            try engine.activateEnergyBooster(
+                .triple20Minutes,
+                at: now.addingTimeInterval(1),
+                in: &state)
+        }
     }
 
     @Test("Reward state persists without companion or provider data")
@@ -292,8 +345,8 @@ struct CompanionRewardEngineTests {
           "rewardedSpeciesIDs" : [],
           "rewardedJourneyCount" : 0,
           "rewardedFormMilestones" : [],
-          "unlockedCosmeticIDs" : ["starCrown"],
-          "selectedCosmeticID" : "starCrown",
+          "unlockedCosmeticIDs" : ["sparkleAura"],
+          "selectedCosmeticID" : "sparkleAura",
           "updatedAt" : "2027-01-15T08:00:00Z"
         }
         """
@@ -301,8 +354,8 @@ struct CompanionRewardEngineTests {
 
         let state = try await CompanionRewardStateStore(fileURL: file).load()
 
-        #expect(state.unlockedCosmeticIDs == [.starCrown])
-        #expect(state.selectedCosmeticIDs == [.starCrown])
+        #expect(state.unlockedCosmeticIDs == [.sparkleAura])
+        #expect(state.selectedCosmeticIDs == [.sparkleAura])
     }
 
     private func forms(at date: Date) -> [CompanionFormRecord] {

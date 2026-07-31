@@ -14,6 +14,7 @@ public struct CompanionGameEngine: Sendable {
 
     public func apply(
         award: GrowthEnergyAward,
+        bondEnergy: Int? = nil,
         to state: inout CompanionGameState) -> [CompanionGameEvent]
     {
         guard !state.appliedGrowthAwardIDs.contains(award.id) else { return [] }
@@ -43,9 +44,12 @@ public struct CompanionGameEngine: Sendable {
             events.append(.energyApplied(credited))
         }
         if state.stage == .adult {
+            let creditedBondEnergy = max(bondEnergy ?? award.energy, 0)
             let previousLevel = CompanionBond.level(for: state.bondEnergy)
-            state.bondEnergy = Self.saturatedAdd(state.bondEnergy, award.energy)
-            events.append(.bondIncreased(award.energy))
+            state.bondEnergy = Self.saturatedAdd(
+                state.bondEnergy,
+                creditedBondEnergy)
+            events.append(.bondIncreased(creditedBondEnergy))
             let newLevel = CompanionBond.level(for: state.bondEnergy)
             if newLevel > previousLevel {
                 for level in (previousLevel + 1)...newLevel {
@@ -398,9 +402,7 @@ public struct CompanionGameEngine: Sendable {
                 required: amount,
                 available: state.availableGrowthEnergy)
         }
-        let reserveSpent = min(state.migrationEnergyReserve, amount)
-        state.migrationEnergyReserve -= reserveSpent
-        state.growthEnergy -= amount - reserveSpent
+        state.growthEnergy -= amount
         state.growthSpentToday = Self.saturatedAdd(
             state.growthSpentToday,
             amount)

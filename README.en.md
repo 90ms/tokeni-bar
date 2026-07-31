@@ -46,7 +46,7 @@ brew install --formula tokeni-bar
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
 | Tokeni pets | Life stage, species, visual variant, name, personality, bond, memories, behavior, and an optional desktop overlay |
-| Collection and rewards | Ten core discoveries and journey albums, automatic activity check-in, animated Star Shard cosmetics, and the nearest guarantee |
+| Collection and rewards | Ten core discoveries and journey albums, automatic activity check-in, bond rewards, Energy Boosters, animated Star Shard cosmetics, and the nearest guarantee |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -59,23 +59,21 @@ references—not subscription bills.
 For today's verified token total `T`:
 
 ```text
-Growth energy = floor(T / 100,000)
+Growth energy = floor(T / 50,000)
 ```
 
 | Tokens today | Growth energy today |
 |---:|---:|
-| 100,000 | 1 |
-| 1,000,000 | 10 |
-| 10,000,000 | 100 |
-| 100,000,000 | 1,000 |
-| 300,000,000 | 3,000 |
+| 50,000 | 1 |
+| 1,000,000 | 20 |
+| 10,000,000 | 200 |
+| 100,000,000 | 2,000 |
+| 300,000,000 | 6,000 |
 
-Every 100,000 verified tokens always grant one energy. A remainder below
-100,000 tokens and all unspent action energy carry across date changes. The
+Every 50,000 verified tokens always grant one energy. A remainder below
+50,000 tokens and all unspent action energy carry across date changes. The
 regular wallet has a 100,000-energy safety limit to contain invalid data, and
-refreshing the same cumulative value never pays twice. Redesign refunds return
-previously spent Energy into a separate migration reserve, so that safety cap
-cannot discard them.
+refreshing the same cumulative value never pays twice.
 
 The collection's **Action energy** section separates tokens reflected in
 growth by provider and shows their combined total, today's energy target, and the
@@ -126,9 +124,9 @@ A pet's variant is decided once at hatch and never changes while evolving.
 After 11 consecutive Standard hatches, hatch 12 is Prismatic. This can combine
 with the missing-species guarantee, and the collection leads with whichever
 guarantee is nearer. Legacy Rare and Epic looks are preserved as body-color
-cosmetic options, and Legendary maps visually to Prismatic. Pets and cosmetics
-owned before the redesign are refunded through the one-time asset migration
-below before the new collection begins.
+cosmetic options, and Legendary maps visually to Prismatic. Here, “Legacy”
+names a current body-color asset; there is no separate refund or asset migration
+flow.
 
 ### 4. Collection, individual records, and new eggs
 
@@ -145,7 +143,12 @@ a separate **journey album** under each discovery.
 The current pet can have a local name up to 24 characters, a presentation-only
 personality, five bond levels, and memories for hatching, evolution, first pat,
 bond levels, and journey completion. Memories never contain work content or
-usage numbers. Completed pets remain under **Completed Pets**, where their
+usage numbers. Reaching bond levels 2, 3, 4, and 5 for the first time in a
+generation grants a 2x booster, a 3x booster, Firefly Aura, and a 5x booster
+plus Orbit Aura, respectively. Boosted action energy does not add boosted bond,
+preventing a self-accelerating bond loop.
+
+Completed pets remain under **Completed Pets**, where their
 identity is retained and they can be shown again. No pet grants numerical
 growth, cost, odds, or reward advantages.
 
@@ -176,9 +179,8 @@ Spend Star Shards on permanent cosmetics in the collection:
 
 | Slot | Cosmetics | Star Shards |
 |---|---|---:|
-| Aura | Sparkle Aura / Pixel Hearts / Night Ring | 60 / 80 / 200 |
-| Head | Developer Headphones / Star Crown / Wizard Hat | 100 / 120 / 140 |
-| Background | Terminal Night / Cloud Garden | 160 / 220 |
+| Aura | Sparkle / Pixel Hearts / Firefly / Orbit / Night Ring | 60 / 80 / 130 / 180 / 200 |
+| Background | Terminal Night / Cloud Garden / Sunset Grid / Pixel Forest | 160 / 220 / 240 / 260 |
 | Body Color | Legacy Azure / Legacy Violet | 90 / 110 |
 
 The purchase sheet compares the current combination with the result before
@@ -191,27 +193,23 @@ item has its own motion; intensity can be Off, Gentle, or Full, and aura
 contrast adapts on bright backgrounds.
 Cosmetics never affect growth energy, variants, guarantees, or rewards. Pet
 play focuses on collecting, individual histories, animation, and styling
-combinations rather than numerical superiority.
+combinations rather than numerical superiority. Head items are not offered
+because their anchors do not remain consistent across species and stages.
 
-### 6. Major redesigns reset only after a reviewed refund
+### 6. Timed Action Energy Boosters
 
-After updating, users with existing pet assets first see a refund quote in the
-menu popover or under **Settings → Tokeni → Data & Migration**. The current pet
-is valued at 0 Energy for an Egg, 500 for a Hatchling, 1,300 for a Juvenile,
-and 2,700 for an Adult. Every completed pet returns 2,700 Energy. Owned
-cosmetics return their full registered price in Star Shards.
+Buy consumable boosters with Star Shards or earn them from bond milestones.
 
-Existing pets remain read-only until the user chooses **Reset and receive
-refund**. Confirmation resets pets, names, memories, collection progress,
-guarantees, legacy benefit state, and cosmetics. Existing Energy, Star Shards,
-attendance, and verified-growth accounting remain intact. Refunded Energy uses
-a separate migration reserve, so the normal 100,000 safety cap cannot discard
-it.
+| Booster | Duration | Star Shards |
+|---|---:|---:|
+| 2x | 30 minutes | 80 |
+| 3x | 20 minutes | 150 |
+| 5x | 10 minutes | 280 |
 
-The app creates a local recovery record first and applies each migration ID
-once. If the app exits midway, it resumes toward the recorded final balances
-instead of paying twice. The completed receipt remains in Settings. Users with
-no resettable assets migrate silently.
+A booster applies only to **base action energy** newly verified while it is
+active. Only one can be active at a time. Activation and expiration timestamps
+are stored locally, so relaunching never extends the duration. Bonus Energy
+from other systems and bond do not receive the multiplier again.
 
 Open the grid button in the menu or choose
 **Settings → Tokeni → Open Pet Collection**. See
@@ -226,8 +224,8 @@ appears when there is enough energy to hatch an egg or evolve a Hatchling or
 Juvenile. Adult journey completion is not included in this badge.
 
 The menu popover keeps its header and history, settings, and quit actions
-fixed while the center content scrolls. Usage appears before the collapsed pet
-summary. Each provider card leads with its primary quota and reset time;
+fixed while the center content scrolls. Usage appears before an always-visible
+pet card. Each provider card leads with its primary quota and reset time;
 expand **Show details** for additional quotas, tokens, reference costs, and
 source information, including in compact mode.
 
@@ -298,8 +296,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 |---|---|
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
 | Pet species, stage, variant, name, personality, bond, memories, collection, and guarantees | Access tokens, refresh tokens, and cookies |
-| Star Shards, attendance dates, purchased cosmetics, and awarded milestone IDs | Account secrets and server telemetry |
-| Pet migration quotes, local recovery records, and receipts | Remote migration services and payment data |
+| Star Shards, attendance dates, purchased cosmetics, boosters, and awarded milestone IDs | Account secrets and server telemetry |
 | On-screen pet preferences and last position | Screen captures and input content |
 | Local progress-validation data | Remote game accounts and analytics telemetry |
 
@@ -320,8 +317,7 @@ analytics or remote game server.
 | Claude password prompt repeats after unlock | Update the app and connect once under **Settings → General → Providers**. Background refreshes never open authentication UI |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Pet progress cannot be read | Restart the app to retry local recovery, then review diagnostics if the issue continues |
-| Pet controls are unavailable | Review the pending asset refund under **Settings → Tokeni → Data & Migration**. Existing pets are read-only until confirmation |
-| The app exits during a refund | Relaunch to resume toward the same journaled target balances, then review the receipt in Settings |
+| Cannot use a booster | Check whether another booster is active and whether you own one or have enough Star Shards to buy it |
 
 ## Development
 

@@ -1,0 +1,61 @@
+# Tokeni Bar
+
+> Tokeni Bar is a native macOS menu-bar app that shows verified AI coding
+> usage and turns verified cumulative token growth into a local virtual-pet
+> experience.
+
+Canonical repository: https://github.com/90ms/tokeni-bar
+
+## Documentation
+
+- [Korean README](https://github.com/90ms/tokeni-bar/blob/main/README.md):
+  Primary overview, installation, provider setup, pet rules, privacy, and
+  troubleshooting.
+- [English README](https://github.com/90ms/tokeni-bar/blob/main/README.en.md):
+  English version of the primary overview.
+- [Tokeni companion guide, Korean](https://github.com/90ms/tokeni-bar/blob/main/docs/bytebot.ko.md):
+  Detailed growth, bond, reward, cosmetic, booster, and privacy rules.
+- [Tokeni companion guide, English](https://github.com/90ms/tokeni-bar/blob/main/docs/bytebot.md):
+  English companion guide.
+- [Usage accounting, Korean](https://github.com/90ms/tokeni-bar/blob/main/docs/usage.ko.md):
+  Provider-neutral verified-token accounting and stale-data behavior.
+- [Usage accounting, English](https://github.com/90ms/tokeni-bar/blob/main/docs/usage.md):
+  English usage-accounting guide.
+- [Companion policy, Korean](https://github.com/90ms/tokeni-bar/blob/main/docs/companion-policy.ko.md):
+  Normative companion behavior, storage, compatibility, and privacy policy.
+- [Companion policy, English](https://github.com/90ms/tokeni-bar/blob/main/docs/companion-policy.md):
+  English normative policy.
+- [GitHub Wiki](https://github.com/90ms/tokeni-bar/wiki):
+  Concise Korean user guide.
+- [Homebrew installation, Korean](https://github.com/90ms/tokeni-bar/blob/main/docs/HOMEBREW.ko.md):
+  Formula installation and Cask-to-Formula migration.
+- [Homebrew installation, English](https://github.com/90ms/tokeni-bar/blob/main/docs/HOMEBREW.md):
+  English Homebrew guide.
+
+## Current companion facts
+
+- Growth is provider-neutral and derives only from verified cumulative token
+  observations. Active minutes affect presentation, never growth.
+- One action energy is awarded per 50,000 verified tokens. Sub-threshold
+  remainders and unspent energy carry forward.
+- The menu popover always shows the companion card; it is not collapsible.
+- Bond levels 2 through 5 grant one-time, per-generation rewards: a 2x
+  30-minute booster, a 3x 20-minute booster, Firefly Aura, and a 5x 10-minute
+  booster plus Orbit Aura.
+- A timed booster multiplies only newly awarded base action energy. Only one
+  booster can be active.
+- Cosmetic slots are Aura, Background, and Body Color. There is no Head slot.
+- Refund, asset-reset, and companion migration-reserve features are not part of
+  the current product. Legacy Azure and Legacy Violet are names of current
+  body-color assets.
+- Companion state never contains provider names, token totals, prompts,
+  responses, or credentials.
+
+## Source layout
+
+- `Sources/TokeniCore`: provider-neutral models, scanners, adapters, and
+  companion engines.
+- `Sources/TokeniBar`: macOS menu-bar UI and app state.
+- `Tests/TokeniCoreTests`: parser and core behavior tests with sanitized
+  fixtures.
+- `packaging`: app-bundle and Homebrew templates.

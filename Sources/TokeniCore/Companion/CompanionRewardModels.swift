@@ -2,23 +2,22 @@ import Foundation
 
 public enum CompanionCosmeticID: String, Codable, CaseIterable, Hashable, Sendable {
     case sparkleAura
-    case starCrown
     case nightRing
     case pixelHearts
-    case developerHeadphones
-    case wizardHat
+    case fireflyAura
+    case orbitAura
     case terminalNight
     case cloudGarden
+    case sunsetGrid
+    case pixelForest
     case azurePalette
     case violetPalette
 
     public var slot: CompanionCosmeticSlot {
         switch self {
-        case .sparkleAura, .nightRing, .pixelHearts:
+        case .sparkleAura, .nightRing, .pixelHearts, .fireflyAura, .orbitAura:
             .aura
-        case .starCrown, .developerHeadphones, .wizardHat:
-            .head
-        case .terminalNight, .cloudGarden:
+        case .terminalNight, .cloudGarden, .sunsetGrid, .pixelForest:
             .background
         case .azurePalette, .violetPalette:
             .palette
@@ -27,7 +26,6 @@ public enum CompanionCosmeticID: String, Codable, CaseIterable, Hashable, Sendab
 }
 
 public enum CompanionCosmeticSlot: String, Codable, CaseIterable, Hashable, Sendable {
-    case head
     case aura
     case background
     case palette
@@ -40,6 +38,54 @@ public struct CompanionCosmetic: Identifiable, Hashable, Sendable {
     public init(id: CompanionCosmeticID, cost: Int) {
         self.id = id
         self.cost = max(cost, 0)
+    }
+}
+
+public enum CompanionEnergyBoosterID:
+    String, Codable, CaseIterable, Hashable, Sendable
+{
+    case double30Minutes
+    case triple20Minutes
+    case quintuple10Minutes
+
+    public var multiplier: Int {
+        switch self {
+        case .double30Minutes: 2
+        case .triple20Minutes: 3
+        case .quintuple10Minutes: 5
+        }
+    }
+
+    public var duration: TimeInterval {
+        switch self {
+        case .double30Minutes: 30 * 60
+        case .triple20Minutes: 20 * 60
+        case .quintuple10Minutes: 10 * 60
+        }
+    }
+
+    public var cost: Int {
+        switch self {
+        case .double30Minutes: 80
+        case .triple20Minutes: 150
+        case .quintuple10Minutes: 280
+        }
+    }
+}
+
+public struct CompanionActiveEnergyBooster: Codable, Hashable, Sendable {
+    public let id: CompanionEnergyBoosterID
+    public let activatedAt: Date
+    public let expiresAt: Date
+
+    public init(id: CompanionEnergyBoosterID, activatedAt: Date) {
+        self.id = id
+        self.activatedAt = activatedAt
+        self.expiresAt = activatedAt.addingTimeInterval(id.duration)
+    }
+
+    public func isActive(at date: Date) -> Bool {
+        date >= self.activatedAt && date < self.expiresAt
     }
 }
 
@@ -63,7 +109,7 @@ public struct CompanionAttendanceRecord: Codable, Hashable, Sendable {
 }
 
 public struct CompanionRewardState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 5
+    public static let currentSchemaVersion = 6
 
     public var schemaVersion: Int
     public var starShards: Int
@@ -79,6 +125,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
     public var latestObservedDateKey: String?
     public var unlockedCosmeticIDs: Set<CompanionCosmeticID>
     public var selectedCosmeticIDs: Set<CompanionCosmeticID>
+    public var energyBoosterInventory: [CompanionEnergyBoosterID: Int]
+    public var activeEnergyBooster: CompanionActiveEnergyBooster?
+    public var rewardedBondMilestoneIDs: Set<String>
     public var updatedAt: Date
 
     public init(
@@ -96,6 +145,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         latestObservedDateKey: String? = nil,
         unlockedCosmeticIDs: Set<CompanionCosmeticID> = [],
         selectedCosmeticIDs: Set<CompanionCosmeticID> = [],
+        energyBoosterInventory: [CompanionEnergyBoosterID: Int] = [:],
+        activeEnergyBooster: CompanionActiveEnergyBooster? = nil,
+        rewardedBondMilestoneIDs: Set<String> = [],
         updatedAt: Date = .now)
     {
         self.schemaVersion = schemaVersion
@@ -112,6 +164,11 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         self.latestObservedDateKey = latestObservedDateKey
         self.unlockedCosmeticIDs = unlockedCosmeticIDs
         self.selectedCosmeticIDs = selectedCosmeticIDs
+        self.energyBoosterInventory = energyBoosterInventory.mapValues {
+            max($0, 0)
+        }
+        self.activeEnergyBooster = activeEnergyBooster
+        self.rewardedBondMilestoneIDs = rewardedBondMilestoneIDs
         self.updatedAt = updatedAt
     }
 
@@ -139,6 +196,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             && Set(self.selectedCosmeticIDs.map(\.slot)).count
                 == self.selectedCosmeticIDs.count
             && self.selectedCosmeticIDs.isSubset(of: self.unlockedCosmeticIDs)
+            && self.energyBoosterInventory.values.allSatisfy { $0 >= 0 }
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -157,6 +215,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         case unlockedCosmeticIDs
         case selectedCosmeticIDs
         case selectedCosmeticID
+        case energyBoosterInventory
+        case activeEnergyBooster
+        case rewardedBondMilestoneIDs
         case updatedAt
     }
 
@@ -229,6 +290,15 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
                 forKey: .latestObservedDateKey),
             unlockedCosmeticIDs: unlockedCosmeticIDs,
             selectedCosmeticIDs: selectedCosmeticIDs,
+            energyBoosterInventory: try container.decodeIfPresent(
+                [CompanionEnergyBoosterID: Int].self,
+                forKey: .energyBoosterInventory) ?? [:],
+            activeEnergyBooster: try container.decodeIfPresent(
+                CompanionActiveEnergyBooster.self,
+                forKey: .activeEnergyBooster),
+            rewardedBondMilestoneIDs: try container.decodeIfPresent(
+                Set<String>.self,
+                forKey: .rewardedBondMilestoneIDs) ?? [],
             updatedAt: try container.decodeIfPresent(
                 Date.self,
                 forKey: .updatedAt) ?? .now)
@@ -272,6 +342,15 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         try container.encode(
             self.selectedCosmeticIDs,
             forKey: .selectedCosmeticIDs)
+        try container.encode(
+            self.energyBoosterInventory,
+            forKey: .energyBoosterInventory)
+        try container.encodeIfPresent(
+            self.activeEnergyBooster,
+            forKey: .activeEnergyBooster)
+        try container.encode(
+            self.rewardedBondMilestoneIDs,
+            forKey: .rewardedBondMilestoneIDs)
         try container.encode(self.updatedAt, forKey: .updatedAt)
     }
 }
@@ -314,4 +393,6 @@ public enum CompanionRewardError: Error, Equatable, Sendable {
     case cosmeticAlreadyOwned
     case cosmeticNotOwned
     case insufficientStarShards
+    case energyBoosterNotOwned
+    case energyBoosterAlreadyActive
 }

@@ -22,10 +22,10 @@ sleeps and waits while you rest.
 For deduplicated verified token growth `T` across providers:
 
 ```text
-growth energy = floor(T / 100,000)
+growth energy = floor(T / 50,000)
 ```
 
-Sub-100,000 token remainders and unspent action energy carry across dates.
+Sub-50,000 token remainders and unspent action energy carry across dates.
 Only verified cumulative token observations create growth. Active time may
 change animations but never creates growth.
 
@@ -58,9 +58,9 @@ After 11 consecutive Standard hatches, hatch 12 is guaranteed Prismatic.
 Prismatic is a visual discovery and never improves growth, rewards, or odds.
 
 Pre-update Rare and Epic sprites remain available as **Legacy Azure** and
-**Legacy Violet** body colors that can be purchased again. Legendary maps
-visually to Prismatic. Pre-redesign assets are settled through the reset and
-refund flow below instead of being forced into the new collection.
+**Legacy Violet** body colors. Legendary maps visually to Prismatic. “Legacy”
+is the name of a current body-color asset, not a separate migration or refund
+flow.
 
 Variant definitions use string IDs and a registry so future looks can be added
 without provider switches in shared UI or a new save format.
@@ -86,9 +86,20 @@ Each hatch receives one presentation-only personality: Calm, Curious, Playful,
 Dreamy, or Brave. You can give the individual a local name. Neither changes
 stats.
 
-Verified growth earned while an Adult also builds bond. Bond levels 1 through
+Verified base growth earned while an Adult also builds bond. Bond levels 1 through
 5 begin at 0, 50, 150, 400, and 800 energy. Bond never falls and never creates
-a growth or reward multiplier.
+a permanent growth or reward multiplier.
+
+Each generation grants a first-time reward for reaching a bond level:
+
+| Bond level | First-time reward |
+|---:|---|
+| 2 | One 2x, 30-minute Action Energy Booster |
+| 3 | One 3x, 20-minute booster |
+| 4 | Permanently unlock Firefly Aura |
+| 5 | One 5x, 10-minute booster and permanently unlock Orbit Aura |
+
+Action energy added by a booster does not add boosted bond.
 
 The private memory timeline stores only content-free pet events:
 
@@ -118,16 +129,14 @@ Star Shards are a styling currency separate from growth energy.
 | Discover 5 / 10 collection variants | 20 / 100 |
 | First launch of a stable release | 20 |
 
-Cosmetic slots are Head, Aura, Background, and Body Color. Equipped cosmetics
+Cosmetic slots are Aura, Background, and Body Color. Equipped cosmetics
 appear in the menu popover, pet-management window, and on-screen pet.
 
 | Slot | Items | Cost |
 |---|---|---:|
-| Aura | Sparkle Aura / Pixel Hearts | 60 / 80 |
+| Aura | Sparkle / Pixel Hearts / Firefly / Orbit / Night Ring | 60 / 80 / 130 / 180 / 200 |
 | Body Color | Legacy Azure / Legacy Violet | 90 / 110 |
-| Head | Developer Headphones / Star Crown / Wizard Hat | 100 / 120 / 140 |
-| Background | Terminal Night / Cloud Garden | 160 / 220 |
-| Aura | Night Ring | 200 |
+| Background | Terminal Night / Cloud Garden / Sunset Grid / Pixel Forest | 160 / 220 / 240 / 260 |
 
 The Customize screen filters by slot and ownership and distinguishes owned from
 equipped items with explicit icons. The purchase sheet compares the current and
@@ -139,35 +148,21 @@ Customize**. Identity and Energy ledgers expand on demand. A completed
 companion's detail sheet shows its name, personality, bond, and full memory
 history.
 
-## Pet asset reset and refund
+## Action Energy Boosters
 
-A major pet-policy change never deletes owned assets silently. When pets,
-collection records, or cosmetics need resetting, a refund card appears in the
-menu popover, collection, and **Settings → Tokeni → Data & Migration**.
+Boosters are consumable items purchased with Star Shards or earned from
+first-time bond milestones.
 
-| Asset | Refund |
-|---|---:|
-| Egg | 0 Energy |
-| Hatchling | 500 Energy |
-| Juvenile | 1,300 Energy |
-| Adult | 2,700 Energy |
-| Completed pet | 2,700 Energy each |
-| Owned cosmetic | Full registered price in Star Shards |
+| Booster | Duration | Price |
+|---|---:|---:|
+| 2x | 30 minutes | 80 Star Shards |
+| 3x | 20 minutes | 150 Star Shards |
+| 5x | 10 minutes | 280 Star Shards |
 
-Collection records are shown in the quote but do not add separate currency.
-Bond accumulated alongside growth Energy, while the journey-completion action
-already granted a new hatch and rewards, so neither is paid twice.
-
-Existing pets remain read-only until confirmation. Confirming resets pets,
-names, personalities, bonds, memories, collection progress, guarantees, legacy
-benefit state, and cosmetic ownership and selection. Unspent Energy, Star
-Shards, attendance, and verified-growth settlement records remain.
-
-The app first stores a local recovery record containing the source state and
-fixed target balances. Each migration ID applies once; an interrupted write
-resumes toward the same target instead of paying twice. Refunded Energy lives
-in a separate migration reserve and is spent first, so the normal safety cap
-cannot discard it. Receipts remain available in Settings and never expire.
+Only one booster can be active. It multiplies base action energy newly verified
+during its active interval. Activation and expiration timestamps are persisted
+locally, so quitting and reopening the app does not reset its duration. Bonus
+Energy from another system is not multiplied again.
 
 ## Behavior and on-screen pet
 
@@ -182,14 +177,9 @@ animation setting, and Low Power Mode are respected.
 ## Storage and privacy
 
 Species, stage, variant, name, personality, energy, bond, memories, collection,
-and cosmetics remain on the Mac. Memories contain no provider name, token
+cosmetics, and boosters remain on the Mac. Memories contain no provider name, token
 total, prompt, response, or credential. There is no analytics SDK or remote
 game server.
-
-The asset-migration journal also stays on the Mac. It contains only the
-migration ID, refund quote, source pet and reward state, fixed target state,
-and receipt—never provider names, raw token totals, work content, or
-credentials.
 
 Unavailable or stale usage never fabricates growth. See
 [Usage display and growth accounting](usage.md) for accounting details.
