@@ -20,6 +20,22 @@ struct HomebrewUpdateServiceTests {
         #expect(info.installedVersion.description == "0.6.0")
         #expect(info.latestVersion.description == "0.7.0")
         #expect(info.isUpdateAvailable)
+        #expect(info.isAvailable(for: SemanticVersion("0.7.0")!))
+        #expect(!info.isAvailable(for: SemanticVersion("0.8.0")!))
+    }
+
+    @Test
+    func installedReleaseCanBeRelinkedWithoutPackageUpgrade() throws {
+        let value = """
+            [{
+              "versions": { "stable": "0.17.0" },
+              "installed": [{ "version": "0.17.0" }]
+            }]
+            """
+        let info = try HomebrewUpdateService.parseFormulaInfo(value)
+
+        #expect(!info.isUpdateAvailable)
+        #expect(info.isAvailable(for: SemanticVersion("0.17.0")!))
     }
 
     @Test

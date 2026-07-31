@@ -1712,6 +1712,9 @@ final class UsageStore: ObservableObject {
             self.appUpdateInstallationTask = nil
         }
         do {
+            guard let releaseVersion = self.appUpdateResult?.latestRelease.version else {
+                throw HomebrewUpdateError.invalidResponse
+            }
             self.appUpdateInstallationOperation = .readInstallation
             guard let brew = HomebrewUpdateService.locateBrew() else {
                 throw HomebrewUpdateError.homebrewNotFound
@@ -1723,14 +1726,16 @@ final class UsageStore: ObservableObject {
 
             self.appUpdateInstallationOperation = .readInstallation
             let formula = try await self.homebrewUpdateService.readFormulaInfo(brew: brew)
-            guard formula.isUpdateAvailable else {
+            guard formula.isAvailable(for: releaseVersion) else {
                 self.appUpdateInstallationMessage = AppLocalization.string(
                     "settings.updates.formulaPending")
                 return
             }
 
-            self.appUpdateInstallationOperation = .upgradeFormula
-            try await self.homebrewUpdateService.upgradeFormula(brew: brew)
+            if formula.isUpdateAvailable {
+                self.appUpdateInstallationOperation = .upgradeFormula
+                try await self.homebrewUpdateService.upgradeFormula(brew: brew)
+            }
 
             self.appUpdateInstallationOperation = .relinkApplication
             try await self.homebrewUpdateService.relinkApplication(brew: brew)

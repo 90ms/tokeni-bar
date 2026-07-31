@@ -12,6 +12,10 @@ public struct HomebrewFormulaInfo: Sendable, Equatable {
     public var isUpdateAvailable: Bool {
         self.installedVersion < self.latestVersion
     }
+
+    public func isAvailable(for releaseVersion: SemanticVersion) -> Bool {
+        self.latestVersion >= releaseVersion
+    }
 }
 
 public enum HomebrewUpdateOperation: String, Sendable, Equatable {
