@@ -68,8 +68,11 @@ public actor GitHubReleaseUpdateClient {
     public static let defaultMinimumCheckInterval: TimeInterval = 6 * 60 * 60
     public static let defaultEndpoint = URL(
         string: "https://api.github.com/repos/90ms/tokeni-bar/releases?per_page=20")!
+    public static let defaultLatestReleasePageURL = URL(
+        string: "https://github.com/90ms/tokeni-bar/releases/latest")!
 
     private let endpoint: URL
+    private let latestReleasePageURL: URL
     private let cacheURL: URL
     private let minimumCheckInterval: TimeInterval
     private let allowedAPIHosts: Set<String>
@@ -78,6 +81,8 @@ public actor GitHubReleaseUpdateClient {
 
     public init(
         endpoint: URL = GitHubReleaseUpdateClient.defaultEndpoint,
+        latestReleasePageURL: URL = GitHubReleaseUpdateClient
+            .defaultLatestReleasePageURL,
         cacheURL: URL? = nil,
         minimumCheckInterval: TimeInterval = GitHubReleaseUpdateClient.defaultMinimumCheckInterval,
         session: URLSession = .shared,
@@ -85,6 +90,7 @@ public actor GitHubReleaseUpdateClient {
         allowedReleaseHosts: Set<String> = ["github.com"])
     {
         self.endpoint = endpoint
+        self.latestReleasePageURL = latestReleasePageURL
         self.cacheURL = cacheURL ?? Self.defaultCacheURL
         self.minimumCheckInterval = max(0, minimumCheckInterval)
         self.allowedAPIHosts = Set(allowedAPIHosts.map { $0.lowercased() })
@@ -96,6 +102,8 @@ public actor GitHubReleaseUpdateClient {
 
     init(
         endpoint: URL = GitHubReleaseUpdateClient.defaultEndpoint,
+        latestReleasePageURL: URL = GitHubReleaseUpdateClient
+            .defaultLatestReleasePageURL,
         cacheURL: URL,
         minimumCheckInterval: TimeInterval = GitHubReleaseUpdateClient.defaultMinimumCheckInterval,
         allowedAPIHosts: Set<String> = ["api.github.com"],
@@ -103,6 +111,7 @@ public actor GitHubReleaseUpdateClient {
         load: @escaping @Sendable (URLRequest) async throws -> (Data, URLResponse))
     {
         self.endpoint = endpoint
+        self.latestReleasePageURL = latestReleasePageURL
         self.cacheURL = cacheURL
         self.minimumCheckInterval = max(0, minimumCheckInterval)
         self.allowedAPIHosts = Set(allowedAPIHosts.map { $0.lowercased() })
@@ -119,6 +128,9 @@ public actor GitHubReleaseUpdateClient {
             throw AppUpdateCheckError.invalidCurrentVersion
         }
         try self.validateURL(self.endpoint, allowedHosts: self.allowedAPIHosts)
+        try self.validateURL(
+            self.latestReleasePageURL,
+            allowedHosts: self.allowedReleaseHosts)
         let cached = try? self.loadCache()
 
         if !force,
@@ -133,28 +145,14 @@ public actor GitHubReleaseUpdateClient {
         }
 
         do {
-            var request = URLRequest(url: self.endpoint)
-            request.cachePolicy = .reloadIgnoringLocalCacheData
-            request.timeoutInterval = 15
-            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-            request.setValue("TokeniBar", forHTTPHeaderField: "User-Agent")
-            request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
-            let (data, response) = try await self.load(request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw AppUpdateCheckError.invalidResponse
+            let release: StableAppRelease
+            do {
+                release = try await self.fetchLatestStableReleaseFromAPI()
+            } catch AppUpdateCheckError.invalidHTTPStatus(403) {
+                release = try await self.fetchLatestStableReleasePage()
+            } catch AppUpdateCheckError.invalidHTTPStatus(429) {
+                release = try await self.fetchLatestStableReleasePage()
             }
-            if let finalURL = httpResponse.url {
-                try self.validateURL(finalURL, allowedHosts: self.allowedAPIHosts)
-            }
-            guard httpResponse.statusCode == 200 else {
-                throw AppUpdateCheckError.invalidHTTPStatus(httpResponse.statusCode)
-            }
-            if httpResponse.expectedContentLength > Self.maximumResponseBytes ||
-                data.count > Self.maximumResponseBytes
-            {
-                throw AppUpdateCheckError.responseTooLarge
-            }
-            let release = try self.decodeLatestStableRelease(data)
             let cache = CachedRelease(checkedAt: now, release: release)
             try self.save(cache)
             return AppUpdateCheckResult(
@@ -170,6 +168,69 @@ public actor GitHubReleaseUpdateClient {
                 cached: cached,
                 isStale: true)
         }
+    }
+
+    private func fetchLatestStableReleaseFromAPI() async throws -> StableAppRelease {
+        var request = URLRequest(url: self.endpoint)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 15
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("TokeniBar", forHTTPHeaderField: "User-Agent")
+        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+        let (data, response) = try await self.load(request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AppUpdateCheckError.invalidResponse
+        }
+        if let finalURL = httpResponse.url {
+            try self.validateURL(finalURL, allowedHosts: self.allowedAPIHosts)
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw AppUpdateCheckError.invalidHTTPStatus(httpResponse.statusCode)
+        }
+        if httpResponse.expectedContentLength > Self.maximumResponseBytes ||
+            data.count > Self.maximumResponseBytes
+        {
+            throw AppUpdateCheckError.responseTooLarge
+        }
+        return try self.decodeLatestStableRelease(data)
+    }
+
+    private func fetchLatestStableReleasePage() async throws -> StableAppRelease {
+        var request = URLRequest(url: self.latestReleasePageURL)
+        request.httpMethod = "HEAD"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 15
+        request.setValue("TokeniBar", forHTTPHeaderField: "User-Agent")
+        let (_, response) = try await self.load(request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              let finalURL = httpResponse.url
+        else {
+            throw AppUpdateCheckError.invalidResponse
+        }
+        try self.validateURL(finalURL, allowedHosts: self.allowedReleaseHosts)
+        guard httpResponse.statusCode == 200 else {
+            throw AppUpdateCheckError.invalidHTTPStatus(httpResponse.statusCode)
+        }
+        let expectedPrefix = "/90ms/tokeni-bar/releases/tag/"
+        guard finalURL.path.hasPrefix(expectedPrefix) else {
+            throw AppUpdateCheckError.invalidResponse
+        }
+        let tagName = String(finalURL.path.dropFirst(expectedPrefix.count))
+        guard !tagName.isEmpty,
+              !tagName.contains("/"),
+              finalURL.query == nil,
+              finalURL.fragment == nil,
+              let version = SemanticVersion(tagName),
+              version.prerelease.isEmpty
+        else {
+            throw AppUpdateCheckError.invalidResponse
+        }
+        return StableAppRelease(
+            version: version,
+            tagName: tagName,
+            name: tagName,
+            pageURL: finalURL,
+            publishedAt: nil)
     }
 
     public func clearCache() throws {

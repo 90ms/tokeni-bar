@@ -78,6 +78,32 @@ struct AppUpdateCheckTests {
     }
 
     @Test
+    func fallsBackToLatestReleasePageWhenAPIRateLimitIsExhausted() async throws {
+        let directory = self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let counter = RequestCounter()
+        let latestURL = URL(
+            string: "https://github.com/90ms/tokeni-bar/releases/tag/v0.17.2")!
+        let client = self.client(directory: directory) { request in
+            await counter.increment()
+            if request.url == GitHubReleaseUpdateClient.defaultEndpoint {
+                return (Data(), self.response(url: request.url!, status: 403))
+            }
+            #expect(request.url == GitHubReleaseUpdateClient.defaultLatestReleasePageURL)
+            #expect(request.httpMethod == "HEAD")
+            return (Data(), self.response(url: latestURL, status: 200))
+        }
+
+        let result = try await client.check(currentVersion: "0.17.1")
+
+        #expect(await counter.value == 2)
+        #expect(result.latestRelease.version == SemanticVersion("0.17.2"))
+        #expect(result.latestRelease.pageURL == latestURL)
+        #expect(result.source == .remote)
+        #expect(!result.isStale)
+    }
+
+    @Test
     func rejectsUntrustedEndpointAndRedirectHosts() async throws {
         let directory = self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
