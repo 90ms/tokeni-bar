@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
+          fetch-depth: 0
 
       - name: Resolve version
         id: version
@@ -43,6 +44,11 @@ jobs:
           git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}" >/dev/null
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Render structured release notes
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: ./Scripts/render_release_notes.sh "$VERSION" dist/release-notes.md
 
       - name: Build application
         env:
@@ -101,8 +107,7 @@ jobs:
           gh release create "$RELEASE_TAG" \
             "dist/TokeniBar-$VERSION.zip" \
             "dist/TokeniBar-$VERSION.zip.sha256" \
-            --generate-notes \
-            --notes "Ad-hoc signed build. Verify the artifact attestation and checksum before installation." \
+            --notes-file "dist/release-notes.md" \
             --verify-tag
 
       - name: Open Homebrew distribution update pull request

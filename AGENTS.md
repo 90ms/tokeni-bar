@@ -21,3 +21,21 @@
 ## Verification
 
 Run `swift test` and `swift build` before handing off changes.
+
+## Release notes
+
+- Every user-visible source or packaging change must add a unique bilingual
+  `.changes/YYYYMMDD-lowercase-slug.md` fragment following
+  `.changes/README.md`.
+- Write concise user-facing Korean and English summaries. Do not copy commit
+  messages, internal implementation detail, secrets, paths, prompts, responses,
+  or raw token totals into release notes.
+- Mark user action with `breaking: true` and provide both `action_ko` and
+  `action_en`. Otherwise use `breaking: false`.
+- Never edit or delete a released fragment. The renderer includes only fragments
+  added or modified after the previous semantic-version tag.
+- Before creating a release tag, run
+  `Scripts/render_release_notes.sh <version> <output-file>` and review both
+  languages. Do not tag or deploy without a successful main-branch CI run.
+- The release workflow must publish the validated rendered file with
+  `--notes-file`; do not switch back to unstructured generated notes.
