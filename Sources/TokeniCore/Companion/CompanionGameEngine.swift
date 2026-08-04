@@ -24,9 +24,21 @@ public struct CompanionGameEngine: Sendable {
         state.updatedAt = award.createdAt
         guard award.energy > 0 else { return [] }
 
-        let availableRoom = max(self.rules.maximumEnergyBalance - state.growthEnergy, 0)
-        let credited = min(award.energy, availableRoom)
-        state.growthEnergy = Self.saturatedAdd(state.growthEnergy, credited)
+        let previousLevel = state.level
+        let credited: Int
+        if state.stage == .egg {
+            let availableRoom = max(
+                self.rules.maximumEnergyBalance - state.growthEnergy,
+                0)
+            credited = min(award.energy, availableRoom)
+            state.growthEnergy = Self.saturatedAdd(
+                state.growthEnergy,
+                credited)
+        } else {
+            credited = award.energy
+            state.growthXP = Self.saturatedAdd(state.growthXP, credited)
+            state.highestPetLevel = max(state.highestPetLevel, state.level)
+        }
         state.growthEarnedToday = Self.saturatedAdd(
             state.growthEarnedToday,
             credited)
@@ -43,27 +55,13 @@ public struct CompanionGameEngine: Sendable {
         if credited > 0 {
             events.append(.energyApplied(credited))
         }
-        if state.stage == .adult {
-            let creditedBondEnergy = max(bondEnergy ?? award.energy, 0)
-            let previousLevel = CompanionBond.level(for: state.bondEnergy)
-            state.bondEnergy = Self.saturatedAdd(
-                state.bondEnergy,
-                creditedBondEnergy)
-            events.append(.bondIncreased(creditedBondEnergy))
-            let newLevel = CompanionBond.level(for: state.bondEnergy)
-            if newLevel > previousLevel {
-                for level in (previousLevel + 1)...newLevel {
-                    self.recordMemory(
-                        .bondLevel,
-                        bondLevel: level,
-                        at: award.createdAt,
-                        in: &state)
-                }
-            }
+        if state.level > previousLevel {
+            events.append(.levelIncreased(from: previousLevel, to: state.level))
         }
         return events
     }
 
+    @available(*, deprecated, message: "Use openEgg(_:at:in:) for free egg hatching.")
     public func hatch(
         speciesUnitValue: Double,
         variantUnitValue: Double,
@@ -74,22 +72,33 @@ public struct CompanionGameEngine: Sendable {
     {
         self.rollOverEnergyIfNeeded(at: now, in: &state)
         guard state.stage == .egg else { throw CompanionGameError.eggRequired }
+        guard let egg = state.eggs.first,
+              let definition = CompanionEggRegistry.definition(
+                for: egg.definitionID)
+        else { throw CompanionGameError.eggNotFound }
         let cost = self.discountedCost(
             self.rules.hatchCost,
             basisPoints: costDiscountBasisPoints)
         try self.spend(cost, in: &state)
-        return [.energySpent(cost)] + self.revealHatch(
+        state.eggs.removeFirst()
+        let events = self.revealHatch(
             speciesUnitValue: speciesUnitValue,
             variantUnitValue: variantUnitValue,
             personalityUnitValue: personalityUnitValue,
+            eggDefinition: definition,
             at: now,
             in: &state)
+        state.highestPetLevel = max(state.highestPetLevel, state.level)
+        return [.energySpent(cost)]
+            + events
+            + self.reconcileEggMilestones(at: now, in: &state)
     }
 
     private func revealHatch(
         speciesUnitValue: Double,
         variantUnitValue: Double,
         personalityUnitValue: Double,
+        eggDefinition: CompanionEggDefinition? = nil,
         at now: Date,
         in state: inout CompanionGameState) -> [CompanionGameEvent]
     {
@@ -100,13 +109,19 @@ public struct CompanionGameEngine: Sendable {
         let pityApplies = !missingSpecies.isEmpty
             && state.consecutiveDuplicateHatches
                 >= self.rules.duplicateSpeciesPityHatches
+        let eggPrefersMissing = eggDefinition?.prefersUndiscoveredSpecies == true
+            && !missingSpecies.isEmpty
         let speciesID = self.rollSpecies(
-            from: pityApplies ? missingSpecies : CompanionSpeciesID.allCases,
+            from: pityApplies || eggPrefersMissing
+                ? missingSpecies
+                : CompanionSpeciesID.allCases,
             unitValue: speciesUnitValue)
         let isNewSpecies = !discoveredSpecies.contains(speciesID)
-        let variantID = self.rollVariant(
-            unitValue: variantUnitValue,
-            pity: state.variantPity)
+        let variantID: CompanionVariantID = eggDefinition?.guaranteesPrismatic == true
+            ? .prismatic
+            : self.rollVariant(
+                unitValue: variantUnitValue,
+                pity: state.variantPity)
         let rarity = CompanionVariantRegistry.definition(
             for: variantID).assetRarity
         state.speciesID = speciesID
@@ -116,6 +131,7 @@ public struct CompanionGameEngine: Sendable {
         state.nickname = nil
         state.personalityID = self.rollPersonality(
             unitValue: personalityUnitValue)
+        state.activeAcquisitionEggID = eggDefinition?.id
         state.variantPity.standardHatches = variantID == .prismatic
             ? 0
             : Self.saturatedAdd(state.variantPity.standardHatches, 1)
@@ -146,7 +162,7 @@ public struct CompanionGameEngine: Sendable {
     {
         self.rollOverEnergyIfNeeded(at: now, in: &state)
         guard state.stage == .hatchling || state.stage == .junior,
-              let nextStage = self.rules.nextStage(after: state.stage)
+              let evolution = CompanionEvolutionRegistry.next(after: state.stage)
         else { throw CompanionGameError.evolutionUnavailable }
         guard let rarity = state.rarity,
               state.resolvedVariantID != nil
@@ -154,10 +170,12 @@ public struct CompanionGameEngine: Sendable {
             throw CompanionGameError.rarityMissing
         }
 
-        let cost = self.discountedCost(
-            self.rules.actionCost(to: nextStage),
-            basisPoints: costDiscountBasisPoints)
-        try self.spend(cost, in: &state)
+        guard state.level >= evolution.requiredLevel else {
+            throw CompanionGameError.evolutionLevelRequired(
+                required: evolution.requiredLevel,
+                current: state.level)
+        }
+        let nextStage = evolution.stage
         let fromStage = state.stage
         state.stage = nextStage
         state.updatedAt = now
@@ -169,7 +187,6 @@ public struct CompanionGameEngine: Sendable {
             in: &state)
         self.recordMemory(.evolved, at: now, in: &state)
         return [
-            .energySpent(cost),
             .evolved(
                 fromStage: fromStage,
                 toStage: nextStage,
@@ -179,6 +196,7 @@ public struct CompanionGameEngine: Sendable {
         ]
     }
 
+    @available(*, deprecated, message: "Owned pets no longer have a completion reset.")
     public func completeGeneration(
         speciesUnitValue: Double,
         variantUnitValue: Double,
@@ -209,6 +227,10 @@ public struct CompanionGameEngine: Sendable {
             nickname: state.nickname,
             personalityID: state.personalityID,
             bondEnergy: state.bondEnergy,
+            growthXP: state.growthXP,
+            stage: state.stage,
+            acquisitionEggID: state.activeAcquisitionEggID,
+            createdAt: state.generationCreatedAt,
             completedAt: now)
         self.recordCompletion(completion, in: &state)
         self.startNewEgg(at: now, in: &state)
@@ -225,6 +247,7 @@ public struct CompanionGameEngine: Sendable {
         ] + hatchEvents
     }
 
+    @available(*, deprecated, message: "Acquire and open an egg without replacing the active pet.")
     public func abandonForNewEgg(
         costDiscountBasisPoints: Int = 0,
         at now: Date = .now,
@@ -259,6 +282,184 @@ public struct CompanionGameEngine: Sendable {
         state.updatedAt = now
     }
 
+    @discardableResult
+    public func acquireEgg(
+        definitionID: CompanionEggDefinitionID,
+        seed: UInt64,
+        source: CompanionEggSource,
+        transactionID: UUID = UUID(),
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws -> [CompanionGameEvent]
+    {
+        guard !state.processedEggTransactionIDs.contains(transactionID)
+        else { return [] }
+        guard CompanionEggRegistry.definition(for: definitionID) != nil
+        else { throw CompanionEggError.definitionNotFound }
+        state.eggs.append(CompanionEggInstance(
+            definitionID: definitionID,
+            seed: seed,
+            acquiredAt: now,
+            source: source))
+        state.processedEggTransactionIDs.append(transactionID)
+        state.processedEggTransactionIDs = Array(
+            state.processedEggTransactionIDs.suffix(512))
+        state.updatedAt = now
+        return [.eggAcquired(definitionID)]
+    }
+
+    @discardableResult
+    public func sellEgg(
+        _ eggID: UUID,
+        transactionID: UUID = UUID(),
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws -> Int
+    {
+        if state.processedEggTransactionIDs.contains(transactionID) {
+            return 0
+        }
+        guard let index = state.eggs.firstIndex(where: { $0.id == eggID })
+        else { throw CompanionEggError.eggNotFound }
+        guard let definition = CompanionEggRegistry.definition(
+            for: state.eggs[index].definitionID)
+        else { throw CompanionEggError.definitionNotFound }
+        guard definition.isSellable else {
+            throw CompanionEggError.eggNotSellable
+        }
+        state.eggs.remove(at: index)
+        state.processedEggTransactionIDs.append(transactionID)
+        state.processedEggTransactionIDs = Array(
+            state.processedEggTransactionIDs.suffix(512))
+        state.updatedAt = now
+        return definition.resaleValue
+    }
+
+    @discardableResult
+    public func openEgg(
+        _ eggID: UUID,
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws -> [CompanionGameEvent]
+    {
+        guard let index = state.eggs.firstIndex(where: { $0.id == eggID })
+        else { throw CompanionEggError.eggNotFound }
+        let egg = state.eggs[index]
+        guard let definition = CompanionEggRegistry.definition(
+            for: egg.definitionID)
+        else { throw CompanionEggError.definitionNotFound }
+        let speciesValue = CompanionEggRegistry.unitValue(
+            seed: egg.seed,
+            salt: 1)
+        let variantValue = CompanionEggRegistry.unitValue(
+            seed: egg.seed,
+            salt: 2)
+        let personalityValue = CompanionEggRegistry.unitValue(
+            seed: egg.seed,
+            salt: 3)
+        state.eggs.remove(at: index)
+
+        let events: [CompanionGameEvent]
+        if state.stage == .egg {
+            let bankedXP = state.growthEnergy
+            state.growthEnergy = 0
+            events = self.revealHatch(
+                speciesUnitValue: speciesValue,
+                variantUnitValue: variantValue,
+                personalityUnitValue: personalityValue,
+                eggDefinition: definition,
+                at: now,
+                in: &state)
+            state.growthXP = Self.saturatedAdd(state.growthXP, bankedXP)
+            state.highestPetLevel = max(state.highestPetLevel, state.level)
+        } else {
+            events = self.revealInactiveCompanion(
+                egg: egg,
+                definition: definition,
+                speciesUnitValue: speciesValue,
+                variantUnitValue: variantValue,
+                personalityUnitValue: personalityValue,
+                at: now,
+                in: &state)
+        }
+        let milestoneEvents = self.reconcileEggMilestones(at: now, in: &state)
+        state.updatedAt = now
+        return [.eggOpened(eggID)] + events + milestoneEvents
+    }
+
+    public func activateArchivedGeneration(
+        _ generationID: UUID,
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws -> [CompanionGameEvent]
+    {
+        guard state.stage != .egg,
+              let selectedIndex = state.collection.recentCompletedGenerations
+                .firstIndex(where: { $0.generationID == generationID }),
+              let activeSpeciesID = state.speciesID,
+              let activeRarity = state.rarity
+        else { throw CompanionGameError.archivedGenerationNotFound }
+
+        let selected = state.collection.recentCompletedGenerations.remove(
+            at: selectedIndex)
+        let active = CompletedCompanionGeneration(
+            generationID: state.generationID,
+            generationNumber: state.generationNumber,
+            speciesID: activeSpeciesID,
+            finalRarity: activeRarity,
+            variantID: state.resolvedVariantID,
+            nickname: state.nickname,
+            personalityID: state.personalityID,
+            bondEnergy: state.bondEnergy,
+            growthXP: state.growthXP,
+            stage: state.stage,
+            acquisitionEggID: state.activeAcquisitionEggID,
+            createdAt: state.generationCreatedAt,
+            completedAt: now)
+        state.collection.recentCompletedGenerations.append(active)
+
+        state.generationID = selected.generationID
+        state.generationNumber = selected.generationNumber
+        state.speciesID = selected.speciesID
+        state.stage = selected.stage
+        state.rarity = selected.finalRarity
+        state.variantID = selected.variantID
+        state.nickname = selected.nickname
+        state.personalityID = selected.personalityID ?? .calm
+        state.activeAcquisitionEggID = selected.acquisitionEggID
+        state.bondEnergy = selected.bondEnergy
+        state.growthXP = selected.growthXP
+        state.highestPetLevel = max(state.highestPetLevel, state.level)
+        state.generationCreatedAt = selected.createdAt
+        state.lastPattedAt = nil
+        state.showcasedGenerationID = nil
+        state.updatedAt = now
+        return [.activeCompanionChanged(generationID)]
+    }
+
+    @discardableResult
+    public func sellArchivedGeneration(
+        _ generationID: UUID,
+        transactionID: UUID = UUID(),
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws -> Int
+    {
+        if state.processedEggTransactionIDs.contains(transactionID) {
+            return 0
+        }
+        guard let index = state.collection.recentCompletedGenerations
+            .firstIndex(where: { $0.generationID == generationID })
+        else { throw CompanionGameError.archivedGenerationNotFound }
+        guard state.stage != .egg
+                || state.collection.recentCompletedGenerations.count > 1
+        else { throw CompanionEggError.lastPetCannotBeSold }
+        let companion = state.collection.recentCompletedGenerations.remove(at: index)
+        if state.showcasedGenerationID == generationID {
+            state.showcasedGenerationID = nil
+        }
+        state.processedEggTransactionIDs.append(transactionID)
+        state.processedEggTransactionIDs = Array(
+            state.processedEggTransactionIDs.suffix(512))
+        state.updatedAt = now
+        return companion.variantID == .prismatic ? 60 : 30
+    }
+
     public func rollOverEnergyIfNeeded(
         at now: Date = .now,
         in state: inout CompanionGameState)
@@ -283,32 +484,26 @@ public struct CompanionGameEngine: Sendable {
         state.updatedAt = now
     }
 
+    @available(*, deprecated, message: "Level evolution and egg opening do not spend Growth XP.")
     public func actionCost(
         for stage: CompanionGameStage,
         costDiscountBasisPoints: Int = 0) -> Int?
     {
-        let baseCost: Int? = switch stage {
-        case .egg:
-            self.rules.hatchCost
-        case .hatchling, .junior:
-            self.rules.nextActionCost(after: stage)
-        case .adult:
-            self.rules.journeyCompletionCost
-        }
-        return baseCost.map {
-            self.discountedCost($0, basisPoints: costDiscountBasisPoints)
-        }
+        nil
     }
 
     public func canPerformAction(
         for state: CompanionGameState,
         costDiscountBasisPoints: Int = 0) -> Bool
     {
-        self.actionCost(
-            for: state.stage,
-            costDiscountBasisPoints: costDiscountBasisPoints).map {
-            state.availableGrowthEnergy >= $0
-        } ?? false
+        switch state.stage {
+        case .egg:
+            !state.eggs.isEmpty
+        case .hatchling, .junior:
+            state.canEvolve
+        case .adult:
+            false
+        }
     }
 
     public func discountedCost(_ baseCost: Int, basisPoints: Int) -> Int {
@@ -428,6 +623,157 @@ public struct CompanionGameEngine: Sendable {
             variantID: state.resolvedVariantID)]
     }
 
+    private func revealInactiveCompanion(
+        egg: CompanionEggInstance,
+        definition: CompanionEggDefinition,
+        speciesUnitValue: Double,
+        variantUnitValue: Double,
+        personalityUnitValue: Double,
+        at now: Date,
+        in state: inout CompanionGameState) -> [CompanionGameEvent]
+    {
+        let discoveredSpecies = state.collection.discoveredSpeciesIDs
+        let missingSpecies = CompanionSpeciesID.allCases.filter {
+            !discoveredSpecies.contains($0)
+        }
+        let pityApplies = !missingSpecies.isEmpty
+            && state.consecutiveDuplicateHatches
+                >= self.rules.duplicateSpeciesPityHatches
+        let prefersMissing = definition.prefersUndiscoveredSpecies
+            && !missingSpecies.isEmpty
+        let speciesID = self.rollSpecies(
+            from: pityApplies || prefersMissing
+                ? missingSpecies
+                : CompanionSpeciesID.allCases,
+            unitValue: speciesUnitValue)
+        let isNewSpecies = !discoveredSpecies.contains(speciesID)
+        let variantID: CompanionVariantID = definition.guaranteesPrismatic
+            ? .prismatic
+            : self.rollVariant(
+                unitValue: variantUnitValue,
+                pity: state.variantPity)
+        let rarity = CompanionVariantRegistry.definition(
+            for: variantID).assetRarity
+        let personality = self.rollPersonality(unitValue: personalityUnitValue)
+        let generationID = UUID()
+        let generationNumber = Self.saturatedAdd(
+            max(
+                state.generationNumber,
+                state.collection.recentCompletedGenerations
+                    .map(\.generationNumber).max() ?? 0),
+            1)
+
+        state.variantPity.standardHatches = variantID == .prismatic
+            ? 0
+            : Self.saturatedAdd(state.variantPity.standardHatches, 1)
+        state.consecutiveDuplicateHatches = isNewSpecies
+            ? 0
+            : Self.saturatedAdd(state.consecutiveDuplicateHatches, 1)
+        let unlocked = self.recordEncounter(
+            speciesID: speciesID,
+            stage: .hatchling,
+            rarity: rarity,
+            variantID: variantID,
+            at: now,
+            in: &state)
+        state.collection.recentCompletedGenerations.append(
+            CompletedCompanionGeneration(
+                generationID: generationID,
+                generationNumber: generationNumber,
+                speciesID: speciesID,
+                finalRarity: rarity,
+                variantID: variantID,
+                personalityID: personality,
+                bondEnergy: 0,
+                growthXP: 0,
+                stage: .hatchling,
+                acquisitionEggID: egg.definitionID,
+                createdAt: now,
+                completedAt: now))
+        state.memories.append(CompanionMemoryRecord(
+            generationID: generationID,
+            kind: .hatched,
+            stage: .hatchling,
+            occurredAt: now))
+        state.memories = CompanionMemoryPolicy.pruned(state.memories)
+        return [
+            .hatched(
+                speciesID: speciesID,
+                rarity: rarity,
+                isNewSpecies: isNewSpecies,
+                unlockedFormIDs: unlocked),
+        ]
+    }
+
+    private func recordEncounter(
+        speciesID: CompanionSpeciesID,
+        stage: CompanionGameStage,
+        rarity: CompanionRarity,
+        variantID: CompanionVariantID,
+        at date: Date,
+        in state: inout CompanionGameState) -> [String]
+    {
+        let currentFormID = self.formID(
+            speciesID: speciesID,
+            stage: stage,
+            rarity: rarity,
+            variantID: variantID)
+        if let index = state.collection.forms.firstIndex(where: {
+            $0.formID == currentFormID
+        }) {
+            state.collection.forms[index].unlockKind = .encountered
+            state.collection.forms[index].lastEncounteredAt = date
+            state.collection.forms[index].encounterCount += 1
+            return []
+        }
+        state.collection.forms.append(CompanionFormRecord(
+            formID: currentFormID,
+            speciesID: speciesID,
+            stage: stage,
+            rarity: rarity,
+            variantID: variantID,
+            unlockKind: .encountered,
+            firstUnlockedAt: date,
+            lastEncounteredAt: date,
+            encounterCount: 1))
+        return [currentFormID]
+    }
+
+    /// Grants any collection milestone eggs that were not claimed yet.
+    ///
+    /// This is public so migrated saves can be reconciled on load as well as
+    /// immediately after opening an egg. Claimed IDs keep the operation
+    /// idempotent across repeated launches.
+    @discardableResult
+    public func reconcileEggMilestones(
+        at now: Date,
+        in state: inout CompanionGameState) -> [CompanionGameEvent]
+    {
+        let candidates: [(String, CompanionEggDefinitionID, Bool)] = [
+            ("species-5", .discovery,
+             state.collection.discoveredSpeciesIDs.count >= 5),
+            ("variants-5", .prismatic,
+             state.collection.discoveredCollectibleVariantCount >= 5),
+            ("variants-10", .prismatic,
+             state.collection.discoveredCollectibleVariantCount >= 10),
+        ]
+        var events: [CompanionGameEvent] = []
+        for (milestoneID, definitionID, reached) in candidates
+            where reached && !state.claimedEggMilestoneIDs.contains(milestoneID)
+        {
+            state.claimedEggMilestoneIDs.append(milestoneID)
+            state.eggs.append(CompanionEggInstance(
+                definitionID: definitionID,
+                seed: CompanionEggRegistry.deterministicSeed(
+                    for: milestoneID),
+                acquiredAt: now,
+                source: .collectionMilestone))
+            events.append(.eggAcquired(definitionID))
+        }
+        state.claimedEggMilestoneIDs.sort()
+        return events
+    }
+
     private func recordEvolution(
         stage: CompanionGameStage,
         rarity: CompanionRarity,
@@ -541,6 +887,8 @@ public struct CompanionGameEngine: Sendable {
         state.variantID = nil
         state.nickname = nil
         state.personalityID = nil
+        state.activeAcquisitionEggID = nil
+        state.growthXP = 0
         state.bondEnergy = 0
         state.lastPattedAt = nil
         state.celebrationUntil = nil
@@ -561,7 +909,7 @@ public struct CompanionGameEngine: Sendable {
             stage: state.stage,
             bondLevel: bondLevel,
             occurredAt: date))
-        state.memories = Array(state.memories.suffix(400))
+        state.memories = CompanionMemoryPolicy.pruned(state.memories)
     }
 
     private func dayDistance(from startKey: String, to endKey: String) -> Int {

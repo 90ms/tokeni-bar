@@ -45,8 +45,8 @@ brew install --formula tokeni-bar
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
-| Tokeni pets | Life stage, species, visual variant, name, personality, bond, memories, behavior, and an optional desktop overlay |
-| Collection and rewards | Ten core discoveries and journey albums, automatic activity check-in, bond rewards, Energy Boosters, animated Star Shard cosmetics, and the nearest guarantee |
+| Tokeni pets | Unbounded levels, evolution appearances, owned-pet switching, names, personalities, memories, behavior, and an optional desktop overlay |
+| Eggs, collection, and rewards | Starter egg, Star Shard egg shop, ten core discoveries, special eggs, level rewards, boosters, and cosmetics |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -54,174 +54,93 @@ references—not subscription bills.
 
 ## How Tokeni pets grow
 
-### 1. Tokens become growth energy
+### 1. Verified tokens become unbounded levels
 
-For today's verified token total `T`:
+Every 25,000 verified cumulative tokens grant one Growth XP. A remainder below
+25,000 carries across dates. Active time may change animation, but never creates
+XP.
 
 ```text
-Growth energy = floor(T / 50,000)
+XP for next level = min(2 + floor((current level - 1) / 10), 15)
 ```
 
-| Tokens today | Growth energy today |
-|---:|---:|
-| 50,000 | 1 |
-| 1,000,000 | 20 |
-| 10,000,000 | 200 |
-| 100,000,000 | 2,000 |
-| 300,000,000 | 6,000 |
-
-Every 50,000 verified tokens always grant one energy. A remainder below
-50,000 tokens and all unspent action energy carry across date changes. The
-regular wallet has a 100,000-energy safety limit to contain invalid data, and
-refreshing the same cumulative value never pays twice.
-
-The collection's **Action energy** section separates tokens reflected in
-growth by provider and shows their combined total, today's energy target, and the
-additional tokens needed for the next energy point. CLIs without a complete
-daily total show only observed session or lifetime increases. Providers that
-do not yet have a trustworthy baseline remain **Waiting for data**.
-
-Codex daily account buckets combine usage from every PC signed into the same
-account, but the current-day bucket may not be available yet. Tokeni Bar accepts
-the newest confirmed bucket for up to three days, calculates growth for its
-original usage date, and settles the energy on the day it is confirmed. The
-collection shows the usage date plus **Settled today** or **Today pending**.
-
-### 2. Four life stages
-
-| Action | Energy spent | Result |
-|---|---:|---|
-| Hatch egg | 500 | Reveal the species and Standard or Prismatic variant, then become a Hatchling |
-| Evolve to Juvenile | 800 | Keep the same variant and become a Juvenile |
-| Evolve to Adult | 1,400 | Keep the same variant and become an Adult |
-| Finish an Adult journey and hatch again | 800 | Archive the Adult and immediately hatch a new pet |
-| Receive a new egg before Adult | 300 | Restart with a mystery egg |
-
-Having enough energy never hatches or evolves automatically. The user must
-click the action. Energy earned as an Adult fills action energy and also records
-bond. Evolution shows the previous form entering a glow before the new stage
-appears; Reduce Motion and Low Power Mode use a short transition.
-
-Working, a short waiting period after recent activity, low quota, patting, and
-long inactivity change the pet's behavior. The pet briefly sparkles when
-verified tokens credit growth energy and occasionally shifts while idle. These
-visual reactions never add growth energy.
-
-Every species shares the same mystery egg. Hatching reveals ByteBot, CacheCat,
-StackFox, PromptPup, or NullSlime at equal 20% base odds. While any species is
-still missing, five duplicate hatches guarantee an undiscovered species from
-the next egg.
-
-### 3. Collect Standard and Prismatic variants
-
-A pet's variant is decided once at hatch and never changes while evolving.
-
-| Variant | Hatch odds | Rule |
-|---|---:|---|
-| Standard | 92% | Each species' signature look |
-| Prismatic | 8% | A special visual variant with no stat advantage |
-
-After 11 consecutive Standard hatches, hatch 12 is Prismatic. This can combine
-with the missing-species guarantee, and the collection leads with whichever
-guarantee is nearer. Legacy Rare and Epic looks are preserved as body-color
-cosmetic options, and Legendary maps visually to Prismatic. Here, “Legacy”
-names a current body-color asset; there is no separate refund or asset migration
-flow.
-
-### 4. Collection, individual records, and new eggs
-
-| Choice | Result | What remains |
-|---|---|---|
-| Stay with an Adult | New energy becomes bond | Current form and all records |
-| Finish an Adult journey | Spend 800 energy, archive it, and hatch immediately | Collection and variant/species guarantees |
-| Leave before Adult | Spend 300 energy and start a new egg | Collection and existing guarantees |
-
-Generation one has ten core discoveries: five species times Standard and
-Prismatic. Hatchling, Juvenile, and Adult forms actually encountered remain in
-a separate **journey album** under each discovery.
-
-The current pet can have a local name up to 24 characters, a presentation-only
-personality, five bond levels, and memories for hatching, evolution, first pat,
-bond levels, and journey completion. Memories never contain work content or
-usage numbers. Reaching bond levels 2, 3, 4, and 5 for the first time in a
-generation grants a 2x booster, a 3x booster, Firefly Aura, and a 5x booster
-plus Orbit Aura, respectively. Boosted action energy does not add boosted bond,
-preventing a self-accelerating bond loop.
-
-Completed pets remain under **Completed Pets**, where their
-identity is retained and they can be shown again. No pet grants numerical
-growth, cost, odds, or reward advantages.
-
-### 5. Activity and collection achievements award Star Shards
-
-Growth energy continues to come only from verified token usage. Attendance and
-collection activity award a separate currency called **Star Shards**.
-
-| Condition | Star Shards |
-|---|---:|
-| Automatic activity check-in with the first verified growth | 10 |
-| First verified growth of the day | 5 |
-| 3 / 5 / 7 check-ins in a week | 10 / 20 / 30 |
-| 20 check-ins in a month | 50 |
-| First discovery of a species | 20 |
-| First Prismatic discovery | 50 |
-| Completed Adult journey | 25 |
-| 5 / 10 variant discoveries | 20 / 100 |
-| First launch of a new stable release | 20 |
-
-There is no separate check-in button. The first verified growth observation of
-the day records activity attendance automatically. Missing a day does not reset weekly or monthly cumulative progress. Duplicate
-claims for the same local date are rejected. If the system date moves behind
-the latest claimed date, new attendance remains unavailable until the date is
-valid again.
-
-Spend Star Shards on permanent cosmetics in the collection:
-
-| Slot | Cosmetics | Star Shards |
-|---|---|---:|
-| Aura | Sparkle / Pixel Hearts / Firefly / Orbit / Night Ring | 60 / 80 / 130 / 180 / 200 |
-| Background | Terminal Night / Cloud Garden / Sunset Grid / Pixel Forest | 160 / 220 / 240 / 260 |
-| Body Color | Legacy Azure / Legacy Violet | 90 / 110 |
-
-The purchase sheet compares the current combination with the result before
-spending shards. Cosmetics appear in the menu popover, pet-management window,
-and on-screen pet and can be filtered by slot and ownership. One item per slot
-can be equipped at the same time. A completed companion's detail sheet shows
-its full identity and memory history.
-Its decoration scales with the Small, Medium, or Large pet size setting. Every
-item has its own motion; intensity can be Off, Gentle, or Full, and aura
-contrast adapts on bright backgrounds.
-Cosmetics never affect growth energy, variants, guarantees, or rewards. Pet
-play focuses on collecting, individual histories, animation, and styling
-combinations rather than numerical superiority. Head items are not offered
-because their anchors do not remain consistent across species and stages.
-
-### 6. Timed Action Energy Boosters
-
-Buy consumable boosters with Star Shards or earn them from bond milestones.
-
-| Booster | Duration | Star Shards |
+| Goal | Cumulative Growth XP | At 100,000 tokens/day |
 |---|---:|---:|
-| 2x | 30 minutes | 80 |
-| 3x | 20 minutes | 150 |
-| 5x | 10 minutes | 280 |
+| Level 10 | 18 | About 5 days |
+| Level 25 | 66 | About 17 days |
+| Each high level | At most 15 | At most about 4 days |
 
-A booster applies only to **base action energy** newly verified while it is
-active. Only one can be active at a time. Activation and expiration timestamps
-are stored locally, so relaunching never extends the duration. Bonus Energy
-from other systems and bond do not receive the multiplier again.
+Levels have no cap. At levels 10 and 25, the player can manually evolve the pet
+into its Juvenile and Adult appearance without spending XP. Delaying evolution
+does not stop level growth.
 
-Open the grid button in the menu or choose
-**Settings → Tokeni → Open Pet Collection**. See
-[Tokeni pet growth and collection](docs/bytebot.md) for player-facing rules and
+Starting at level 30, every ten levels grant 10 Star Shards so adult pets retain
+a recurring goal.
+
+### 2. Collect new pets through eggs
+
+The first launch grants one non-sellable Starter Egg, which hatches for free.
+Further pets come from the Egg Vault and shop without completing or replacing
+the current pet.
+Users who migrate an existing active pet receive one additional Homecoming Egg.
+
+| Egg | Unlock or source | Purchase | Resale |
+|---|---|---:|---:|
+| Starter Egg | Once on first launch | Free | Not sellable |
+| Homecoming Egg | Once when migrating an active pet | Not purchasable | Not sellable |
+| Mystery Egg | Highest pet level 5 | 90 shards | 30 |
+| Discovery Egg | Discover 3 different species | 180 shards | 60 |
+| Prismatic Egg | Collection milestones | Not purchasable | 60 |
+
+A Discovery Egg selects an undiscovered species when one remains. A Prismatic
+Egg guarantees the Prismatic variant. Discovering all five species grants one
+Discovery Egg, and discovering 5 and 10 species/variant combinations grants one
+Prismatic Egg at each milestone.
+
+Opening another egg never removes the current pet. The hatchling joins the
+owned-pet roster; select one pet at a time to receive Growth XP and switch at any
+time. Inactive pets can be sent to a new home for Star Shards. Their level does
+not increase resale value, and collection discoveries remain recorded.
+
+### 3. Discover five species and their variants
+
+ByteBot, CacheCat, StackFox, PromptPup, and NullSlime have equal base odds. While
+any species is still missing, the next regular hatch after five duplicates is
+chosen from undiscovered species.
+
+| Variant | Base odds | Power |
+|---|---:|---|
+| Standard | 92% | Equal |
+| Prismatic | 8% | Equal |
+
+After 11 consecutive Standard hatches, regular hatch 12 is Prismatic. The main
+collection contains ten combinations—five species times Standard and
+Prismatic—while evolution appearances are recorded in each combination's
+growth album.
+
+### 4. Earn rewards from levels and activity
+
+| Pet level | First-time reward |
+|---:|---|
+| 5 | 2x, 30-minute booster |
+| 10 | 3x, 20-minute booster |
+| 20 | Firefly Aura |
+| 25 | 5x, 10-minute booster and Orbit Aura |
+
+Automatic activity attendance, the first verified growth of a day, weekly and
+monthly activity, species and variant discoveries, and stable-release gifts
+also grant Star Shards. Shards are shared across eggs, cosmetics, and boosters.
+There are no real-money purchases, limited-time shops, player trading, or lost
+login streaks.
+
+See [Tokeni pet growth and eggs](docs/bytebot.md) for player-facing rules and
 the [companion system policy](docs/companion-policy.md) for extensibility and
 balance records.
 
 ## Menu bar and on-screen pet
 
 Every menu-bar display mode uses a native monochrome status icon. A red badge
-appears when there is enough energy to hatch an egg or evolve a Hatchling or
-Juvenile. Adult journey completion is not included in this badge.
+appears when an egg can be opened or a level 10 or 25 evolution is ready.
 
 The menu popover keeps its header and history, settings, and quit actions
 fixed while the center content scrolls. Usage appears before an always-visible
@@ -295,8 +214,8 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 | Stored locally | Never stored |
 |---|---|
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
-| Pet species, stage, variant, name, personality, bond, memories, collection, and guarantees | Access tokens, refresh tokens, and cookies |
-| Star Shards, attendance dates, purchased cosmetics, boosters, and awarded milestone IDs | Account secrets and server telemetry |
+| Pet IDs, level/XP, stage, variant, name, personality, egg inventory, owned roster, memories, collection, and guarantees | Access tokens, refresh tokens, and cookies |
+| Star Shards, egg transaction IDs, attendance dates, purchased cosmetics, boosters, and awarded milestone IDs | Account secrets and server telemetry |
 | On-screen pet preferences and last position | Screen captures and input content |
 | Local progress-validation data | Remote game accounts and analytics telemetry |
 
@@ -318,6 +237,7 @@ analytics or remote game server.
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Pet progress cannot be read | Restart the app to retry local recovery, then review diagnostics if the issue continues |
 | Cannot use a booster | Check whether another booster is active and whether you own one or have enough Star Shards to buy it |
+| Memory use is temporarily high | Check whether a large provider log just refreshed or a new pet sprite appeared for the first time. Disable the on-screen pet when unused; if memory keeps growing, restart and report diagnostics with reproduction steps |
 
 ## Development
 

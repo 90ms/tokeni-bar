@@ -158,15 +158,15 @@ struct CompanionGameEngineTests {
         #expect(state.speciesID == .bytebot)
         #expect(state.rarity == .rare)
         #expect(state.variantID == .legacyAzure)
-        #expect(state.growthEnergy == 1_400)
+        #expect(state.growthEnergy == 2_200)
 
         _ = try engine.evolve(unitValue: 0.90, at: now, in: &state)
         #expect(state.stage == .adult)
         #expect(state.speciesID == .bytebot)
         #expect(state.rarity == .rare)
         #expect(state.variantID == .legacyAzure)
-        #expect(state.growthEnergy == 0)
-        #expect(state.growthSpentToday == 2_200)
+        #expect(state.growthEnergy == 2_200)
+        #expect(state.growthSpentToday == 0)
         #expect(state.collection.forms.map(\.formID).sorted() == [
             "bytebot.adult.legacy-azure",
             "bytebot.junior.legacy-azure",
@@ -174,6 +174,31 @@ struct CompanionGameEngineTests {
         #expect(!state.collection.forms.contains {
             $0.variantID != .legacyAzure
         })
+    }
+
+    @Test("Evolution requires its configured level and never spends XP")
+    func levelGatedEvolution() throws {
+        let engine = CompanionGameEngine(calendar: self.calendar)
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .hatchling,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            growthXP: 17,
+            growthDateKey: "2027-01-15")
+
+        #expect(throws: CompanionGameError.evolutionLevelRequired(
+            required: 10,
+            current: 9))
+        {
+            try engine.evolve(unitValue: 0, in: &state)
+        }
+
+        state.growthXP = 18
+        _ = try engine.evolve(unitValue: 0, in: &state)
+        #expect(state.stage == .junior)
+        #expect(state.growthXP == 18)
     }
 
     @Test("Insufficient energy leaves the egg unchanged")
@@ -299,7 +324,7 @@ struct CompanionGameEngineTests {
         #expect(state.variantPity.standardHatches == 1)
         #expect(state.collection.completedCount(for: .normal) == 1)
         #expect(state.collection.archivedGenerations.count == 1)
-        #expect(engine.actionCost(for: .adult) == 800)
+        #expect(engine.actionCost(for: .adult) == nil)
         #expect(events.contains(.energySpent(800)))
         #expect(events.contains {
             if case .hatched(
@@ -386,8 +411,8 @@ struct CompanionGameEngineTests {
         #expect(state.collection.forms == [form])
     }
 
-    @Test("Adult energy becomes bond while also filling action energy")
-    func adultBond() throws {
+    @Test("Adult growth continues as unbounded level XP")
+    func adultGrowth() throws {
         let now = try #require(self.date("2027-01-15T12:00:00Z"))
         let engine = CompanionGameEngine(calendar: self.calendar)
         var state = CompanionGameState(
@@ -403,13 +428,14 @@ struct CompanionGameEngineTests {
                 createdAt: now),
             to: &state)
 
-        #expect(state.bondEnergy == 120)
-        #expect(state.growthEnergy == 120)
-        #expect(state.memories.compactMap(\.bondLevel) == [2])
+        #expect(state.growthXP == 186)
+        #expect(state.growthEnergy == 0)
+        #expect(state.bondEnergy == 0)
+        #expect(state.memories.compactMap(\.bondLevel).isEmpty)
     }
 
-    @Test("Boosted action energy can preserve verified base bond growth")
-    func boostedEnergyUsesBaseBondValue() {
+    @Test("Boosted awards increase level XP without a second bond track")
+    func boostedEnergyUsesLevelXP() {
         let engine = CompanionGameEngine(calendar: self.calendar)
         var state = CompanionGameState(
             speciesID: .bytebot,
@@ -424,8 +450,9 @@ struct CompanionGameEngineTests {
 
         _ = engine.apply(award: award, bondEnergy: 10, to: &state)
 
-        #expect(state.growthEnergy == 50)
-        #expect(state.bondEnergy == 10)
+        #expect(state.growthEnergy == 0)
+        #expect(state.growthXP == 116)
+        #expect(state.bondEnergy == 0)
     }
 
     @Test("Names and content-free memories make journeys individual")
@@ -489,18 +516,60 @@ struct CompanionGameEngineTests {
         let versionThree = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":8"#,
+                    of: #""schemaVersion":10"#,
                     with: #""schemaVersion":3"#)
                 .data(using: .utf8))
         try versionThree.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 8)
+        #expect(state.schemaVersion == 10)
         #expect(state.speciesID == .bytebot)
         #expect(state.stage == .junior)
         #expect(state.rarity == .epic)
-        #expect(state.growthEnergy == 320)
+        #expect(state.growthEnergy == 0)
+        #expect(state.level >= 10)
+    }
+
+    @Test("Version eight adults migrate into unbounded level progress")
+    func migratesVersionEightProgress() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let file = directory.appending(path: "companion-state.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true)
+        let current = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            growthEnergy: 40,
+            bondEnergy: 20)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let encoded = try encoder.encode(current)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        object["schemaVersion"] = 8
+        object.removeValue(forKey: "growthXP")
+        object.removeValue(forKey: "eggs")
+        object.removeValue(forKey: "highestPetLevel")
+        object.removeValue(forKey: "claimedEggMilestoneIDs")
+        object.removeValue(forKey: "processedEggTransactionIDs")
+        try JSONSerialization.data(withJSONObject: object).write(to: file)
+
+        let state = try await CompanionGameStateStore(fileURL: file).load()
+
+        #expect(state.schemaVersion == 10)
+        #expect(state.stage == .adult)
+        #expect(state.level >= 25)
+        #expect(state.growthXP >= 106)
+        #expect(state.growthEnergy == 0)
+        #expect(state.legacyMigratedGenerationIDs.contains(state.generationID))
+        #expect(state.eggs.contains { $0.source == .migrationGift })
     }
 
     @Test("Version five rarity migrates to a non-ranked visual variant")
@@ -527,14 +596,14 @@ struct CompanionGameEngineTests {
         let versionFive = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":8"#,
+                    of: #""schemaVersion":10"#,
                     with: #""schemaVersion":5"#)
                 .data(using: .utf8))
         try versionFive.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 8)
+        #expect(state.schemaVersion == 10)
         #expect(state.speciesID == .cachecat)
         #expect(state.variantID == .legacyViolet)
         #expect(state.rarity == .epic)
@@ -572,7 +641,7 @@ struct CompanionGameEngineTests {
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 8)
+        #expect(state.schemaVersion == 10)
         #expect(state.variantID == .prismatic)
         #expect(state.personalityID == .calm)
         #expect(state.memories.isEmpty)
@@ -615,14 +684,14 @@ struct CompanionGameEngineTests {
         let versionFour = try #require(
             String(data: encoded, encoding: .utf8)?
                 .replacingOccurrences(
-                    of: #""schemaVersion":8"#,
+                    of: #""schemaVersion":10"#,
                     with: #""schemaVersion":4"#)
                 .data(using: .utf8))
         try versionFour.write(to: file)
 
         let state = try await CompanionGameStateStore(fileURL: file).load()
 
-        #expect(state.schemaVersion == 8)
+        #expect(state.schemaVersion == 10)
         #expect(state.collection.forms == [encountered])
         #expect(state.delayedGrowthEarnedToday == 0)
     }
@@ -638,12 +707,14 @@ struct CompanionGameEngineTests {
             #"{"schemaVersion":1,"companionID":"bytebot","totalXP":120}"#.utf8)
             .write(to: file)
 
-        let state = try await CompanionGameStateStore(fileURL: file).load()
+        var loadFailed = false
+        do {
+            _ = try await CompanionGameStateStore(fileURL: file).load()
+        } catch {
+            loadFailed = true
+        }
 
-        #expect(state.schemaVersion == 8)
-        #expect(state.stage == .egg)
-        #expect(state.speciesID == nil)
-        #expect(state.rarity == nil)
+        #expect(loadFailed)
         #expect(!FileManager.default.fileExists(atPath: file.path))
         let quarantinedFiles = try FileManager.default.contentsOfDirectory(
             at: directory,

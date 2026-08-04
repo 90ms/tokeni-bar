@@ -10,15 +10,26 @@ public actor CompanionGameStateStore {
     }
 
     public func load() throws -> CompanionGameState {
-        try RecoverableFileStorage.load(
+        let fileExisted = FileManager.default.fileExists(
+            atPath: self.fileURL.path)
+        let quarantineExisted = RecoverableFileStorage.hasQuarantinedFile(
+            for: self.fileURL)
+        if let state = try RecoverableFileStorage.load(
             from: self.fileURL,
-            decode: Self.decode) ?? CompanionGameState()
+            decode: Self.decode)
+        {
+            return state
+        }
+        guard !fileExisted, !quarantineExisted else {
+            throw CompanionGameStateStoreError.unrecoverableState
+        }
+        return CompanionGameState()
     }
 
     private static func decode(_ data: Data) throws -> CompanionGameState {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let state: CompanionGameState
+        var state: CompanionGameState
         let version = try? decoder.decode(SchemaVersion.self, from: data).schemaVersion
         if version == 2,
            let legacy = try? decoder.decode(LegacyCompanionGameStateV2.self, from: data)
@@ -48,9 +59,15 @@ public actor CompanionGameStateStore {
                       from: data)
         {
             state = legacy.migrated()
-        } else if version == 7,
+        } else if version == 7 || version == 8,
                   let legacy = try? decoder.decode(
                       LegacyCompanionGameStateV7.self,
+                      from: data)
+        {
+            state = legacy.migrated()
+        } else if version == 9,
+                  let legacy = try? decoder.decode(
+                      LegacyCompanionGameStateV9.self,
                       from: data)
         {
             state = legacy.migrated()
@@ -62,6 +79,27 @@ public actor CompanionGameStateStore {
             state = current
         } else {
             throw CompanionGameStateStoreError.invalidState
+        }
+        if let version, version < CompanionGameState.currentSchemaVersion {
+            let migratedIDs = [state.stage == .egg ? nil : state.generationID]
+                .compactMap { $0 }
+                + state.collection.archivedGenerations.map(\.generationID)
+            state.legacyMigratedGenerationIDs = Array(Set(migratedIDs)).sorted {
+                $0.uuidString < $1.uuidString
+            }
+            if state.stage != .egg {
+                state.growthEnergy = 0
+                state.growthCarriedToday = 0
+                state.growthSpentToday = 0
+                if !state.eggs.contains(where: { $0.source == .migrationGift }) {
+                    state.eggs.append(CompanionEggInstance(
+                        definitionID: .homecoming,
+                        seed: CompanionEggRegistry.deterministicSeed(
+                            for: state.generationID.uuidString),
+                        acquiredAt: state.updatedAt,
+                        source: .migrationGift))
+                }
+            }
         }
         guard state.isValid() else {
             throw CompanionGameStateStoreError.invalidState
@@ -92,6 +130,77 @@ public actor CompanionGameStateStore {
 
     public func clear() throws {
         try RecoverableFileStorage.removePrimaryAndBackups(for: self.fileURL)
+    }
+}
+
+private struct LegacyCompanionGameStateV9: Decodable {
+    let speciesID: CompanionSpeciesID?
+    let generationID: UUID
+    let generationNumber: Int
+    let stage: CompanionGameStage
+    let rarity: CompanionRarity?
+    let variantID: CompanionVariantID?
+    let nickname: String?
+    let personalityID: CompanionPersonalityID?
+    let growthXP: Int
+    let growthEnergy: Int
+    let growthDateKey: String
+    let growthEarnedToday: Int
+    let delayedGrowthEarnedToday: Int
+    let growthCarriedToday: Int
+    let growthSpentToday: Int
+    let bondEnergy: Int
+    let memories: [CompanionMemoryRecord]
+    let collection: CompanionCollection
+    let consecutiveDuplicateHatches: Int
+    let pity: CompanionPityState
+    let variantPity: CompanionVariantPityState
+    let eggs: [CompanionEggInstance]
+    let highestPetLevel: Int
+    let claimedEggMilestoneIDs: [String]
+    let processedEggTransactionIDs: [UUID]
+    let appliedGrowthAwardIDs: [UUID]
+    let lastActiveAt: Date?
+    let lastPattedAt: Date?
+    let celebrationUntil: Date?
+    let showcasedGenerationID: UUID?
+    let generationCreatedAt: Date
+    let updatedAt: Date
+
+    func migrated() -> CompanionGameState {
+        CompanionGameState(
+            speciesID: self.speciesID,
+            generationID: self.generationID,
+            generationNumber: self.generationNumber,
+            stage: self.stage,
+            rarity: self.rarity,
+            variantID: self.variantID,
+            nickname: self.nickname,
+            personalityID: self.personalityID,
+            growthXP: self.growthXP,
+            growthEnergy: self.growthEnergy,
+            growthDateKey: self.growthDateKey,
+            growthEarnedToday: self.growthEarnedToday,
+            delayedGrowthEarnedToday: self.delayedGrowthEarnedToday,
+            growthCarriedToday: self.growthCarriedToday,
+            growthSpentToday: self.growthSpentToday,
+            bondEnergy: self.bondEnergy,
+            memories: self.memories,
+            collection: self.collection,
+            consecutiveDuplicateHatches: self.consecutiveDuplicateHatches,
+            pity: self.pity,
+            variantPity: self.variantPity,
+            eggs: self.eggs,
+            highestPetLevel: self.highestPetLevel,
+            claimedEggMilestoneIDs: self.claimedEggMilestoneIDs,
+            processedEggTransactionIDs: self.processedEggTransactionIDs,
+            appliedGrowthAwardIDs: self.appliedGrowthAwardIDs,
+            lastActiveAt: self.lastActiveAt,
+            lastPattedAt: self.lastPattedAt,
+            celebrationUntil: self.celebrationUntil,
+            showcasedGenerationID: self.showcasedGenerationID,
+            generationCreatedAt: self.generationCreatedAt,
+            updatedAt: self.updatedAt)
     }
 }
 
@@ -276,6 +385,7 @@ private struct LegacyCompanionGameStateV5: Decodable {
 
 private enum CompanionGameStateStoreError: Error {
     case invalidState
+    case unrecoverableState
 }
 
 private struct SchemaVersion: Decodable {

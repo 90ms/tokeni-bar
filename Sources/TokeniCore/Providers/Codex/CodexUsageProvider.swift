@@ -232,47 +232,61 @@ struct CodexParsedUsage {
 
 enum CodexLogParser {
     static func latestUsage(in file: URL) -> CodexParsedUsage? {
-        guard let lines = LocalFiles.lines(in: file) else { return nil }
-        let events = lines.compactMap {
-            try? JSONDecoder().decode(CodexEvent.self, from: $0)
+        let decoder = JSONDecoder()
+        var latestModelID: String?
+        var latestTokenEvent: CodexEvent?
+        guard LocalFiles.forEachLine(in: file, { line in
+            guard let event = try? decoder.decode(CodexEvent.self, from: line)
+            else { return }
+            if let modelID = event.payload?.model {
+                latestModelID = modelID
+            }
+            if event.type == "event_msg",
+               event.payload?.type == "token_count",
+               event.payload?.info?.totalTokenUsage != nil
+            {
+                latestTokenEvent = event
+            }
+        }),
+        let event = latestTokenEvent,
+        let usage = event.payload?.info?.totalTokenUsage
+        else { return nil }
+
+        let limits = event.payload?.rateLimits
+        var windows: [QuotaWindow] = []
+        if let primary = limits?.primary {
+            windows.append(primary.quotaWindow(
+                id: "primary",
+                fallbackLabel: "Session"))
         }
-        let modelID = events.reversed().compactMap(\.payload?.model).first
-
-        for event in events.reversed() {
-            guard
-                  event.type == "event_msg",
-                  event.payload?.type == "token_count",
-                  let usage = event.payload?.info?.totalTokenUsage
-            else { continue }
-
-            let limits = event.payload?.rateLimits
-            var windows: [QuotaWindow] = []
-            if let primary = limits?.primary {
-                windows.append(primary.quotaWindow(id: "primary", fallbackLabel: "Session"))
-            }
-            if let secondary = limits?.secondary {
-                windows.append(secondary.quotaWindow(id: "secondary", fallbackLabel: "Weekly"))
-            }
-
-            let credits = limits?.credits.map {
-                CreditBalance(balance: $0.balance, hasCredits: $0.hasCredits, unlimited: $0.unlimited)
-            }
-            let tokenUsage = TokenUsage(
-                label: "Latest session",
-                modelID: modelID,
-                inputTokens: max(usage.inputTokens - usage.cachedInputTokens, 0),
-                cachedInputTokens: usage.cachedInputTokens,
-                outputTokens: max(usage.outputTokens - usage.reasoningOutputTokens, 0),
-                reasoningTokens: usage.reasoningOutputTokens,
-                totalTokens: usage.totalTokens)
-            return CodexParsedUsage(
-                sessionID: file.deletingPathExtension().lastPathComponent,
-                timestamp: TimestampParser.parse(event.timestamp),
-                quotaWindows: windows,
-                tokenUsage: tokenUsage,
-                credits: credits)
+        if let secondary = limits?.secondary {
+            windows.append(secondary.quotaWindow(
+                id: "secondary",
+                fallbackLabel: "Weekly"))
         }
-        return nil
+
+        let credits = limits?.credits.map {
+            CreditBalance(
+                balance: $0.balance,
+                hasCredits: $0.hasCredits,
+                unlimited: $0.unlimited)
+        }
+        let tokenUsage = TokenUsage(
+            label: "Latest session",
+            modelID: latestModelID,
+            inputTokens: max(usage.inputTokens - usage.cachedInputTokens, 0),
+            cachedInputTokens: usage.cachedInputTokens,
+            outputTokens: max(
+                usage.outputTokens - usage.reasoningOutputTokens,
+                0),
+            reasoningTokens: usage.reasoningOutputTokens,
+            totalTokens: usage.totalTokens)
+        return CodexParsedUsage(
+            sessionID: file.deletingPathExtension().lastPathComponent,
+            timestamp: TimestampParser.parse(event.timestamp),
+            quotaWindows: windows,
+            tokenUsage: tokenUsage,
+            credits: credits)
     }
 }
 

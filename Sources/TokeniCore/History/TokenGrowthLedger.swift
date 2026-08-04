@@ -477,9 +477,20 @@ public actor TokenGrowthLedgerStore {
     }
 
     public func load() throws -> TokenGrowthLedgerState {
-        try RecoverableFileStorage.load(
+        let fileExisted = FileManager.default.fileExists(
+            atPath: self.fileURL.path)
+        let quarantineExisted = RecoverableFileStorage.hasQuarantinedFile(
+            for: self.fileURL)
+        if let state = try RecoverableFileStorage.load(
             from: self.fileURL,
-            decode: Self.decode) ?? TokenGrowthLedgerState()
+            decode: Self.decode)
+        {
+            return state
+        }
+        guard !fileExisted, !quarantineExisted else {
+            throw TokenGrowthLedgerStoreError.unrecoverableState
+        }
+        return TokenGrowthLedgerState()
     }
 
     private static func decode(_ data: Data) throws -> TokenGrowthLedgerState {
@@ -522,4 +533,5 @@ public actor TokenGrowthLedgerStore {
 
 private enum TokenGrowthLedgerStoreError: Error {
     case invalidState
+    case unrecoverableState
 }

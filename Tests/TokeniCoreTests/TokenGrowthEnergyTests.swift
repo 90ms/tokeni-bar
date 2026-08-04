@@ -10,8 +10,8 @@ struct TokenGrowthEnergyTests {
 
         #expect(formula.energy(forDailyTokens: 0) == 0)
         #expect(formula.energy(forDailyTokens: 49_999) == 0)
-        #expect(formula.energy(forDailyTokens: 50_000) == 1)
-        #expect(formula.energy(forDailyTokens: 250_000) == 5)
+        #expect(formula.energy(forDailyTokens: 25_000) == 1)
+        #expect(formula.energy(forDailyTokens: 250_000) == 10)
         #expect(formula.energy(forDailyTokens: 1_000_000) == 20)
         #expect(formula.energy(forDailyTokens: 300_000_000) == 6_000)
     }

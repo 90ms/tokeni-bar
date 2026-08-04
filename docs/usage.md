@@ -19,18 +19,18 @@ directly; settings and quit remain available as right-side icon actions.
 
 Tokeni growth uses only **verified increases** in token counters reported by
 providers. Usage-file modification times drive working and sleeping animation
-only; they never create growth energy.
+only; they never create Growth XP.
 
 Verified increases across providers are combined after preventing replayed
-counters from paying twice. Every 50,000 tokens grant one action energy.
+counters from paying twice. Every 25,000 tokens grant one Growth XP.
 Unconverted remainder tokens carry across dates, and refreshing the same
 cumulative value never pays twice.
 
 When a booster is active, its 2x, 3x, or 5x multiplier applies to the base
-action energy produced by the ledger. The award creation time determines
+Growth XP produced by the ledger. The award creation time determines
 whether the booster is active, and an already-applied award ID never pays
-again. Booster-added Energy does not become extra bond and does not multiply
-other bonus Energy again.
+again. Booster-added XP is never treated as another base award and does not
+multiply other bonus XP again.
 
 Counter scope differs by provider:
 
@@ -42,7 +42,7 @@ Counter scope differs by provider:
 - Codex uses current-session increases the same way when a daily total is
   unavailable.
 
-A counter drop or reset never removes awarded energy. Session and lifetime
+A counter drop or reset never removes awarded XP. Session and lifetime
 increases are not guessed across a date boundary while the app was closed.
 An implausibly large increase must be confirmed by a later observation before
 it credits. Complete daily totals that arrive late may credit up to three
@@ -51,7 +51,7 @@ recent days.
 The collection's combined total and target use today's usage-date ledger.
 Provider rows separately show each provider's newest confirmed usage date and
 token total. When an earlier daily bucket is first confirmed today, it says
-**Settled today**, and its energy is included in today's earned amount. A
+**Settled today**, and its XP is included in today's earned amount. A
 provider without a trustworthy value remains **Waiting for data** rather than
 becoming a misleading zero.
 
@@ -59,7 +59,27 @@ The app uses local progress-validation data to keep the same usage from being
 credited again. If a write is interrupted or part of the data is damaged,
 retained recovery copies are checked first.
 
-See [Tokeni pet growth and collection](bytebot.md) for life stages and variants.
+See [Tokeni pet growth and eggs](bytebot.md) for levels, evolution, and eggs.
+
+## Resource and memory management
+
+Codex and Claude local JSONL files are decoded one line at a time from 64 KiB
+chunks instead of retaining the complete file and every event in memory. Files
+over the safety limit and symbolic links are rejected; a file that grows past
+the limit while being read is discarded as well.
+
+Sprite manifests are checked at launch, but image sheets load lazily only for
+the species, form, and variant being displayed. Cropped frames are detached
+from their source sheet, with an 8 MiB sheet-cache cost limit and a 12 MiB
+frame-cache cost limit. Disabling the on-screen pet releases its SwiftUI
+hosting view and animation tasks.
+
+Provider directories are checked every ten seconds for activity animation.
+While activity continues, pet-state persistence is limited to once per minute
+except for a date rollover. macOS may retain released allocations in process
+RSS for reuse, so the displayed footprint does not always fall immediately.
+Memory that keeps increasing independently of log refreshes or newly displayed
+sprites should be reported with diagnostics and reproduction steps.
 
 ## Codex account token activity
 

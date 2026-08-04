@@ -6,6 +6,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
     private static let frameOriginKey = "companionOverlayFrameOrigin"
 
     private var panel: CompanionOverlayPanel?
+    private weak var store: UsageStore?
 
     override init() {
         super.init()
@@ -17,22 +18,24 @@ final class CompanionOverlayController: NSObject, ObservableObject {
     }
 
     func connect(to store: UsageStore) {
-        if self.panel == nil {
-            self.panel = self.makePanel(store: store)
-        }
-        self.setSize(store.companionOverlaySize)
-        self.setPositionLocked(store.companionOverlayPositionLocked)
-        self.setClickThroughEnabled(
-            store.companionOverlayClickThroughEnabled)
+        self.store = store
         self.setVisible(store.showsCompanionOverlay)
     }
 
     func setVisible(_ visible: Bool) {
-        guard let panel else { return }
         if visible {
+            if self.panel == nil, let store {
+                self.panel = self.makePanel(store: store)
+            }
+            guard let panel else { return }
             panel.orderFrontRegardless()
         } else {
+            guard let panel else { return }
             panel.orderOut(nil)
+            panel.contentView = nil
+            panel.delegate = nil
+            panel.close()
+            self.panel = nil
         }
     }
 

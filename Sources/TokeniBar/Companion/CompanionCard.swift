@@ -1,14 +1,42 @@
 import AppKit
 import SwiftUI
+import TokeniCore
 
 struct CompanionCard: View {
     @ObservedObject var store: UsageStore
     @Environment(\.openWindow) private var openWindow
-    @State private var confirmsCompletion = false
     var compact = false
 
     var body: some View {
+        if self.store.companionDataUnavailable {
+            self.unavailableCard
+        } else {
+            self.companionContent
+        }
+    }
+
+    private var unavailableCard: some View {
+        Label(
+            AppLocalization.string("companion.data.unavailable"),
+            systemImage: "exclamationmark.triangle.fill")
+            .font(.callout)
+            .foregroundStyle(.orange)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(
+                .quaternary.opacity(0.5),
+                in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var companionContent: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if self.store.companionGrowthDataUnavailable {
+                Label(
+                    AppLocalization.string("companion.growthData.unavailable"),
+                    systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
             HStack(alignment: .top, spacing: 10) {
                 ByteBotTransitionView(
                     speciesID: self.store.displayedCompanionSpeciesID,
@@ -30,6 +58,9 @@ struct CompanionCard: View {
                         .font(.headline)
 
                     HStack(spacing: 5) {
+                        self.metadataBadge(AppLocalization.format(
+                            "companion.level.value",
+                            self.store.displayedCompanionLevel))
                         self.metadataBadge(AppLocalization.string(
                             "companion.stage.\(self.store.displayedCompanionStage.rawValue)"))
                         if let variantID =
@@ -69,10 +100,6 @@ struct CompanionCard: View {
                         AppLocalization.string(
                             "companion.personality.\(personalityID.rawValue)"),
                         systemImage: "heart.text.square")
-                    Spacer()
-                    Text(AppLocalization.format(
-                        "companion.identity.bondLevelValue",
-                        self.store.displayedCompanionBondLevel))
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -82,18 +109,13 @@ struct CompanionCard: View {
                 HStack {
                     if self.store.isShowingArchivedCompanion {
                         Text(AppLocalization.format(
-                            "companion.archive.showcasedSummary",
-                            self.store.displayedCompanionBondEnergy))
-                    } else if self.store.companionStage == .adult {
+                            "companion.level.value",
+                            self.store.displayedCompanionLevel))
+                    } else if self.store.companionStage != .egg {
                         Text(AppLocalization.format(
-                            "companion.progress.adult",
-                            self.store.companionState.bondEnergy,
-                            self.store.companionState.availableGrowthEnergy))
-                    } else if let nextEnergy = self.store.companionNextStageEnergy {
-                        Text(AppLocalization.format(
-                            "companion.progress",
-                            self.store.companionState.availableGrowthEnergy,
-                            nextEnergy))
+                            "companion.level.progress",
+                            self.store.companionXPIntoLevel,
+                            self.store.companionNextLevelXP))
                     }
 
                     Spacer()
@@ -107,15 +129,32 @@ struct CompanionCard: View {
                 .monospacedDigit()
 
                 if !self.store.isShowingArchivedCompanion,
-                   let nextEnergy = self.store.companionNextStageEnergy
+                   self.store.companionStage != .egg
                 {
                     ProgressView(value: self.store.companionStageProgress)
                         .accessibilityLabel(AppLocalization.string(
                             "companion.progress.accessibility.label"))
                         .accessibilityValue(AppLocalization.format(
                             "companion.progress.accessibility.value",
-                            self.store.companionState.availableGrowthEnergy,
-                            nextEnergy))
+                            self.store.companionXPIntoLevel,
+                            self.store.companionNextLevelXP))
+                    if let evolutionLevel = self.store.companionNextEvolutionLevel {
+                        Text(AppLocalization.format(
+                            "companion.level.nextEvolution",
+                            evolutionLevel))
+                            .font(.caption2)
+                            .foregroundStyle(
+                                self.store.canPerformCompanionAction
+                                    ? Color.green
+                                    : Color.secondary)
+                    } else {
+                        Text(AppLocalization.format(
+                            "companion.level.nextReward",
+                            self.store.companionNextRecurringRewardLevel,
+                            CompanionRewardEngine.recurringLevelRewardShards))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
@@ -139,20 +178,6 @@ struct CompanionCard: View {
         .background(
             .quaternary.opacity(0.5),
             in: RoundedRectangle(cornerRadius: 10))
-        .confirmationDialog(
-            AppLocalization.string("companion.complete.confirm.title"),
-            isPresented: self.$confirmsCompletion,
-            titleVisibility: .visible)
-        {
-            Button(AppLocalization.string("companion.complete.confirm.action")) {
-                self.store.completeCompanionGeneration()
-            }
-            Button(AppLocalization.string("action.cancel"), role: .cancel) {}
-        } message: {
-            Text(AppLocalization.format(
-                "companion.complete.confirm.message",
-                self.store.companionJourneyCompletionCost))
-        }
         .sheet(item: Binding(
             get: { self.store.companionReveal },
             set: { reveal in
@@ -206,15 +231,14 @@ struct CompanionCard: View {
                 .disabled(!self.store.canPerformCompanionAction)
             case .adult:
                 Button {
-                    self.confirmsCompletion = true
+                    self.openCompanionCollection()
                 } label: {
                     Label(
-                        AppLocalization.string("companion.complete.action"),
-                        systemImage: "archivebox.fill")
+                        AppLocalization.string("companion.collection.open"),
+                        systemImage: "square.grid.3x3.fill")
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .disabled(!self.store.canPerformCompanionAction)
             }
         }
     }

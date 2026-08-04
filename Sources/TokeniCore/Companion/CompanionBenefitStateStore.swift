@@ -10,9 +10,20 @@ public actor CompanionBenefitStateStore {
     }
 
     public func load() throws -> CompanionBenefitState {
-        try RecoverableFileStorage.load(
+        let fileExisted = FileManager.default.fileExists(
+            atPath: self.fileURL.path)
+        let quarantineExisted = RecoverableFileStorage.hasQuarantinedFile(
+            for: self.fileURL)
+        if let state = try RecoverableFileStorage.load(
             from: self.fileURL,
-            decode: Self.decode) ?? CompanionBenefitState()
+            decode: Self.decode)
+        {
+            return state
+        }
+        guard !fileExisted, !quarantineExisted else {
+            throw CompanionBenefitStateStoreError.unrecoverableState
+        }
+        return CompanionBenefitState()
     }
 
     private static func decode(_ data: Data) throws -> CompanionBenefitState {
@@ -49,4 +60,5 @@ public actor CompanionBenefitStateStore {
 
 private enum CompanionBenefitStateStoreError: Error {
     case invalidState
+    case unrecoverableState
 }

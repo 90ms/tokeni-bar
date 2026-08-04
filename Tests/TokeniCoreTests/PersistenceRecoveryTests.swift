@@ -47,4 +47,38 @@ struct PersistenceRecoveryTests {
         #expect(!FileManager.default.fileExists(
             atPath: "\(file.path).backup-4"))
     }
+
+    @Test("A damaged growth ledger never falls back to an empty ledger")
+    func growthLedgerDoesNotReset() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true)
+        let file = directory.appending(path: "growth-ledger.json")
+        try Data("damaged".utf8).write(to: file)
+
+        var loadFailed = false
+        do {
+            _ = try await TokenGrowthLedgerStore(fileURL: file).load()
+        } catch {
+            loadFailed = true
+        }
+
+        #expect(loadFailed)
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+
+        loadFailed = false
+        do {
+            _ = try await TokenGrowthLedgerStore(fileURL: file).load()
+        } catch {
+            loadFailed = true
+        }
+        #expect(loadFailed)
+
+        let store = TokenGrowthLedgerStore(fileURL: file)
+        try await store.clear()
+        #expect(try await store.load() == TokenGrowthLedgerState())
+    }
 }

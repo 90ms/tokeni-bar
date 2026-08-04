@@ -1,185 +1,124 @@
-# Tokeni Pet Growth and Collection
+# Tokeni pet growth and egg collection
 
 [한국어](bytebot.ko.md) | **English**
 
-Tokeni pets are local pixel companions that grow from token usage verified by
-Tokeni Bar. There is no game account or server. Companion state never stores a
-provider name, raw token total, prompt, or response content.
+Tokeni pets are local pixel companions that grow from verified agent token
+usage. They require no game account or server. Pet state never contains a
+provider name, raw token total, prompt, response, or credential.
 
 ## Core loop
 
-1. Verified cumulative token increases become action energy.
-2. You manually hatch an egg and grow it through Hatchling, Juvenile, and Adult.
-3. You name the individual and build personality, bond, and memories.
-4. Completing an Adult journey archives that individual and starts a new egg.
-5. You collect Standard and Prismatic looks for five species and style them.
+1. The first launch grants one non-sellable Starter Egg.
+2. Hatch it for free and choose one pet as the active growth pet.
+3. Verified token increases become that pet's cumulative Growth XP.
+4. Manually evolve at levels 10 and 25 to change its appearance.
+5. Obtain more eggs from the Star Shard shop and collection milestones.
+6. Switch among owned pets or send an inactive pet to a new home.
 
-There is no hunger, sickness, death, or punishment for days away. A pet simply
-sleeps and waits while you rest.
+Levels continue without a cap after the adult form. Getting another pet never
+requires completing or replacing the current pet or spending Growth XP.
 
-## Growth energy
+## Unbounded levels
 
-For deduplicated verified token growth `T` across providers:
+Every 25,000 verified tokens grant one Growth XP. Remainder tokens carry across
+dates. Active time affects animation only and cannot create XP.
 
 ```text
-growth energy = floor(T / 50,000)
+next-level XP = min(2 + floor((current level - 1) / 10), 15)
 ```
 
-Sub-50,000 token remainders and unspent action energy carry across dates.
-Only verified cumulative token observations create growth. Active time may
-change animations but never creates growth.
+Level 10 requires 18 cumulative XP and level 25 requires 66. At 100,000 verified
+tokens per active day, the targets are about five and seventeen days. A
+high-level pet never needs more than 15 XP for its next level. Starting at level
+30, every ten levels grant 10 Star Shards.
 
-| Action | Energy |
-|---|---:|
-| Hatch egg | 500 |
-| Evolve to Juvenile | 800 |
-| Evolve to Adult | 1,400 |
-| Complete Adult journey and hatch again | 800 |
-| Start a new egg before Adult | 300 |
+Timed 2x, 3x, and 5x boosters apply only to newly verified base XP. Activity,
+species, variants, personalities, and cosmetics do not create multipliers.
 
-Energy never evolves a pet automatically. You choose when each growth moment
-and new encounter happens.
+## Evolution and forms
 
-## Five species and visual variants
+| Level | Result |
+|---:|---|
+| 1 | Hatchling form |
+| 10 | Junior evolution available |
+| 25 | Adult evolution available |
 
-ByteBot, CacheCat, StackFox, PromptPup, and NullSlime currently have equal
-base hatch chances. While a species remains undiscovered, five consecutive
-duplicate hatches guarantee that the next egg is one of the missing species.
+Evolution is manual and never spends XP. Levels keep increasing if evolution is
+deferred. Future appearances can be added through the evolution registry.
 
-Ranked Normal, Rare, Epic, and Legendary grades are no longer gameplay. A new
-individual hatches with one stable visual variant:
+## Egg vault and shop
+
+| Egg | Acquisition or unlock | Price | Resale |
+|---|---|---:|---:|
+| Starter Egg | First launch once | Free | No |
+| Homecoming Egg | Once when migrating an active pet | Not sold | No |
+| Mystery Egg | Highest pet level 5 | 90 shards | 30 |
+| Discovery Egg | Discover three species | 180 shards | 60 |
+| Prismatic Egg | Collection milestones | Not sold | 60 |
+
+A Discovery Egg guarantees an undiscovered species while any remain. A
+Prismatic Egg guarantees the prismatic variant. Eggs have stable IDs and seeds,
+so a crash during the reveal cannot consume one twice or reroll its result.
+
+The collection grants each reward once:
+
+- Discover all five species: one Discovery Egg.
+- Discover five species/variant combinations: one Prismatic Egg.
+- Discover all ten combinations: one Prismatic Egg.
+
+Resale is always below purchase price. There are no real-money purchases,
+limited-time shops, or player-to-player trades.
+
+## Owned pets and switching
+
+Hatching adds a pet to the owned roster without replacing the current pet. One
+pet receives Growth XP at a time, and the active pet can be changed freely.
+Each pet retains its level, XP, form, name, personality, and memories.
+
+The active pet and the last remaining pet cannot be sent away. Sending an
+inactive standard pet to a new home grants 30 shards; a prismatic pet grants 60.
+Value does not rise with level, preventing XP farming from becoming a currency
+loop. Collection discoveries remain after an egg or pet is sold.
+
+## Five species and variants
+
+ByteBot, CacheCat, StackFox, PromptPup, and NullSlime have equal base odds. If
+an undiscovered species remains, five consecutive duplicate hatches guarantee
+that the next normal hatch uses the undiscovered pool.
 
 | Variant | Base chance | Power |
 |---|---:|---|
-| Standard | 92% | Equal |
-| Prismatic | 8% | Equal |
+| Standard | 92% | Identical |
+| Prismatic | 8% | Identical |
 
-After 11 consecutive Standard hatches, hatch 12 is guaranteed Prismatic.
-Prismatic is a visual discovery and never improves growth, rewards, or odds.
+After 11 consecutive standard results, the twelfth normal hatch is prismatic.
+The main collection is `5 species × standard/prismatic`, or ten combinations.
+Lifecycle forms remain in each combination's growth album.
 
-Pre-update Rare and Epic sprites remain available as **Legacy Azure** and
-**Legacy Violet** body colors. Legendary maps visually to Prismatic. “Legacy”
-is the name of a current body-color asset, not a separate migration or refund
-flow.
+## Level rewards and Star Shards
 
-Variant definitions use string IDs and a registry so future looks can be added
-without provider switches in shared UI or a new save format.
-
-## Collection and journey albums
-
-The main collection target is ten meaningful discoveries: five species times
-Standard and Prismatic. Hatchling, Juvenile, and Adult sprites are recorded in
-that variant's journey album instead of inflating the collection with 60
-stage-grade combinations.
-
-The collection shows:
-
-- discovery state for five species;
-- Standard and Prismatic discovery per species;
-- growth stages actually seen for each variant;
-- the nearest missing-species or Prismatic guarantee;
-- completed individuals with their name, personality, bond, and memories.
-
-## Name, personality, bond, and memories
-
-Each hatch receives one presentation-only personality: Calm, Curious, Playful,
-Dreamy, or Brave. You can give the individual a local name. Neither changes
-stats.
-
-Verified base growth earned while an Adult also builds bond. Bond levels 1 through
-5 begin at 0, 50, 150, 400, and 800 energy. Bond never falls and never creates
-a permanent growth or reward multiplier.
-
-Each generation grants a first-time reward for reaching a bond level:
-
-| Bond level | First-time reward |
+| Level | First reward for each pet |
 |---:|---|
-| 2 | One 2x, 30-minute Action Energy Booster |
-| 3 | One 3x, 20-minute booster |
-| 4 | Permanently unlock Firefly Aura |
-| 5 | One 5x, 10-minute booster and permanently unlock Orbit Aura |
+| 5 | 2x booster for 30 minutes |
+| 10 | 3x booster for 20 minutes |
+| 20 | Firefly aura |
+| 25 | 5x booster for 10 minutes and orbit aura |
 
-Action energy added by a booster does not add boosted bond.
-
-The private memory timeline stores only content-free pet events:
-
-- hatch;
-- evolution;
-- first pat;
-- reaching a new bond level;
-- completing an Adult journey.
-
-A completed pet keeps its name, personality, final look, and bond in the
-archive. Bringing it back as the visible companion does not redirect action
-energy from the current growing journey and grants no stat bonus.
-
-## Star Shards and cosmetics
-
-Star Shards are a styling currency separate from growth energy.
-
-| Condition | Star Shards |
-|---|---:|
-| Automatic activity check-in on first verified growth | 10 |
-| First verified growth energy of the day | 5 |
-| 3 / 5 / 7 active days in a week | 10 / 20 / 30 |
-| 20 active days in a month | 50 |
-| First discovery of a species | 20 |
-| First Prismatic discovery | 50 |
-| Complete an Adult journey | 25 |
-| Discover 5 / 10 collection variants | 20 / 100 |
-| First launch of a stable release | 20 |
-
-Cosmetic slots are Aura, Background, and Body Color. Equipped cosmetics
-appear in the menu popover, pet-management window, and on-screen pet.
-
-| Slot | Items | Cost |
-|---|---|---:|
-| Aura | Sparkle / Pixel Hearts / Firefly / Orbit / Night Ring | 60 / 80 / 130 / 180 / 200 |
-| Body Color | Legacy Azure / Legacy Violet | 90 / 110 |
-| Background | Terminal Night / Cloud Garden / Sunset Grid / Pixel Forest | 160 / 220 / 240 / 260 |
-
-The Customize screen filters by slot and ownership and distinguishes owned from
-equipped items with explicit icons. The purchase sheet compares the current and
-resulting full pet. Every cosmetic and body color is visual only and never
-affects growth, rewards, or variant odds.
-
-Pet management is organized as **My Pet, Collection, Companions, and
-Customize**. Identity and Energy ledgers expand on demand. A completed
-companion's detail sheet shows its name, personality, bond, and full memory
-history.
-
-## Action Energy Boosters
-
-Boosters are consumable items purchased with Star Shards or earned from
-first-time bond milestones.
-
-| Booster | Duration | Price |
-|---|---:|---:|
-| 2x | 30 minutes | 80 Star Shards |
-| 3x | 20 minutes | 150 Star Shards |
-| 5x | 10 minutes | 280 Star Shards |
-
-Only one booster can be active. It multiplies base action energy newly verified
-during its active interval. Activation and expiration timestamps are persisted
-locally, so quitting and reopening the app does not reset its duration. Bonus
-Energy from another system is not multiplied again.
+Automatic activity attendance, first verified daily growth, weekly and monthly
+activity, discoveries, and stable-version gifts still grant Star Shards. Shards
+are shared by eggs, cosmetics, and boosters. There are no streak-loss penalties,
+hunger, illness, or death.
 
 ## Behavior and on-screen pet
 
-The pet reacts to work, recent activity, rest, quota warnings, and pats. These
-are presentation states; they are not derived from network response content or
-work content.
-
-Enable the overlay under **Settings → Tokeni → Show pet on screen** and choose
-its size, position lock, and click-through behavior. Reduce Motion, the app
-animation setting, and Low Power Mode are respected.
+Pets react to work, recent activity, rest, quota warnings, and pats. These are
+animations and do not create XP. Settings control the on-screen pet, size,
+position lock, click-through, reduced motion, and low-power behavior.
 
 ## Storage and privacy
 
-Species, stage, variant, name, personality, energy, bond, memories, collection,
-cosmetics, and boosters remain on the Mac. Memories contain no provider name, token
-total, prompt, response, or credential. There is no analytics SDK or remote
-game server.
-
-Unavailable or stale usage never fabricates growth. See
-[Usage display and growth accounting](usage.md) for accounting details.
+Pet UUIDs, species, variants, forms, Growth XP, eggs, names, personalities,
+memories, collection state, shards, cosmetics, and boosters stay on the Mac.
+Pet state never stores provider names, raw token totals, prompts, responses, or
+credentials. Unverified or stale usage never becomes XP. See
+[usage display and growth accounting](usage.md) for aggregation details.

@@ -1,161 +1,132 @@
-# Tokeni Companion System Policy
+# Tokeni pet system policy
 
 [한국어](companion-policy.ko.md) | **English**
 
-- Policy version: 2.2.0
-- Updated: 2026-07-31
+- Policy version: 2.3.0
+- Updated: 2026-08-04
 - Status: implemented
 
-This document is the source of truth for pet growth, variants, individual
-identity, collection, rewards, and cosmetics.
+This document defines the invariants for unbounded levels, evolution, the egg
+economy, owned pets, collection rewards, persistence, and privacy.
 
 ## 1. Invariants
 
-- Growth comes only from verified cumulative token increases.
-- Active time may drive animation but never growth.
-- Unavailable usage is never estimated.
-- Pet choice, personality, variant, and cosmetics never multiply growth, cost,
-  rewards, or odds.
-- Only a timed booster may apply its declared multiplier to verified base
-  action energy.
-- There is no hunger, sickness, death, lost streak progress, or expiring FOMO.
-- Companion state stores no provider name, raw token total, prompt, response,
-  or credential.
+- Growth XP comes only from verified cumulative token increases.
+- Active time may alter behavior but cannot create XP.
+- Unverifiable usage is never estimated.
+- Species, variants, personalities, eggs, and cosmetics create no growth,
+  price, reward, or probability multipliers.
+- Only timed boosters multiply newly verified base XP.
+- Hunger, illness, death, streak loss, and limited-time FOMO are excluded.
+- Pet state never stores provider names, raw token totals, prompts, responses,
+  or credentials.
 
-## 2. Extensible registries
+## 2. Growth and evolution
 
-Species and variants are registered for shared UI; do not add species or
-variant switches to feature screens.
+The standard conversion is one Growth XP per 25,000 verified tokens. Level is
+derived from XP, is not stored independently, and has no product maximum.
 
-A variant definition contains only:
+```text
+next-level XP = min(2 + floor((current level - 1) / 10), 15)
+```
 
-- a stable string ID;
-- its bundled sprite palette;
-- whether it contributes to the main collection;
-- whether it is a special visual variant.
+Hatchling, junior, and adult forms correspond to levels 1, 10, and 25.
+Evolution is manual and does not spend XP. Passing a threshold does not change
+the form until evolution is requested. Growth continues after level 25.
+Starting at level 30, every ten levels grant 10 Star Shards.
 
-Variants have no rank or power. Unknown future IDs must fail soft without
-damaging existing saves.
+## 3. Owned pets and eggs
 
-## 3. Growth and hatching
+New state contains one non-sellable Starter Egg. A migration that imports an
+active pet grants one non-sellable Homecoming Egg. Hatched pets have UUIDs, one
+pet is selected for growth, and another hatch adds to the roster without
+deleting or completing the current pet. Switching preserves XP, form, name,
+personality, and memories.
 
-The standard conversion is `floor(verified tokens / 50,000)`. Action costs are
-500 to hatch, 800 for Juvenile, 1,400 for Adult, 800 to complete and hatch
-again, and 300 to start a new egg early.
+Egg definitions contain only a stable ID, buy and resale prices, unlock
+requirements, species candidates, variant rules, guarantees, and sellability.
+The Mystery Egg unlocks at highest pet level 5 for 90 shards. The Discovery Egg
+unlocks after three species for 180 shards. Their resale values are 30 and 60.
+There are no real-money purchases, limited-time offers, or player trading.
 
-Five current species have equal base odds. While one remains missing, five
-duplicate hatches make the next hatch choose from missing species.
+The active pet cannot be sent away. Inactive standard and prismatic pets return
+30 and 60 shards. Level never increases resale value, and discoveries remain.
 
-New hatches are 92% Standard and 8% Prismatic. After 11 Standard hatches, hatch
-12 is Prismatic. A variant is fixed at hatch and never changes during
-evolution.
+## 4. Collection and guarantees
 
-Legacy ranked rolls, Adult rarity pity, lucky rerolls, and action discounts do
-not participate in new rules.
+Five species have equal base odds. Five duplicate hatches guarantee an
+undiscovered species while one remains. Standard and prismatic odds are 92% and
+8%; the twelfth normal hatch after 11 standard results is prismatic.
 
-## 4. Collection
+The main collection has ten species/variant combinations. Forms remain in a
+growth album. Five species grant a Discovery Egg; five and ten combinations
+each grant one Prismatic Egg. Discovery and Prismatic Eggs guarantee their
+documented result pools.
 
-Main completion is `registered species × collectible variants`. Generation one
-is five species times Standard and Prismatic, for ten discoveries.
+## 5. Level rewards and cosmetics
 
-Life stages form a journey album under that discovery instead of separate
-completion cells. Legacy colors remain available as store cosmetics without
-inflating the new denominator.
+Each pet grants a 2x booster, 3x booster, Firefly aura, and the 5x booster plus
+Orbit aura at levels 5, 10, 20, and 25. Legacy bond rewards suppress the matching
+level reward so migration cannot duplicate grants.
 
-Only two guarantees remain:
+Star Shards come from attendance, verified growth, discoveries, collection
+milestones, and stable-version gifts. They buy eggs, boosters, and visual
+cosmetics. Resale remains below purchase price and XP cannot become a repeatable
+currency farm.
 
-- missing species;
-- Prismatic variant.
+## 6. Identity and memories
 
-The UI leads with whichever guarantee is nearer.
+Each pet has a UUID, species, variant, form, XP, local name, registered
+personality ID, and creation date. At most 40 content-free memories per pet and
+2,000 across the account are kept.
+Legacy hatch, evolution, pat, bond, and journey records remain after migration.
+No work content or raw usage number enters a memory.
 
-## 5. Individual identity and memories
+## 7. Persistence and transaction safety
 
-Current and completed individuals are identified by UUID and may contain:
+Eggs have UUIDs and stable random seeds. Purchase and resale are first written
+to a journal and use transaction UUIDs to reject duplicate pet and currency
+processing; hatching is keyed by the egg ID
+and its seed. State and guarantee counters are updated before reveal animation
+so interruption cannot reroll an egg or duplicate a reward.
 
-- a local name of at most 24 characters;
-- a registered personality ID;
-- species, variant, and life stage;
-- bond energy and level;
-- creation and completion timestamps.
+Schema v10 stores the active pet, inactive owned pets, acquisition egg source,
+eggs, Growth XP, highest level, egg milestones, and processed egg transactions. Corrupt data uses a
+recoverable backup or becomes unavailable rather than fabricated.
 
-Personality is presentation-only. Bond levels begin at 0, 50, 150, 400, and
-800 energy.
+Provider JSONL is processed one line at a time without constructing a complete
+file or event array. Companion sprite sheets load on demand under bounded sheet
+and frame caches. Hiding the overlay releases its hosting view and animation
+tasks.
 
-Each generation grants a one-time reward at a bond level: level 2 grants a 2x
-booster, level 3 a 3x booster, level 4 Firefly Aura, and level 5 a 5x booster
-plus Orbit Aura. Booster-added Energy does not add boosted bond.
+## 8. Migration and compatibility
 
-At most 400 structured, content-free memories are retained:
+- Dedicated readers migrate schemas v2 through v9 into v10.
+- Hatchling, junior, and adult states receive at least levels 1, 10, and 25.
+- The greater useful legacy action balance or adult bond progress is added to
+  XP, then the duplicate action balance is removed.
+- Completed pets become inactive, sellable owned pets.
+- An imported active pet receives one Homecoming Egg; a legacy empty egg state
+  is restored with one Starter Egg.
+- Imported pets do not backfill every passed level reward, but earn the next new
+  milestone normally.
+- Guarantees, identity, memories, shards, cosmetics, and boosters remain.
 
-- hatch;
-- evolution;
-- first pat;
-- bond level;
-- journey completion.
+## 9. Adding content
 
-Memories never include work content or usage numbers.
+1. Register stable species, variant, evolution, or egg IDs.
+2. Add every required sprite and manifest entry for a new form.
+3. Document egg price, resale, odds, guarantees, and unlock rules.
+4. Declare collection denominator and special-egg milestone behavior.
+5. Add round-trip, migration, duplicate-transaction, and probability tests.
+6. Update Korean and English strings and documentation together.
 
-## 6. Rewards and cosmetics
+## 10. Version 2.3.0 redesign
 
-Star Shards remain separate from growth energy. Sources are automatic activity
-check-in, first verified growth, species and Prismatic discovery, 5/10 variant
-collection milestones, completed journeys, and stable-release gifts.
-
-Cosmetic slots are Aura, Background, and Body Color. One item per slot
-can be active. All cosmetics are visual. Do not add paid random boxes or expiry
-dates.
-
-Legacy Rare and Epic sprites become Legacy Azure and Legacy Violet store
-assets. Legendary art can serve Prismatic. “Legacy” names a current color
-asset; it does not imply a live migration policy.
-
-Boosters are separate consumable reward-state items. The catalog provides 2x
-for 30 minutes, 3x for 20 minutes, and 5x for 10 minutes at 80, 150, and 280
-Star Shards. Only one may be active. Persist an absolute expiration time and
-apply the multiplier only to newly verified base action energy, never to bonus
-Energy or bond.
-
-## 7. Migration and compatibility
-
-- Companion schemas v2 through v7 load through dedicated read-only decoders.
-- Unknown JSON fields in the current schema are ignored, but removing an enum
-  ID must not cause the entire reward save to reset.
-- Compatible field additions use safe defaults automatically.
-- Refund quotes, asset resets, migration reserves, recovery journals, and
-  receipts are not current features and are never written to new state.
-- Damaged state uses recoverable backups or remains unavailable.
-- Removing compatibility code requires an explicit minimum direct-upgrade
-  version change and save-fixture coverage.
-
-## 8. Adding content
-
-1. Register a stable species or variant ID.
-2. Add every life-stage sprite and manifest entry.
-3. Verify normal, compact, Low Power, and Reduce Motion rendering.
-4. Declare whether it changes the collection denominator or guarantee.
-5. Add persistence round-trip and old-save fixture tests.
-6. Update Korean and English strings and docs together.
-
-Differentiate new content through silhouette, motion, personality expression,
-and cosmetic compatibility—not numerical superiority.
-
-## 9. Version 2.2.0 policy
-
-- Changed base action energy to one per 50,000 verified tokens.
-- Removed the Head cosmetic slot and expanded species-neutral Aura and
-  Background items.
-- Added timed 2x, 3x, and 5x boosters and one-time bond-level rewards.
-- Removed refund, asset-reset, migration-reserve, journal, and receipt policy
-  from the current system.
-- Made the popover companion card always visible.
-
-## 10. Version 2.0.0 redesign
-
-- Removed the Normal/Rare/Epic/Legendary hierarchy and evolution rank rolls.
-- Added Standard/Prismatic variants and one transparent Prismatic guarantee.
-- Replaced the 60-cell stage-rarity matrix with ten species-variant discoveries
-  and journey albums.
-- Disabled growth, cost, odds, and reward effects from traits and passives.
-- Added names, personalities, five bond levels, and private memories.
-- Reused legacy grade assets as variants and body-color cosmetics.
+- Replaced spendable lifecycle growth with unbounded levels and level evolution.
+- Increased early growth speed and capped next-level XP at 15.
+- Removed adult completion and action-energy journey resets.
+- Added Starter Eggs, the Egg Vault, a shard shop, resale, and special eggs.
+- Unified current and completed companions into a switchable owned roster.
+- Moved bond rewards to levels 5, 10, 20, and 25.
+- Added 10 Star Shards every ten levels starting at level 30.

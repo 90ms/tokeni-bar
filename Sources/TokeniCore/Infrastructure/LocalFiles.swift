@@ -83,14 +83,60 @@ enum LocalFiles {
         return try? Data(contentsOf: file, options: .mappedIfSafe)
     }
 
-    static func lines(
+    /// Reads a JSONL file incrementally so callers never retain the complete
+    /// file and an array of copied lines at the same time.
+    @discardableResult
+    static func forEachLine(
         in file: URL,
-        maximumBytes: Int = LocalFiles.maximumJSONLinesBytes) -> [Data]?
+        maximumBytes: Int = LocalFiles.maximumJSONLinesBytes,
+        _ consume: (Data) -> Void) -> Bool
     {
-        guard let data = self.data(in: file, maximumBytes: maximumBytes) else {
-            return nil
+        guard maximumBytes >= 0,
+              let values = try? file.resourceValues(
+                  forKeys: [
+                      .fileSizeKey,
+                      .isRegularFileKey,
+                      .isSymbolicLinkKey,
+                  ]),
+              values.isRegularFile == true,
+              values.isSymbolicLink != true,
+              let fileSize = values.fileSize,
+              fileSize >= 0,
+              fileSize <= maximumBytes,
+              let handle = try? FileHandle(forReadingFrom: file)
+        else { return false }
+        defer { try? handle.close() }
+
+        var buffer = Data()
+        var bytesRead = 0
+        while true {
+            let chunk: Data
+            do {
+                chunk = try handle.read(upToCount: 64 * 1_024) ?? Data()
+            } catch {
+                return false
+            }
+            if chunk.isEmpty { break }
+            bytesRead += chunk.count
+            guard bytesRead <= maximumBytes else { return false }
+            buffer.append(chunk)
+
+            var lineStart = buffer.startIndex
+            while let newline = buffer[lineStart...].firstIndex(of: 0x0A) {
+                if newline > lineStart {
+                    consume(Data(buffer[lineStart..<newline]))
+                }
+                lineStart = buffer.index(after: newline)
+            }
+            if lineStart > buffer.startIndex {
+                buffer.removeSubrange(buffer.startIndex..<lineStart)
+            }
         }
-        return data.split(whereSeparator: { $0 == 0x0A }).map { Data($0) }
+
+        if !buffer.isEmpty {
+            consume(buffer)
+        }
+        return true
     }
 }
 

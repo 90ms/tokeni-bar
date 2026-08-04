@@ -8,11 +8,12 @@ enum RecoverableFileStorage {
         fileManager: FileManager = .default,
         decode: (Data) throws -> Value) throws -> Value?
     {
-        guard fileManager.fileExists(atPath: fileURL.path) else { return nil }
-        do {
-            return try decode(Data(contentsOf: fileURL))
-        } catch {
-            try self.quarantine(fileURL, fileManager: fileManager)
+        if fileManager.fileExists(atPath: fileURL.path) {
+            do {
+                return try decode(Data(contentsOf: fileURL))
+            } catch {
+                try self.quarantine(fileURL, fileManager: fileManager)
+            }
         }
 
         for backupURL in self.backupURLs(for: fileURL) {
@@ -47,11 +48,38 @@ enum RecoverableFileStorage {
         for fileURL: URL,
         fileManager: FileManager = .default) throws
     {
-        for url in [fileURL] + self.backupURLs(for: fileURL)
+        for url in [fileURL]
+            + self.backupURLs(for: fileURL)
+            + self.quarantineURLs(for: fileURL, fileManager: fileManager)
             where fileManager.fileExists(atPath: url.path)
         {
             try fileManager.removeItem(at: url)
         }
+    }
+
+    static func hasQuarantinedFile(
+        for fileURL: URL,
+        fileManager: FileManager = .default) -> Bool
+    {
+        !self.quarantineURLs(
+            for: fileURL,
+            fileManager: fileManager).isEmpty
+    }
+
+    static func quarantineURLs(
+        for fileURL: URL,
+        fileManager: FileManager = .default) -> [URL]
+    {
+        let fileName = fileURL.deletingPathExtension().lastPathComponent
+        let pathExtension = fileURL.pathExtension
+        let prefix = "\(fileName).corrupt-"
+        return (try? fileManager.contentsOfDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            includingPropertiesForKeys: nil))?.filter { candidate in
+                candidate.lastPathComponent.hasPrefix(prefix)
+                    && (pathExtension.isEmpty
+                        || candidate.pathExtension == pathExtension)
+            } ?? []
     }
 
     @discardableResult

@@ -7,32 +7,27 @@ final class CompanionAssetCatalog {
     static let shared = CompanionAssetCatalog()
 
     private let manifests: [CompanionSpeciesID: CompanionSpriteManifest]
-    private let sheets: [CompanionSpeciesID: [String: CGImage]]
+    private let assetDirectories: [CompanionSpeciesID: URL]
+    private let sheetCache = NSCache<NSString, ImageBox>()
+    private let frameCache = NSCache<NSString, ImageBox>()
 
     private init() {
         var loadedManifests: [CompanionSpeciesID: CompanionSpriteManifest] = [:]
-        var loadedSheets: [CompanionSpeciesID: [String: CGImage]] = [:]
+        var loadedDirectories: [CompanionSpeciesID: URL] = [:]
         for speciesID in CompanionSpeciesID.allCases {
             guard let assetDirectory = Self.assetDirectory(for: speciesID),
                   let manifest = Self.loadManifest(from: assetDirectory)
             else { continue }
 
             loadedManifests[speciesID] = manifest
-            var speciesSheets: [String: CGImage] = [:]
-            for fileName in Set(manifest.forms.values) {
-                let fileURL = assetDirectory.appending(path: fileName)
-                guard let image = NSImage(contentsOf: fileURL),
-                      let cgImage = image.cgImage(
-                          forProposedRect: nil,
-                          context: nil,
-                          hints: nil)
-                else { continue }
-                speciesSheets[fileName] = cgImage
-            }
-            loadedSheets[speciesID] = speciesSheets
+            loadedDirectories[speciesID] = assetDirectory
         }
         self.manifests = loadedManifests
-        self.sheets = loadedSheets
+        self.assetDirectories = loadedDirectories
+        self.sheetCache.totalCostLimit = 8 * 1_024 * 1_024
+        self.sheetCache.countLimit = 12
+        self.frameCache.totalCostLimit = 12 * 1_024 * 1_024
+        self.frameCache.countLimit = 768
     }
 
     func animation(
@@ -54,16 +49,29 @@ final class CompanionAssetCatalog {
             : requestedSpeciesID ?? .bytebot
         guard let manifest = self.manifests[speciesID],
               let sheetName = manifest.sheetName(for: stage, rarity: rarity),
-              let sheet = self.sheets[speciesID]?[sheetName],
               let animation = manifest.animation(for: behavior)
         else {
             return nil
         }
 
+        let column = min(max(index, 0), max(animation.frameCount - 1, 0))
+        let frameKey = NSString(string: [
+            speciesID.rawValue,
+            sheetName,
+            behavior.rawValue,
+            String(column),
+        ].joined(separator: ":"))
+        if let cached = self.frameCache.object(forKey: frameKey) {
+            return cached.image
+        }
+        guard let sheet = self.sheet(
+            speciesID: speciesID,
+            fileName: sheetName)
+        else { return nil }
+
         let frameWidth = sheet.width / manifest.columns
         let frameHeight = sheet.height / manifest.rows
         guard frameWidth > 0, frameHeight > 0 else { return nil }
-        let column = min(max(index, 0), max(animation.frameCount - 1, 0))
         let x = column * frameWidth
         let y = animation.row * frameHeight
         guard x >= 0,
@@ -73,11 +81,65 @@ final class CompanionAssetCatalog {
         else {
             return nil
         }
-        return sheet.cropping(to: CGRect(
+        guard let cropped = sheet.cropping(to: CGRect(
             x: x,
             y: y,
             width: frameWidth,
-            height: frameHeight))
+            height: frameHeight)),
+            let frame = Self.detachedCopy(
+                of: cropped,
+                width: frameWidth,
+                height: frameHeight)
+        else { return nil }
+        self.frameCache.setObject(
+            ImageBox(frame),
+            forKey: frameKey,
+            cost: frameWidth * frameHeight * 4)
+        return frame
+    }
+
+    private func sheet(
+        speciesID: CompanionSpeciesID,
+        fileName: String) -> CGImage?
+    {
+        let key = NSString(string: "\(speciesID.rawValue):\(fileName)")
+        if let cached = self.sheetCache.object(forKey: key) {
+            return cached.image
+        }
+        guard let directory = self.assetDirectories[speciesID],
+              let image = NSImage(contentsOf: directory.appending(path: fileName)),
+              let sheet = image.cgImage(
+                  forProposedRect: nil,
+                  context: nil,
+                  hints: nil)
+        else { return nil }
+        self.sheetCache.setObject(
+            ImageBox(sheet),
+            forKey: key,
+            cost: sheet.bytesPerRow * sheet.height)
+        return sheet
+    }
+
+    private static func detachedCopy(
+        of image: CGImage,
+        width: Int,
+        height: Int) -> CGImage?
+    {
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue
+                | CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.interpolationQuality = .none
+        context.draw(
+            image,
+            in: CGRect(x: 0, y: 0, width: width, height: height))
+        return context.makeImage()
     }
 
     private func manifest(
@@ -126,5 +188,13 @@ final class CompanionAssetCatalog {
             return nil
         }
         return manifest
+    }
+}
+
+private final class ImageBox {
+    let image: CGImage
+
+    init(_ image: CGImage) {
+        self.image = image
     }
 }

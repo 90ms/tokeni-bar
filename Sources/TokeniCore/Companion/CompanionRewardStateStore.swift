@@ -10,9 +10,20 @@ public actor CompanionRewardStateStore {
     }
 
     public func load() throws -> CompanionRewardState {
-        try RecoverableFileStorage.load(
+        let fileExisted = FileManager.default.fileExists(
+            atPath: self.fileURL.path)
+        let quarantineExisted = RecoverableFileStorage.hasQuarantinedFile(
+            for: self.fileURL)
+        if let state = try RecoverableFileStorage.load(
             from: self.fileURL,
-            decode: Self.decode) ?? CompanionRewardState()
+            decode: Self.decode)
+        {
+            return state
+        }
+        guard !fileExisted, !quarantineExisted else {
+            throw CompanionRewardStateStoreError.unrecoverableState
+        }
+        return CompanionRewardState()
     }
 
     private static func decode(_ data: Data) throws -> CompanionRewardState {
@@ -51,4 +62,5 @@ public actor CompanionRewardStateStore {
 
 private enum CompanionRewardStateStoreError: Error {
     case invalidState
+    case unrecoverableState
 }

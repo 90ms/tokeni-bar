@@ -48,7 +48,13 @@ struct LocalFileSafetyTests {
         let file = directory.appending(path: "events.jsonl")
         try Data("one\ntwo\n".utf8).write(to: file)
 
-        #expect(LocalFiles.lines(in: file, maximumBytes: 4) == nil)
-        #expect(LocalFiles.lines(in: file, maximumBytes: 16)?.count == 2)
+        var streamed: [String] = []
+        #expect(LocalFiles.forEachLine(in: file, maximumBytes: 16) {
+            streamed.append(String(decoding: $0, as: UTF8.self))
+        })
+        #expect(streamed == ["one", "two"])
+        #expect(!LocalFiles.forEachLine(in: file, maximumBytes: 4) { _ in
+            Issue.record("An oversized file must not be consumed")
+        })
     }
 }

@@ -358,6 +358,98 @@ struct CompanionRewardEngineTests {
         #expect(state.selectedCosmeticIDs == [.sparkleAura])
     }
 
+    @Test("Level milestones replace bond rewards without duplicate grants")
+    func levelMilestones() {
+        let engine = CompanionRewardEngine()
+        let generationID = UUID()
+        var state = CompanionRewardState()
+
+        engine.reconcileLevelMilestones(
+            generationID: generationID,
+            level: 25,
+            in: &state)
+        engine.reconcileLevelMilestones(
+            generationID: generationID,
+            level: 25,
+            in: &state)
+
+        #expect(state.energyBoosterInventory[.double30Minutes] == 1)
+        #expect(state.energyBoosterInventory[.triple20Minutes] == 1)
+        #expect(state.energyBoosterInventory[.quintuple10Minutes] == 1)
+        #expect(state.unlockedCosmeticIDs.contains(.fireflyAura))
+        #expect(state.unlockedCosmeticIDs.contains(.orbitAura))
+    }
+
+    @Test("Levels 30 and above grant recurring shards once per ten levels")
+    func recurringLevelMilestones() {
+        let engine = CompanionRewardEngine()
+        let generationID = UUID()
+        var state = CompanionRewardState()
+
+        engine.reconcileLevelMilestones(
+            generationID: generationID,
+            level: 49,
+            in: &state)
+        engine.reconcileLevelMilestones(
+            generationID: generationID,
+            level: 50,
+            in: &state)
+        engine.reconcileLevelMilestones(
+            generationID: generationID,
+            level: 50,
+            in: &state)
+
+        #expect(state.starShards == 30)
+        #expect(CompanionRewardEngine.nextRecurringRewardLevel(after: 29) == 30)
+        #expect(CompanionRewardEngine.nextRecurringRewardLevel(after: 30) == 40)
+        #expect(CompanionRewardEngine.nextRecurringRewardLevel(after: 49) == 50)
+    }
+
+    @Test("Imported pets skip historical rewards but earn future milestones")
+    func importedLevelBaseline() {
+        let engine = CompanionRewardEngine()
+        let generationID = UUID()
+        var state = CompanionRewardState()
+
+        engine.suppressImportedLevelBackfill(
+            generationID: generationID,
+            level: 35,
+            in: &state)
+        engine.reconcileLevelMilestones(
+            generationID: generationID,
+            level: 35,
+            in: &state)
+        #expect(state.starShards == 0)
+        #expect(state.energyBoosterInventory.isEmpty)
+
+        engine.reconcileLevelMilestones(
+            generationID: generationID,
+            level: 40,
+            in: &state)
+        #expect(state.starShards == 10)
+    }
+
+    @Test("Egg shop shard transactions are idempotent")
+    func eggTransactions() throws {
+        let engine = CompanionRewardEngine()
+        let purchaseID = UUID()
+        let saleID = UUID()
+        var state = CompanionRewardState(starShards: 100)
+
+        try engine.spendStarShards(
+            90,
+            transactionID: purchaseID,
+            in: &state)
+        try engine.spendStarShards(
+            90,
+            transactionID: purchaseID,
+            in: &state)
+        engine.grantStarShards(30, transactionID: saleID, in: &state)
+        engine.grantStarShards(30, transactionID: saleID, in: &state)
+
+        #expect(state.starShards == 40)
+    }
+
     private func forms(at date: Date) -> [CompanionFormRecord] {
         let combinations: [(CompanionSpeciesID, CompanionVariantID)] = [
             (.bytebot, .standard),

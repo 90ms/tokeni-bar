@@ -5,6 +5,7 @@ private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
     case home
     case collection
     case lineup
+    case eggs
     case rewards
 
     var id: Self { self }
@@ -14,6 +15,7 @@ private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
         case .home: "house.fill"
         case .collection: "square.grid.3x3.fill"
         case .lineup: "person.3.fill"
+        case .eggs: "shippingbox.fill"
         case .rewards: "star.fill"
         }
     }
@@ -64,8 +66,6 @@ private enum CompanionCosmeticOwnershipFilter:
 struct CompanionCollectionView: View {
     @ObservedObject var store: UsageStore
     @State private var selectedSection = CompanionCollectionSection.home
-    @State private var confirmsNewEgg = false
-    @State private var confirmsCompletion = false
     @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
     @State private var selectedGeneration = 0
     @State private var acquisitionFilter = CompanionAcquisitionFilter.all
@@ -80,12 +80,34 @@ struct CompanionCollectionView: View {
     @State private var selectedArchivedGeneration:
         CompletedCompanionGeneration?
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
+    @State private var pendingEggSale: CompanionEggInstance?
+    @State private var pendingPetSale: CompletedCompanionGeneration?
     @State private var nicknameDraft = ""
 
     private let stages: [CompanionGameStage] = [.hatchling, .junior, .adult]
 
     var body: some View {
+        if self.store.companionDataUnavailable {
+            ContentUnavailableView(
+                AppLocalization.string("companion.data.unavailable.title"),
+                systemImage: "externaldrive.badge.exclamationmark",
+                description: Text(AppLocalization.string(
+                    "companion.data.unavailable.description")))
+        } else {
+            self.collectionContent
+        }
+    }
+
+    private var collectionContent: some View {
         VStack(spacing: 0) {
+            if self.store.companionGrowthDataUnavailable {
+                Label(
+                    AppLocalization.string("companion.growthData.unavailable"),
+                    systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .padding(.top, 10)
+            }
             Picker(
                 AppLocalization.string("companion.section.title"),
                 selection: self.$selectedSection)
@@ -110,37 +132,6 @@ struct CompanionCollectionView: View {
                     .padding(20)
             }
         }
-        .confirmationDialog(
-            AppLocalization.string("companion.newEgg.confirm.title"),
-            isPresented: self.$confirmsNewEgg,
-            titleVisibility: .visible)
-        {
-            Button(
-                AppLocalization.string("companion.newEgg.confirm.action"),
-                role: .destructive)
-            {
-                self.store.abandonCompanionForNewEgg()
-            }
-            Button(AppLocalization.string("action.cancel"), role: .cancel) {}
-        } message: {
-            Text(AppLocalization.format(
-                "companion.newEgg.confirm.message",
-                self.store.companionNewEggCost))
-        }
-        .confirmationDialog(
-            AppLocalization.string("companion.complete.confirm.title"),
-            isPresented: self.$confirmsCompletion,
-            titleVisibility: .visible)
-        {
-            Button(AppLocalization.string("companion.complete.confirm.action")) {
-                self.store.completeCompanionGeneration()
-            }
-            Button(AppLocalization.string("action.cancel"), role: .cancel) {}
-        } message: {
-            Text(AppLocalization.format(
-                "companion.complete.confirm.message",
-                self.store.companionJourneyCompletionCost))
-        }
         .sheet(
             isPresented: Binding(
                 get: { self.pendingCosmeticPurchaseID != nil },
@@ -156,6 +147,30 @@ struct CompanionCollectionView: View {
         }
         .sheet(item: self.$selectedArchivedGeneration) { generation in
             self.archivedCompanionDetail(generation)
+        }
+        .alert(item: self.$pendingEggSale) { egg in
+            Alert(
+                title: Text(AppLocalization.string(
+                    "companion.sale.confirm.title")),
+                message: Text(AppLocalization.string(
+                    "companion.sale.egg.confirm")),
+                primaryButton: .destructive(Text(AppLocalization.string(
+                    "companion.sale.confirm.action"))) {
+                        self.store.sellCompanionEgg(egg.id)
+                    },
+                secondaryButton: .cancel())
+        }
+        .alert(item: self.$pendingPetSale) { companion in
+            Alert(
+                title: Text(AppLocalization.string(
+                    "companion.sale.confirm.title")),
+                message: Text(AppLocalization.string(
+                    "companion.sale.pet.confirm")),
+                primaryButton: .destructive(Text(AppLocalization.string(
+                    "companion.sale.confirm.action"))) {
+                        self.store.sellCompanion(companion.generationID)
+                    },
+                secondaryButton: .cancel())
         }
         .sheet(item: Binding(
             get: { self.store.companionReveal },
@@ -195,7 +210,6 @@ struct CompanionCollectionView: View {
             switch self.selectedSection {
             case .home:
                 self.currentCompanion
-                self.journeyActions
                 self.homeDetails
             case .collection:
                 self.summary
@@ -203,9 +217,132 @@ struct CompanionCollectionView: View {
                 self.collectionGrid
             case .lineup:
                 self.companionArchive
+            case .eggs:
+                self.eggVault
             case .rewards:
                 self.rewardWallet
             }
+        }
+    }
+
+    private var eggVault: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(AppLocalization.string("companion.eggs.title"))
+                        .font(.title2.bold())
+                    Text(AppLocalization.string("companion.eggs.description"))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text(AppLocalization.format(
+                    "companion.rewards.balance",
+                    self.store.companionRewardState.starShards))
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            if let message = self.store.companionEconomyErrorMessage {
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
+            GroupBox(AppLocalization.string("companion.eggs.inventory")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    if self.store.companionState.eggs.isEmpty {
+                        Text(AppLocalization.string("companion.eggs.empty"))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(self.store.companionState.eggs) { egg in
+                            HStack {
+                                Label(
+                                    AppLocalization.string(
+                                        "companion.egg.\(egg.definitionID.rawValue)"),
+                                    systemImage: "circle.hexagongrid.fill")
+                                Spacer()
+                                Button(AppLocalization.string(
+                                    "companion.eggs.hatch"))
+                                {
+                                    self.store.openCompanionEgg(egg.id)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(self.store
+                                    .companionEconomyTransactionInFlight)
+                                if let definition = CompanionEggRegistry.definition(
+                                    for: egg.definitionID),
+                                   definition.isSellable
+                                {
+                                    Button(AppLocalization.format(
+                                        "companion.eggs.sellValue",
+                                        definition.resaleValue))
+                                    {
+                                        self.pendingEggSale = egg
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .disabled(self.store
+                                        .companionEconomyTransactionInFlight)
+                                }
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            GroupBox(AppLocalization.string("companion.eggs.shop")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(CompanionEggRegistry.definitions.filter {
+                        $0.price != nil
+                    }) { definition in
+                        let unlocked = CompanionEggRegistry.isUnlocked(
+                            definition,
+                            highestPetLevel:
+                                self.store.companionState.highestPetLevel,
+                            discoveredSpeciesCount: self.store.companionState
+                                .collection.discoveredSpeciesIDs.count)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(AppLocalization.string(
+                                    "companion.egg.\(definition.id.rawValue)"))
+                                Text(self.eggRequirementText(definition))
+                                    .font(.caption)
+                                    .foregroundStyle(
+                                        unlocked ? Color.secondary : Color.orange)
+                            }
+                            Spacer()
+                            Button(AppLocalization.format(
+                                "companion.eggs.buy",
+                                definition.price ?? 0))
+                            {
+                                self.store.purchaseCompanionEgg(definition.id)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(
+                                !unlocked
+                                    || self.store
+                                        .companionEconomyTransactionInFlight
+                                    || self.store.companionRewardState.starShards
+                                        < (definition.price ?? 0))
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func eggRequirementText(
+        _ definition: CompanionEggDefinition) -> String
+    {
+        switch definition.unlockRequirement {
+        case let .highestPetLevel(level):
+            AppLocalization.format("companion.eggs.requirement.level", level)
+        case let .discoveredSpecies(count):
+            AppLocalization.format("companion.eggs.requirement.species", count)
+        case .starterOnly, .milestoneOnly:
+            AppLocalization.string("companion.eggs.locked")
         }
     }
 
@@ -331,20 +468,20 @@ struct CompanionCollectionView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     self.metric(
-                        AppLocalization.string("companion.energy.balance"),
-                        value: "\(self.store.companionState.availableGrowthEnergy)")
+                        AppLocalization.string("companion.level.title"),
+                        value: "\(self.store.companionLevel)")
+                    Divider()
+                    self.metric(
+                        AppLocalization.string("companion.level.xp"),
+                        value: "\(self.store.companionState.growthXP)")
                     Divider()
                     self.metric(
                         AppLocalization.string("companion.energy.earnedToday"),
                         value: "+\(self.store.companionState.growthEarnedToday)")
                     Divider()
                     self.metric(
-                        AppLocalization.string("companion.energy.carried"),
-                        value: "\(self.store.companionState.growthCarriedToday)")
-                    Divider()
-                    self.metric(
-                        AppLocalization.string("companion.energy.spentToday"),
-                        value: "-\(self.store.companionState.growthSpentToday)")
+                        AppLocalization.string("companion.level.next"),
+                        value: "\(self.store.companionNextLevelXP)")
                 }
                 .frame(height: 42)
 
@@ -577,7 +714,7 @@ struct CompanionCollectionView: View {
                         }
                     }
                     Text(AppLocalization.string(
-                        "companion.booster.bondDescription"))
+                        "companion.booster.levelDescription"))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -1243,6 +1380,9 @@ struct CompanionCollectionView: View {
                     Text(self.displayedCompanionTitle)
                         .font(.title2.weight(.semibold))
                     HStack {
+                        Text(AppLocalization.format(
+                            "companion.level.value",
+                            self.store.displayedCompanionLevel))
                         Text(AppLocalization.string(
                             "companion.stage.\(self.store.displayedCompanionStage.rawValue)"))
                         if let variantID =
@@ -1256,28 +1396,22 @@ struct CompanionCollectionView: View {
                     }
                     if self.store.isShowingArchivedCompanion {
                         Text(AppLocalization.format(
-                            "companion.archive.showcasedSummary",
-                            self.store.displayedCompanionBondEnergy))
+                            "companion.level.value",
+                            self.store.displayedCompanionLevel))
                             .foregroundStyle(.secondary)
-                    } else if self.store.companionStage == .adult {
-                        Text(AppLocalization.format(
-                            "companion.collection.bond",
-                            self.store.companionState.bondEnergy))
-                            .foregroundStyle(.secondary)
-                    } else if let next = self.store.companionNextStageEnergy {
+                    } else if self.store.companionStage != .egg {
                         ProgressView(value: self.store.companionStageProgress)
                             .frame(width: 220)
                             .accessibilityLabel(AppLocalization.string(
                                 "companion.progress.accessibility.label"))
                             .accessibilityValue(AppLocalization.format(
                                 "companion.progress.accessibility.value",
-                                self.store.companionState
-                                    .availableGrowthEnergy,
-                                next))
+                                self.store.companionXPIntoLevel,
+                                self.store.companionNextLevelXP))
                         Text(AppLocalization.format(
-                            "companion.progress",
-                            self.store.companionState.availableGrowthEnergy,
-                            next))
+                            "companion.level.progress",
+                            self.store.companionXPIntoLevel,
+                            self.store.companionNextLevelXP))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1299,7 +1433,7 @@ struct CompanionCollectionView: View {
                 HStack(spacing: 8) {
                     Label(
                         AppLocalization.string(
-                            "companion.header.growingJourney"),
+                            "companion.header.growingPet"),
                         systemImage: "leaf.fill")
                         .font(.caption.weight(.semibold))
                     Text(self.growingCompanionName)
@@ -1318,10 +1452,59 @@ struct CompanionCollectionView: View {
                     }
                     Spacer()
                     Text(AppLocalization.format(
-                        "companion.energy.balanceValue",
-                        self.store.companionState.availableGrowthEnergy))
+                        "companion.level.value",
+                        self.store.companionLevel))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+            } else {
+                Divider()
+                HStack {
+                    switch self.store.companionStage {
+                    case .egg:
+                        Button {
+                            self.store.hatchCompanion()
+                        } label: {
+                            Label(
+                                AppLocalization.string("companion.hatch.action"),
+                                systemImage: "sparkles")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(!self.store.canPerformCompanionAction)
+                    case .hatchling, .junior:
+                        Button {
+                            self.store.evolveCompanion()
+                        } label: {
+                            Label(
+                                AppLocalization.string("companion.evolve.action"),
+                                systemImage: "arrow.up.circle.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(!self.store.canPerformCompanionAction)
+                        if let level = self.store.companionNextEvolutionLevel {
+                            Text(AppLocalization.format(
+                                "companion.level.nextEvolution",
+                                level))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    case .adult:
+                        Button {
+                            self.selectedSection = .eggs
+                        } label: {
+                            Label(
+                                AppLocalization.string("companion.eggs.open"),
+                                systemImage: "shippingbox.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        Text(AppLocalization.format(
+                            "companion.level.nextReward",
+                            self.store.companionNextRecurringRewardLevel,
+                            CompanionRewardEngine.recurringLevelRewardShards))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
                 }
             }
         }
@@ -1365,8 +1548,8 @@ struct CompanionCollectionView: View {
                     Divider()
                     self.metric(
                         AppLocalization.string(
-                            "companion.identity.bondLevel"),
-                        value: "\(self.store.displayedCompanionBondLevel)")
+                            "companion.level.title"),
+                        value: "\(self.store.displayedCompanionLevel)")
                     Divider()
                     self.metric(
                         AppLocalization.string("companion.memories.title"),
@@ -1873,7 +2056,7 @@ struct CompanionCollectionView: View {
             HStack(spacing: 8) {
                 ByteBotSpriteView(
                     speciesID: generation.speciesID,
-                    stage: .adult,
+                    stage: generation.stage,
                     rarity: generation.finalRarity,
                     behavior: .idle,
                     dimension: 52,
@@ -1894,7 +2077,8 @@ struct CompanionCollectionView: View {
                     }
                     Text(AppLocalization.format(
                         "companion.archive.identity",
-                        CompanionBond.level(for: generation.bondEnergy),
+                        CompanionLevelCurve.standard.level(
+                            forXP: generation.growthXP),
                         self.memoryCount(for: generation.generationID)))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -1931,6 +2115,15 @@ struct CompanionCollectionView: View {
                     "companion.archive.details"))
                 .accessibilityLabel(AppLocalization.string(
                     "companion.archive.details"))
+
+                Button {
+                    self.store.activateCompanion(generation.generationID)
+                } label: {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .help(AppLocalization.string("companion.archive.activate"))
 
                 Button {
                     self.store.showcaseArchivedCompanion(
@@ -1974,7 +2167,7 @@ struct CompanionCollectionView: View {
             HStack(alignment: .top, spacing: 18) {
                 ByteBotSpriteView(
                     speciesID: generation.speciesID,
-                    stage: .adult,
+                    stage: generation.stage,
                     rarity: generation.finalRarity,
                     behavior: .idle,
                     dimension: 112,
@@ -2009,16 +2202,16 @@ struct CompanionCollectionView: View {
             HStack(spacing: 8) {
                 TokeniMetricTile(
                     title: AppLocalization.string(
-                        "companion.identity.bondLevel"),
-                    value: String(CompanionBond.level(
-                        for: generation.bondEnergy)),
-                    systemImage: "heart.fill",
+                        "companion.level.title"),
+                    value: String(CompanionLevelCurve.standard.level(
+                        forXP: generation.growthXP)),
+                    systemImage: "arrow.up.circle.fill",
                     tint: .pink)
                 TokeniMetricTile(
                     title: AppLocalization.string(
-                        "companion.archive.bondEnergy"),
-                    value: generation.bondEnergy.formatted(),
-                    systemImage: "bolt.heart.fill",
+                        "companion.level.xp"),
+                    value: generation.growthXP.formatted(),
+                    systemImage: "sparkles",
                     tint: .orange)
                 TokeniMetricTile(
                     title: AppLocalization.string(
@@ -2076,7 +2269,25 @@ struct CompanionCollectionView: View {
                 Button(AppLocalization.string("action.done")) {
                     self.selectedArchivedGeneration = nil
                 }
+                Button(
+                    AppLocalization.format(
+                        "companion.archive.sellValue",
+                        generation.variantID == .prismatic ? 60 : 30),
+                    role: .destructive)
+                {
+                    self.pendingPetSale = generation
+                    self.selectedArchivedGeneration = nil
+                }
                 Spacer()
+                Button {
+                    self.store.activateCompanion(generation.generationID)
+                    self.selectedArchivedGeneration = nil
+                } label: {
+                    Label(
+                        AppLocalization.string("companion.archive.activate"),
+                        systemImage: "arrow.triangle.2.circlepath")
+                }
+                .buttonStyle(.borderedProminent)
                 Button {
                     self.store.showcaseArchivedCompanion(
                         isShowcased ? nil : generation.generationID)
@@ -2154,95 +2365,6 @@ struct CompanionCollectionView: View {
         }
         .menuStyle(.button)
         .controlSize(.small)
-    }
-
-    @ViewBuilder
-    private var journeyActions: some View {
-        GroupBox(AppLocalization.string("companion.journey.title")) {
-            VStack(alignment: .leading, spacing: 10) {
-                if self.store.companionStage == .adult {
-                    Text(AppLocalization.string("companion.complete.description"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button(AppLocalization.format(
-                        "companion.action.withCost",
-                        AppLocalization.string("companion.complete.action"),
-                        self.store.companionJourneyCompletionCost))
-                    {
-                        self.confirmsCompletion = true
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!self.store.canPerformCompanionAction)
-                } else if self.store.companionStage == .egg {
-                    Text(AppLocalization.string("companion.hatch.description"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button(AppLocalization.format(
-                        "companion.action.withCost",
-                        AppLocalization.string("companion.hatch.action"),
-                        self.store.companionActionCost ?? 0))
-                    {
-                        self.store.hatchCompanion()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!self.store.canPerformCompanionAction)
-                } else {
-                    Text(AppLocalization.string("companion.evolve.description"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button(AppLocalization.format(
-                        "companion.action.withCost",
-                        AppLocalization.string("companion.evolve.action"),
-                        self.store.companionActionCost ?? 0))
-                    {
-                        self.store.evolveCompanion()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!self.store.canPerformCompanionAction)
-
-                    Divider()
-                    Text(AppLocalization.string("companion.newEgg.description"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button(
-                        AppLocalization.format(
-                            "companion.action.withCost",
-                            AppLocalization.string("companion.newEgg.action"),
-                            self.store.companionNewEggCost),
-                        role: .destructive)
-                    {
-                        self.confirmsNewEgg = true
-                    }
-                    .disabled(
-                        self.store.companionState.availableGrowthEnergy
-                            < self.store.companionNewEggCost)
-                }
-
-                if self.store.canPerformCompanionAction {
-                    Text(AppLocalization.string(self.readyMessageKey))
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.green)
-                } else if let cost = self.store.companionActionCost {
-                    Text(AppLocalization.format(
-                        "companion.energy.insufficient",
-                        max(
-                            cost - self.store.companionState.availableGrowthEnergy,
-                            0)))
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
-        }
-    }
-
-    private var readyMessageKey: String {
-        switch self.store.companionStage {
-        case .egg: "companion.hatch.ready"
-        case .hatchling, .junior: "companion.evolve.ready"
-        case .adult: "companion.complete.ready"
-        }
     }
 
     private func metric(_ title: String, value: String) -> some View {

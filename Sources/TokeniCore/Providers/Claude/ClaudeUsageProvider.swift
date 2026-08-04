@@ -203,18 +203,18 @@ enum ClaudeLogParser {
         var modelIDs: Set<String> = []
         var allRecordsPriced = true
         var recordCount = 0
+        let decoder = JSONDecoder()
 
         for file in files {
-            guard let lines = LocalFiles.lines(in: file) else { return nil }
-            for line in lines {
-                guard let record = try? JSONDecoder().decode(ClaudeRecord.self, from: line),
+            guard LocalFiles.forEachLine(in: file, { line in
+                guard let record = try? decoder.decode(ClaudeRecord.self, from: line),
                       let usage = record.message?.usage,
                       let timestamp = TimestampParser.parse(record.timestamp),
                       timestamp >= startDate
-                else { continue }
+                else { return }
 
                 let identifier = record.message?.id ?? record.uuid ?? "\(file.path):\(record.timestamp ?? "")"
-                guard seenMessageIDs.insert(identifier).inserted else { continue }
+                guard seenMessageIDs.insert(identifier).inserted else { return }
                 recordCount += 1
                 input += usage.inputTokens
                 let oneHourCacheCreation = usage.cacheCreation?.ephemeral1hInputTokens ?? 0
@@ -245,7 +245,7 @@ enum ClaudeLogParser {
                 } else {
                     allRecordsPriced = false
                 }
-            }
+            }) else { return nil }
         }
 
         let tokenUsage = TokenUsage(

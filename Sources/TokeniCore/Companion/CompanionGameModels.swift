@@ -1,5 +1,22 @@
 import Foundation
 
+enum CompanionMemoryPolicy {
+    static let maximumPerCompanion = 40
+    static let maximumTotal = 2_000
+
+    static func pruned(
+        _ memories: [CompanionMemoryRecord]) -> [CompanionMemoryRecord]
+    {
+        let retainedIDs = Set(
+            Dictionary(grouping: memories, by: \.generationID)
+                .values
+                .flatMap { $0.suffix(Self.maximumPerCompanion).map(\.id) })
+        return Array(memories.filter {
+            retainedIDs.contains($0.id)
+        }.suffix(Self.maximumTotal))
+    }
+}
+
 public enum CompanionGameStage: String, Codable, CaseIterable, Hashable, Sendable {
     case egg
     case hatchling
@@ -194,6 +211,10 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
     public var nickname: String?
     public var personalityID: CompanionPersonalityID?
     public let bondEnergy: Int
+    public let growthXP: Int
+    public let stage: CompanionGameStage
+    public let acquisitionEggID: CompanionEggDefinitionID?
+    public let createdAt: Date
     public let completedAt: Date
 
     public var id: UUID { self.generationID }
@@ -207,6 +228,10 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         nickname: String? = nil,
         personalityID: CompanionPersonalityID? = nil,
         bondEnergy: Int,
+        growthXP: Int = 0,
+        stage: CompanionGameStage = .adult,
+        acquisitionEggID: CompanionEggDefinitionID? = nil,
+        createdAt: Date? = nil,
         completedAt: Date)
     {
         self.generationID = generationID
@@ -217,6 +242,10 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         self.nickname = nickname
         self.personalityID = personalityID
         self.bondEnergy = bondEnergy
+        self.growthXP = max(growthXP, 0)
+        self.stage = stage
+        self.acquisitionEggID = acquisitionEggID
+        self.createdAt = createdAt ?? completedAt
         self.completedAt = completedAt
     }
 
@@ -229,6 +258,10 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         case nickname
         case personalityID
         case bondEnergy
+        case growthXP
+        case stage
+        case acquisitionEggID
+        case createdAt
         case completedAt
     }
 
@@ -252,7 +285,19 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
             CompanionPersonalityID.self,
             forKey: .personalityID)
         self.bondEnergy = try container.decode(Int.self, forKey: .bondEnergy)
+        self.growthXP = max(
+            try container.decodeIfPresent(Int.self, forKey: .growthXP) ?? 0,
+            0)
+        self.stage = try container.decodeIfPresent(
+            CompanionGameStage.self,
+            forKey: .stage) ?? .adult
+        self.acquisitionEggID = try container.decodeIfPresent(
+            CompanionEggDefinitionID.self,
+            forKey: .acquisitionEggID)
         self.completedAt = try container.decode(Date.self, forKey: .completedAt)
+        self.createdAt = try container.decodeIfPresent(
+            Date.self,
+            forKey: .createdAt) ?? self.completedAt
     }
 }
 
@@ -443,7 +488,7 @@ public struct CompanionGameRules: Hashable, Sendable {
 }
 
 public struct CompanionGameState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 8
+    public static let currentSchemaVersion = 10
 
     public var schemaVersion: Int
     public var speciesID: CompanionSpeciesID?
@@ -454,6 +499,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var variantID: CompanionVariantID?
     public var nickname: String?
     public var personalityID: CompanionPersonalityID?
+    public var activeAcquisitionEggID: CompanionEggDefinitionID?
+    public var growthXP: Int
     public var growthEnergy: Int
     public var growthDateKey: String
     public var growthEarnedToday: Int
@@ -466,6 +513,11 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var consecutiveDuplicateHatches: Int
     public var pity: CompanionPityState
     public var variantPity: CompanionVariantPityState
+    public var eggs: [CompanionEggInstance]
+    public var highestPetLevel: Int
+    public var claimedEggMilestoneIDs: [String]
+    public var processedEggTransactionIDs: [UUID]
+    public var legacyMigratedGenerationIDs: [UUID]
     public var appliedGrowthAwardIDs: [UUID]
     public var lastActiveAt: Date?
     public var lastPattedAt: Date?
@@ -484,6 +536,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         variantID: CompanionVariantID? = nil,
         nickname: String? = nil,
         personalityID: CompanionPersonalityID? = nil,
+        activeAcquisitionEggID: CompanionEggDefinitionID? = nil,
+        growthXP: Int? = nil,
         growthEnergy: Int = 0,
         growthDateKey: String? = nil,
         growthEarnedToday: Int = 0,
@@ -496,6 +550,11 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         consecutiveDuplicateHatches: Int = 0,
         pity: CompanionPityState = CompanionPityState(),
         variantPity: CompanionVariantPityState = CompanionVariantPityState(),
+        eggs: [CompanionEggInstance]? = nil,
+        highestPetLevel: Int = 0,
+        claimedEggMilestoneIDs: [String] = [],
+        processedEggTransactionIDs: [UUID] = [],
+        legacyMigratedGenerationIDs: [UUID] = [],
         appliedGrowthAwardIDs: [UUID] = [],
         lastActiveAt: Date? = nil,
         lastPattedAt: Date? = nil,
@@ -513,6 +572,13 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.variantID = variantID
         self.nickname = nickname
         self.personalityID = personalityID
+        self.activeAcquisitionEggID = activeAcquisitionEggID
+        self.growthXP = max(
+            growthXP ?? Self.migratedGrowthXP(
+                stage: stage,
+                growthEnergy: growthEnergy,
+                bondEnergy: bondEnergy),
+            0)
         self.growthEnergy = max(growthEnergy, 0)
         self.growthDateKey = growthDateKey
             ?? GrowthLocalDate.key(for: generationCreatedAt)
@@ -523,11 +589,32 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.growthCarriedToday = max(growthCarriedToday, 0)
         self.growthSpentToday = max(growthSpentToday, 0)
         self.bondEnergy = max(bondEnergy, 0)
-        self.memories = Array(memories.suffix(400))
-        self.collection = collection ?? CompanionCollection()
+        self.memories = CompanionMemoryPolicy.pruned(memories)
+        self.collection = Self.migratedCollection(
+            collection ?? CompanionCollection())
         self.consecutiveDuplicateHatches = max(consecutiveDuplicateHatches, 0)
         self.pity = pity
         self.variantPity = variantPity
+        self.eggs = eggs ?? (stage == .egg && speciesID == nil
+            ? [CompanionEggInstance.starter(at: generationCreatedAt)]
+            : [])
+        let activeLevel = stage == .egg
+            ? 0
+            : CompanionLevelCurve.standard.level(forXP: self.growthXP)
+        let ownedHighestLevel = self.collection.archivedGenerations.map {
+            CompanionLevelCurve.standard.level(forXP: $0.growthXP)
+        }.max() ?? 0
+        self.highestPetLevel = max(
+            highestPetLevel,
+            max(activeLevel, ownedHighestLevel))
+        self.claimedEggMilestoneIDs = Array(
+            Set(claimedEggMilestoneIDs)).sorted()
+        self.processedEggTransactionIDs = Array(
+            processedEggTransactionIDs.suffix(512))
+        self.legacyMigratedGenerationIDs = Array(
+            Set(legacyMigratedGenerationIDs)).sorted {
+                $0.uuidString < $1.uuidString
+            }
         self.appliedGrowthAwardIDs = Array(appliedGrowthAwardIDs.suffix(256))
         self.lastActiveAt = lastActiveAt
         self.lastPattedAt = lastPattedAt
@@ -561,10 +648,30 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.growthEnergy
     }
 
+    public var level: Int {
+        self.stage == .egg
+            ? 0
+            : CompanionLevelCurve.standard.level(forXP: self.growthXP)
+    }
+
+    public var nextEvolution: CompanionEvolutionDefinition? {
+        CompanionEvolutionRegistry.next(after: self.stage)
+    }
+
+    public var canEvolve: Bool {
+        self.nextEvolution.map { self.level >= $0.requiredLevel } ?? false
+    }
+
     public func isValid(rules: CompanionGameRules = .standard) -> Bool {
         let archivedGenerationsAreValid =
             self.collection.archivedGenerations.allSatisfy { generation in
-                generation.generationNumber >= 1 && generation.bondEnergy >= 0
+                generation.generationNumber >= 1
+                    && generation.bondEnergy >= 0
+                    && generation.growthXP >= 0
+                    && generation.stage != .egg
+                    && generation.personalityID.map {
+                        CompanionPersonalityRegistry.allIDs.contains($0)
+                    } != false
             }
         let showcasedGenerationIsValid = self.showcasedGenerationID.map { generationID in
             self.collection.archivedGenerations.contains { generation in
@@ -581,10 +688,15 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                 (1...CompanionBond.levelThresholds.count).contains($0)
             } != false
         }
+        let eggIDsAreUnique = Set(self.eggs.map(\.id)).count == self.eggs.count
+        let eggsAreKnown = self.eggs.allSatisfy {
+            CompanionEggRegistry.definition(for: $0.definitionID) != nil
+        }
         guard self.schemaVersion == Self.currentSchemaVersion,
               self.generationNumber >= 1,
               self.growthEnergy >= 0,
               self.growthEnergy <= rules.maximumEnergyBalance,
+              self.growthXP >= 0,
               !self.growthDateKey.isEmpty,
               self.growthEarnedToday >= 0,
               self.delayedGrowthEarnedToday >= 0,
@@ -593,11 +705,22 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
               self.growthSpentToday >= 0,
               self.bondEnergy >= 0,
               self.consecutiveDuplicateHatches >= 0,
+              self.highestPetLevel >= self.level,
+              Set(self.claimedEggMilestoneIDs).count
+                == self.claimedEggMilestoneIDs.count,
+              Set(self.processedEggTransactionIDs).count
+                == self.processedEggTransactionIDs.count,
+              Set(self.legacyMigratedGenerationIDs).count
+                == self.legacyMigratedGenerationIDs.count,
+              self.processedEggTransactionIDs.count <= 512,
+              eggIDsAreUnique,
+              eggsAreKnown,
               (self.stage == .egg
                   ? self.rarity == nil
                       && self.variantID == nil
                       && self.nickname == nil
                       && self.personalityID == nil
+                      && self.activeAcquisitionEggID == nil
                       && self.speciesID == nil
                   : self.rarity != nil
                       && self.resolvedVariantID != nil
@@ -611,8 +734,9 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
               Set(self.appliedGrowthAwardIDs).count == self.appliedGrowthAwardIDs.count,
               Set(self.collection.archivedGenerations.map(\.generationID)).count
                 == self.collection.archivedGenerations.count,
-              self.collection.archivedGenerations.count
-                <= self.collection.totalCompletedGenerations,
+              !self.collection.archivedGenerations.contains {
+                  $0.generationID == self.generationID
+              },
               archivedGenerationsAreValid,
               showcasedGenerationIsValid,
               self.collection.forms.count
@@ -639,6 +763,52 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         }
     }
 
+    private static func migratedGrowthXP(
+        stage: CompanionGameStage,
+        growthEnergy: Int,
+        bondEnergy: Int) -> Int
+    {
+        guard stage != .egg else { return 0 }
+        let minimumLevel = CompanionEvolutionRegistry.requiredLevel(for: stage) ?? 1
+        let base = CompanionLevelCurve.standard.totalXPRequired(
+            forLevel: minimumLevel)
+        let legacyProgress = max(growthEnergy, stage == .adult ? bondEnergy : 0)
+        let (value, overflow) = base.addingReportingOverflow(
+            max(legacyProgress, 0))
+        return overflow ? Int.max : value
+    }
+
+    private static func migratedCollection(
+        _ collection: CompanionCollection) -> CompanionCollection
+    {
+        var migrated = collection
+        migrated.recentCompletedGenerations = collection
+            .recentCompletedGenerations.map { generation in
+                guard generation.growthXP == 0,
+                      generation.stage == .adult
+                else { return generation }
+                let base = CompanionLevelCurve.standard.totalXPRequired(
+                    forLevel: 25)
+                let (xp, overflow) = base.addingReportingOverflow(
+                    max(generation.bondEnergy, 0))
+                return CompletedCompanionGeneration(
+                    generationID: generation.generationID,
+                    generationNumber: generation.generationNumber,
+                    speciesID: generation.speciesID,
+                    finalRarity: generation.finalRarity,
+                    variantID: generation.variantID,
+                    nickname: generation.nickname,
+                    personalityID: generation.personalityID,
+                    bondEnergy: generation.bondEnergy,
+                    growthXP: overflow ? Int.max : xp,
+                    stage: generation.stage,
+                    acquisitionEggID: generation.acquisitionEggID,
+                    createdAt: generation.createdAt,
+                    completedAt: generation.completedAt)
+            }
+        return migrated
+    }
+
     public var showcasedGeneration: CompletedCompanionGeneration? {
         guard let showcasedGenerationID else { return nil }
         return self.collection.archivedGenerations.first {
@@ -650,6 +820,11 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
 public enum CompanionGameEvent: Hashable, Sendable {
     case energyApplied(Int)
     case energySpent(Int)
+    case levelIncreased(from: Int, to: Int)
+    case eggAcquired(CompanionEggDefinitionID)
+    case eggOpened(UUID)
+    case activeCompanionChanged(UUID)
+    case companionSold(UUID, value: Int)
     case hatched(
         speciesID: CompanionSpeciesID,
         rarity: CompanionRarity,
@@ -673,4 +848,6 @@ public enum CompanionGameError: Error, Equatable {
     case rarityMissing
     case adultRequired
     case archivedGenerationNotFound
+    case eggNotFound
+    case evolutionLevelRequired(required: Int, current: Int)
 }

@@ -109,7 +109,7 @@ public struct CompanionAttendanceRecord: Codable, Hashable, Sendable {
 }
 
 public struct CompanionRewardState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 6
+    public static let currentSchemaVersion = 7
 
     public var schemaVersion: Int
     public var starShards: Int
@@ -128,6 +128,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
     public var energyBoosterInventory: [CompanionEnergyBoosterID: Int]
     public var activeEnergyBooster: CompanionActiveEnergyBooster?
     public var rewardedBondMilestoneIDs: Set<String>
+    public var processedEggTransactionIDs: [UUID]
     public var updatedAt: Date
 
     public init(
@@ -148,6 +149,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         energyBoosterInventory: [CompanionEnergyBoosterID: Int] = [:],
         activeEnergyBooster: CompanionActiveEnergyBooster? = nil,
         rewardedBondMilestoneIDs: Set<String> = [],
+        processedEggTransactionIDs: [UUID] = [],
         updatedAt: Date = .now)
     {
         self.schemaVersion = schemaVersion
@@ -169,6 +171,8 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         }
         self.activeEnergyBooster = activeEnergyBooster
         self.rewardedBondMilestoneIDs = rewardedBondMilestoneIDs
+        self.processedEggTransactionIDs = Array(
+            processedEggTransactionIDs.suffix(512))
         self.updatedAt = updatedAt
     }
 
@@ -197,6 +201,8 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
                 == self.selectedCosmeticIDs.count
             && self.selectedCosmeticIDs.isSubset(of: self.unlockedCosmeticIDs)
             && self.energyBoosterInventory.values.allSatisfy { $0 >= 0 }
+            && Set(self.processedEggTransactionIDs).count
+                == self.processedEggTransactionIDs.count
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -218,6 +224,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         case energyBoosterInventory
         case activeEnergyBooster
         case rewardedBondMilestoneIDs
+        case processedEggTransactionIDs
         case updatedAt
     }
 
@@ -299,6 +306,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             rewardedBondMilestoneIDs: try container.decodeIfPresent(
                 Set<String>.self,
                 forKey: .rewardedBondMilestoneIDs) ?? [],
+            processedEggTransactionIDs: try container.decodeIfPresent(
+                [UUID].self,
+                forKey: .processedEggTransactionIDs) ?? [],
             updatedAt: try container.decodeIfPresent(
                 Date.self,
                 forKey: .updatedAt) ?? .now)
@@ -351,6 +361,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         try container.encode(
             self.rewardedBondMilestoneIDs,
             forKey: .rewardedBondMilestoneIDs)
+        try container.encode(
+            self.processedEggTransactionIDs,
+            forKey: .processedEggTransactionIDs)
         try container.encode(self.updatedAt, forKey: .updatedAt)
     }
 }
