@@ -9,11 +9,12 @@ struct TokenGrowthEnergyTests {
         let formula = TokenGrowthEnergyFormula.standard
 
         #expect(formula.energy(forDailyTokens: 0) == 0)
-        #expect(formula.energy(forDailyTokens: 49_999) == 0)
+        #expect(formula.energy(forDailyTokens: 24_999) == 0)
         #expect(formula.energy(forDailyTokens: 25_000) == 1)
+        #expect(formula.energy(forDailyTokens: 49_999) == 1)
         #expect(formula.energy(forDailyTokens: 250_000) == 10)
-        #expect(formula.energy(forDailyTokens: 1_000_000) == 20)
-        #expect(formula.energy(forDailyTokens: 300_000_000) == 6_000)
+        #expect(formula.energy(forDailyTokens: 1_000_000) == 40)
+        #expect(formula.energy(forDailyTokens: 300_000_000) == 12_000)
     }
 
     @Test("Never decreases and has no hard cap")

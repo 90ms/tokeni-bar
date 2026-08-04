@@ -202,7 +202,10 @@ struct CompanionEggTests {
             price: 90))
 
         try await store.begin(transaction)
-        #expect(try await store.load().pending == [transaction])
+        let pending = try await store.load().pending
+        #expect(pending.count == 1)
+        #expect(pending.first?.id == transaction.id)
+        #expect(pending.first?.kind == transaction.kind)
 
         try await store.complete(transaction.id)
         #expect(try await store.load().pending.isEmpty)

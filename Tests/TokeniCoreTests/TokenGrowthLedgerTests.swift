@@ -24,9 +24,9 @@ struct TokenGrowthLedgerTests {
             at: now,
             in: &state)
 
-        #expect(awards.map(\.energy) == [2])
+        #expect(awards.map(\.energy) == [4])
         #expect(state.dayCredits.first?.aggregateTokens == 100_000)
-        #expect(state.dayCredits.first?.targetEnergy == 2)
+        #expect(state.dayCredits.first?.targetEnergy == 4)
         #expect(state.pendingAwards == awards)
     }
 
@@ -44,10 +44,10 @@ struct TokenGrowthLedgerTests {
             at: now,
             in: &state)
 
-        #expect(first.map(\.energy) == [2])
+        #expect(first.map(\.energy) == [4])
         #expect(repeated.isEmpty)
-        #expect(increased.map(\.energy) == [3])
-        #expect(state.dayCredits.first?.awardedEnergy == 5)
+        #expect(increased.map(\.energy) == [6])
+        #expect(state.dayCredits.first?.awardedEnergy == 10)
         #expect(state.conversionRemainderTokens == 0)
     }
 
@@ -71,8 +71,8 @@ struct TokenGrowthLedgerTests {
             at: nextDay,
             in: &state)
 
-        #expect(first.map(\.energy) == [1])
-        #expect(second.map(\.energy) == [1])
+        #expect(first.map(\.energy) == [2])
+        #expect(second.map(\.energy) == [2])
         #expect(state.conversionRemainderTokens == 10_000)
     }
 
@@ -164,9 +164,9 @@ struct TokenGrowthLedgerTests {
             at: confirmedAt,
             in: &state)
 
-        #expect(localAward.map(\.energy) == [1])
-        #expect(confirmedAward.map(\.energy) == [1])
-        #expect(state.dayCredits.first?.awardedEnergy == 2)
+        #expect(localAward.map(\.energy) == [2])
+        #expect(confirmedAward.map(\.energy) == [2])
+        #expect(state.dayCredits.first?.awardedEnergy == 4)
         #expect(state.providerDayTotals.first?.tokens == 100_000)
     }
 
@@ -232,7 +232,7 @@ struct TokenGrowthLedgerTests {
             in: &state)
 
         #expect(first.isEmpty)
-        #expect(second.map(\.energy) == [2])
+        #expect(second.map(\.energy) == [4])
     }
 
     @Test("New sessions and new dates cannot backfill unknown usage")
@@ -259,7 +259,7 @@ struct TokenGrowthLedgerTests {
             at: nextDay,
             in: &state)
 
-        #expect(sameDay.map(\.energy) == [1])
+        #expect(sameDay.map(\.energy) == [2])
         #expect(newSession.isEmpty)
         #expect(newDate.isEmpty)
         #expect(state.conversionRemainderTokens == 0)
@@ -285,8 +285,8 @@ struct TokenGrowthLedgerTests {
             in: &state)
 
         #expect(decreased.isEmpty)
-        #expect(recovered.map(\.energy) == [1])
-        #expect(state.dayCredits.first?.awardedEnergy == 3)
+        #expect(recovered.map(\.energy) == [2])
+        #expect(state.dayCredits.first?.awardedEnergy == 6)
         #expect(state.conversionRemainderTokens == 0)
     }
 
@@ -303,7 +303,7 @@ struct TokenGrowthLedgerTests {
         let confirmed = engine.process(observations: [observation], at: now, in: &state)
 
         #expect(first.isEmpty)
-        #expect(confirmed.map(\.energy) == [2])
+        #expect(confirmed.map(\.energy) == [4])
     }
 
     @Test("Pending awards survive storage until marked applied")
