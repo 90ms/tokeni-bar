@@ -692,6 +692,10 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         let eggsAreKnown = self.eggs.allSatisfy {
             CompanionEggRegistry.definition(for: $0.definitionID) != nil
         }
+        let activeGenerationIsNotArchived = !self.collection
+            .archivedGenerations.contains(where: {
+                $0.generationID == self.generationID
+            })
         guard self.schemaVersion == Self.currentSchemaVersion,
               self.generationNumber >= 1,
               self.growthEnergy >= 0,
@@ -734,9 +738,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
               Set(self.appliedGrowthAwardIDs).count == self.appliedGrowthAwardIDs.count,
               Set(self.collection.archivedGenerations.map(\.generationID)).count
                 == self.collection.archivedGenerations.count,
-              !self.collection.archivedGenerations.contains {
-                  $0.generationID == self.generationID
-              },
+              activeGenerationIsNotArchived,
               archivedGenerationsAreValid,
               showcasedGenerationIsValid,
               self.collection.forms.count

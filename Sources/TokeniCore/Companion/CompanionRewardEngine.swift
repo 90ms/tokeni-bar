@@ -542,13 +542,14 @@ public struct CompanionRewardEngine: Sendable {
         in state: inout CompanionRewardState)
     {
         let prefix = "\(generationID.uuidString).level."
-        state.rewardedBondMilestoneIDs.removeAll { milestoneID in
-            guard milestoneID.hasPrefix(prefix),
-                  let recordedLevel = Int(
-                      milestoneID.dropFirst(prefix.count))
-            else { return false }
-            return recordedLevel >= Self.recurringLevelRewardStart
-        }
+        state.rewardedBondMilestoneIDs = Set(
+            state.rewardedBondMilestoneIDs.filter { milestoneID in
+                guard milestoneID.hasPrefix(prefix),
+                      let recordedLevel = Int(
+                          milestoneID.dropFirst(prefix.count))
+                else { return true }
+                return recordedLevel < Self.recurringLevelRewardStart
+            })
         state.rewardedBondMilestoneIDs.insert("\(prefix)\(level)")
     }
 
