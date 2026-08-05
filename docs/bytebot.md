@@ -14,6 +14,7 @@ provider name, raw token total, prompt, response, or credential.
 4. Manually evolve at levels 10 and 25 to change its appearance.
 5. Obtain more eggs from the Star Shard shop and collection milestones.
 6. Switch among owned pets or send an inactive pet to a new home.
+7. Combine three duplicate pets of one species in the Mutation Lab to collect a visual mutation.
 
 Levels continue without a cap after the adult form. Getting another pet never
 requires completing or replacing the current pet or spending Growth XP.
@@ -95,6 +96,20 @@ After 11 consecutive standard results, the twelfth normal hatch is prismatic.
 The main collection is `5 species × standard/prismatic`, or ten combinations.
 Lifecycle forms remain in each combination's growth album.
 
+### Duplicate pets and the Mutation Lab
+
+Combine three inactive archived pets of the same species to discover one visual
+mutation. The three source pets are consumed. Each species has five mutations—
+Neon, Shadow, Crystal, Glitch, and Aurora—and every third synthesis guarantees
+an undiscovered mutation for the selected species. A repeat strengthens its
+resonance level instead of adding another entry.
+
+Mutations are visual collection elements that can be equipped to the active pet.
+They never affect Growth XP, hatch odds, stats, rewards, or resale value. The
+mutation collection has `5 species × 5 mutations`, or 25 entries; together with
+the ten Standard/Prismatic entries, the full collection contains 35 entries.
+Each mutation grants 30 Star Shards once, on first discovery.
+
 ## Level rewards and Star Shards
 
 | Level | First reward for each pet |
@@ -118,7 +133,8 @@ position lock, click-through, reduced motion, and low-power behavior.
 ## Storage and privacy
 
 Pet UUIDs, species, variants, forms, Growth XP, eggs, names, personalities,
-memories, collection state, shards, cosmetics, and boosters stay on the Mac.
+memories, collection state, mutation records and synthesis count, equipped
+mutation, shards, cosmetics, and boosters stay on the Mac.
 Pet state never stores provider names, raw token totals, prompts, responses, or
 credentials. Unverified or stale usage never becomes XP. See
 [usage display and growth accounting](usage.md) for aggregation details.

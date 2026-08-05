@@ -46,7 +46,7 @@ brew install --formula tokeni-bar
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
 | Tokeni pets | Unbounded levels, evolution appearances, owned-pet switching, names, personalities, memories, behavior, and an optional desktop overlay |
-| Eggs, collection, and rewards | Starter egg, Star Shard egg shop, ten core discoveries, special eggs, level rewards, boosters, and cosmetics |
+| Eggs, collection, and rewards | Starter egg, Star Shard egg shop, 35 collection entries (10 variants + 25 mutations), special eggs, level rewards, boosters, and cosmetics |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -117,6 +117,14 @@ After 11 consecutive Standard hatches, regular hatch 12 is Prismatic. The main
 collection contains ten combinations—five species times Standard and
 Prismatic—while evolution appearances are recorded in each combination's
 growth album.
+
+Three inactive duplicate pets of the same species can be combined in the
+Mutation Lab. The source pets are consumed, and the result discovers one of
+five visual mutations for that species: Neon, Shadow, Crystal, Glitch, or
+Aurora. Every third synthesis guarantees an undiscovered mutation. Mutations
+never affect growth, odds, stats, or resale value. The full collection contains
+35 entries: ten variants and 25 mutations. A first mutation discovery grants
+30 Star Shards once.
 
 ### 4. Earn rewards from levels and activity
 
@@ -214,7 +222,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 | Stored locally | Never stored |
 |---|---|
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
-| Pet IDs, level/XP, stage, variant, name, personality, egg inventory, owned roster, memories, collection, and guarantees | Access tokens, refresh tokens, and cookies |
+| Pet IDs, level/XP, stage, variant, name, personality, egg inventory, owned roster, memories, collection, mutation records, equipped mutation, and guarantees | Access tokens, refresh tokens, and cookies |
 | Star Shards, egg transaction IDs, attendance dates, purchased cosmetics, boosters, and awarded milestone IDs | Account secrets and server telemetry |
 | On-screen pet preferences and last position | Screen captures and input content |
 | Local progress-validation data | Remote game accounts and analytics telemetry |
