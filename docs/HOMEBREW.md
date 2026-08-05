@@ -21,8 +21,10 @@ tokeni-bar --install-app
 tokeni-bar
 ```
 
-`--install-app` safely links the current Cellar app into
-`~/Applications/Tokeni Bar.app`.
+`--install-app` safely links the current Homebrew Formula app into
+`~/Applications/Tokeni Bar.app`. It recognizes both Homebrew's stable Formula
+path and its versioned Cellar path, so Formula upgrades replace the managed link
+automatically.
 
 If the tap was already added and Homebrew reports a trust error, trust only
 this Formula:
@@ -74,7 +76,7 @@ tokeni-bar
 ```
 
 The Formula creates a managed link at `~/Applications/Tokeni Bar.app` pointing
-to the app in the Homebrew Cellar. Uninstalling the Cask removes its app bundle
+to the Homebrew app. Uninstalling the Cask removes its app bundle
 but, without `--zap`, does not delete
 `~/Library/Application Support/TokeniBar` or existing preferences.
 
@@ -85,8 +87,8 @@ brew list --formula tokeni-bar
 tokeni-bar --print-app-path
 ```
 
-The launcher refuses to overwrite a user-created app or unrelated symlink
-already present at `~/Applications/Tokeni Bar.app`. Verify and move that item
+The launcher refuses to overwrite a user-created app or a symlink unrelated to
+the Formula at `~/Applications/Tokeni Bar.app`. Verify and move that item
 yourself, then run `tokeni-bar --install-app` again.
 
 ## Direct installation from GitHub Releases

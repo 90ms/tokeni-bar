@@ -21,8 +21,10 @@ tokeni-bar --install-app
 tokeni-bar
 ```
 
-`--install-app`은 현재 Homebrew Cellar의 앱을
-`~/Applications/Tokeni Bar.app`에 안전하게 연결합니다.
+`--install-app`은 현재 Homebrew Formula 앱을
+`~/Applications/Tokeni Bar.app`에 안전하게 연결합니다. Homebrew의 안정 경로와
+버전이 포함된 Cellar 경로를 모두 관리하므로 Formula 업데이트 뒤에도 링크를
+자동으로 교체합니다.
 
 이미 tap을 추가한 뒤 신뢰 오류가 발생했다면 이 Formula만 신뢰합니다.
 
@@ -72,8 +74,8 @@ tokeni-bar --install-app
 tokeni-bar
 ```
 
-Formula 앱은 `~/Applications/Tokeni Bar.app`에 Homebrew Cellar 앱을 가리키는
-관리형 링크를 만듭니다. Cask 제거 명령은 앱 번들만 제거하며 `--zap`을 붙이지
+Formula 앱은 `~/Applications/Tokeni Bar.app`에 Homebrew 앱을 가리키는 관리형
+링크를 만듭니다. Cask 제거 명령은 앱 번들만 제거하며 `--zap`을 붙이지
 않는 한 `~/Library/Application Support/TokeniBar`와 기존 설정을 지우지
 않습니다.
 
@@ -84,9 +86,9 @@ brew list --formula tokeni-bar
 tokeni-bar --print-app-path
 ```
 
-`~/Applications/Tokeni Bar.app`에 사용자가 직접 만든 앱이나 다른 링크가 이미
-있으면 런처는 덮어쓰지 않습니다. 해당 파일의 출처를 확인해 직접 옮긴 뒤
-`tokeni-bar --install-app`을 다시 실행하세요.
+`~/Applications/Tokeni Bar.app`에 사용자가 직접 만든 앱이나 Formula와 무관한
+링크가 이미 있으면 런처는 덮어쓰지 않습니다. 해당 파일의 출처를 확인해 직접
+옮긴 뒤 `tokeni-bar --install-app`을 다시 실행하세요.
 
 ## GitHub 릴리스로 직접 설치
 

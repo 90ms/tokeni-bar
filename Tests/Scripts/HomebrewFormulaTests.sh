@@ -41,6 +41,15 @@ TOKENI_APP_PATH="$FAKE_APP" \
 TOKENI_APPLICATIONS_DIR="$TEST_ROOT/Applications" \
     "$ROOT/Scripts/tokeni-bar" --install-app
 test "$(readlink "$TEST_ROOT/Applications/Tokeni Bar.app")" = "$FAKE_APP"
+
+OPT_APP="$TEST_ROOT/opt/tokeni-bar/libexec/Tokeni Bar.app"
+mkdir -p "$OPT_APP/Contents/MacOS"
+touch "$OPT_APP/Contents/MacOS/TokeniBar"
+chmod +x "$OPT_APP/Contents/MacOS/TokeniBar"
+TOKENI_APP_PATH="$OPT_APP" \
+TOKENI_APPLICATIONS_DIR="$TEST_ROOT/Applications" \
+    "$ROOT/Scripts/tokeni-bar" --install-app
+test "$(readlink "$TEST_ROOT/Applications/Tokeni Bar.app")" = "$OPT_APP"
 TOKENI_APP_PATH="$FAKE_APP" \
 TOKENI_APPLICATIONS_DIR="$TEST_ROOT/Applications" \
     "$ROOT/Scripts/tokeni-bar" --uninstall-app
