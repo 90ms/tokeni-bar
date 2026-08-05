@@ -74,6 +74,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionGrowthPulse: Int
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
+    @Published private(set) var companionCelebration: CompanionCelebration?
     @Published private(set) var isCompanionEvolving: Bool
     @Published private(set) var companionRewardState: CompanionRewardState
     @Published private(set) var companionBenefitState: CompanionBenefitState
@@ -293,6 +294,7 @@ final class UsageStore: ObservableObject {
         self.companionGrowthPulse = 0
         self.companionState = CompanionGameState()
         self.companionReveal = nil
+        self.companionCelebration = nil
         self.isCompanionEvolving = false
         self.companionRewardState = CompanionRewardState()
         self.companionBenefitState = CompanionBenefitState()
@@ -749,6 +751,7 @@ final class UsageStore: ObservableObject {
     func hatchCompanion() {
         guard self.companionEnabled,
               self.companionStateLoaded,
+              self.companionCelebration == nil,
               self.companionState.stage == .egg
         else { return }
         var state = self.companionState
@@ -760,7 +763,7 @@ final class UsageStore: ObservableObject {
         self.companionState = state
         for event in events {
             if case let .hatched(speciesID, rarity, isNewSpecies, _) = event {
-                self.companionReveal = CompanionHatchReveal(
+                self.presentCompanionHatch(
                     speciesID: speciesID,
                     rarity: rarity,
                     variantID: state.resolvedVariantID ?? .standard,
@@ -774,6 +777,10 @@ final class UsageStore: ObservableObject {
 
     func dismissCompanionReveal() {
         self.companionReveal = nil
+    }
+
+    func dismissCompanionCelebration() {
+        self.companionCelebration = nil
     }
 
     func purchaseCompanionEgg(_ definitionID: CompanionEggDefinitionID) {
@@ -796,6 +803,7 @@ final class UsageStore: ObservableObject {
     func openCompanionEgg(_ eggID: UUID) {
         guard self.companionEnabled,
               self.companionStateLoaded,
+              self.companionCelebration == nil,
               !self.companionEconomyTransactionInFlight
         else { return }
         self.companionEconomyErrorMessage = nil
@@ -822,7 +830,7 @@ final class UsageStore: ObservableObject {
                 {
                     let latest = state.collection
                         .recentCompletedGenerations.last
-                    self.companionReveal = CompanionHatchReveal(
+                    self.presentCompanionHatch(
                         speciesID: speciesID,
                         rarity: rarity,
                         variantID: (opensActivePet
@@ -1107,16 +1115,19 @@ final class UsageStore: ObservableObject {
     func evolveCompanion() {
         guard self.companionEnabled,
               self.companionStateLoaded,
+              self.companionCelebration == nil,
               !self.isCompanionEvolving,
               self.companionState.stage == .hatchling
                 || self.companionState.stage == .junior
         else { return }
+        let fromStage = self.companionState.stage
         var state = self.companionState
         guard (try? self.companionGameEngine.evolve(
             unitValue: Double.random(in: 0..<1),
             in: &state)) != nil
         else { return }
         self.companionState = state
+        self.presentCompanionEvolution(from: fromStage, state: state)
         if self.companionAnimationsEnabled,
            !ProcessInfo.processInfo.isLowPowerModeEnabled,
            !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
@@ -1492,9 +1503,61 @@ final class UsageStore: ObservableObject {
 
     var canPerformCompanionAction: Bool {
         self.companionStateLoaded
+            && self.companionCelebration == nil
             && !self.isCompanionEvolving
             && self.companionGameEngine.canPerformAction(
                 for: self.companionState)
+    }
+
+    private var canPresentCompanionCelebration: Bool {
+        self.companionAnimationsEnabled
+            && !ProcessInfo.processInfo.isLowPowerModeEnabled
+            && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    }
+
+    private func presentCompanionHatch(
+        speciesID: CompanionSpeciesID,
+        rarity: CompanionRarity,
+        variantID: CompanionVariantID,
+        personalityID: CompanionPersonalityID,
+        isNewSpecies: Bool)
+    {
+        let reveal = CompanionHatchReveal(
+            speciesID: speciesID,
+            rarity: rarity,
+            variantID: variantID,
+            personalityID: personalityID,
+            isNewSpecies: isNewSpecies)
+        guard self.canPresentCompanionCelebration else {
+            self.companionReveal = reveal
+            return
+        }
+        self.companionReveal = nil
+        self.companionCelebration = CompanionCelebration(
+            kind: .hatch,
+            speciesID: speciesID,
+            stage: .hatchling,
+            rarity: rarity,
+            variantID: variantID,
+            personalityID: personalityID,
+            isNewSpecies: isNewSpecies)
+    }
+
+    private func presentCompanionEvolution(
+        from fromStage: CompanionGameStage,
+        state: CompanionGameState)
+    {
+        guard self.canPresentCompanionCelebration,
+              let speciesID = state.speciesID
+        else { return }
+        self.companionCelebration = CompanionCelebration(
+            kind: .evolution,
+            speciesID: speciesID,
+            stage: state.stage,
+            rarity: state.rarity ?? .normal,
+            variantID: state.resolvedVariantID ?? .standard,
+            personalityID: state.personalityID ?? .calm,
+            fromStage: fromStage)
     }
 
     var hasReadyCompanionGrowthAction: Bool {

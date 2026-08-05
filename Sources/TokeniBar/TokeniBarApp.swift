@@ -29,6 +29,13 @@ struct TokeniBarApp: App {
                 ) { _, enabled in
                     self.companionOverlayController.setClickThroughEnabled(enabled)
                 }
+                .onChange(of: self.store.companionCelebration) { _, celebration in
+                    if let celebration {
+                        self.companionOverlayController.presentCelebration(celebration)
+                    } else {
+                        self.companionOverlayController.dismissCelebration()
+                    }
+                }
                 .onChange(
                     of: self.store.companionOverlayPositionResetPulse
                 ) { _, _ in

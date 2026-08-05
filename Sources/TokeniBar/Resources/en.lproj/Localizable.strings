@@ -427,6 +427,9 @@
 "companion.animation.hatched" = "Hatched with the %@ look!";
 "companion.animation.rarityUp" = "Discovered the %@ look!";
 "companion.animation.variantChanged" = "Discovered the %@ look!";
+"companion.celebration.hatch.title" = "A new pet has hatched!";
+"companion.celebration.evolution.title" = "Evolution complete!";
+"companion.celebration.continue" = "Continue";
 "companion.reveal.new" = "New pet discovered!";
 "companion.reveal.returning" = "A familiar friend returned!";
 "companion.reveal.continue" = "Start together";

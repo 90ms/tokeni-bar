@@ -427,6 +427,9 @@
 "companion.animation.hatched" = "%@ 모습으로 부화!";
 "companion.animation.rarityUp" = "%@ 모습 발견!";
 "companion.animation.variantChanged" = "%@ 모습 발견!";
+"companion.celebration.hatch.title" = "펫이 태어났어요!";
+"companion.celebration.evolution.title" = "진화 완료!";
+"companion.celebration.continue" = "계속";
 "companion.reveal.new" = "새로운 펫 발견!";
 "companion.reveal.returning" = "반가운 친구가 돌아왔어요!";
 "companion.reveal.continue" = "함께 시작하기";

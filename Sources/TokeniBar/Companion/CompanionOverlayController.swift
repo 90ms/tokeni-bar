@@ -6,6 +6,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
     private static let frameOriginKey = "companionOverlayFrameOrigin"
 
     private var panel: CompanionOverlayPanel?
+    private var celebrationPanel: CompanionCelebrationPanel?
     private weak var store: UsageStore?
 
     override init() {
@@ -30,13 +31,59 @@ final class CompanionOverlayController: NSObject, ObservableObject {
             guard let panel else { return }
             panel.orderFrontRegardless()
         } else {
-            guard let panel else { return }
-            panel.orderOut(nil)
-            panel.contentView = nil
-            panel.delegate = nil
-            panel.close()
-            self.panel = nil
+            self.closeOverlayPanel()
         }
+    }
+
+    func presentCelebration(_ celebration: CompanionCelebration) {
+        guard let store,
+              let screen = self.panel?.screen ?? NSScreen.main
+        else { return }
+
+        let frame = screen.frame
+        let celebrationPanel: CompanionCelebrationPanel
+        if let existing = self.celebrationPanel {
+            celebrationPanel = existing
+            celebrationPanel.setFrame(frame, display: true, animate: false)
+        } else {
+            celebrationPanel = CompanionCelebrationPanel(
+                contentRect: frame,
+                styleMask: [.borderless, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false)
+            celebrationPanel.backgroundColor = .clear
+            celebrationPanel.isOpaque = false
+            celebrationPanel.hasShadow = false
+            celebrationPanel.level = .screenSaver
+            celebrationPanel.hidesOnDeactivate = false
+            celebrationPanel.becomesKeyOnlyIfNeeded = true
+            celebrationPanel.collectionBehavior = [
+                .canJoinAllSpaces,
+                .fullScreenAuxiliary,
+                .stationary,
+                .ignoresCycle,
+            ]
+            self.celebrationPanel = celebrationPanel
+        }
+
+        celebrationPanel.contentView = NSHostingView(
+            rootView: CompanionCelebrationView(
+                celebration: celebration,
+                animationsEnabled: store.companionAnimationsEnabled,
+                dismiss: { [weak self, weak store] in
+                    store?.dismissCompanionCelebration()
+                    self?.dismissCelebration()
+                }))
+        celebrationPanel.orderFrontRegardless()
+        celebrationPanel.makeKey()
+    }
+
+    func dismissCelebration() {
+        guard let celebrationPanel else { return }
+        celebrationPanel.orderOut(nil)
+        celebrationPanel.contentView = nil
+        celebrationPanel.close()
+        self.celebrationPanel = nil
     }
 
     func setSize(_ size: CompanionOverlaySize) {
@@ -77,10 +124,17 @@ final class CompanionOverlayController: NSObject, ObservableObject {
 
     @objc
     private func screenParametersDidChange(_ notification: Notification) {
-        guard let panel else { return }
-        panel.setFrameOrigin(self.constrainedOrigin(
-            panel.frame.origin,
-            panelSize: panel.frame.size))
+        if let panel {
+            panel.setFrameOrigin(self.constrainedOrigin(
+                panel.frame.origin,
+                panelSize: panel.frame.size))
+        }
+        if let celebrationPanel {
+            let screen = celebrationPanel.screen ?? NSScreen.main
+            if let screen {
+                celebrationPanel.setFrame(screen.frame, display: true, animate: false)
+            }
+        }
     }
 
     private func makePanel(store: UsageStore) -> CompanionOverlayPanel {
@@ -116,6 +170,16 @@ final class CompanionOverlayController: NSObject, ObservableObject {
             frame.origin,
             panelSize: panelSize))
         return panel
+    }
+
+    private func closeOverlayPanel() {
+        self.dismissCelebration()
+        guard let panel else { return }
+        panel.orderOut(nil)
+        panel.contentView = nil
+        panel.delegate = nil
+        panel.close()
+        self.panel = nil
     }
 
     private func restoredOrigin(panelSize: NSSize) -> NSPoint {
@@ -163,6 +227,11 @@ extension CompanionOverlayController: NSWindowDelegate {
 
 private final class CompanionOverlayPanel: NSPanel {
     override var canBecomeKey: Bool { false }
+    override var canBecomeMain: Bool { false }
+}
+
+private final class CompanionCelebrationPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 }
 
