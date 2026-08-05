@@ -394,6 +394,7 @@ struct CompanionGameEngineTests {
             stage: .adult,
             rarity: .normal,
             variantID: .standard,
+            personalityID: .calm,
             collection: CompanionCollection(
                 recentCompletedGenerations: duplicates))
 
