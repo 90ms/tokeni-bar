@@ -373,6 +373,56 @@ struct CompanionGameEngineTests {
         }
     }
 
+    @Test("Three same-species duplicates synthesize a visual mutation")
+    func mutationSynthesis() throws {
+        let now = try #require(self.date("2027-01-15T12:00:00Z"))
+        let engine = CompanionGameEngine(calendar: self.calendar)
+        let duplicates = (0..<3).map { index in
+            CompletedCompanionGeneration(
+                generationID: UUID(),
+                generationNumber: index + 1,
+                speciesID: .bytebot,
+                finalRarity: .normal,
+                variantID: .standard,
+                bondEnergy: 0,
+                growthXP: 0,
+                stage: .adult,
+                completedAt: now)
+        }
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            collection: CompanionCollection(
+                recentCompletedGenerations: duplicates))
+
+        let events = try engine.synthesizeMutation(
+            sourceGenerationIDs: duplicates.map(\.generationID),
+            mutationUnitValue: 0,
+            at: now,
+            in: &state)
+
+        #expect(state.collection.archivedGenerations.isEmpty)
+        #expect(state.collection.mutationSynthesisCount == 1)
+        #expect(state.collection.mutations.map(\.mutationID) == [.neon])
+        #expect(events.contains {
+            if case .mutationSynthesized(
+                speciesID: .bytebot,
+                mutationID: .neon,
+                consumedGenerationIDs: _,
+                isNewMutation: true) = $0
+            {
+                return true
+            }
+            return false
+        })
+
+        try engine.equipMutation(.neon, at: now, in: &state)
+        #expect(state.activeMutationID == .neon)
+        #expect(state.isValid())
+    }
+
     @Test("Every currently bundled pet belongs to asset generation one")
     func currentSpeciesAreGenerationOne() {
         #expect(CompanionSpeciesID.allCases.allSatisfy {

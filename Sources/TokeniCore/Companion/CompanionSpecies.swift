@@ -33,4 +33,13 @@ public enum CompanionSpeciesID: String, Codable, CaseIterable, Hashable, Sendabl
     public static var totalCollectibleVariantCount: Int {
         Self.allCases.count * CompanionVariantRegistry.collectibleIDs.count
     }
+
+    public static var totalCollectibleMutationCount: Int {
+        Self.allCases.count * CompanionMutationRegistry.allIDs.count
+    }
+
+    public static var totalCollectionEntryCount: Int {
+        Self.totalCollectibleVariantCount
+            + Self.totalCollectibleMutationCount
+    }
 }

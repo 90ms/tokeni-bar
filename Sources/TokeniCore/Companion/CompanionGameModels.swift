@@ -208,6 +208,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
     public let speciesID: CompanionSpeciesID
     public let finalRarity: CompanionRarity
     public var variantID: CompanionVariantID?
+    public var mutationID: CompanionMutationID?
     public var nickname: String?
     public var personalityID: CompanionPersonalityID?
     public let bondEnergy: Int
@@ -225,6 +226,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         speciesID: CompanionSpeciesID = .bytebot,
         finalRarity: CompanionRarity,
         variantID: CompanionVariantID? = nil,
+        mutationID: CompanionMutationID? = nil,
         nickname: String? = nil,
         personalityID: CompanionPersonalityID? = nil,
         bondEnergy: Int,
@@ -239,6 +241,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         self.speciesID = speciesID
         self.finalRarity = finalRarity
         self.variantID = variantID
+        self.mutationID = mutationID
         self.nickname = nickname
         self.personalityID = personalityID
         self.bondEnergy = bondEnergy
@@ -255,6 +258,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         case speciesID
         case finalRarity
         case variantID
+        case mutationID
         case nickname
         case personalityID
         case bondEnergy
@@ -278,6 +282,9 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         self.variantID = try container.decodeIfPresent(
             CompanionVariantID.self,
             forKey: .variantID)
+        self.mutationID = try container.decodeIfPresent(
+            CompanionMutationID.self,
+            forKey: .mutationID)
         self.nickname = try container.decodeIfPresent(
             String.self,
             forKey: .nickname)
@@ -303,6 +310,8 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
 
 public struct CompanionCollection: Codable, Hashable, Sendable {
     public var forms: [CompanionFormRecord]
+    public var mutations: [CompanionMutationRecord]
+    public var mutationSynthesisCount: Int
     public var totalCompletedGenerations: Int
     public var completedByRarity: [String: Int]
     public var highestRarity: CompanionRarity
@@ -311,6 +320,8 @@ public struct CompanionCollection: Codable, Hashable, Sendable {
 
     public init(
         forms: [CompanionFormRecord] = [],
+        mutations: [CompanionMutationRecord] = [],
+        mutationSynthesisCount: Int = 0,
         totalCompletedGenerations: Int = 0,
         completedByRarity: [String: Int] = [:],
         highestRarity: CompanionRarity = .normal,
@@ -318,6 +329,8 @@ public struct CompanionCollection: Codable, Hashable, Sendable {
         recentCompletedGenerations: [CompletedCompanionGeneration] = [])
     {
         self.forms = forms
+        self.mutations = mutations
+        self.mutationSynthesisCount = max(mutationSynthesisCount, 0)
         self.totalCompletedGenerations = max(totalCompletedGenerations, 0)
         self.completedByRarity = completedByRarity
         self.highestRarity = highestRarity
@@ -325,7 +338,70 @@ public struct CompanionCollection: Codable, Hashable, Sendable {
         self.recentCompletedGenerations = recentCompletedGenerations
     }
 
+    private enum CodingKeys: String, CodingKey {
+        case forms
+        case mutations
+        case mutationSynthesisCount
+        case totalCompletedGenerations
+        case completedByRarity
+        case highestRarity
+        case highestBondEnergy
+        case recentCompletedGenerations
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.forms = try container.decode(
+            [CompanionFormRecord].self,
+            forKey: .forms)
+        self.mutations = try container.decodeIfPresent(
+            [CompanionMutationRecord].self,
+            forKey: .mutations) ?? []
+        self.mutationSynthesisCount = max(
+            try container.decodeIfPresent(
+                Int.self,
+                forKey: .mutationSynthesisCount) ?? 0,
+            0)
+        self.totalCompletedGenerations = try container.decode(
+            Int.self,
+            forKey: .totalCompletedGenerations)
+        self.completedByRarity = try container.decode(
+            [String: Int].self,
+            forKey: .completedByRarity)
+        self.highestRarity = try container.decode(
+            CompanionRarity.self,
+            forKey: .highestRarity)
+        self.highestBondEnergy = try container.decode(
+            Int.self,
+            forKey: .highestBondEnergy)
+        self.recentCompletedGenerations = try container.decode(
+            [CompletedCompanionGeneration].self,
+            forKey: .recentCompletedGenerations)
+    }
+
     public var unlockedFormCount: Int { self.forms.count }
+
+    public var discoveredMutationKeys: Set<String> {
+        Set(self.mutations.map(\.id))
+    }
+
+    public var discoveredMutationCount: Int {
+        self.discoveredMutationKeys.count
+    }
+
+    public var discoveredCollectionEntryCount: Int {
+        self.discoveredCollectibleVariantCount
+            + self.discoveredMutationCount
+    }
+
+    public func mutationRecord(
+        for speciesID: CompanionSpeciesID,
+        mutationID: CompanionMutationID) -> CompanionMutationRecord?
+    {
+        self.mutations.first {
+            $0.speciesID == speciesID && $0.mutationID == mutationID
+        }
+    }
 
     public var discoveredSpeciesIDs: Set<CompanionSpeciesID> {
         Set(self.forms.filter { $0.unlockKind == .encountered }.map(\.speciesID))
@@ -497,6 +573,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var stage: CompanionGameStage
     public var rarity: CompanionRarity?
     public var variantID: CompanionVariantID?
+    public var activeMutationID: CompanionMutationID?
     public var nickname: String?
     public var personalityID: CompanionPersonalityID?
     public var activeAcquisitionEggID: CompanionEggDefinitionID?
@@ -534,6 +611,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         stage: CompanionGameStage = .egg,
         rarity: CompanionRarity? = nil,
         variantID: CompanionVariantID? = nil,
+        activeMutationID: CompanionMutationID? = nil,
         nickname: String? = nil,
         personalityID: CompanionPersonalityID? = nil,
         activeAcquisitionEggID: CompanionEggDefinitionID? = nil,
@@ -570,6 +648,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.stage = stage
         self.rarity = rarity
         self.variantID = variantID
+        self.activeMutationID = activeMutationID
         self.nickname = nickname
         self.personalityID = personalityID
         self.activeAcquisitionEggID = activeAcquisitionEggID
@@ -672,6 +751,11 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                     && generation.personalityID.map {
                         CompanionPersonalityRegistry.allIDs.contains($0)
                     } != false
+                    && generation.mutationID.map { mutationID in
+                        self.collection.mutationRecord(
+                            for: generation.speciesID,
+                            mutationID: mutationID) != nil
+                    } != false
             }
         let showcasedGenerationIsValid = self.showcasedGenerationID.map { generationID in
             self.collection.archivedGenerations.contains { generation in
@@ -692,6 +776,17 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         let eggsAreKnown = self.eggs.allSatisfy {
             CompanionEggRegistry.definition(for: $0.definitionID) != nil
         }
+        let mutationKeys = self.collection.mutations.map(\.id)
+        let mutationRecordsAreValid = self.collection.mutations.allSatisfy {
+            CompanionMutationRegistry.definition(for: $0.mutationID) != nil
+                && $0.synthesisCount > 0
+        }
+        let activeMutationIsValid = self.activeMutationID.map { mutationID in
+            guard let speciesID = self.speciesID else { return false }
+            return self.collection.mutationRecord(
+                for: speciesID,
+                mutationID: mutationID) != nil
+        } != false
         let activeGenerationIsNotArchived = !self.collection
             .archivedGenerations.contains(where: {
                 $0.generationID == self.generationID
@@ -716,6 +811,10 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                 == self.processedEggTransactionIDs.count,
               Set(self.legacyMigratedGenerationIDs).count
                 == self.legacyMigratedGenerationIDs.count,
+              Set(mutationKeys).count == mutationKeys.count,
+              self.collection.mutationSynthesisCount >= 0,
+              mutationRecordsAreValid,
+              activeMutationIsValid,
               self.processedEggTransactionIDs.count <= 512,
               eggIDsAreUnique,
               eggsAreKnown,
@@ -725,6 +824,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                       && self.nickname == nil
                       && self.personalityID == nil
                       && self.activeAcquisitionEggID == nil
+                      && self.activeMutationID == nil
                       && self.speciesID == nil
                   : self.rarity != nil
                       && self.resolvedVariantID != nil
@@ -799,6 +899,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                     speciesID: generation.speciesID,
                     finalRarity: generation.finalRarity,
                     variantID: generation.variantID,
+                    mutationID: generation.mutationID,
                     nickname: generation.nickname,
                     personalityID: generation.personalityID,
                     bondEnergy: generation.bondEnergy,
@@ -841,6 +942,11 @@ public enum CompanionGameEvent: Hashable, Sendable {
     case bondIncreased(Int)
     case generationCompleted(CompletedCompanionGeneration)
     case newEgg(generationNumber: Int)
+    case mutationSynthesized(
+        speciesID: CompanionSpeciesID,
+        mutationID: CompanionMutationID,
+        consumedGenerationIDs: [UUID],
+        isNewMutation: Bool)
 }
 
 public enum CompanionGameError: Error, Equatable {
@@ -852,4 +958,12 @@ public enum CompanionGameError: Error, Equatable {
     case archivedGenerationNotFound
     case eggNotFound
     case evolutionLevelRequired(required: Int, current: Int)
+}
+
+public enum CompanionMutationError: Error, Equatable, Sendable {
+    case requiresThreeSources
+    case sourceNotFound(UUID)
+    case sourceSpeciesMismatch
+    case sourceIsActive
+    case mutationNotDiscovered
 }

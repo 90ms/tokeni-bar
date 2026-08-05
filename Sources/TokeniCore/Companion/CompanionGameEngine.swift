@@ -128,6 +128,7 @@ public struct CompanionGameEngine: Sendable {
         state.stage = .hatchling
         state.rarity = rarity
         state.variantID = variantID
+        state.activeMutationID = nil
         state.nickname = nil
         state.personalityID = self.rollPersonality(
             unitValue: personalityUnitValue)
@@ -224,6 +225,7 @@ public struct CompanionGameEngine: Sendable {
             speciesID: speciesID,
             finalRarity: rarity,
             variantID: state.resolvedVariantID,
+            mutationID: state.activeMutationID,
             nickname: state.nickname,
             personalityID: state.personalityID,
             bondEnergy: state.bondEnergy,
@@ -404,6 +406,7 @@ public struct CompanionGameEngine: Sendable {
             speciesID: activeSpeciesID,
             finalRarity: activeRarity,
             variantID: state.resolvedVariantID,
+            mutationID: state.activeMutationID,
             nickname: state.nickname,
             personalityID: state.personalityID,
             bondEnergy: state.bondEnergy,
@@ -420,6 +423,7 @@ public struct CompanionGameEngine: Sendable {
         state.stage = selected.stage
         state.rarity = selected.finalRarity
         state.variantID = selected.variantID
+        state.activeMutationID = selected.mutationID
         state.nickname = selected.nickname
         state.personalityID = selected.personalityID ?? .calm
         state.activeAcquisitionEggID = selected.acquisitionEggID
@@ -431,6 +435,101 @@ public struct CompanionGameEngine: Sendable {
         state.showcasedGenerationID = nil
         state.updatedAt = now
         return [.activeCompanionChanged(generationID)]
+    }
+
+    @discardableResult
+    public func synthesizeMutation(
+        sourceGenerationIDs: [UUID],
+        mutationUnitValue: Double,
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws -> [CompanionGameEvent]
+    {
+        guard sourceGenerationIDs.count
+                == CompanionMutationRegistry.synthesisSourceCount,
+              Set(sourceGenerationIDs).count == sourceGenerationIDs.count
+        else { throw CompanionMutationError.requiresThreeSources }
+
+        guard !sourceGenerationIDs.contains(state.generationID) else {
+            throw CompanionMutationError.sourceIsActive
+        }
+        let sources = try sourceGenerationIDs.map { generationID in
+            guard let generation = state.collection.archivedGenerations.first(
+                where: { $0.generationID == generationID })
+            else { throw CompanionMutationError.sourceNotFound(generationID) }
+            return generation
+        }
+        guard let speciesID = sources.first?.speciesID,
+              sources.allSatisfy({ $0.speciesID == speciesID })
+        else { throw CompanionMutationError.sourceSpeciesMismatch }
+
+        let nextSynthesisCount = Self.saturatedAdd(
+            state.collection.mutationSynthesisCount,
+            1)
+        let discovered = Set(
+            state.collection.mutations
+                .filter { $0.speciesID == speciesID }
+                .map(\.mutationID))
+        let missing = CompanionMutationRegistry.allIDs.filter {
+            !discovered.contains($0)
+        }
+        let guaranteesNewMutation = !missing.isEmpty
+            && nextSynthesisCount % CompanionMutationRegistry.pitySynthesisCount == 0
+        let mutationID = CompanionMutationRegistry.roll(
+            from: guaranteesNewMutation
+                ? missing
+                : CompanionMutationRegistry.allIDs,
+            unitValue: mutationUnitValue)
+
+        let sourceIDSet = Set(sourceGenerationIDs)
+        state.collection.recentCompletedGenerations.removeAll {
+            sourceIDSet.contains($0.generationID)
+        }
+        if let showcasedGenerationID = state.showcasedGenerationID,
+           sourceIDSet.contains(showcasedGenerationID)
+        {
+            state.showcasedGenerationID = nil
+        }
+        state.collection.mutationSynthesisCount = nextSynthesisCount
+        if let index = state.collection.mutations.firstIndex(where: {
+            $0.speciesID == speciesID && $0.mutationID == mutationID
+        }) {
+            state.collection.mutations[index].lastSynthesizedAt = now
+            state.collection.mutations[index].synthesisCount = Self.saturatedAdd(
+                state.collection.mutations[index].synthesisCount,
+                1)
+        } else {
+            state.collection.mutations.append(CompanionMutationRecord(
+                speciesID: speciesID,
+                mutationID: mutationID,
+                firstDiscoveredAt: now,
+                lastSynthesizedAt: now))
+        }
+        state.updatedAt = now
+        return [.mutationSynthesized(
+            speciesID: speciesID,
+            mutationID: mutationID,
+            consumedGenerationIDs: sourceGenerationIDs,
+            isNewMutation: !discovered.contains(mutationID))]
+    }
+
+    public func equipMutation(
+        _ mutationID: CompanionMutationID?,
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws
+    {
+        guard let mutationID else {
+            state.activeMutationID = nil
+            state.updatedAt = now
+            return
+        }
+        guard let speciesID = state.speciesID,
+              state.stage != .egg,
+              state.collection.mutationRecord(
+                  for: speciesID,
+                  mutationID: mutationID) != nil
+        else { throw CompanionMutationError.mutationNotDiscovered }
+        state.activeMutationID = mutationID
+        state.updatedAt = now
     }
 
     @discardableResult
@@ -885,6 +984,7 @@ public struct CompanionGameEngine: Sendable {
         state.stage = .egg
         state.rarity = nil
         state.variantID = nil
+        state.activeMutationID = nil
         state.nickname = nil
         state.personalityID = nil
         state.activeAcquisitionEggID = nil
