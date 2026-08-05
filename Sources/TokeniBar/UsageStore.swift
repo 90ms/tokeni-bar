@@ -835,7 +835,7 @@ final class UsageStore: ObservableObject {
         } catch let error as CompanionMutationError {
             self.companionMutationErrorMessage = switch error {
             case .requiresThreeSources, .sourceNotFound(_), .sourceIsActive,
-                    .sourceSpeciesMismatch:
+                    .sourceSpeciesMismatch, .sourceNotEligible:
                 AppLocalization.string("companion.mutation.error.sources")
             case .mutationNotDiscovered:
                 AppLocalization.string("companion.mutation.error.unavailable")
@@ -1460,7 +1460,10 @@ final class UsageStore: ObservableObject {
         for speciesID: CompanionSpeciesID) -> [CompletedCompanionGeneration]
     {
         self.companionState.collection.archivedGenerations
-            .filter { $0.speciesID == speciesID }
+            .filter {
+                $0.speciesID == speciesID
+                    && CompanionMutationRegistry.isEligibleSource($0)
+            }
             .sorted {
                 if $0.generationNumber != $1.generationNumber {
                     return $0.generationNumber < $1.generationNumber

@@ -986,6 +986,7 @@ public enum CompanionMutationError: Error, Equatable, Sendable {
     case requiresThreeSources
     case sourceNotFound(UUID)
     case sourceSpeciesMismatch
+    case sourceNotEligible
     case sourceIsActive
     case mutationNotDiscovered
 }

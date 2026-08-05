@@ -430,11 +430,11 @@
 "companion.animation.rarityUp" = "Discovered the %@ look!";
 "companion.animation.variantChanged" = "Discovered the %@ look!";
 "companion.mutation.title" = "Mutation Lab";
-"companion.mutation.description" = "Combine three duplicate pets of the same species to discover a visual mutation. Mutations never affect growth, odds, or stats.";
+"companion.mutation.description" = "Combine three standard, mutation-free duplicates of one species to discover a visual mutation pet. Prismatic and existing mutation pets are never consumed.";
 "companion.mutation.pity" = "Every third synthesis guarantees one undiscovered mutation for that species.";
 "companion.mutation.progress" = "Mutation collection %d/%d";
 "companion.mutation.syntheses" = "%d syntheses";
-"companion.mutation.duplicates" = "%d duplicate pets";
+"companion.mutation.duplicates" = "%d standard, mutation-free duplicates";
 "companion.mutation.synthesize" = "Combine three";
 "companion.mutation.needSources" = "Need three duplicates";
 "companion.mutation.equip.title" = "Current pet mutation";
@@ -443,7 +443,7 @@
 "companion.mutation.reveal.new" = "New mutation discovered!";
 "companion.mutation.reveal.repeat" = "Mutation resonance strengthened!";
 "companion.mutation.continue" = "Continue";
-"companion.mutation.error.sources" = "Three archived pets of the same species are required.";
+"companion.mutation.error.sources" = "Three standard, mutation-free archived pets of the same species are required. Prismatic and mutation pets are protected.";
 "companion.mutation.error.unavailable" = "The mutation synthesis could not be completed. Try again shortly.";
 "companion.mutation.neon.name" = "Neon";
 "companion.mutation.neon.description" = "An electric outline surrounds the pet.";

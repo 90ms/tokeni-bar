@@ -461,6 +461,8 @@ public struct CompanionGameEngine: Sendable {
         guard let speciesID = sources.first?.speciesID,
               sources.allSatisfy({ $0.speciesID == speciesID })
         else { throw CompanionMutationError.sourceSpeciesMismatch }
+        guard sources.allSatisfy(CompanionMutationRegistry.isEligibleSource)
+        else { throw CompanionMutationError.sourceNotEligible }
 
         let nextSynthesisCount = Self.saturatedAdd(
             state.collection.mutationSynthesisCount,
