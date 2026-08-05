@@ -379,6 +379,28 @@ public struct CompanionCollection: Codable, Hashable, Sendable {
             forKey: .recentCompletedGenerations)
     }
 
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.forms, forKey: .forms)
+        try container.encode(self.mutations, forKey: .mutations)
+        try container.encode(
+            self.mutationSynthesisCount,
+            forKey: .mutationSynthesisCount)
+        try container.encode(
+            self.totalCompletedGenerations,
+            forKey: .totalCompletedGenerations)
+        try container.encode(
+            self.completedByRarity,
+            forKey: .completedByRarity)
+        try container.encode(self.highestRarity, forKey: .highestRarity)
+        try container.encode(
+            self.highestBondEnergy,
+            forKey: .highestBondEnergy)
+        try container.encode(
+            self.recentCompletedGenerations,
+            forKey: .recentCompletedGenerations)
+    }
+
     public var unlockedFormCount: Int { self.forms.count }
 
     public var discoveredMutationKeys: Set<String> {

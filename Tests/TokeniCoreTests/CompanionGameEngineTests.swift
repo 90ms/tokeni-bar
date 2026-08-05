@@ -421,6 +421,13 @@ struct CompanionGameEngineTests {
         try engine.equipMutation(.neon, at: now, in: &state)
         #expect(state.activeMutationID == .neon)
         #expect(state.isValid())
+
+        let data = try JSONEncoder().encode(state)
+        let decoded = try JSONDecoder().decode(
+            CompanionGameState.self,
+            from: data)
+        #expect(decoded.collection.mutations == state.collection.mutations)
+        #expect(decoded.activeMutationID == .neon)
     }
 
     @Test("Every currently bundled pet belongs to asset generation one")
