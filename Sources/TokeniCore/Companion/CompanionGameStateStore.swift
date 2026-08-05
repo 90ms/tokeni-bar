@@ -18,12 +18,69 @@ public actor CompanionGameStateStore {
             from: self.fileURL,
             decode: Self.decode)
         {
-            return state
+            return self.recoverPrismaticCompanions(from: state)
         }
         guard !fileExisted, !quarantineExisted else {
             throw CompanionGameStateStoreError.unrecoverableState
         }
         return CompanionGameState()
+    }
+
+    private func recoverPrismaticCompanions(
+        from state: CompanionGameState) -> CompanionGameState
+    {
+        guard state.collection.mutationSynthesisCount > 0 else {
+            return state
+        }
+
+        let currentGenerationIDs = Set(
+            state.collection.archivedGenerations.map(\.generationID))
+        let currentMutationCount = state.collection.mutationSynthesisCount
+        for backupURL in RecoverableFileStorage.backupURLs(
+            for: self.fileURL)
+        {
+            guard let data = try? Data(contentsOf: backupURL),
+                  let backup = try? Self.decode(data),
+                  backup.collection.mutationSynthesisCount
+                    < currentMutationCount
+            else { continue }
+
+            let missingPrismatic = backup.collection.archivedGenerations
+                .filter { generation in
+                    let variantID = generation.variantID
+                        ?? CompanionVariantRegistry.migrated(
+                            from: generation.finalRarity)
+                    return variantID == .prismatic
+                        && !currentGenerationIDs.contains(
+                            generation.generationID)
+                }
+            guard !missingPrismatic.isEmpty else { continue }
+
+            var repaired = state
+            repaired.collection.recentCompletedGenerations.append(
+                contentsOf: missingPrismatic)
+            repaired.collection.recentCompletedGenerations.sort {
+                if $0.generationNumber != $1.generationNumber {
+                    return $0.generationNumber < $1.generationNumber
+                }
+                return $0.completedAt < $1.completedAt
+            }
+            for record in backup.collection.mutations
+                where missingPrismatic.contains(where: {
+                    $0.mutationID == record.mutationID
+                        && $0.speciesID == record.speciesID
+                })
+                && repaired.collection.mutationRecord(
+                    for: record.speciesID,
+                    mutationID: record.mutationID) == nil
+            {
+                repaired.collection.mutations.append(record)
+            }
+            guard repaired.isValid() else { continue }
+            try? self.save(repaired)
+            return repaired
+        }
+        return state
     }
 
     private static func decode(_ data: Data) throws -> CompanionGameState {

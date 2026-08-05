@@ -923,6 +923,74 @@ struct CompanionGameEngineTests {
         #expect(!encoded.contains("token"))
     }
 
+    @Test("A mutation backup restores missing prismatic archived pets")
+    func recoversPrismaticCompanionFromMutationBackup() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let file = directory.appending(path: "companion-state.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
+        let prismatic = CompletedCompanionGeneration(
+            generationID: UUID(),
+            generationNumber: 2,
+            speciesID: .bytebot,
+            finalRarity: .legendary,
+            variantID: .prismatic,
+            bondEnergy: 0,
+            stage: .hatchling,
+            completedAt: timestamp)
+        let mutationRecord = CompanionMutationRecord(
+            speciesID: .bytebot,
+            mutationID: .neon,
+            firstDiscoveredAt: timestamp,
+            lastSynthesizedAt: timestamp)
+        let mutationPet = CompletedCompanionGeneration(
+            generationID: UUID(),
+            generationNumber: 4,
+            speciesID: .bytebot,
+            finalRarity: .normal,
+            variantID: .standard,
+            mutationID: .neon,
+            personalityID: .calm,
+            bondEnergy: 0,
+            stage: .hatchling,
+            completedAt: timestamp)
+        let beforeMutation = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .hatchling,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            collection: CompanionCollection(
+                recentCompletedGenerations: [prismatic]),
+            updatedAt: timestamp)
+        let afterMutation = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .hatchling,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            collection: CompanionCollection(
+                mutations: [mutationRecord],
+                mutationSynthesisCount: 1,
+                recentCompletedGenerations: [mutationPet]),
+            updatedAt: timestamp.addingTimeInterval(60))
+        let store = CompanionGameStateStore(fileURL: file)
+
+        try await store.save(beforeMutation)
+        try await store.save(afterMutation)
+        let loaded = try await store.load()
+
+        #expect(loaded.collection.archivedGenerations.contains {
+            $0.generationID == prismatic.generationID
+        })
+        #expect(loaded.collection.archivedGenerations.contains {
+            $0.generationID == mutationPet.generationID
+        })
+        #expect(loaded.collection.mutationSynthesisCount == 1)
+        #expect(loaded.isValid())
+    }
+
     @Test("Behavior priority remains celebration warning work waiting sleep idle")
     func behaviorPriority() {
         let now = Date(timeIntervalSince1970: 1_800_000_000)

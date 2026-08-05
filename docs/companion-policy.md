@@ -112,6 +112,9 @@ so interruption cannot reroll an egg or duplicate a reward.
 Schema v10 stores the active pet, inactive owned pets, acquisition egg source,
 eggs, Growth XP, highest level, egg milestones, mutation records, synthesis
 count, equipped mutation, mutation reward keys, and processed egg transactions.
+If a prismatic archived pet is missing after a mutation synthesis but remains in
+the pre-synthesis backup, only that missing generation is merged back; the
+current state is never rolled back wholesale.
 The new fields are optional-compatible, so existing v10 files remain readable.
 Corrupt data uses a recoverable backup or becomes unavailable rather than fabricated.
 
