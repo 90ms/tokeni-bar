@@ -10,6 +10,7 @@ struct ByteBotTransitionView: View {
     let stage: CompanionGameStage
     let rarity: CompanionRarity?
     let behavior: CompanionBehavior
+    var mutationID: CompanionMutationID? = nil
     var cosmeticIDs: Set<CompanionCosmeticID> = []
     var dimension: CGFloat = 64
     var animationsEnabled = true
@@ -57,6 +58,14 @@ struct ByteBotTransitionView: View {
             if self.growthEffectVisible {
                 self.growthBurst
                     .transition(.opacity)
+            }
+
+            if let mutationID = self.mutationID {
+                CompanionMutationDecoration(
+                    mutationID: mutationID,
+                    dimension: self.dimension,
+                    animationsEnabled: self.animationsEnabled,
+                    motionIntensity: self.animationIntensity)
             }
 
             ByteBotSpriteView(

@@ -113,6 +113,37 @@ struct CompanionRewardEngineTests {
         #expect(repeated.isEmpty)
     }
 
+    @Test("Mutation discoveries grant shards once")
+    func mutationRewards() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let mutation = CompanionMutationRecord(
+            speciesID: .bytebot,
+            mutationID: .neon,
+            firstDiscoveredAt: now,
+            lastSynthesizedAt: now)
+        let collection = CompanionCollection(mutations: [mutation])
+        let engine = CompanionRewardEngine(calendar: self.calendar)
+        var state = CompanionRewardState()
+
+        let first = engine.reconcile(
+            collection: collection,
+            at: now,
+            in: &state)
+        let repeated = engine.reconcile(
+            collection: collection,
+            at: now,
+            in: &state)
+
+        #expect(first == [CompanionRewardGrant(
+            amount: 30,
+            reason: .mutationDiscovered(
+                speciesID: .bytebot,
+                mutationID: .neon))])
+        #expect(state.starShards == 30)
+        #expect(state.rewardedMutationKeys == [mutation.id])
+        #expect(repeated.isEmpty)
+    }
+
     @Test("Verified growth and stable release gifts are awarded once")
     func recurringRewards() throws {
         let engine = CompanionRewardEngine(calendar: self.calendar)

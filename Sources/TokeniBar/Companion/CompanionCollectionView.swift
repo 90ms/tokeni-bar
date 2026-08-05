@@ -185,6 +185,19 @@ struct CompanionCollectionView: View {
                 animationsEnabled: self.store.companionAnimationsEnabled,
                 dismiss: self.store.dismissCompanionReveal)
         }
+        .sheet(item: Binding(
+            get: { self.store.companionMutationReveal },
+            set: { reveal in
+                if reveal == nil {
+                    self.store.dismissCompanionMutationReveal()
+                }
+            }))
+        { reveal in
+            CompanionMutationRevealView(
+                reveal: reveal,
+                animationsEnabled: self.store.companionAnimationsEnabled,
+                dismiss: self.store.dismissCompanionMutationReveal)
+        }
         .onAppear {
             if let current = self.store.companionState.speciesID {
                 self.selectedSpeciesID = current
@@ -210,11 +223,13 @@ struct CompanionCollectionView: View {
             switch self.selectedSection {
             case .home:
                 self.currentCompanion
+                self.mutationLoadout
                 self.homeDetails
             case .collection:
                 self.summary
                 self.pity
                 self.collectionGrid
+                self.mutationLab
             case .lineup:
                 self.companionArchive
             case .eggs:
@@ -1213,9 +1228,10 @@ struct CompanionCollectionView: View {
             ByteBotTransitionView(
                 speciesID: self.store.displayedCompanionSpeciesID,
                 stage: self.store.displayedCompanionStage,
-                rarity: self.previewRarity(for: cosmeticIDs),
-                behavior: .idle,
-                cosmeticIDs: cosmeticIDs,
+                    rarity: self.previewRarity(for: cosmeticIDs),
+                    behavior: .idle,
+                    mutationID: self.store.displayedCompanionMutationID,
+                    cosmeticIDs: cosmeticIDs,
                 dimension: 104,
                 animationsEnabled: self.store.companionAnimationsEnabled,
                 animationIntensity: self.store
@@ -1392,6 +1408,7 @@ struct CompanionCollectionView: View {
                     stage: self.store.displayedCompanionStage,
                     rarity: self.store.displayedCompanionRarity,
                     behavior: self.store.companionBehavior,
+                    mutationID: self.store.displayedCompanionMutationID,
                     cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                     dimension: 104,
                     animationsEnabled: self.store.companionAnimationsEnabled,
@@ -1616,22 +1633,34 @@ struct CompanionCollectionView: View {
 
     private var summary: some View {
         GroupBox(AppLocalization.string("companion.collection.summary")) {
-            HStack {
+            VStack(spacing: 10) {
+                HStack {
                     self.metric(
                         AppLocalization.string("companion.collection.unlocked"),
-                    value: "\(self.store.companionState.collection.discoveredCollectibleVariantCount) / \(CompanionSpeciesID.totalCollectibleVariantCount)")
+                        value: "\(self.store.companionState.collection.discoveredCollectionEntryCount) / \(CompanionSpeciesID.totalCollectionEntryCount)")
+                    Divider()
+                    self.metric(
+                        AppLocalization.string("companion.collection.species"),
+                        value: "\(self.store.companionState.collection.discoveredSpeciesIDs.count) / \(CompanionSpeciesID.allCases.count)")
+                    Divider()
+                    self.metric(
+                        AppLocalization.string("companion.collection.mutations"),
+                        value: "\(self.store.companionState.collection.discoveredMutationCount) / \(CompanionSpeciesID.totalCollectibleMutationCount)")
+                }
                 Divider()
-                self.metric(
-                    AppLocalization.string("companion.collection.species"),
-                    value: "\(self.store.companionState.collection.discoveredSpeciesIDs.count) / \(CompanionSpeciesID.allCases.count)")
-                Divider()
-                self.metric(
-                    AppLocalization.string("companion.collection.prismatic"),
-                    value: "\(self.prismaticSpeciesCount) / \(CompanionSpeciesID.allCases.count)")
-                Divider()
-                self.metric(
-                    AppLocalization.string("companion.memories.title"),
-                    value: "\(self.store.companionState.memories.count)")
+                HStack {
+                    self.metric(
+                        AppLocalization.string("companion.collection.prismatic"),
+                        value: "\(self.prismaticSpeciesCount) / \(CompanionSpeciesID.allCases.count)")
+                    Divider()
+                    self.metric(
+                        AppLocalization.string("companion.collection.synthesis"),
+                        value: "\(self.store.companionState.collection.mutationSynthesisCount)")
+                    Divider()
+                    self.metric(
+                        AppLocalization.string("companion.memories.title"),
+                        value: "\(self.store.companionState.memories.count)")
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
@@ -1740,6 +1769,204 @@ struct CompanionCollectionView: View {
                 }
             }
             .padding(.vertical, 8)
+        }
+    }
+
+    private var mutationLab: some View {
+        GroupBox(AppLocalization.string("companion.mutation.title")) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(AppLocalization.string("companion.mutation.description"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack {
+                    Label(
+                        AppLocalization.format(
+                            "companion.mutation.progress",
+                            self.store.companionState.collection
+                                .discoveredMutationCount,
+                            CompanionSpeciesID.totalCollectibleMutationCount),
+                        systemImage: "wand.and.stars")
+                        .font(.caption.weight(.semibold))
+                    Spacer()
+                    Text(AppLocalization.format(
+                        "companion.mutation.syntheses",
+                        self.store.companionState.collection
+                            .mutationSynthesisCount))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let message = self.store.companionMutationErrorMessage {
+                    Label(message, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+
+                LazyVGrid(
+                    columns: [
+                        GridItem(.flexible(), spacing: 8),
+                        GridItem(.flexible(), spacing: 8),
+                    ],
+                    spacing: 8)
+                {
+                    ForEach(CompanionSpeciesID.allCases, id: \.self) {
+                        speciesID in
+                        self.mutationSpeciesCard(speciesID)
+                    }
+                }
+            }
+            .padding(.vertical, 6)
+        }
+    }
+
+    private func mutationSpeciesCard(
+        _ speciesID: CompanionSpeciesID) -> some View
+        -> some View
+    {
+        let records = self.store.companionState.collection.mutations.filter {
+            $0.speciesID == speciesID
+        }
+        let sourceCount = self.store.companionMutationSources(for: speciesID).count
+        let canSynthesize = sourceCount >= CompanionMutationRegistry.synthesisSourceCount
+        return VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 5) {
+                Text(AppLocalization.string(
+                    "companion.species.\(speciesID.rawValue).name"))
+                    .font(.caption.weight(.semibold))
+                Spacer()
+                Text("\(records.count)/\(CompanionMutationRegistry.allIDs.count)")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 4),
+                    GridItem(.flexible(), spacing: 4),
+                ],
+                spacing: 4)
+            {
+                ForEach(CompanionMutationRegistry.allIDs, id: \.rawValue) {
+                    mutationID in
+                    let discovered = records.contains {
+                        $0.mutationID == mutationID
+                    }
+                    HStack(spacing: 3) {
+                        if discovered {
+                            CompanionMutationDecoration(
+                                mutationID: mutationID,
+                                dimension: 22,
+                                animationsEnabled: false,
+                                motionIntensity: 0)
+                                .frame(width: 25, height: 25)
+                        } else {
+                            Image(systemName: "lock.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .frame(width: 25, height: 25)
+                        }
+                        Text(self.mutationName(mutationID))
+                            .font(.caption2)
+                            .lineLimit(1)
+                            .foregroundStyle(
+                                discovered ? Color.primary : Color.tertiary)
+                    }
+                }
+            }
+
+            Text(AppLocalization.format(
+                "companion.mutation.duplicates",
+                sourceCount))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Button {
+                self.store.synthesizeCompanionMutation(for: speciesID)
+            } label: {
+                Label(
+                    AppLocalization.string(
+                        canSynthesize
+                            ? "companion.mutation.synthesize"
+                            : "companion.mutation.needSources"),
+                    systemImage: "wand.and.stars")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(!canSynthesize || self.store.companionCelebration != nil)
+        }
+        .padding(9)
+        .background(
+            .quaternary.opacity(0.45),
+            in: RoundedRectangle(cornerRadius: 9))
+    }
+
+    @ViewBuilder
+    private var mutationLoadout: some View {
+        if !self.store.isShowingArchivedCompanion,
+           self.store.companionStage != .egg,
+           let speciesID = self.store.companionState.speciesID
+        {
+            let records = self.store.companionState.collection.mutations.filter {
+                $0.speciesID == speciesID
+            }
+            if !records.isEmpty {
+                GroupBox(AppLocalization.string("companion.mutation.equip.title")) {
+                    HStack {
+                        Label(
+                            AppLocalization.string("companion.mutation.equip"),
+                            systemImage: "wand.and.stars")
+                            .font(.caption.weight(.semibold))
+                        Spacer()
+                        Menu {
+                            Button {
+                                self.store.equipCompanionMutation(nil)
+                            } label: {
+                                Label(
+                                    AppLocalization.string(
+                                        "companion.mutation.none"),
+                                    systemImage: "circle.slash")
+                            }
+                            Divider()
+                            ForEach(records) { record in
+                                Button {
+                                    self.store.equipCompanionMutation(
+                                        record.mutationID)
+                                } label: {
+                                    Label(
+                                        self.mutationName(record.mutationID),
+                                        systemImage: self.mutationIcon(
+                                            record.mutationID))
+                                }
+                            }
+                        } label: {
+                            Label(
+                                self.store.companionState.activeMutationID.map {
+                                    self.mutationName($0)
+                                } ?? AppLocalization.string(
+                                    "companion.mutation.none"),
+                                systemImage: "chevron.up.chevron.down")
+                        }
+                        .menuStyle(.borderlessButton)
+                    }
+                }
+            }
+        }
+    }
+
+    private func mutationName(_ mutationID: CompanionMutationID) -> String {
+        AppLocalization.string(
+            "companion.mutation.\(mutationID.rawValue).name")
+    }
+
+    private func mutationIcon(_ mutationID: CompanionMutationID) -> String {
+        switch mutationID.rawValue {
+        case "neon": "bolt.fill"
+        case "shadow": "moon.fill"
+        case "crystal": "diamond.fill"
+        case "glitch": "rectangle.split.3x1"
+        case "aurora": "rainbow"
+        default: "wand.and.stars"
         }
     }
 

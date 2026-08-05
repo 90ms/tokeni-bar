@@ -244,6 +244,7 @@ private struct CompanionOverlayView: View {
             stage: self.store.displayedCompanionStage,
             rarity: self.store.displayedCompanionRarity,
             behavior: self.store.companionBehavior,
+            mutationID: self.store.displayedCompanionMutationID,
             cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
             dimension: self.store.companionOverlaySize.spriteDimension,
             animationsEnabled: self.store.companionAnimationsEnabled,

@@ -116,6 +116,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
     public var attendanceRecords: [CompanionAttendanceRecord]
     public var awardedMilestoneIDs: Set<String>
     public var rewardedSpeciesIDs: Set<CompanionSpeciesID>
+    public var rewardedMutationKeys: Set<String>
     public var rewardedJourneyCount: Int
     public var rewardedFormMilestones: Set<Int>
     public var rewardedRarities: Set<CompanionRarity>
@@ -137,6 +138,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         attendanceRecords: [CompanionAttendanceRecord] = [],
         awardedMilestoneIDs: Set<String> = [],
         rewardedSpeciesIDs: Set<CompanionSpeciesID> = [],
+        rewardedMutationKeys: Set<String> = [],
         rewardedJourneyCount: Int = 0,
         rewardedFormMilestones: Set<Int> = [],
         rewardedRarities: Set<CompanionRarity> = [],
@@ -158,6 +160,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         self.attendanceRecords = Array(attendanceRecords.suffix(400))
         self.awardedMilestoneIDs = awardedMilestoneIDs
         self.rewardedSpeciesIDs = rewardedSpeciesIDs
+        self.rewardedMutationKeys = rewardedMutationKeys
         self.rewardedJourneyCount = max(rewardedJourneyCount, 0)
         self.rewardedFormMilestones = rewardedFormMilestones
         self.rewardedRarities = rewardedRarities
@@ -190,6 +193,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             && self.attendanceRecords.allSatisfy {
                 !$0.dateKey.isEmpty && !$0.weekKey.isEmpty && !$0.monthKey.isEmpty
             }
+            && self.rewardedMutationKeys.allSatisfy { !$0.isEmpty }
             && self.rewardedJourneyCount >= 0
             && self.rewardedFormMilestones.allSatisfy { $0 > 0 }
             && Set(self.rewardedGrowthDateKeys).count
@@ -212,6 +216,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         case attendanceRecords
         case awardedMilestoneIDs
         case rewardedSpeciesIDs
+        case rewardedMutationKeys
         case rewardedJourneyCount
         case rewardedFormMilestones
         case rewardedRarities
@@ -279,6 +284,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             rewardedSpeciesIDs: try container.decodeIfPresent(
                 Set<CompanionSpeciesID>.self,
                 forKey: .rewardedSpeciesIDs) ?? [],
+            rewardedMutationKeys: try container.decodeIfPresent(
+                Set<String>.self,
+                forKey: .rewardedMutationKeys) ?? [],
             rewardedJourneyCount: try container.decodeIfPresent(
                 Int.self,
                 forKey: .rewardedJourneyCount) ?? 0,
@@ -327,6 +335,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             self.rewardedSpeciesIDs,
             forKey: .rewardedSpeciesIDs)
         try container.encode(
+            self.rewardedMutationKeys,
+            forKey: .rewardedMutationKeys)
+        try container.encode(
             self.rewardedJourneyCount,
             forKey: .rewardedJourneyCount)
         try container.encode(
@@ -374,6 +385,9 @@ public enum CompanionRewardReason: Hashable, Sendable {
     case weeklyAttendance(days: Int)
     case monthlyAttendance(days: Int)
     case speciesDiscovered(CompanionSpeciesID)
+    case mutationDiscovered(
+        speciesID: CompanionSpeciesID,
+        mutationID: CompanionMutationID)
     case rarityDiscovered(CompanionRarity)
     case variantDiscovered(CompanionVariantID)
     case journeysCompleted(Int)

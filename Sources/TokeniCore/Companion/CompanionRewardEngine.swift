@@ -7,6 +7,7 @@ public struct CompanionRewardRules: Sendable {
         monthlyAttendanceDays: 20,
         monthlyAttendanceReward: 50,
         speciesDiscovery: 20,
+        mutationDiscovery: 30,
         variantDiscovery: [.prismatic: 50],
         journeyCompletion: 25,
         collectionVariants: [5: 20, 10: 100],
@@ -18,6 +19,7 @@ public struct CompanionRewardRules: Sendable {
     public let monthlyAttendanceDays: Int
     public let monthlyAttendanceReward: Int
     public let speciesDiscovery: Int
+    public let mutationDiscovery: Int
     public let variantDiscovery: [CompanionVariantID: Int]
     public let journeyCompletion: Int
     public let collectionVariants: [Int: Int]
@@ -30,6 +32,7 @@ public struct CompanionRewardRules: Sendable {
         monthlyAttendanceDays: Int,
         monthlyAttendanceReward: Int,
         speciesDiscovery: Int,
+        mutationDiscovery: Int = 30,
         variantDiscovery: [CompanionVariantID: Int],
         journeyCompletion: Int,
         collectionVariants: [Int: Int],
@@ -45,6 +48,7 @@ public struct CompanionRewardRules: Sendable {
         self.monthlyAttendanceDays = max(monthlyAttendanceDays, 1)
         self.monthlyAttendanceReward = max(monthlyAttendanceReward, 0)
         self.speciesDiscovery = max(speciesDiscovery, 0)
+        self.mutationDiscovery = max(mutationDiscovery, 0)
         self.variantDiscovery = variantDiscovery.mapValues { max($0, 0) }
         self.journeyCompletion = max(journeyCompletion, 0)
         self.collectionVariants = collectionVariants.reduce(into: [:]) {
@@ -190,6 +194,16 @@ public struct CompanionRewardEngine: Sendable {
             grants.append(CompanionRewardGrant(
                 amount: self.rules.variantDiscovery[variantID, default: 0],
                 reason: .variantDiscovered(variantID)))
+        }
+
+        for mutation in collection.mutations.sorted(by: { $0.id < $1.id })
+            where state.rewardedMutationKeys.insert(mutation.id).inserted
+        {
+            grants.append(CompanionRewardGrant(
+                amount: self.rules.mutationDiscovery,
+                reason: .mutationDiscovered(
+                    speciesID: mutation.speciesID,
+                    mutationID: mutation.mutationID)))
         }
 
         if collection.totalCompletedGenerations > state.rewardedJourneyCount {

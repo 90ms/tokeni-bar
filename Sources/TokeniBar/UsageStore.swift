@@ -75,6 +75,8 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
     @Published private(set) var companionCelebration: CompanionCelebration?
+    @Published private(set) var companionMutationReveal: CompanionMutationReveal?
+    @Published private(set) var companionMutationErrorMessage: String?
     @Published private(set) var isCompanionEvolving: Bool
     @Published private(set) var companionRewardState: CompanionRewardState
     @Published private(set) var companionBenefitState: CompanionBenefitState
@@ -295,6 +297,8 @@ final class UsageStore: ObservableObject {
         self.companionState = CompanionGameState()
         self.companionReveal = nil
         self.companionCelebration = nil
+        self.companionMutationReveal = nil
+        self.companionMutationErrorMessage = nil
         self.isCompanionEvolving = false
         self.companionRewardState = CompanionRewardState()
         self.companionBenefitState = CompanionBenefitState()
@@ -781,6 +785,84 @@ final class UsageStore: ObservableObject {
 
     func dismissCompanionCelebration() {
         self.companionCelebration = nil
+    }
+
+    func dismissCompanionMutationReveal() {
+        self.companionMutationReveal = nil
+    }
+
+    func synthesizeCompanionMutation(for speciesID: CompanionSpeciesID) {
+        guard self.companionEnabled,
+              self.companionStateLoaded,
+              self.companionCelebration == nil
+        else { return }
+        let sources = self.companionMutationSources(for: speciesID)
+        guard sources.count >= CompanionMutationRegistry.synthesisSourceCount
+        else {
+            self.companionMutationErrorMessage = AppLocalization.string(
+                "companion.mutation.error.sources")
+            return
+        }
+
+        var state = self.companionState
+        do {
+            let events = try self.companionGameEngine.synthesizeMutation(
+                sourceGenerationIDs: Array(sources.prefix(
+                    CompanionMutationRegistry.synthesisSourceCount))
+                    .map(\.generationID),
+                mutationUnitValue: Double.random(in: 0..<1),
+                in: &state)
+            self.companionState = state
+            self.companionMutationErrorMessage = nil
+            for event in events {
+                if case let .mutationSynthesized(
+                    speciesID,
+                    mutationID,
+                    consumedGenerationIDs,
+                    isNewMutation) = event
+                {
+                    for generationID in consumedGenerationIDs {
+                        self.removeCompanionFromPassiveLineup(generationID)
+                    }
+                    self.companionMutationReveal = CompanionMutationReveal(
+                        speciesID: speciesID,
+                        mutationID: mutationID,
+                        isNewMutation: isNewMutation)
+                }
+            }
+            self.reconcileCompanionRewards()
+            self.saveCompanionState()
+        } catch let error as CompanionMutationError {
+            self.companionMutationErrorMessage = switch error {
+            case .requiresThreeSources, .sourceNotFound(_), .sourceIsActive,
+                    .sourceSpeciesMismatch:
+                AppLocalization.string("companion.mutation.error.sources")
+            case .mutationNotDiscovered:
+                AppLocalization.string("companion.mutation.error.unavailable")
+            }
+        } catch {
+            self.companionMutationErrorMessage = AppLocalization.string(
+                "companion.mutation.error.unavailable")
+        }
+    }
+
+    func equipCompanionMutation(_ mutationID: CompanionMutationID?) {
+        guard self.companionEnabled,
+              self.companionStateLoaded,
+              self.companionState.stage != .egg
+        else { return }
+        var state = self.companionState
+        guard (try? self.companionGameEngine.equipMutation(
+            mutationID,
+            in: &state)) != nil
+        else {
+            self.companionMutationErrorMessage = AppLocalization.string(
+                "companion.mutation.error.unavailable")
+            return
+        }
+        self.companionState = state
+        self.companionMutationErrorMessage = nil
+        self.saveCompanionState()
     }
 
     func purchaseCompanionEgg(_ definitionID: CompanionEggDefinitionID) {
@@ -1351,6 +1433,40 @@ final class UsageStore: ObservableObject {
                     from: showcased.finalRarity)
         }
         return self.companionState.resolvedVariantID
+    }
+
+    var displayedCompanionMutationID: CompanionMutationID? {
+        self.showcasedCompanion?.mutationID
+            ?? self.companionState.activeMutationID
+    }
+
+    var companionMutationRecords: [CompanionMutationRecord] {
+        self.companionState.collection.mutations.sorted {
+            if $0.speciesID != $1.speciesID {
+                return $0.speciesID.rawValue < $1.speciesID.rawValue
+            }
+            return $0.mutationID.rawValue < $1.mutationID.rawValue
+        }
+    }
+
+    var companionMutationReadySpecies: [CompanionSpeciesID] {
+        CompanionSpeciesID.allCases.filter {
+            self.companionMutationSources(for: $0).count
+                >= CompanionMutationRegistry.synthesisSourceCount
+        }
+    }
+
+    func companionMutationSources(
+        for speciesID: CompanionSpeciesID) -> [CompletedCompanionGeneration]
+    {
+        self.companionState.collection.archivedGenerations
+            .filter { $0.speciesID == speciesID }
+            .sorted {
+                if $0.generationNumber != $1.generationNumber {
+                    return $0.generationNumber < $1.generationNumber
+                }
+                return $0.completedAt < $1.completedAt
+            }
     }
 
     var displayedCompanionNickname: String? {

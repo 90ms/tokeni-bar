@@ -43,6 +43,7 @@ struct CompanionCard: View {
                     stage: self.store.displayedCompanionStage,
                     rarity: self.store.displayedCompanionRarity,
                     behavior: self.store.companionBehavior,
+                    mutationID: self.store.displayedCompanionMutationID,
                     cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                     dimension: self.compact ? 50 : 62,
                     animationsEnabled: self.store.companionAnimationsEnabled,
