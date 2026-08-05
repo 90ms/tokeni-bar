@@ -431,6 +431,7 @@
 "companion.animation.variantChanged" = "%@ 모습 발견!";
 "companion.mutation.title" = "변이 연구소";
 "companion.mutation.description" = "같은 종의 중복 펫 3마리를 합성해 시각적 변이를 발견하세요. 변이는 성장·확률·능력치에 영향을 주지 않습니다.";
+"companion.mutation.pity" = "합성 3회마다 해당 종의 미발견 변이를 하나 보장합니다.";
 "companion.mutation.progress" = "변이 도감 %d/%d";
 "companion.mutation.syntheses" = "합성 %d회";
 "companion.mutation.duplicates" = "중복 펫 %d마리";

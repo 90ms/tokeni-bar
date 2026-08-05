@@ -431,6 +431,7 @@
 "companion.animation.variantChanged" = "Discovered the %@ look!";
 "companion.mutation.title" = "Mutation Lab";
 "companion.mutation.description" = "Combine three duplicate pets of the same species to discover a visual mutation. Mutations never affect growth, odds, or stats.";
+"companion.mutation.pity" = "Every third synthesis guarantees one undiscovered mutation for that species.";
 "companion.mutation.progress" = "Mutation collection %d/%d";
 "companion.mutation.syntheses" = "%d syntheses";
 "companion.mutation.duplicates" = "%d duplicate pets";

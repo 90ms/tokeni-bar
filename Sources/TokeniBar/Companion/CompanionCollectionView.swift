@@ -1779,6 +1779,10 @@ struct CompanionCollectionView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                Text(AppLocalization.string("companion.mutation.pity"))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+
                 HStack {
                     Label(
                         AppLocalization.format(
