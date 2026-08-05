@@ -488,9 +488,6 @@ public struct CompanionGameEngine: Sendable {
         let mutationGenerationNumber = Self.saturatedAdd(
             max(state.generationNumber, highestGenerationNumber),
             1)
-        state.generationNumber = max(
-            state.generationNumber,
-            mutationGenerationNumber)
         let createdGeneration = CompletedCompanionGeneration(
             generationID: UUID(),
             generationNumber: mutationGenerationNumber,
