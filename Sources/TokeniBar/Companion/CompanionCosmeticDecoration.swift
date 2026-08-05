@@ -13,6 +13,7 @@ struct CompanionCosmeticDecoration: View {
     var animationsEnabled = true
     var motionIntensity = 1.0
     var lightBackground = false
+    var isBackground = false
     private let canvasDimension: CGFloat = 136
 
     var body: some View {
@@ -27,7 +28,9 @@ struct CompanionCosmeticDecoration: View {
                     : 0)
         }
         .frame(width: self.canvasDimension, height: self.canvasDimension)
-        .scaleEffect(self.dimension / self.canvasDimension)
+        .scaleEffect(
+            self.dimension / self.canvasDimension
+                * (self.isBackground ? 1.10 : 1))
         .frame(width: self.dimension, height: self.dimension)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
@@ -67,24 +70,7 @@ struct CompanionCosmeticDecoration: View {
                     }
                 }
             case .nightRing:
-                Circle()
-                    .stroke(
-                        AngularGradient(
-                            colors: [.indigo, .cyan, .purple, .indigo],
-                            center: .center),
-                        style: StrokeStyle(
-                            lineWidth: max(self.canvasDimension * 0.045, 2),
-                            lineCap: .round,
-                            dash: [
-                                self.canvasDimension * 0.08,
-                                self.canvasDimension * 0.04,
-                            ]))
-                    .frame(
-                        width: self.canvasDimension * 0.92,
-                        height: self.canvasDimension * 0.92)
-                    .shadow(color: .indigo.opacity(0.5), radius: 3)
-                    .rotationEffect(.degrees(time * 24))
-                    .scaleEffect(1 + slowWave * 0.018)
+                EmptyView()
             case .pixelHearts:
                 ZStack {
                     ForEach(0..<6, id: \.self) { index in
@@ -215,10 +201,12 @@ struct CompanionCosmeticDecoration: View {
                                 Image(systemName: "tree.fill")
                             }
                         }
-                        .font(.system(size: self.canvasDimension * 0.22))
+                        .font(.system(size: self.canvasDimension * 0.18))
                         .foregroundStyle(.green.opacity(0.55))
-                        .offset(y: self.canvasDimension * 0.28)
+                        .offset(y: self.canvasDimension * 0.22)
                     }
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: self.canvasDimension * 0.16))
                     .padding(self.canvasDimension * 0.03)
             case .azurePalette:
                 Circle()

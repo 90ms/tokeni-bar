@@ -152,6 +152,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         processedEggTransactionIDs: [UUID] = [],
         updatedAt: Date = .now)
     {
+        let removedCosmetics: Set<CompanionCosmeticID> = [.nightRing]
         self.schemaVersion = schemaVersion
         self.starShards = max(starShards, 0)
         self.attendanceRecords = Array(attendanceRecords.suffix(400))
@@ -164,8 +165,8 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         self.rewardedGrowthDateKeys = Array(rewardedGrowthDateKeys.suffix(400))
         self.latestRewardedAppVersion = latestRewardedAppVersion
         self.latestObservedDateKey = latestObservedDateKey
-        self.unlockedCosmeticIDs = unlockedCosmeticIDs
-        self.selectedCosmeticIDs = selectedCosmeticIDs
+        self.unlockedCosmeticIDs = unlockedCosmeticIDs.subtracting(removedCosmetics)
+        self.selectedCosmeticIDs = selectedCosmeticIDs.subtracting(removedCosmetics)
         self.energyBoosterInventory = energyBoosterInventory.mapValues {
             max($0, 0)
         }

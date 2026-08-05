@@ -1248,7 +1248,8 @@ struct CompanionCollectionView: View {
                     dimension: 54,
                     animationsEnabled: self.store.companionAnimationsEnabled,
                     motionIntensity: self.store
-                        .companionAnimationIntensity.motionScale)
+                        .companionAnimationIntensity.motionScale,
+                    isBackground: cosmetic.id.slot == .background)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
 

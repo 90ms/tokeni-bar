@@ -77,7 +77,6 @@ public struct CompanionRewardEngine: Sendable {
             CompanionCosmetic(id: .fireflyAura, cost: 130),
             CompanionCosmetic(id: .terminalNight, cost: 160),
             CompanionCosmetic(id: .orbitAura, cost: 180),
-            CompanionCosmetic(id: .nightRing, cost: 200),
             CompanionCosmetic(id: .cloudGarden, cost: 220),
             CompanionCosmetic(id: .sunsetGrid, cost: 240),
             CompanionCosmetic(id: .pixelForest, cost: 260),

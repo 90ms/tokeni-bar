@@ -208,7 +208,7 @@ struct CompanionRewardEngineTests {
             try engine.purchase(cosmeticID: .sparkleAura, in: &state)
         }
         #expect(throws: CompanionRewardError.cosmeticNotOwned) {
-            try engine.select(cosmeticID: .nightRing, in: &state)
+            try engine.select(cosmeticID: .sparkleAura, in: &state)
         }
         #expect(state.starShards == 59)
         #expect(state.unlockedCosmeticIDs.isEmpty)
@@ -217,6 +217,21 @@ struct CompanionRewardEngineTests {
         #expect(state.rewardedVariantIDs.isEmpty)
         #expect(state.rewardedGrowthDateKeys.isEmpty)
         #expect(state.latestRewardedAppVersion == nil)
+    }
+
+    @Test("Removed cosmetics are absent and legacy night rings are discarded")
+    func removedNightRing() throws {
+        let engine = CompanionRewardEngine()
+        #expect(!engine.cosmetics.contains { $0.id == .nightRing })
+
+        var state = CompanionRewardState(
+            unlockedCosmeticIDs: [.nightRing],
+            selectedCosmeticIDs: [.nightRing])
+        #expect(state.unlockedCosmeticIDs.isEmpty)
+        #expect(state.selectedCosmeticIDs.isEmpty)
+        #expect(throws: CompanionRewardError.unknownCosmetic) {
+            try engine.purchase(cosmeticID: .nightRing, in: &state)
+        }
     }
 
     @Test("Bond milestones grant each booster and cosmetic once")

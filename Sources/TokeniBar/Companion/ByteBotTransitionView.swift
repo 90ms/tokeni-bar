@@ -36,7 +36,8 @@ struct ByteBotTransitionView: View {
                     cosmeticID: cosmeticID,
                     dimension: self.dimension,
                     animationsEnabled: self.cosmeticMotionEnabled,
-                    motionIntensity: self.animationIntensity)
+                    motionIntensity: self.animationIntensity,
+                    isBackground: true)
             }
 
             if let cosmeticID = self.cosmeticID(in: .aura) {
