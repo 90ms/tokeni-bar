@@ -1872,8 +1872,7 @@ struct CompanionCollectionView: View {
                         Text(self.mutationName(mutationID))
                             .font(.caption2)
                             .lineLimit(1)
-                            .foregroundStyle(
-                                discovered ? Color.primary : Color.tertiary)
+                            .foregroundStyle(discovered ? .primary : .tertiary)
                     }
                 }
             }
