@@ -234,6 +234,9 @@ struct CompanionCollectionView: View {
                     Text(AppLocalization.string("companion.eggs.description"))
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                    Text(AppLocalization.string("companion.eggs.hatchingCost"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 Spacer()
                 Text(AppLocalization.format(
@@ -310,6 +313,9 @@ struct CompanionCollectionView: View {
                                     .font(.caption)
                                     .foregroundStyle(
                                         unlocked ? Color.secondary : Color.orange)
+                                Text(self.eggOutcomeText(definition))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(Color.accentColor)
                             }
                             Spacer()
                             Button(AppLocalization.format(
@@ -344,6 +350,23 @@ struct CompanionCollectionView: View {
         case .starterOnly, .milestoneOnly:
             AppLocalization.string("companion.eggs.locked")
         }
+    }
+
+    private func eggOutcomeText(
+        _ definition: CompanionEggDefinition) -> String
+    {
+        if definition.guaranteesPrismatic {
+            return AppLocalization.string(
+                "companion.eggs.outcome.prismatic")
+        }
+
+        let key = definition.prefersUndiscoveredSpecies
+            ? "companion.eggs.outcome.discovery"
+            : "companion.eggs.outcome.mystery"
+        return AppLocalization.format(
+            key,
+            self.store.companionPrismaticChancePercent,
+            self.store.companionPrismaticPityHatches)
     }
 
     private var homeDetails: some View {

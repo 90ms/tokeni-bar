@@ -1486,6 +1486,10 @@ final class UsageStore: ObservableObject {
         self.companionGameEngine.rules.prismaticPityHatches
     }
 
+    var companionPrismaticChancePercent: Int {
+        Int((self.companionGameEngine.rules.prismaticChance * 100).rounded())
+    }
+
     var canPerformCompanionAction: Bool {
         self.companionStateLoaded
             && !self.isCompanionEvolving

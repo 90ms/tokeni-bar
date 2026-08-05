@@ -205,6 +205,7 @@
 "companion.eggs.open" = "알 보관함";
 "companion.eggs.title" = "알 보관함과 상점";
 "companion.eggs.description" = "별조각으로 알을 구하거나 도감 보상으로 특별한 알을 받고, 부화한 펫을 자유롭게 골라 키울 수 있습니다.";
+"companion.eggs.hatchingCost" = "알을 부화할 때는 별조각이 추가로 소모되지 않습니다.";
 "companion.eggs.inventory" = "보유한 알";
 "companion.eggs.empty" = "보유한 알이 없습니다.";
 "companion.eggs.shop" = "알 상점";
@@ -214,6 +215,9 @@
 "companion.eggs.locked" = "레벨 또는 도감 조건이 더 필요합니다.";
 "companion.eggs.requirement.level" = "최고 펫 레벨 Lv.%d 달성 시 해금";
 "companion.eggs.requirement.species" = "펫 종류 %d종 발견 시 해금";
+"companion.eggs.outcome.mystery" = "종·변종 무작위 · 프리즘 %d%% · 최대 %d회 안에 보장";
+"companion.eggs.outcome.discovery" = "미발견 종 1종 보장 · 프리즘 %d%% · 최대 %d회 안에 보장";
+"companion.eggs.outcome.prismatic" = "프리즘 변종 보장";
 "companion.egg.starter" = "스타터 알";
 "companion.egg.homecoming" = "귀환 선물 알";
 "companion.egg.mystery" = "수수께끼 알";

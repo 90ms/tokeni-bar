@@ -205,6 +205,7 @@
 "companion.eggs.open" = "Egg Vault";
 "companion.eggs.title" = "Egg Vault and Shop";
 "companion.eggs.description" = "Buy eggs with Star Shards or earn special eggs from collection milestones, then choose which hatched pet to grow.";
+"companion.eggs.hatchingCost" = "Hatching an egg does not spend additional Star Shards.";
 "companion.eggs.inventory" = "Owned Eggs";
 "companion.eggs.empty" = "You do not own any eggs.";
 "companion.eggs.shop" = "Egg Shop";
@@ -214,6 +215,9 @@
 "companion.eggs.locked" = "Reach the required level or collection milestone.";
 "companion.eggs.requirement.level" = "Unlock at highest pet level %d";
 "companion.eggs.requirement.species" = "Unlock after discovering %d pet species";
+"companion.eggs.outcome.mystery" = "Random species and variant · %d%% prismatic · guaranteed within %d hatches";
+"companion.eggs.outcome.discovery" = "Guarantees one undiscovered species · %d%% prismatic · guaranteed within %d hatches";
+"companion.eggs.outcome.prismatic" = "Guarantees a prismatic variant";
 "companion.egg.starter" = "Starter Egg";
 "companion.egg.homecoming" = "Homecoming Egg";
 "companion.egg.mystery" = "Mystery Egg";

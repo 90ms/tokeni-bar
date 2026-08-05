@@ -24,6 +24,21 @@ struct CompanionEggTests {
             discoveredSpeciesCount: 3))
     }
 
+    @Test("Mystery and discovery eggs have distinct outcomes")
+    func distinctOutcomes() throws {
+        let mystery = try #require(
+            CompanionEggRegistry.definition(for: .mystery))
+        let discovery = try #require(
+            CompanionEggRegistry.definition(for: .discovery))
+
+        #expect(mystery.price == 90)
+        #expect(discovery.price == 180)
+        #expect(!mystery.prefersUndiscoveredSpecies)
+        #expect(discovery.prefersUndiscoveredSpecies)
+        #expect(!mystery.guaranteesPrismatic)
+        #expect(!discovery.guaranteesPrismatic)
+    }
+
     @Test("Egg seeds produce stable unit values")
     func stableSeed() {
         let first = CompanionEggRegistry.unitValue(seed: 42, salt: 1)
