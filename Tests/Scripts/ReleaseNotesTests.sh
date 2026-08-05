@@ -11,13 +11,33 @@ renderer="$project_dir/Scripts/render_release_notes.sh"
 output="$temporary_dir/release-notes.md"
 
 "$validator" all
-"$renderer" 99.99.99 "$output"
 
-grep -Fxq '# Tokeni Bar 99.99.99' "$output"
+render_fixture="$temporary_dir/render-fixture"
+mkdir -p "$render_fixture/Scripts" "$render_fixture/.changes"
+cp "$validator" "$render_fixture/Scripts/validate_release_notes.sh"
+cp "$renderer" "$render_fixture/Scripts/render_release_notes.sh"
+git -C "$render_fixture" init -q
+git -C "$render_fixture" config user.name "Release Notes Test"
+git -C "$render_fixture" config user.email "release-notes-test@example.invalid"
+git -C "$render_fixture" add Scripts
+git -C "$render_fixture" commit -qm "Base"
+git -C "$render_fixture" tag v1.0.0
+printf '%s\n' \
+    'category: improvement' \
+    'scope: renderer' \
+    'breaking: false' \
+    'ko: 렌더러 테스트 기록입니다.' \
+    'en: This renderer fixture is valid.' \
+    > "$render_fixture/.changes/20260805-renderer-test.md"
+git -C "$render_fixture" add .changes/20260805-renderer-test.md
+git -C "$render_fixture" commit -qm "Add renderer fixture"
+"$render_fixture/Scripts/render_release_notes.sh" 1.1.0 "$output"
+
+grep -Fxq '# Tokeni Bar 1.1.0' "$output"
 grep -Fxq '## 한국어' "$output"
 grep -Fxq '## English' "$output"
-grep -Fq '릴리스 노트를 일정한 형식으로 자동 생성' "$output"
-grep -Fq 'generated in a consistent Korean and English format' "$output"
+grep -Fq '렌더러 테스트 기록입니다.' "$output"
+grep -Fq 'This renderer fixture is valid.' "$output"
 
 invalid="$temporary_dir/20260804-invalid.md"
 printf '%s\n' \
