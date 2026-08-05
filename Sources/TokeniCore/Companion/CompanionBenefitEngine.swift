@@ -304,7 +304,8 @@ extension CompanionRewardReason {
     var isEligibleForRewardAbsorption: Bool {
         switch self {
         case .speciesDiscovered, .rarityDiscovered, .variantDiscovered,
-             .journeysCompleted, .collectionForms, .collectionVariants:
+             .mutationDiscovered, .journeysCompleted, .collectionForms,
+             .collectionVariants:
             true
         case .dailyAttendance, .weeklyAttendance, .monthlyAttendance,
              .verifiedGrowth, .releaseGift, .benefit:
