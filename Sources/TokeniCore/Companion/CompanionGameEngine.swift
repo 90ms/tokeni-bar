@@ -461,6 +461,8 @@ public struct CompanionGameEngine: Sendable {
         guard let speciesID = sources.first?.speciesID,
               sources.allSatisfy({ $0.speciesID == speciesID })
         else { throw CompanionMutationError.sourceSpeciesMismatch }
+        guard sources.allSatisfy(CompanionMutationRegistry.isEligibleSource)
+        else { throw CompanionMutationError.sourceNotEligible }
 
         let nextSynthesisCount = Self.saturatedAdd(
             state.collection.mutationSynthesisCount,
@@ -479,6 +481,26 @@ public struct CompanionGameEngine: Sendable {
                 ? missing
                 : CompanionMutationRegistry.allIDs,
             unitValue: mutationUnitValue)
+
+        let highestGenerationNumber = state.collection.archivedGenerations
+            .map(\.generationNumber)
+            .max() ?? 0
+        let mutationGenerationNumber = Self.saturatedAdd(
+            max(state.generationNumber, highestGenerationNumber),
+            1)
+        let createdGeneration = CompletedCompanionGeneration(
+            generationID: UUID(),
+            generationNumber: mutationGenerationNumber,
+            speciesID: speciesID,
+            finalRarity: .normal,
+            variantID: .standard,
+            mutationID: mutationID,
+            personalityID: .calm,
+            bondEnergy: 0,
+            growthXP: 0,
+            stage: .hatchling,
+            createdAt: now,
+            completedAt: now)
 
         let sourceIDSet = Set(sourceGenerationIDs)
         state.collection.recentCompletedGenerations.removeAll {
@@ -504,11 +526,13 @@ public struct CompanionGameEngine: Sendable {
                 firstDiscoveredAt: now,
                 lastSynthesizedAt: now))
         }
+        state.collection.recentCompletedGenerations.append(createdGeneration)
         state.updatedAt = now
         return [.mutationSynthesized(
             speciesID: speciesID,
             mutationID: mutationID,
             consumedGenerationIDs: sourceGenerationIDs,
+            createdGeneration: createdGeneration,
             isNewMutation: !discovered.contains(mutationID))]
     }
 

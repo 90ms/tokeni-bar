@@ -1,6 +1,6 @@
 import Foundation
 
-/// A visual-only mutation discovered by combining duplicate companions.
+/// A visual mutation discovered by combining duplicate companions.
 /// Mutations never affect growth, odds, benefits, or resale value.
 public struct CompanionMutationID:
     RawRepresentable, Codable, Hashable, Sendable
@@ -55,6 +55,18 @@ public enum CompanionMutationRegistry {
         mutationID: CompanionMutationID) -> String
     {
         "\(speciesID.rawValue).\(mutationID.rawValue)"
+    }
+
+    /// Only standard, mutation-free companions can be consumed by the lab.
+    /// This keeps prismatic discoveries and previously synthesized companions
+    /// permanently out of the synthesis material pool.
+    public static func isEligibleSource(
+        _ generation: CompletedCompanionGeneration) -> Bool
+    {
+        generation.mutationID == nil
+            && (generation.variantID
+                ?? CompanionVariantRegistry.migrated(
+                    from: generation.finalRarity)) == .standard
     }
 
     public static func roll(

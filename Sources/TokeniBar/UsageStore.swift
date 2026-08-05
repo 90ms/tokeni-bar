@@ -819,6 +819,7 @@ final class UsageStore: ObservableObject {
                     speciesID,
                     mutationID,
                     consumedGenerationIDs,
+                    _,
                     isNewMutation) = event
                 {
                     for generationID in consumedGenerationIDs {
@@ -835,7 +836,7 @@ final class UsageStore: ObservableObject {
         } catch let error as CompanionMutationError {
             self.companionMutationErrorMessage = switch error {
             case .requiresThreeSources, .sourceNotFound(_), .sourceIsActive,
-                    .sourceSpeciesMismatch:
+                    .sourceSpeciesMismatch, .sourceNotEligible:
                 AppLocalization.string("companion.mutation.error.sources")
             case .mutationNotDiscovered:
                 AppLocalization.string("companion.mutation.error.unavailable")
@@ -1436,8 +1437,10 @@ final class UsageStore: ObservableObject {
     }
 
     var displayedCompanionMutationID: CompanionMutationID? {
-        self.showcasedCompanion?.mutationID
-            ?? self.companionState.activeMutationID
+        if let showcased = self.showcasedCompanion {
+            return showcased.mutationID
+        }
+        return self.companionState.activeMutationID
     }
 
     var companionMutationRecords: [CompanionMutationRecord] {
@@ -1460,7 +1463,10 @@ final class UsageStore: ObservableObject {
         for speciesID: CompanionSpeciesID) -> [CompletedCompanionGeneration]
     {
         self.companionState.collection.archivedGenerations
-            .filter { $0.speciesID == speciesID }
+            .filter {
+                $0.speciesID == speciesID
+                    && CompanionMutationRegistry.isEligibleSource($0)
+            }
             .sorted {
                 if $0.generationNumber != $1.generationNumber {
                     return $0.generationNumber < $1.generationNumber

@@ -2,7 +2,7 @@
 
 [한국어](companion-policy.ko.md) | **English**
 
-- Policy version: 2.4.0
+- Policy version: 2.5.0
 - Updated: 2026-08-05
 - Status: implemented
 
@@ -17,8 +17,8 @@ privacy.
 - Unverifiable usage is never estimated.
 - Species, variants, personalities, eggs, and cosmetics create no growth,
   price, reward, or probability multipliers.
-- Mutations are visual only and never affect Growth XP, hatch odds, stats, or
-  resale value.
+- Mutation pets are independent owned generations, but the mutation itself is
+  visual-only and never affects Growth XP, hatch odds, stats, or resale value.
 - Only timed boosters multiply newly verified base XP.
 - Hunger, illness, death, streak loss, and limited-time FOMO are excluded.
 - Pet state never stores provider names, raw token totals, prompts, responses,
@@ -55,9 +55,11 @@ There are no real-money purchases, limited-time offers, or player trading.
 The active pet cannot be sent away. Inactive standard and prismatic pets return
 30 and 60 shards. Level never increases resale value, and discoveries remain.
 
-Exactly three inactive archived pets of the same species can be combined in the
-Mutation Lab. The three source generations are consumed, and the current active
-pet can never be used as a source.
+Exactly three inactive standard, mutation-free archived pets of the same species
+can be combined in the Mutation Lab. Prismatic and existing mutation pets are
+excluded from the material pool. The three source generations are consumed, and
+a new standard mutation pet is added to the archive at hatchling stage and level
+1. The current active pet can never be used as a source.
 
 ## 4. Collection and guarantees
 
@@ -153,10 +155,14 @@ tasks.
 - Moved bond rewards to levels 5, 10, 20, and 25.
 - Added 10 Star Shards every ten levels starting at level 30.
 
-## 11. Version 2.4.0 Mutation Lab
+## 11. Version 2.5.0 Mutation Lab
 
-- Added a Mutation Lab that consumes three inactive same-species duplicates.
+- Added a Mutation Lab that consumes three inactive standard, mutation-free
+  same-species duplicates and protects prismatic/mutation pets.
 - Added 25 visual mutation entries, five for each species, and an equip slot.
+- Made each synthesis create an independent hatchling mutation pet that can be
+  raised, activated, or assigned to a companion lineup slot.
 - Guaranteed an undiscovered mutation every third synthesis and awarded 30 Star
   Shards once per first discovery.
-- Kept mutations separate from growth, odds, stats, and the special-egg milestones.
+- Kept mutation visuals separate from growth, odds, stats, and the special-egg
+  milestones.

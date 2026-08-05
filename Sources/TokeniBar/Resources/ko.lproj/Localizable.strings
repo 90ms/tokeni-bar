@@ -430,11 +430,11 @@
 "companion.animation.rarityUp" = "%@ 모습 발견!";
 "companion.animation.variantChanged" = "%@ 모습 발견!";
 "companion.mutation.title" = "변이 연구소";
-"companion.mutation.description" = "같은 종의 중복 펫 3마리를 합성해 시각적 변이를 발견하세요. 변이는 성장·확률·능력치에 영향을 주지 않습니다.";
+"companion.mutation.description" = "같은 종의 일반·무변이 중복 펫 3마리를 합성해 시각적 변이 펫을 발견하세요. 프리즘과 기존 변이 펫은 재료로 사용되지 않습니다.";
 "companion.mutation.pity" = "합성 3회마다 해당 종의 미발견 변이를 하나 보장합니다.";
 "companion.mutation.progress" = "변이 도감 %d/%d";
 "companion.mutation.syntheses" = "합성 %d회";
-"companion.mutation.duplicates" = "중복 펫 %d마리";
+"companion.mutation.duplicates" = "일반·무변이 중복 펫 %d마리";
 "companion.mutation.synthesize" = "3마리 합성";
 "companion.mutation.needSources" = "중복 3마리 필요";
 "companion.mutation.equip.title" = "현재 펫 변이";
@@ -442,8 +442,9 @@
 "companion.mutation.none" = "변이 없음";
 "companion.mutation.reveal.new" = "새로운 변이 발견!";
 "companion.mutation.reveal.repeat" = "변이 공명이 강화됐어요!";
+"companion.mutation.reveal.added" = "변이 펫이 보관함에 추가됐습니다. 동료로 데려올 수 있어요.";
 "companion.mutation.continue" = "계속";
-"companion.mutation.error.sources" = "같은 종의 보관 펫 3마리가 필요합니다.";
+"companion.mutation.error.sources" = "같은 종의 일반·무변이 보관 펫 3마리가 필요합니다. 프리즘과 변이 펫은 안전하게 보존됩니다.";
 "companion.mutation.error.unavailable" = "변이 합성을 완료하지 못했습니다. 잠시 후 다시 시도하세요.";
 "companion.mutation.neon.name" = "네온";
 "companion.mutation.neon.description" = "전기빛 윤곽이 펫을 감쌉니다.";

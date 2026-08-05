@@ -968,6 +968,7 @@ public enum CompanionGameEvent: Hashable, Sendable {
         speciesID: CompanionSpeciesID,
         mutationID: CompanionMutationID,
         consumedGenerationIDs: [UUID],
+        createdGeneration: CompletedCompanionGeneration,
         isNewMutation: Bool)
 }
 
@@ -986,6 +987,7 @@ public enum CompanionMutationError: Error, Equatable, Sendable {
     case requiresThreeSources
     case sourceNotFound(UUID)
     case sourceSpeciesMismatch
+    case sourceNotEligible
     case sourceIsActive
     case mutationNotDiscovered
 }

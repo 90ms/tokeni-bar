@@ -70,6 +70,12 @@ struct CompanionCard: View {
                             self.metadataBadge(AppLocalization.string(
                                 "companion.variant.\(variantID.rawValue)"))
                         }
+                        if let mutationID =
+                            self.store.displayedCompanionMutationID
+                        {
+                            self.metadataBadge(AppLocalization.string(
+                                "companion.mutation.\(mutationID.rawValue).name"))
+                        }
                     }
 
                     if !self.compact {
