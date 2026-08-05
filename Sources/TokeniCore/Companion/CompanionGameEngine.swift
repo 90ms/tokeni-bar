@@ -482,6 +482,29 @@ public struct CompanionGameEngine: Sendable {
                 : CompanionMutationRegistry.allIDs,
             unitValue: mutationUnitValue)
 
+        let highestGenerationNumber = state.collection.archivedGenerations
+            .map(\.generationNumber)
+            .max() ?? 0
+        let mutationGenerationNumber = Self.saturatedAdd(
+            max(state.generationNumber, highestGenerationNumber),
+            1)
+        state.generationNumber = max(
+            state.generationNumber,
+            mutationGenerationNumber)
+        let createdGeneration = CompletedCompanionGeneration(
+            generationID: UUID(),
+            generationNumber: mutationGenerationNumber,
+            speciesID: speciesID,
+            finalRarity: .normal,
+            variantID: .standard,
+            mutationID: mutationID,
+            personalityID: .calm,
+            bondEnergy: 0,
+            growthXP: 0,
+            stage: .hatchling,
+            createdAt: now,
+            completedAt: now)
+
         let sourceIDSet = Set(sourceGenerationIDs)
         state.collection.recentCompletedGenerations.removeAll {
             sourceIDSet.contains($0.generationID)
@@ -506,11 +529,13 @@ public struct CompanionGameEngine: Sendable {
                 firstDiscoveredAt: now,
                 lastSynthesizedAt: now))
         }
+        state.collection.recentCompletedGenerations.append(createdGeneration)
         state.updatedAt = now
         return [.mutationSynthesized(
             speciesID: speciesID,
             mutationID: mutationID,
             consumedGenerationIDs: sourceGenerationIDs,
+            createdGeneration: createdGeneration,
             isNewMutation: !discovered.contains(mutationID))]
     }
 

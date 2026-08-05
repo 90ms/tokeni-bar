@@ -53,6 +53,10 @@ struct CompanionMutationRevealView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 320)
 
+            Text(AppLocalization.string("companion.mutation.reveal.added"))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+
             Button(AppLocalization.string("companion.mutation.continue")) {
                 self.dismiss()
             }

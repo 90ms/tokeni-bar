@@ -968,6 +968,7 @@ public enum CompanionGameEvent: Hashable, Sendable {
         speciesID: CompanionSpeciesID,
         mutationID: CompanionMutationID,
         consumedGenerationIDs: [UUID],
+        createdGeneration: CompletedCompanionGeneration,
         isNewMutation: Bool)
 }
 

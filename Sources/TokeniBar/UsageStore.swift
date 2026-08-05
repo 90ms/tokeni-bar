@@ -819,6 +819,7 @@ final class UsageStore: ObservableObject {
                     speciesID,
                     mutationID,
                     consumedGenerationIDs,
+                    _,
                     isNewMutation) = event
                 {
                     for generationID in consumedGenerationIDs {
@@ -1436,8 +1437,10 @@ final class UsageStore: ObservableObject {
     }
 
     var displayedCompanionMutationID: CompanionMutationID? {
-        self.showcasedCompanion?.mutationID
-            ?? self.companionState.activeMutationID
+        if let showcased = self.showcasedCompanion {
+            return showcased.mutationID
+        }
+        return self.companionState.activeMutationID
     }
 
     var companionMutationRecords: [CompanionMutationRecord] {

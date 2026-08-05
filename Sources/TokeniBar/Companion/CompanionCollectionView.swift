@@ -980,13 +980,23 @@ struct CompanionCollectionView: View {
                    let definition = CompanionBenefitRegistry.definition(
                        for: generation.speciesID)
                 {
-                    ByteBotSpriteView(
-                        speciesID: generation.speciesID,
-                        stage: .adult,
-                        rarity: generation.finalRarity,
-                        behavior: .idle,
-                        dimension: 38,
-                        animationsEnabled: false)
+                    ZStack {
+                        if let mutationID = generation.mutationID {
+                            CompanionMutationDecoration(
+                                mutationID: mutationID,
+                                dimension: 38,
+                                animationsEnabled: false,
+                                motionIntensity: 0)
+                        }
+                        ByteBotSpriteView(
+                            speciesID: generation.speciesID,
+                            stage: generation.stage,
+                            rarity: generation.finalRarity,
+                            behavior: .idle,
+                            dimension: 38,
+                            animationsEnabled: false)
+                    }
+                    .frame(width: 48, height: 48)
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 5) {
                             Text(CompanionBenefitPresentation.speciesName(
@@ -1004,6 +1014,12 @@ struct CompanionCollectionView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
+                        if let mutationID = generation.mutationID {
+                            Text(AppLocalization.string(
+                                "companion.mutation.\(mutationID.rawValue).name"))
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
                     }
                 } else {
                     VStack(alignment: .leading, spacing: 2) {
@@ -2307,13 +2323,23 @@ struct CompanionCollectionView: View {
                 from: generation.finalRarity)
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                ByteBotSpriteView(
-                    speciesID: generation.speciesID,
-                    stage: generation.stage,
-                    rarity: generation.finalRarity,
-                    behavior: .idle,
-                    dimension: 52,
-                    animationsEnabled: false)
+                ZStack {
+                    if let mutationID = generation.mutationID {
+                        CompanionMutationDecoration(
+                            mutationID: mutationID,
+                            dimension: 52,
+                            animationsEnabled: false,
+                            motionIntensity: 0)
+                    }
+                    ByteBotSpriteView(
+                        speciesID: generation.speciesID,
+                        stage: generation.stage,
+                        rarity: generation.finalRarity,
+                        behavior: .idle,
+                        dimension: 52,
+                        animationsEnabled: false)
+                }
+                .frame(width: 64, height: 64)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(generation.nickname ?? AppLocalization.string(
                         "companion.species.\(generation.speciesID.rawValue).name"))
@@ -2321,6 +2347,12 @@ struct CompanionCollectionView: View {
                         .lineLimit(1)
                     HStack(spacing: 5) {
                         CompanionVariantBadge(variantID: variantID)
+                        if let mutationID = generation.mutationID {
+                            Text(AppLocalization.string(
+                                "companion.mutation.\(mutationID.rawValue).name"))
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
                         if isShowcased {
                             Text(AppLocalization.string(
                                 "companion.archive.status.together"))
@@ -2418,13 +2450,23 @@ struct CompanionCollectionView: View {
 
         return VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 18) {
-                ByteBotSpriteView(
-                    speciesID: generation.speciesID,
-                    stage: generation.stage,
-                    rarity: generation.finalRarity,
-                    behavior: .idle,
-                    dimension: 112,
-                    animationsEnabled: false)
+                ZStack {
+                    if let mutationID = generation.mutationID {
+                        CompanionMutationDecoration(
+                            mutationID: mutationID,
+                            dimension: 112,
+                            animationsEnabled: false,
+                            motionIntensity: 0)
+                    }
+                    ByteBotSpriteView(
+                        speciesID: generation.speciesID,
+                        stage: generation.stage,
+                        rarity: generation.finalRarity,
+                        behavior: .idle,
+                        dimension: 112,
+                        animationsEnabled: false)
+                }
+                .frame(width: 136, height: 136)
 
                 VStack(alignment: .leading, spacing: 7) {
                     Text(generation.nickname ?? AppLocalization.string(
@@ -2433,6 +2475,14 @@ struct CompanionCollectionView: View {
                             + ".name"))
                         .font(.title2.weight(.semibold))
                     CompanionVariantBadge(variantID: variantID)
+                    if let mutationID = generation.mutationID {
+                        Label(
+                            AppLocalization.string(
+                                "companion.mutation.\(mutationID.rawValue).name"),
+                            systemImage: "wand.and.stars")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.accentColor)
+                    }
                     if let personalityID = generation.personalityID {
                         Label(
                             AppLocalization.string(

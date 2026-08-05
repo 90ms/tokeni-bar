@@ -442,6 +442,7 @@
 "companion.mutation.none" = "No mutation";
 "companion.mutation.reveal.new" = "New mutation discovered!";
 "companion.mutation.reveal.repeat" = "Mutation resonance strengthened!";
+"companion.mutation.reveal.added" = "The mutation pet was added to your archive and can join your lineup.";
 "companion.mutation.continue" = "Continue";
 "companion.mutation.error.sources" = "Three standard, mutation-free archived pets of the same species are required. Prismatic and mutation pets are protected.";
 "companion.mutation.error.unavailable" = "The mutation synthesis could not be completed. Try again shortly.";

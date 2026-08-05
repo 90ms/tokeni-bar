@@ -404,7 +404,15 @@ struct CompanionGameEngineTests {
             at: now,
             in: &state)
 
-        #expect(state.collection.archivedGenerations.isEmpty)
+        let mutationPet = try #require(
+            state.collection.archivedGenerations.first(where: {
+                $0.mutationID == .neon
+            }))
+        #expect(state.collection.archivedGenerations.count == 1)
+        #expect(mutationPet.speciesID == .bytebot)
+        #expect(mutationPet.finalRarity == .normal)
+        #expect(mutationPet.variantID == .standard)
+        #expect(mutationPet.stage == .hatchling)
         #expect(state.collection.mutationSynthesisCount == 1)
         #expect(state.collection.mutations.map(\.mutationID) == [.neon])
         #expect(events.contains {
@@ -412,6 +420,7 @@ struct CompanionGameEngineTests {
                 speciesID: .bytebot,
                 mutationID: .neon,
                 consumedGenerationIDs: _,
+                createdGeneration: _,
                 isNewMutation: true) = $0
             {
                 return true
@@ -428,7 +437,17 @@ struct CompanionGameEngineTests {
             CompanionGameState.self,
             from: data)
         #expect(decoded.collection.mutations == state.collection.mutations)
+        #expect(decoded.collection.archivedGenerations == state.collection.archivedGenerations)
         #expect(decoded.activeMutationID == .neon)
+
+        try engine.activateArchivedGeneration(
+            mutationPet.generationID,
+            at: now,
+            in: &state)
+        #expect(state.generationID == mutationPet.generationID)
+        #expect(state.activeMutationID == .neon)
+        #expect(state.stage == .hatchling)
+        #expect(state.isValid())
     }
 
     @Test("Mutation synthesis protects prismatic and mutated companions")
