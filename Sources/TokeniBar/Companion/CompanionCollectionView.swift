@@ -1822,7 +1822,6 @@ struct CompanionCollectionView: View {
 
     private func mutationSpeciesCard(
         _ speciesID: CompanionSpeciesID) -> some View
-        -> some View
     {
         let records = self.store.companionState.collection.mutations.filter {
             $0.speciesID == speciesID
