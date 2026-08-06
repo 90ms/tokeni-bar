@@ -3,7 +3,7 @@
 [한국어](companion-policy.ko.md) | **English**
 
 - Policy version: 2.5.0
-- Updated: 2026-08-05
+- Updated: 2026-08-06
 - Status: implemented
 
 This document defines the invariants for unbounded levels, evolution, the egg
@@ -164,7 +164,7 @@ tasks.
   same-species duplicates and protects prismatic/mutation pets.
 - Added 25 visual mutation entries, five for each species, and an equip slot.
 - Made each synthesis create an independent hatchling mutation pet that can be
-  raised, activated, or assigned to a companion lineup slot.
+  raised, activated, showcased, or assigned to a passive slot.
 - Guaranteed an undiscovered mutation every third synthesis and awarded 30 Star
   Shards once per first discovery.
 - Kept mutation visuals separate from growth, odds, stats, and the special-egg

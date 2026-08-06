@@ -81,6 +81,14 @@ inactive standard pet to a new home grants 30 shards; a prismatic pet grants 60.
 Value does not rise with level, preventing XP farming from becoming a currency
 loop. Collection discoveries remain after an egg or pet is sold.
 
+## Pet manager views
+
+The pet manager keeps **Collection** and **Owned** in one screen. Collection records
+discovered species, variants, lifecycle forms, and mutations; Owned shows each
+hatched pet's level, name, personality, memories, switching, showcasing, and resale
+actions. In Owned, choose a species from **View by pet** to show only that species,
+along with the displayed count and an empty-result explanation when applicable.
+
 ## Five species and variants
 
 ByteBot, CacheCat, StackFox, PromptPup, and NullSlime have equal base odds. If
@@ -102,8 +110,8 @@ Only three inactive standard, mutation-free archived pets of the same species
 can be combined. Prismatic pets and existing mutation pets are protected from
 the material pool. The three source pets are consumed, and the result creates a
 separate `standard + mutation` pet at hatchling stage and level 1 in the
-archive. It can be raised, activated as the current pet, or assigned to a
-companion lineup slot.
+archive. It can be raised, activated as the current pet, showcased, or assigned to
+a passive slot.
 
 Each species has five mutations—Neon, Shadow, Crystal, Glitch, and Aurora—and
 every third synthesis guarantees an undiscovered mutation for the selected

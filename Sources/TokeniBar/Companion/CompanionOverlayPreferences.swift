@@ -20,6 +20,7 @@ enum CompanionOverlaySize: String, CaseIterable, Identifiable {
     }
 
     var panelDimension: CGFloat {
-        self.spriteDimension + 16
+        CompanionMutationDecoration.displayDimension(
+            for: self.spriteDimension) + 16
     }
 }

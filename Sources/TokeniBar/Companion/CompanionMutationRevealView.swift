@@ -36,7 +36,9 @@ struct CompanionMutationRevealView: View {
                     dimension: 150,
                     animationsEnabled: self.animationsEnabled)
             }
-            .frame(width: 190, height: 190)
+            .frame(
+                width: CompanionMutationDecoration.displayDimension(for: 150),
+                height: CompanionMutationDecoration.displayDimension(for: 150))
 
             Text(AppLocalization.string(
                 "companion.species.\(self.reveal.speciesID.rawValue).name"))

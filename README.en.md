@@ -46,7 +46,7 @@ brew install --formula tokeni-bar
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
 | Tokeni pets | Unbounded levels, evolution appearances, owned-pet switching, names, personalities, memories, behavior, and an optional desktop overlay |
-| Eggs, collection, and rewards | Starter egg, Star Shard egg shop, 35 collection entries (10 variants + 25 mutations), special eggs, level rewards, boosters, and cosmetics |
+| Pet manager, eggs, and rewards | Pet collection and owned roster, species filters for owned pets, Starter Egg and Star Shard shop, 35 collection entries (10 variants + 25 mutations), special eggs, level rewards, boosters, and cosmetics |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -102,7 +102,19 @@ owned-pet roster; select one pet at a time to receive Growth XP and switch at an
 time. Inactive pets can be sent to a new home for Star Shards. Their level does
 not increase resale value, and collection discoveries remain recorded.
 
-### 3. Discover five species and their variants
+### 3. Manage the collection and owned pets
+
+The pet manager keeps **Collection** and **Owned** in one screen. Collection records
+discovered species, variants, lifecycle forms, and mutations; Owned lists each
+hatched pet with its level, name, personality, memories, switching, showcasing, and
+resale actions. In the Owned view, choose a species from **View by pet** to show
+only that species and see the displayed count or an empty-result explanation.
+
+Mutation auras and background effects use a larger display area than the sprite, so
+they remain visible in menu cards, owned-pet cards, detail views, and the on-screen
+overlay.
+
+### 4. Discover five species and their variants
 
 ByteBot, CacheCat, StackFox, PromptPup, and NullSlime have equal base odds. While
 any species is still missing, the next regular hatch after five duplicates is
@@ -126,7 +138,7 @@ never affect growth, odds, stats, or resale value. The full collection contains
 35 entries: ten variants and 25 mutations. A first mutation discovery grants
 30 Star Shards once.
 
-### 4. Earn rewards from levels and activity
+### 5. Earn rewards from levels and activity
 
 | Pet level | First-time reward |
 |---:|---|
