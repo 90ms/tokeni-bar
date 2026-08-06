@@ -66,10 +66,21 @@ struct HomebrewUpdateServiceTests {
             executable: "/opt/homebrew/bin/tokeni-bar",
             arguments: ["--install-app"],
             timeout: 30))
-        #expect(HomebrewUpdateService.restartCommand(
-            homeDirectory: "/Users/tokeni").arguments == [
-                "-n", "/Users/tokeni/Applications/Tokeni Bar.app",
-            ])
+        #expect(HomebrewUpdateService.applicationPathCommand(brew: brew) == ProcessCommand(
+            executable: "/opt/homebrew/bin/tokeni-bar",
+            arguments: ["--print-app-path"],
+            timeout: 30))
+
+        let applicationPath = "/opt/homebrew/Cellar/tokeni-bar/0.20.3/libexec/Tokeni Bar.app"
+        let restart = HomebrewUpdateService.restartCommand(
+            applicationPath: applicationPath,
+            processIdentifier: 42)
+        #expect(restart.executable == "/bin/sh")
+        #expect(Array(restart.arguments.dropFirst(2)) == [
+            "tokeni-bar-restart", "42", applicationPath,
+        ])
+        #expect(restart.arguments[1].contains("kill -0 \"$old_pid\""))
+        #expect(restart.arguments[1].contains("/usr/bin/open -n \"$application_path\""))
     }
 
     @Test
@@ -98,6 +109,21 @@ struct HomebrewUpdateServiceTests {
             ["upgrade", "90ms/tap/tokeni-bar"],
             ["--install-app"],
         ])
+    }
+
+    @Test
+    func readsCanonicalApplicationPathAfterRelinking() async throws {
+        let applicationPath = "/opt/homebrew/Cellar/tokeni-bar/0.20.3/libexec/Tokeni Bar.app"
+        let runner = RecordingProcessRunner(result: CommandResult(
+            exitCode: 0,
+            standardOutput: "\(applicationPath)\n",
+            standardError: ""))
+        let service = HomebrewUpdateService(runner: runner)
+
+        #expect(try await service.applicationPath(brew: "/opt/homebrew/bin/brew") == applicationPath)
+        let commands = await runner.recordedCommands()
+        #expect(commands == [HomebrewUpdateService.applicationPathCommand(
+            brew: "/opt/homebrew/bin/brew")])
     }
 
     @Test
