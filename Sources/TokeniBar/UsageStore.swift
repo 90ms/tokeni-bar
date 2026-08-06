@@ -2266,10 +2266,12 @@ final class UsageStore: ObservableObject {
 
             self.appUpdateInstallationOperation = .relinkApplication
             try await self.homebrewUpdateService.relinkApplication(brew: brew)
+            let applicationPath = try await self.homebrewUpdateService.applicationPath(brew: brew)
 
             self.appUpdateInstallationOperation = .restartApplication
             try await self.homebrewUpdateService.restartApplication(
-                homeDirectory: FileManager.default.homeDirectoryForCurrentUser.path)
+                applicationPath: applicationPath,
+                processIdentifier: ProcessInfo.processInfo.processIdentifier)
             NSApplication.shared.terminate(nil)
         } catch is CancellationError {
             self.appUpdateInstallationMessage = AppLocalization.string(

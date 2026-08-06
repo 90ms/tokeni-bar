@@ -4,6 +4,15 @@ set -euo pipefail
 APP_NAME="Tokeni Bar.app"
 FORMULA_NAME="tokeni-bar"
 
+canonical_app_path() {
+    local app_path="$1"
+    if [[ -d "$app_path" ]]; then
+        (cd "$app_path" && pwd -P)
+    else
+        printf '%s\n' "$app_path"
+    fi
+}
+
 resolve_formula_app() {
     if [[ -n "${TOKENI_APP_PATH:-}" ]]; then
         printf '%s\n' "$TOKENI_APP_PATH"
@@ -15,7 +24,7 @@ resolve_formula_app() {
         if formula_prefix="$(brew --prefix "$FORMULA_NAME" 2>/dev/null)"; then
             local brewed_app="$formula_prefix/libexec/$APP_NAME"
             if [[ -d "$brewed_app" ]]; then
-                printf '%s\n' "$brewed_app"
+                canonical_app_path "$brewed_app"
                 return
             fi
         fi
@@ -33,7 +42,7 @@ resolve_formula_app() {
     done
     local script_dir
     script_dir="$(cd "$(dirname "$script_path")" && pwd -P)"
-    printf '%s\n' "$script_dir/../libexec/$APP_NAME"
+    canonical_app_path "$script_dir/../libexec/$APP_NAME"
 }
 
 APP_PATH="$(resolve_formula_app)"

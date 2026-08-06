@@ -89,11 +89,40 @@ public struct HomebrewUpdateService: Sendable {
             timeout: 30)
     }
 
-    public static func restartCommand(homeDirectory: String) -> ProcessCommand {
+    public static func applicationPathCommand(brew: String) -> ProcessCommand {
         ProcessCommand(
-            executable: "/usr/bin/open",
-            arguments: ["-n", "\(homeDirectory)/Applications/Tokeni Bar.app"],
+            executable: self.launcherPath(brew: brew),
+            arguments: ["--print-app-path"],
             timeout: 30)
+    }
+
+    public static func restartCommand(
+        applicationPath: String,
+        processIdentifier: Int32) -> ProcessCommand
+    {
+        ProcessCommand(
+            executable: "/bin/sh",
+            arguments: [
+                "-c",
+                Self.delayedRestartScript,
+                "tokeni-bar-restart",
+                String(processIdentifier),
+                applicationPath,
+            ],
+            timeout: 30)
+    }
+
+    public static func restartCommand(
+        homeDirectory: String,
+        processIdentifier: Int32 = ProcessInfo.processInfo.processIdentifier
+    ) -> ProcessCommand {
+        let applicationPath = URL(fileURLWithPath: homeDirectory)
+            .appendingPathComponent("Applications", isDirectory: true)
+            .appendingPathComponent("Tokeni Bar.app", isDirectory: true)
+            .path
+        return self.restartCommand(
+            applicationPath: applicationPath,
+            processIdentifier: processIdentifier)
     }
 
     public static func parseFormulaInfo(_ value: String) throws -> HomebrewFormulaInfo {
@@ -157,11 +186,56 @@ public struct HomebrewUpdateService: Sendable {
             operation: .relinkApplication)
     }
 
-    public func restartApplication(homeDirectory: String) async throws {
+    public func applicationPath(brew: String) async throws -> String {
+        let result = try await self.runner.run(Self.applicationPathCommand(brew: brew))
+        guard result.succeeded else {
+            throw HomebrewUpdateError.commandFailed(
+                operation: .relinkApplication,
+                message: Self.failureMessage(result))
+        }
+        let path = result.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else {
+            throw HomebrewUpdateError.invalidResponse
+        }
+        return path
+    }
+
+    public func restartApplication(
+        applicationPath: String,
+        processIdentifier: Int32 = ProcessInfo.processInfo.processIdentifier
+    ) async throws {
         try await self.run(
-            Self.restartCommand(homeDirectory: homeDirectory),
+            Self.restartCommand(
+                applicationPath: applicationPath,
+                processIdentifier: processIdentifier),
             operation: .restartApplication)
     }
+
+    public func restartApplication(homeDirectory: String) async throws {
+        let applicationPath = URL(fileURLWithPath: homeDirectory)
+            .appendingPathComponent("Applications", isDirectory: true)
+            .appendingPathComponent("Tokeni Bar.app", isDirectory: true)
+            .path
+        try await self.restartApplication(
+            applicationPath: applicationPath,
+            processIdentifier: ProcessInfo.processInfo.processIdentifier)
+    }
+
+    private static let delayedRestartScript = #"""
+    old_pid="$1"
+    application_path="$2"
+    deadline=$(( $(date +%s) + 30 ))
+    (
+        while kill -0 "$old_pid" 2>/dev/null; do
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+                break
+            fi
+            sleep 0.1
+        done
+        exec /usr/bin/open -n "$application_path"
+    ) >/dev/null 2>&1 </dev/null &
+    exit 0
+    """#
 
     private func run(
         _ command: ProcessCommand,
