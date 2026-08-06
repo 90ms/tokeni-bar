@@ -173,14 +173,16 @@
 "companion.behavior.short.warning" = "Low quota";
 "companion.behavior.short.celebrate" = "Happy";
 "companion.behavior.short.sleep" = "Sleeping";
-"companion.collection.open" = "Open pet collection";
-"companion.collection.window" = "Tokeni Pet Collection";
+"companion.collection.open" = "Open pet manager";
+"companion.collection.window" = "Tokeni Pets";
 "companion.section.title" = "Pet screen";
 "companion.section.home" = "My Pet";
-"companion.section.collection" = "Collection";
-"companion.section.lineup" = "Companions";
+"companion.section.pets" = "Pets";
 "companion.section.eggs" = "Eggs";
 "companion.section.rewards" = "Customize";
+"companion.petSection.title" = "Pet view";
+"companion.petSection.collection" = "Collection";
+"companion.petSection.owned" = "Owned";
 
 "companion.level.title" = "Level";
 "companion.level.value" = "Lv.%d";
@@ -278,6 +280,11 @@
 "companion.archive.title" = "Owned Pets";
 "companion.archive.description" = "Keep every friend hatched from an egg and switch the active growth pet at any time.";
 "companion.archive.empty" = "You do not have another owned pet yet.";
+"companion.archive.filter.title" = "View by pet";
+"companion.archive.filter.all" = "All pets";
+"companion.archive.filter.count" = "%d shown · %d total";
+"companion.archive.filter.empty" = "No owned record for this pet";
+"companion.archive.filter.emptyDescription" = "Choose another pet or view all pets.";
 "companion.archive.identity" = "Level %d · %d memories";
 "companion.archive.record" = "Pet %d · %@";
 "companion.archive.showcase" = "Stay Together";

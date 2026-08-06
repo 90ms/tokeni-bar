@@ -11,6 +11,13 @@ struct CompanionMutationDecoration: View {
 
     @State private var rotating = false
 
+    /// Mutation effects intentionally extend beyond the sprite. Keep a larger
+    /// layout footprint than the effect canvas so rotation and glow remain
+    /// visible inside their parent views.
+    static func displayDimension(for spriteDimension: CGFloat) -> CGFloat {
+        spriteDimension * 1.5
+    }
+
     var body: some View {
         ZStack {
             switch self.mutationID.rawValue {
@@ -30,6 +37,9 @@ struct CompanionMutationDecoration: View {
         }
         .frame(width: self.dimension * 1.28, height: self.dimension * 1.28)
         .rotationEffect(.degrees(self.rotating ? 8 : -8))
+        .frame(
+            width: Self.displayDimension(for: self.dimension),
+            height: Self.displayDimension(for: self.dimension))
         .animation(
             self.motionEnabled
                 ? .easeInOut(duration: 2.4).repeatForever(autoreverses: true)

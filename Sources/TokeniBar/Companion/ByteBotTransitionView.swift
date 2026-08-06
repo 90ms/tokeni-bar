@@ -89,7 +89,9 @@ struct ByteBotTransitionView: View {
                     .opacity(self.expanded ? 1 : 0)
             }
         }
-        .frame(width: self.dimension, height: self.dimension)
+        .frame(
+            width: self.displayDimension,
+            height: self.displayDimension)
         .offset(
             x: self.interactionOffset.width + self.ambientOffset.width,
             y: self.interactionOffset.height + self.ambientOffset.height)
@@ -203,6 +205,12 @@ struct ByteBotTransitionView: View {
             speciesID: self.speciesID,
             stage: self.stage,
             rarity: self.rarity)
+    }
+
+    private var displayDimension: CGFloat {
+        guard self.mutationID != nil else { return self.dimension }
+        return CompanionMutationDecoration.displayDimension(
+            for: self.dimension)
     }
 
     private var displayedKey: TransitionKey {

@@ -3,8 +3,7 @@ import TokeniCore
 
 private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
     case home
-    case collection
-    case lineup
+    case pets
     case eggs
     case rewards
 
@@ -13,10 +12,23 @@ private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .home: "house.fill"
-        case .collection: "square.grid.3x3.fill"
-        case .lineup: "person.3.fill"
+        case .pets: "pawprint.fill"
         case .eggs: "shippingbox.fill"
         case .rewards: "star.fill"
+        }
+    }
+}
+
+private enum CompanionPetSection: String, CaseIterable, Identifiable {
+    case collection
+    case owned
+
+    var id: Self { self }
+
+    var systemImage: String {
+        switch self {
+        case .collection: "square.grid.3x3.fill"
+        case .owned: "pawprint.fill"
         }
     }
 }
@@ -66,7 +78,9 @@ private enum CompanionCosmeticOwnershipFilter:
 struct CompanionCollectionView: View {
     @ObservedObject var store: UsageStore
     @State private var selectedSection = CompanionCollectionSection.home
+    @State private var selectedPetSection = CompanionPetSection.collection
     @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
+    @State private var selectedOwnedSpeciesID: CompanionSpeciesID?
     @State private var selectedGeneration = 0
     @State private var acquisitionFilter = CompanionAcquisitionFilter.all
     @State private var showsGrowthBreakdown = false
@@ -225,17 +239,42 @@ struct CompanionCollectionView: View {
                 self.currentCompanion
                 self.mutationLoadout
                 self.homeDetails
+            case .pets:
+                self.petContent
+            case .eggs:
+                self.eggVault
+            case .rewards:
+                self.rewardWallet
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var petContent: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Picker(
+                AppLocalization.string("companion.petSection.title"),
+                selection: self.$selectedPetSection)
+            {
+                ForEach(CompanionPetSection.allCases) { section in
+                    Label(
+                        AppLocalization.string(
+                            "companion.petSection.\(section.rawValue)"),
+                        systemImage: section.systemImage)
+                        .tag(section)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            switch self.selectedPetSection {
             case .collection:
                 self.summary
                 self.pity
                 self.collectionGrid
                 self.mutationLab
-            case .lineup:
+            case .owned:
                 self.companionArchive
-            case .eggs:
-                self.eggVault
-            case .rewards:
-                self.rewardWallet
             }
         }
     }
@@ -980,6 +1019,9 @@ struct CompanionCollectionView: View {
                    let definition = CompanionBenefitRegistry.definition(
                        for: generation.speciesID)
                 {
+                    let displayDimension = generation.mutationID.map { _ in
+                        CompanionMutationDecoration.displayDimension(for: 38)
+                    } ?? 48
                     ZStack {
                         if let mutationID = generation.mutationID {
                             CompanionMutationDecoration(
@@ -996,7 +1038,9 @@ struct CompanionCollectionView: View {
                             dimension: 38,
                             animationsEnabled: false)
                     }
-                    .frame(width: 48, height: 48)
+                    .frame(
+                        width: displayDimension,
+                        height: displayDimension)
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 5) {
                             Text(CompanionBenefitPresentation.speciesName(
@@ -1878,7 +1922,11 @@ struct CompanionCollectionView: View {
                                 dimension: 22,
                                 animationsEnabled: false,
                                 motionIntensity: 0)
-                                .frame(width: 25, height: 25)
+                                .frame(
+                                    width: CompanionMutationDecoration
+                                        .displayDimension(for: 22),
+                                    height: CompanionMutationDecoration
+                                        .displayDimension(for: 22))
                         } else {
                             Image(systemName: "lock.fill")
                                 .font(.caption2)
@@ -2287,11 +2335,23 @@ struct CompanionCollectionView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                if !self.store.companionState.collection.archivedGenerations.isEmpty {
+                    self.archiveFilters
+                }
+
                 if self.store.companionState.collection.archivedGenerations.isEmpty {
                     Text(AppLocalization.string("companion.archive.empty"))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .frame(maxWidth: .infinity, minHeight: 60)
+                } else if self.filteredArchivedGenerations.isEmpty {
+                    ContentUnavailableView(
+                        AppLocalization.string(
+                            "companion.archive.filter.empty"),
+                        systemImage: "line.3.horizontal.decrease.circle",
+                        description: Text(AppLocalization.string(
+                            "companion.archive.filter.emptyDescription")))
+                        .frame(maxWidth: .infinity, minHeight: 120)
                 } else {
                     LazyVGrid(
                         columns: Array(
@@ -2300,8 +2360,7 @@ struct CompanionCollectionView: View {
                         spacing: 8)
                     {
                         ForEach(Array(
-                            self.store.companionState.collection
-                                .archivedGenerations.reversed()))
+                            self.filteredArchivedGenerations.reversed()))
                         { generation in
                             self.archivedCompanionCard(generation)
                         }
@@ -2313,6 +2372,50 @@ struct CompanionCollectionView: View {
         }
     }
 
+    private var archiveFilters: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 8) {
+                Label(
+                    AppLocalization.string(
+                        "companion.archive.filter.title"),
+                    systemImage: "line.3.horizontal.decrease.circle")
+                    .font(.caption.weight(.semibold))
+                Spacer()
+                Picker(
+                    AppLocalization.string(
+                        "companion.archive.filter.title"),
+                    selection: self.$selectedOwnedSpeciesID)
+                {
+                    Text(AppLocalization.string(
+                        "companion.archive.filter.all"))
+                        .tag(CompanionSpeciesID?.none)
+                    ForEach(CompanionSpeciesID.allCases, id: \.self) {
+                        speciesID in
+                        Text(AppLocalization.string(
+                            "companion.species.\(speciesID.rawValue).name"))
+                            .tag(CompanionSpeciesID?.some(speciesID))
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+
+            Text(AppLocalization.format(
+                "companion.archive.filter.count",
+                self.filteredArchivedGenerations.count,
+                self.store.companionState.collection.archivedGenerations.count))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private var filteredArchivedGenerations: [CompletedCompanionGeneration] {
+        self.store.companionState.collection.archivedGenerations.filter {
+            guard let selectedOwnedSpeciesID = self.selectedOwnedSpeciesID
+            else { return true }
+            return $0.speciesID == selectedOwnedSpeciesID
+        }
+    }
+
     private func archivedCompanionCard(
         _ generation: CompletedCompanionGeneration) -> some View
     {
@@ -2321,6 +2424,9 @@ struct CompanionCollectionView: View {
         let variantID = generation.variantID
             ?? CompanionVariantRegistry.migrated(
                 from: generation.finalRarity)
+        let displayDimension = generation.mutationID.map { _ in
+            CompanionMutationDecoration.displayDimension(for: 52)
+        } ?? 64
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ZStack {
@@ -2339,7 +2445,9 @@ struct CompanionCollectionView: View {
                         dimension: 52,
                         animationsEnabled: false)
                 }
-                .frame(width: 64, height: 64)
+                .frame(
+                    width: displayDimension,
+                    height: displayDimension)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(generation.nickname ?? AppLocalization.string(
                         "companion.species.\(generation.speciesID.rawValue).name"))
@@ -2447,6 +2555,9 @@ struct CompanionCollectionView: View {
                 from: generation.finalRarity)
         let isShowcased = self.store.companionState.showcasedGenerationID
             == generation.generationID
+        let displayDimension = generation.mutationID == nil
+            ? 136
+            : CompanionMutationDecoration.displayDimension(for: 112)
 
         return VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 18) {
@@ -2466,7 +2577,9 @@ struct CompanionCollectionView: View {
                         dimension: 112,
                         animationsEnabled: false)
                 }
-                .frame(width: 136, height: 136)
+                .frame(
+                    width: displayDimension,
+                    height: displayDimension)
 
                 VStack(alignment: .leading, spacing: 7) {
                     Text(generation.nickname ?? AppLocalization.string(
