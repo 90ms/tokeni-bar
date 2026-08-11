@@ -24,7 +24,7 @@ public enum CompanionSpeciesID: String, Codable, CaseIterable, Hashable, Sendabl
 
     public static var totalRegisteredFormCount: Int {
         Self.allCases.count
-            * CompanionRarity.allCases.count
+            * CompanionVariantRegistry.definitions.count
             * CompanionGameStage.allCases.filter { $0 != .egg }.count
     }
 
@@ -35,11 +35,10 @@ public enum CompanionSpeciesID: String, Codable, CaseIterable, Hashable, Sendabl
     }
 
     public static var totalCollectibleMutationCount: Int {
-        Self.allCases.count * CompanionMutationRegistry.allIDs.count
+        0
     }
 
     public static var totalCollectionEntryCount: Int {
         Self.totalCollectibleVariantCount
-            + Self.totalCollectibleMutationCount
     }
 }

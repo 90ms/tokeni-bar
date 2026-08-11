@@ -237,7 +237,6 @@ struct CompanionCollectionView: View {
             switch self.selectedSection {
             case .home:
                 self.currentCompanion
-                self.mutationLoadout
                 self.homeDetails
             case .pets:
                 self.petContent
@@ -272,7 +271,6 @@ struct CompanionCollectionView: View {
                 self.summary
                 self.pity
                 self.collectionGrid
-                self.mutationLab
             case .owned:
                 self.companionArchive
             }
@@ -1705,17 +1703,13 @@ struct CompanionCollectionView: View {
                     Divider()
                     self.metric(
                         AppLocalization.string("companion.collection.mutations"),
-                        value: "\(self.store.companionState.collection.discoveredMutationCount) / \(CompanionSpeciesID.totalCollectibleMutationCount)")
+                        value: "\(self.mutatedSpeciesCount) / \(CompanionSpeciesID.allCases.count)")
                 }
                 Divider()
                 HStack {
                     self.metric(
                         AppLocalization.string("companion.collection.prismatic"),
                         value: "\(self.prismaticSpeciesCount) / \(CompanionSpeciesID.allCases.count)")
-                    Divider()
-                    self.metric(
-                        AppLocalization.string("companion.collection.synthesis"),
-                        value: "\(self.store.companionState.collection.mutationSynthesisCount)")
                     Divider()
                     self.metric(
                         AppLocalization.string("companion.memories.title"),
@@ -2306,6 +2300,14 @@ struct CompanionCollectionView: View {
             self.store.companionState.collection
                 .discoveredCollectibleVariantKeys
                 .contains("\(speciesID.rawValue).prismatic")
+        }
+    }
+
+    private var mutatedSpeciesCount: Int {
+        CompanionSpeciesID.allCases.count { speciesID in
+            self.store.companionState.collection
+                .discoveredCollectibleVariantKeys
+                .contains("\(speciesID.rawValue).mutated")
         }
     }
 

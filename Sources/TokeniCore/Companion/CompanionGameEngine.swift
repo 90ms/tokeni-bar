@@ -736,11 +736,18 @@ public struct CompanionGameEngine: Sendable {
         pity: CompanionVariantPityState = CompanionVariantPityState())
         -> CompanionVariantID
     {
+        let value = min(max(requestedValue, 0), 0.999_999_999_999)
+        if value >= 1 - self.rules.mutationChance {
+            return .mutated
+        }
         if pity.standardHatches >= self.rules.prismaticPityHatches - 1 {
             return .prismatic
         }
-        let value = min(max(requestedValue, 0), 0.999_999_999_999)
-        return value >= 1 - self.rules.prismaticChance ? .prismatic : .standard
+        return value >= 1
+            - self.rules.mutationChance
+            - self.rules.prismaticChance
+            ? .prismatic
+            : .standard
     }
 
     public func rollPersonality(
@@ -854,6 +861,25 @@ public struct CompanionGameEngine: Sendable {
             variantID: variantID,
             at: now,
             in: &state)
+        if let duplicateID = self.duplicateGenerationID(
+            speciesID: speciesID,
+            variantID: variantID,
+            in: state)
+        {
+            let creditedXP = self.creditDuplicateXP(
+                to: duplicateID,
+                in: &state)
+            return [
+                .hatched(
+                    speciesID: speciesID,
+                    rarity: rarity,
+                    isNewSpecies: isNewSpecies,
+                    unlockedFormIDs: unlocked),
+                .duplicateConverted(
+                    generationID: duplicateID,
+                    creditedXP: creditedXP),
+            ]
+        }
         state.collection.recentCompletedGenerations.append(
             CompletedCompanionGeneration(
                 generationID: generationID,
@@ -881,6 +907,57 @@ public struct CompanionGameEngine: Sendable {
                 isNewSpecies: isNewSpecies,
                 unlockedFormIDs: unlocked),
         ]
+    }
+
+    private func duplicateGenerationID(
+        speciesID: CompanionSpeciesID,
+        variantID: CompanionVariantID,
+        in state: CompanionGameState) -> UUID?
+    {
+        if state.speciesID == speciesID,
+           state.resolvedVariantID == variantID
+        {
+            return state.generationID
+        }
+        return state.collection.archivedGenerations.first { generation in
+            generation.speciesID == speciesID
+                && (generation.variantID
+                    ?? CompanionVariantRegistry.migrated(
+                        from: generation.finalRarity)) == variantID
+        }?.generationID
+    }
+
+    private func creditDuplicateXP(
+        to generationID: UUID,
+        in state: inout CompanionGameState) -> Int
+    {
+        let curve = CompanionLevelCurve.standard
+        if generationID == state.generationID {
+            let level = state.level
+            guard level < curve.maximumLevel else { return 0 }
+            let requested = max(
+                Int(ceil(Double(curve.xpToNextLevel(from: level)) * 0.25)),
+                1)
+            let credited = min(requested, curve.maximumXP - state.growthXP)
+            state.growthXP += credited
+            state.highestPetLevel = max(state.highestPetLevel, state.level)
+            return credited
+        }
+        guard let index = state.collection.recentCompletedGenerations
+            .firstIndex(where: { $0.generationID == generationID })
+        else { return 0 }
+        let xp = state.collection.recentCompletedGenerations[index].growthXP
+        let level = curve.level(forXP: xp)
+        guard level < curve.maximumLevel else { return 0 }
+        let requested = max(
+            Int(ceil(Double(curve.xpToNextLevel(from: level)) * 0.25)),
+            1)
+        let credited = min(requested, curve.maximumXP - xp)
+        state.collection.recentCompletedGenerations[index].growthXP += credited
+        state.highestPetLevel = max(
+            state.highestPetLevel,
+            curve.level(forXP: xp + credited))
+        return credited
     }
 
     private func recordEncounter(

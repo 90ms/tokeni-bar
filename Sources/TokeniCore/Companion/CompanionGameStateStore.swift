@@ -135,6 +135,28 @@ public actor CompanionGameStateStore {
         {
             state = current
             state.schemaVersion = CompanionGameState.currentSchemaVersion
+            state.growthXP = CompanionLevelCurve.standard.clampedXP(
+                state.growthXP)
+            for index in state.collection.recentCompletedGenerations.indices {
+                state.collection.recentCompletedGenerations[index].growthXP =
+                    CompanionLevelCurve.standard.clampedXP(
+                        state.collection.recentCompletedGenerations[index].growthXP)
+            }
+            state.activeMutationID = nil
+            state.collection.mutations = []
+            state.collection.mutationSynthesisCount = 0
+            let legacyMutationIDs = Set(
+                state.collection.archivedGenerations.compactMap {
+                    $0.mutationID == nil ? nil : $0.generationID
+                })
+            state.collection.recentCompletedGenerations.removeAll {
+                legacyMutationIDs.contains($0.generationID)
+            }
+            if state.growthTargetGenerationID.map(
+                legacyMutationIDs.contains) == true
+            {
+                state.growthTargetGenerationID = nil
+            }
         } else {
             throw CompanionGameStateStoreError.invalidState
         }

@@ -8,7 +8,7 @@ public struct CompanionRewardRules: Sendable {
         monthlyAttendanceReward: 50,
         speciesDiscovery: 20,
         mutationDiscovery: 30,
-        variantDiscovery: [.prismatic: 50],
+        variantDiscovery: [.mutated: 30, .prismatic: 50],
         journeyCompletion: 25,
         collectionVariants: [5: 20, 10: 100],
         dailyVerifiedGrowth: 5,
@@ -194,16 +194,6 @@ public struct CompanionRewardEngine: Sendable {
             grants.append(CompanionRewardGrant(
                 amount: self.rules.variantDiscovery[variantID, default: 0],
                 reason: .variantDiscovered(variantID)))
-        }
-
-        for mutation in collection.mutations.sorted(by: { $0.id < $1.id })
-            where state.rewardedMutationKeys.insert(mutation.id).inserted
-        {
-            grants.append(CompanionRewardGrant(
-                amount: self.rules.mutationDiscovery,
-                reason: .mutationDiscovered(
-                    speciesID: mutation.speciesID,
-                    mutationID: mutation.mutationID)))
         }
 
         if collection.totalCompletedGenerations > state.rewardedJourneyCount {

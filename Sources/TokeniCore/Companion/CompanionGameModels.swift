@@ -57,6 +57,7 @@ public struct CompanionVariantID: RawRepresentable, Codable, Hashable, Sendable 
     }
 
     public static let standard = Self(rawValue: "standard")
+    public static let mutated = Self(rawValue: "mutated")
     public static let prismatic = Self(rawValue: "prismatic")
     public static let legacyAzure = Self(rawValue: "legacy-azure")
     public static let legacyViolet = Self(rawValue: "legacy-violet")
@@ -88,6 +89,11 @@ public enum CompanionVariantRegistry {
             assetRarity: .normal,
             isCollectible: true,
             isSpecial: false),
+        CompanionVariantDefinition(
+            id: .mutated,
+            assetRarity: .rare,
+            isCollectible: true,
+            isSpecial: true),
         CompanionVariantDefinition(
             id: .prismatic,
             assetRarity: .legendary,
@@ -517,6 +523,7 @@ public struct CompanionGameRules: Hashable, Sendable {
         dailyCarryoverRate: 1,
         maximumEnergyBalance: 100_000,
         duplicateSpeciesPityHatches: 5,
+        mutationChance: 0.01,
         prismaticChance: 0.08,
         prismaticPityHatches: 12)
 
@@ -527,6 +534,7 @@ public struct CompanionGameRules: Hashable, Sendable {
     public let dailyCarryoverRate: Double
     public let maximumEnergyBalance: Int
     public let duplicateSpeciesPityHatches: Int
+    public let mutationChance: Double
     public let prismaticChance: Double
     public let prismaticPityHatches: Int
 
@@ -542,6 +550,7 @@ public struct CompanionGameRules: Hashable, Sendable {
         dailyCarryoverRate: Double,
         maximumEnergyBalance: Int,
         duplicateSpeciesPityHatches: Int = 5,
+        mutationChance: Double = 0.01,
         prismaticChance: Double = 0.08,
         prismaticPityHatches: Int = 12)
     {
@@ -552,6 +561,7 @@ public struct CompanionGameRules: Hashable, Sendable {
         self.dailyCarryoverRate = min(max(dailyCarryoverRate, 0), 1)
         self.maximumEnergyBalance = max(maximumEnergyBalance, 0)
         self.duplicateSpeciesPityHatches = max(duplicateSpeciesPityHatches, 1)
+        self.mutationChance = min(max(mutationChance, 0), 1)
         self.prismaticChance = min(max(prismaticChance, 0), 1)
         self.prismaticPityHatches = max(prismaticPityHatches, 1)
     }
@@ -671,7 +681,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.stage = stage
         self.rarity = rarity
         self.variantID = variantID
-        self.activeMutationID = activeMutationID
+        self.activeMutationID = nil
         self.nickname = nickname
         self.personalityID = personalityID
         self.activeAcquisitionEggID = activeAcquisitionEggID
@@ -931,6 +941,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         _ collection: CompanionCollection) -> CompanionCollection
     {
         var migrated = collection
+        migrated.mutations = []
+        migrated.mutationSynthesisCount = 0
         migrated.recentCompletedGenerations = collection
             .recentCompletedGenerations.map { generation in
                 guard generation.growthXP == 0,
@@ -956,6 +968,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                     createdAt: generation.createdAt,
                     completedAt: generation.completedAt)
             }
+            .filter { $0.mutationID == nil }
         return migrated
     }
 
@@ -975,6 +988,7 @@ public enum CompanionGameEvent: Hashable, Sendable {
     case eggOpened(UUID)
     case activeCompanionChanged(UUID)
     case companionSold(UUID, value: Int)
+    case duplicateConverted(generationID: UUID, creditedXP: Int)
     case hatched(
         speciesID: CompanionSpeciesID,
         rarity: CompanionRarity,

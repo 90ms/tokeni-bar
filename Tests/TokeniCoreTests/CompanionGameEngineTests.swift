@@ -59,7 +59,7 @@ struct CompanionGameEngineTests {
 
         let events = try engine.hatch(
             speciesUnitValue: 0,
-            variantUnitValue: 0.99,
+            variantUnitValue: 0.95,
             personalityUnitValue: 0.5,
             at: now,
             in: &state)
@@ -291,8 +291,9 @@ struct CompanionGameEngineTests {
     func prismaticPity() {
         let engine = CompanionGameEngine(calendar: self.calendar)
 
-        #expect(engine.rollVariant(unitValue: 0.91) == .standard)
+        #expect(engine.rollVariant(unitValue: 0.90) == .standard)
         #expect(engine.rollVariant(unitValue: 0.92) == .prismatic)
+        #expect(engine.rollVariant(unitValue: 0.99) == .mutated)
         #expect(engine.rollVariant(
             unitValue: 0,
             pity: CompanionVariantPityState(standardHatches: 11))
@@ -372,171 +373,6 @@ struct CompanionGameEngineTests {
         #expect(throws: CompanionGameError.archivedGenerationNotFound) {
             try engine.showcaseArchivedGeneration(UUID(), in: &state)
         }
-    }
-
-    @Test("Three same-species duplicates synthesize a visual mutation")
-    func mutationSynthesis() throws {
-        let now = try #require(self.date("2027-01-15T12:00:00Z"))
-        let engine = CompanionGameEngine(calendar: self.calendar)
-        let duplicates = (0..<3).map { index in
-            CompletedCompanionGeneration(
-                generationID: UUID(),
-                generationNumber: index + 1,
-                speciesID: .bytebot,
-                finalRarity: .normal,
-                variantID: .standard,
-                bondEnergy: 0,
-                growthXP: 0,
-                stage: .adult,
-                completedAt: now)
-        }
-        var state = CompanionGameState(
-            speciesID: .bytebot,
-            stage: .adult,
-            rarity: .normal,
-            variantID: .standard,
-            personalityID: .calm,
-            collection: CompanionCollection(
-                recentCompletedGenerations: duplicates))
-
-        let events = try engine.synthesizeMutation(
-            sourceGenerationIDs: duplicates.map(\.generationID),
-            mutationUnitValue: 0,
-            at: now,
-            in: &state)
-
-        let mutationPet = try #require(
-            state.collection.archivedGenerations.first(where: {
-                $0.mutationID == .neon
-            }))
-        #expect(state.collection.archivedGenerations.count == 1)
-        #expect(mutationPet.speciesID == .bytebot)
-        #expect(mutationPet.finalRarity == .normal)
-        #expect(mutationPet.variantID == .standard)
-        #expect(mutationPet.stage == .hatchling)
-        #expect(state.collection.mutationSynthesisCount == 1)
-        #expect(state.collection.mutations.map(\.mutationID) == [.neon])
-        #expect(events.contains {
-            if case .mutationSynthesized(
-                speciesID: .bytebot,
-                mutationID: .neon,
-                consumedGenerationIDs: _,
-                createdGeneration: _,
-                isNewMutation: true) = $0
-            {
-                return true
-            }
-            return false
-        })
-
-        try engine.equipMutation(.neon, at: now, in: &state)
-        #expect(state.activeMutationID == .neon)
-        #expect(state.isValid())
-
-        let data = try JSONEncoder().encode(state)
-        let decoded = try JSONDecoder().decode(
-            CompanionGameState.self,
-            from: data)
-        #expect(decoded.collection.mutations == state.collection.mutations)
-        #expect(decoded.collection.archivedGenerations == state.collection.archivedGenerations)
-        #expect(decoded.activeMutationID == .neon)
-
-        try engine.activateArchivedGeneration(
-            mutationPet.generationID,
-            at: now,
-            in: &state)
-        #expect(state.generationID == mutationPet.generationID)
-        #expect(state.activeMutationID == .neon)
-        #expect(state.stage == .hatchling)
-        #expect(state.isValid())
-    }
-
-    @Test("Mutation synthesis protects prismatic and mutated companions")
-    func mutationSourcesMustBeStandardAndUnmutated() throws {
-        let now = try #require(self.date("2027-01-15T12:00:00Z"))
-        let engine = CompanionGameEngine(calendar: self.calendar)
-        let standardOne = CompletedCompanionGeneration(
-            generationID: UUID(),
-            generationNumber: 1,
-            speciesID: .bytebot,
-            finalRarity: .normal,
-            variantID: .standard,
-            bondEnergy: 0,
-            completedAt: now)
-        let standardTwo = CompletedCompanionGeneration(
-            generationID: UUID(),
-            generationNumber: 2,
-            speciesID: .bytebot,
-            finalRarity: .normal,
-            variantID: .standard,
-            bondEnergy: 0,
-            completedAt: now)
-        let prismatic = CompletedCompanionGeneration(
-            generationID: UUID(),
-            generationNumber: 3,
-            speciesID: .bytebot,
-            finalRarity: .legendary,
-            variantID: .prismatic,
-            bondEnergy: 0,
-            completedAt: now)
-        var state = CompanionGameState(
-            speciesID: .bytebot,
-            stage: .hatchling,
-            rarity: .normal,
-            variantID: .standard,
-            personalityID: .calm,
-            collection: CompanionCollection(
-                recentCompletedGenerations: [
-                    standardOne,
-                    standardTwo,
-                    prismatic,
-                ]))
-        let original = state
-
-        #expect(throws: CompanionMutationError.sourceNotEligible) {
-            try engine.synthesizeMutation(
-                sourceGenerationIDs: [
-                    standardOne.generationID,
-                    standardTwo.generationID,
-                    prismatic.generationID,
-                ],
-                mutationUnitValue: 0,
-                in: &state)
-        }
-        #expect(state == original)
-
-        let mutated = CompletedCompanionGeneration(
-            generationID: UUID(),
-            generationNumber: 4,
-            speciesID: .bytebot,
-            finalRarity: .normal,
-            variantID: .standard,
-            mutationID: .neon,
-            bondEnergy: 0,
-            completedAt: now)
-        state.collection.recentCompletedGenerations = [
-            standardOne,
-            standardTwo,
-            mutated,
-        ]
-        state.collection.mutations = [CompanionMutationRecord(
-            speciesID: .bytebot,
-            mutationID: .neon,
-            firstDiscoveredAt: now,
-            lastSynthesizedAt: now)]
-        let stateWithMutation = state
-
-        #expect(throws: CompanionMutationError.sourceNotEligible) {
-            try engine.synthesizeMutation(
-                sourceGenerationIDs: [
-                    standardOne.generationID,
-                    standardTwo.generationID,
-                    mutated.generationID,
-                ],
-                mutationUnitValue: 0,
-                in: &state)
-        }
-        #expect(state == stateWithMutation)
     }
 
     @Test("Every currently bundled pet belongs to asset generation one")
@@ -926,74 +762,6 @@ struct CompanionGameEngineTests {
         #expect(!encoded.contains("token"))
     }
 
-    @Test("A mutation backup restores missing prismatic archived pets")
-    func recoversPrismaticCompanionFromMutationBackup() async throws {
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
-        let file = directory.appending(path: "companion-state.json")
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
-        let prismatic = CompletedCompanionGeneration(
-            generationID: UUID(),
-            generationNumber: 2,
-            speciesID: .bytebot,
-            finalRarity: .legendary,
-            variantID: .prismatic,
-            bondEnergy: 0,
-            stage: .hatchling,
-            completedAt: timestamp)
-        let mutationRecord = CompanionMutationRecord(
-            speciesID: .bytebot,
-            mutationID: .neon,
-            firstDiscoveredAt: timestamp,
-            lastSynthesizedAt: timestamp)
-        let mutationPet = CompletedCompanionGeneration(
-            generationID: UUID(),
-            generationNumber: 4,
-            speciesID: .bytebot,
-            finalRarity: .normal,
-            variantID: .standard,
-            mutationID: .neon,
-            personalityID: .calm,
-            bondEnergy: 0,
-            stage: .hatchling,
-            completedAt: timestamp)
-        let beforeMutation = CompanionGameState(
-            speciesID: .bytebot,
-            stage: .hatchling,
-            rarity: .normal,
-            variantID: .standard,
-            personalityID: .calm,
-            collection: CompanionCollection(
-                recentCompletedGenerations: [prismatic]),
-            updatedAt: timestamp)
-        let afterMutation = CompanionGameState(
-            speciesID: .bytebot,
-            stage: .hatchling,
-            rarity: .normal,
-            variantID: .standard,
-            personalityID: .calm,
-            collection: CompanionCollection(
-                mutations: [mutationRecord],
-                mutationSynthesisCount: 1,
-                recentCompletedGenerations: [mutationPet]),
-            updatedAt: timestamp.addingTimeInterval(60))
-        let store = CompanionGameStateStore(fileURL: file)
-
-        try await store.save(beforeMutation)
-        try await store.save(afterMutation)
-        let loaded = try await store.load()
-
-        #expect(loaded.collection.archivedGenerations.contains {
-            $0.generationID == prismatic.generationID
-        })
-        #expect(loaded.collection.archivedGenerations.contains {
-            $0.generationID == mutationPet.generationID
-        })
-        #expect(loaded.collection.mutationSynthesisCount == 1)
-        #expect(loaded.isValid())
-    }
-
     @Test("Behavior priority remains celebration warning work waiting sleep idle")
     func behaviorPriority() {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
@@ -1046,21 +814,27 @@ struct CompanionGameEngineTests {
         #expect(!ungradedAdult.isValid())
     }
 
-    @Test("Published variant roll produces the expected prismatic frequency")
+    @Test("Published variant roll produces prismatic and mutation frequencies")
     func variantDistribution() {
         let engine = CompanionGameEngine(calendar: self.calendar)
         var generator = SplitMix64(state: 0x746f_6b65_6e69)
         var prismaticCount = 0
+        var mutationCount = 0
         let samples = 200_000
 
         for _ in 0..<samples {
             if engine.rollVariant(unitValue: generator.nextUnit()) == .prismatic {
                 prismaticCount += 1
             }
+            if engine.rollVariant(unitValue: generator.nextUnit()) == .mutated {
+                mutationCount += 1
+            }
         }
 
         let actual = Double(prismaticCount) / Double(samples)
         #expect(abs(actual - 0.08) < 0.004)
+        let mutationActual = Double(mutationCount) / Double(samples)
+        #expect(abs(mutationActual - 0.01) < 0.002)
     }
 
     @Test("Verified growth can target an inactive pet without replacing the companion")

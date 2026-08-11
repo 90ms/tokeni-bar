@@ -259,4 +259,62 @@ struct CompanionEggTests {
         #expect(rewards.starShards == 10)
         #expect(companion.eggs.count == 1)
     }
+
+    @Test("A duplicate hatch becomes XP for the matching owned pet")
+    func duplicateHatchXP() throws {
+        let engine = CompanionGameEngine()
+        let seed = try #require((0..<100_000).map(UInt64.init).first { seed in
+            CompanionEggRegistry.unitValue(seed: seed, salt: 1) < 0.2
+                && engine.rollVariant(unitValue: CompanionEggRegistry.unitValue(
+                    seed: seed,
+                    salt: 2)) == .standard
+        })
+        let egg = CompanionEggInstance(
+            definitionID: .mystery,
+            seed: seed,
+            acquiredAt: .now,
+            source: .shop)
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .hatchling,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            growthXP: 0,
+            eggs: [egg])
+
+        let events = try engine.openEgg(egg.id, in: &state)
+
+        #expect(state.collection.archivedGenerations.isEmpty)
+        #expect(state.growthXP > 0)
+        #expect(events.contains {
+            if case let .duplicateConverted(generationID, xp) = $0 {
+                return generationID == state.generationID && xp > 0
+            }
+            return false
+        })
+    }
+
+    @Test("A rare mutation hatch is registered as a collectible form")
+    func mutationHatch() throws {
+        let engine = CompanionGameEngine()
+        let seed = try #require((0..<100_000).map(UInt64.init).first { seed in
+            engine.rollVariant(unitValue: CompanionEggRegistry.unitValue(
+                seed: seed,
+                salt: 2)) == .mutated
+        })
+        let egg = CompanionEggInstance(
+            definitionID: .mystery,
+            seed: seed,
+            acquiredAt: .now,
+            source: .shop)
+        var state = CompanionGameState(eggs: [egg])
+
+        _ = try engine.openEgg(egg.id, in: &state)
+
+        #expect(state.variantID == .mutated)
+        #expect(state.collection.forms.contains {
+            $0.variantID == .mutated && $0.stage == .hatchling
+        })
+    }
 }

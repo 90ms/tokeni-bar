@@ -58,6 +58,7 @@ struct CompanionVariantBadge: View {
     }
 
     private var color: Color {
+        if self.variantID == .mutated { return .green }
         if self.variantID == .prismatic { return .pink }
         if self.variantID == .legacyAzure { return .blue }
         if self.variantID == .legacyViolet { return .purple }

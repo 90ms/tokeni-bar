@@ -154,6 +154,7 @@
 "companion.rarity.unhatched" = "Unhatched";
 "companion.variant.standard" = "Standard";
 "companion.variant.prismatic" = "Prismatic";
+"companion.variant.mutated" = "Mutation";
 "companion.variant.legacy-azure" = "Legacy Azure";
 "companion.variant.legacy-violet" = "Legacy Violet";
 "companion.personality.calm" = "Calm";
