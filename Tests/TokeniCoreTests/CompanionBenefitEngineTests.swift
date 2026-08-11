@@ -18,8 +18,8 @@ struct CompanionBenefitEngineTests {
         #expect(
             Set(CompanionBenefitRegistry.definitions.map(\.id)).count
                 == CompanionBenefitRegistry.definitions.count)
-        #expect(CompanionSpeciesID.totalRegisteredFormCount == 60)
-        #expect(CompanionSpeciesID.totalCollectibleVariantCount == 10)
+        #expect(CompanionSpeciesID.totalRegisteredFormCount == 75)
+        #expect(CompanionSpeciesID.totalCollectibleVariantCount == 15)
     }
 
     @Test("Passive slots unlock permanently at collection thresholds")

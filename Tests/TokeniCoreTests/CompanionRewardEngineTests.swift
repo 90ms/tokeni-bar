@@ -113,15 +113,20 @@ struct CompanionRewardEngineTests {
         #expect(repeated.isEmpty)
     }
 
-    @Test("Mutation discoveries grant shards once")
+    @Test("Mutation variant discoveries grant shards once")
     func mutationRewards() {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let mutation = CompanionMutationRecord(
+        let mutation = CompanionFormRecord(
+            formID: "bytebot.hatchling.mutated",
             speciesID: .bytebot,
-            mutationID: .neon,
-            firstDiscoveredAt: now,
-            lastSynthesizedAt: now)
-        let collection = CompanionCollection(mutations: [mutation])
+            stage: .hatchling,
+            rarity: .rare,
+            variantID: .mutated,
+            unlockKind: .encountered,
+            firstUnlockedAt: now,
+            lastEncounteredAt: now,
+            encounterCount: 1)
+        let collection = CompanionCollection(forms: [mutation])
         let engine = CompanionRewardEngine(calendar: self.calendar)
         var state = CompanionRewardState()
 
@@ -134,13 +139,16 @@ struct CompanionRewardEngineTests {
             at: now,
             in: &state)
 
-        #expect(first == [CompanionRewardGrant(
-            amount: 30,
-            reason: .mutationDiscovered(
-                speciesID: .bytebot,
-                mutationID: .neon))])
-        #expect(state.starShards == 30)
-        #expect(state.rewardedMutationKeys == [mutation.id])
+        #expect(first == [
+            CompanionRewardGrant(
+                amount: 20,
+                reason: .speciesDiscovered(.bytebot)),
+            CompanionRewardGrant(
+                amount: 30,
+                reason: .variantDiscovered(.mutated)),
+        ])
+        #expect(state.starShards == 50)
+        #expect(state.rewardedVariantIDs == [.mutated])
         #expect(repeated.isEmpty)
     }
 

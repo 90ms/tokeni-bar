@@ -6,6 +6,7 @@ struct CompanionCard: View {
     @ObservedObject var store: UsageStore
     @Environment(\.openWindow) private var openWindow
     var compact = false
+    @State private var maxLevelMessageKey: String?
 
     var body: some View {
         if self.store.companionDataUnavailable {
@@ -38,21 +39,40 @@ struct CompanionCard: View {
                     .foregroundStyle(.orange)
             }
             HStack(alignment: .top, spacing: 10) {
-                ByteBotTransitionView(
-                    speciesID: self.store.displayedCompanionSpeciesID,
-                    stage: self.store.displayedCompanionStage,
-                    rarity: self.store.displayedCompanionRarity,
-                    behavior: self.store.companionBehavior,
-                    mutationID: self.store.displayedCompanionMutationID,
-                    cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
-                    dimension: self.compact ? 50 : 62,
-                    animationsEnabled: self.store.companionAnimationsEnabled,
-                    animationIntensity: self.store
-                        .companionAnimationIntensity.motionScale,
-                    interactionPulse: self.store.companionInteractionPulse,
-                    growthPulse: self.store.isShowingArchivedCompanion
-                        ? 0
-                        : self.store.companionGrowthPulse)
+                ZStack(alignment: .topLeading) {
+                    ByteBotTransitionView(
+                        speciesID: self.store.displayedCompanionSpeciesID,
+                        stage: self.store.displayedCompanionStage,
+                        rarity: self.store.displayedCompanionRarity,
+                        behavior: self.store.companionBehavior,
+                        mutationID: self.store.displayedCompanionMutationID,
+                        cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
+                        dimension: self.compact ? 50 : 62,
+                        animationsEnabled: self.store.companionAnimationsEnabled,
+                        animationIntensity: self.store
+                            .companionAnimationIntensity.motionScale,
+                        interactionPulse: self.store.companionInteractionPulse,
+                        growthPulse: self.store.isShowingArchivedCompanion
+                            ? 0
+                            : self.store.companionGrowthPulse)
+
+                    if let maxLevelMessageKey {
+                        Button {
+                            self.openCompanionCollection()
+                        } label: {
+                            Text(AppLocalization.string(maxLevelMessageKey))
+                                .font(.caption2)
+                                .multilineTextAlignment(.leading)
+                                .padding(7)
+                                .frame(width: 170, alignment: .leading)
+                                .background(.regularMaterial, in: RoundedRectangle(
+                                    cornerRadius: 9))
+                        }
+                        .buttonStyle(.plain)
+                        .offset(x: 44, y: -14)
+                        .zIndex(2)
+                    }
+                }
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(self.companionName)
@@ -119,10 +139,14 @@ struct CompanionCard: View {
                             "companion.level.value",
                             self.store.displayedCompanionLevel))
                     } else if self.store.companionStage != .egg {
-                        Text(AppLocalization.format(
-                            "companion.level.progress",
-                            self.store.companionXPIntoLevel,
-                            self.store.companionNextLevelXP))
+                        Text(self.store.companionLevel
+                                == CompanionLevelCurve.standard.maximumLevel
+                            ? AppLocalization.string(
+                                "companion.level.maximum")
+                            : AppLocalization.format(
+                                "companion.level.progress",
+                                self.store.companionXPIntoLevel,
+                                self.store.companionNextLevelXP))
                     }
 
                     Spacer()
@@ -145,7 +169,14 @@ struct CompanionCard: View {
                             "companion.progress.accessibility.value",
                             self.store.companionXPIntoLevel,
                             self.store.companionNextLevelXP))
-                    if let evolutionLevel = self.store.companionNextEvolutionLevel {
+                    if self.store.companionLevel
+                        == CompanionLevelCurve.standard.maximumLevel
+                    {
+                        Text(AppLocalization.string(
+                            "companion.maxLevel.growthHint"))
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                    } else if let evolutionLevel = self.store.companionNextEvolutionLevel {
                         Text(AppLocalization.format(
                             "companion.level.nextEvolution",
                             evolutionLevel))
@@ -179,12 +210,33 @@ struct CompanionCard: View {
                 .controlSize(.small)
                 .help(AppLocalization.string("companion.pat"))
                 .accessibilityLabel(AppLocalization.string("companion.pat"))
+
+                if self.store.displayedCompanionLevel
+                    == CompanionLevelCurve.standard.maximumLevel
+                {
+                    Button {
+                        self.showMaxLevelMessage()
+                    } label: {
+                        Image(systemName: "bubble.left.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help(AppLocalization.string(
+                        "companion.maxLevel.talk"))
+                }
             }
         }
         .padding(10)
         .background(
             .quaternary.opacity(0.5),
             in: RoundedRectangle(cornerRadius: 10))
+        .onChange(of: self.store.displayedCompanionLevel) { oldLevel, newLevel in
+            if oldLevel < CompanionLevelCurve.standard.maximumLevel,
+               newLevel == CompanionLevelCurve.standard.maximumLevel
+            {
+                self.showMaxLevelMessage()
+            }
+        }
         .sheet(item: Binding(
             get: { self.store.companionReveal },
             set: { reveal in
@@ -197,6 +249,19 @@ struct CompanionCard: View {
                 reveal: reveal,
                 animationsEnabled: self.store.companionAnimationsEnabled,
                 dismiss: self.store.dismissCompanionReveal)
+        }
+    }
+
+    private func showMaxLevelMessage() {
+        let keys = (1...7).map { "companion.maxLevel.message.\($0)" }
+        let candidates = keys.filter { $0 != self.maxLevelMessageKey }
+        guard let key = candidates.randomElement() else { return }
+        self.maxLevelMessageKey = key
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(7))
+            if self.maxLevelMessageKey == key {
+                self.maxLevelMessageKey = nil
+            }
         }
     }
 

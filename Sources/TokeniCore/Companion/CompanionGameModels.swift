@@ -57,6 +57,7 @@ public struct CompanionVariantID: RawRepresentable, Codable, Hashable, Sendable 
     }
 
     public static let standard = Self(rawValue: "standard")
+    public static let mutated = Self(rawValue: "mutated")
     public static let prismatic = Self(rawValue: "prismatic")
     public static let legacyAzure = Self(rawValue: "legacy-azure")
     public static let legacyViolet = Self(rawValue: "legacy-violet")
@@ -88,6 +89,11 @@ public enum CompanionVariantRegistry {
             assetRarity: .normal,
             isCollectible: true,
             isSpecial: false),
+        CompanionVariantDefinition(
+            id: .mutated,
+            assetRarity: .rare,
+            isCollectible: true,
+            isSpecial: true),
         CompanionVariantDefinition(
             id: .prismatic,
             assetRarity: .legendary,
@@ -212,7 +218,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
     public var nickname: String?
     public var personalityID: CompanionPersonalityID?
     public let bondEnergy: Int
-    public let growthXP: Int
+    public var growthXP: Int
     public let stage: CompanionGameStage
     public let acquisitionEggID: CompanionEggDefinitionID?
     public let createdAt: Date
@@ -245,7 +251,7 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
         self.nickname = nickname
         self.personalityID = personalityID
         self.bondEnergy = bondEnergy
-        self.growthXP = max(growthXP, 0)
+        self.growthXP = CompanionLevelCurve.standard.clampedXP(growthXP)
         self.stage = stage
         self.acquisitionEggID = acquisitionEggID
         self.createdAt = createdAt ?? completedAt
@@ -292,9 +298,8 @@ public struct CompletedCompanionGeneration: Codable, Hashable, Identifiable, Sen
             CompanionPersonalityID.self,
             forKey: .personalityID)
         self.bondEnergy = try container.decode(Int.self, forKey: .bondEnergy)
-        self.growthXP = max(
-            try container.decodeIfPresent(Int.self, forKey: .growthXP) ?? 0,
-            0)
+        self.growthXP = CompanionLevelCurve.standard.clampedXP(
+            try container.decodeIfPresent(Int.self, forKey: .growthXP) ?? 0)
         self.stage = try container.decodeIfPresent(
             CompanionGameStage.self,
             forKey: .stage) ?? .adult
@@ -518,6 +523,7 @@ public struct CompanionGameRules: Hashable, Sendable {
         dailyCarryoverRate: 1,
         maximumEnergyBalance: 100_000,
         duplicateSpeciesPityHatches: 5,
+        mutationChance: 0.01,
         prismaticChance: 0.08,
         prismaticPityHatches: 12)
 
@@ -528,6 +534,7 @@ public struct CompanionGameRules: Hashable, Sendable {
     public let dailyCarryoverRate: Double
     public let maximumEnergyBalance: Int
     public let duplicateSpeciesPityHatches: Int
+    public let mutationChance: Double
     public let prismaticChance: Double
     public let prismaticPityHatches: Int
 
@@ -543,6 +550,7 @@ public struct CompanionGameRules: Hashable, Sendable {
         dailyCarryoverRate: Double,
         maximumEnergyBalance: Int,
         duplicateSpeciesPityHatches: Int = 5,
+        mutationChance: Double = 0.01,
         prismaticChance: Double = 0.08,
         prismaticPityHatches: Int = 12)
     {
@@ -553,6 +561,7 @@ public struct CompanionGameRules: Hashable, Sendable {
         self.dailyCarryoverRate = min(max(dailyCarryoverRate, 0), 1)
         self.maximumEnergyBalance = max(maximumEnergyBalance, 0)
         self.duplicateSpeciesPityHatches = max(duplicateSpeciesPityHatches, 1)
+        self.mutationChance = min(max(mutationChance, 0), 1)
         self.prismaticChance = min(max(prismaticChance, 0), 1)
         self.prismaticPityHatches = max(prismaticPityHatches, 1)
     }
@@ -586,7 +595,7 @@ public struct CompanionGameRules: Hashable, Sendable {
 }
 
 public struct CompanionGameState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 10
+    public static let currentSchemaVersion = 11
 
     public var schemaVersion: Int
     public var speciesID: CompanionSpeciesID?
@@ -599,6 +608,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var nickname: String?
     public var personalityID: CompanionPersonalityID?
     public var activeAcquisitionEggID: CompanionEggDefinitionID?
+    public var growthTargetGenerationID: UUID?
     public var growthXP: Int
     public var growthEnergy: Int
     public var growthDateKey: String
@@ -637,6 +647,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         nickname: String? = nil,
         personalityID: CompanionPersonalityID? = nil,
         activeAcquisitionEggID: CompanionEggDefinitionID? = nil,
+        growthTargetGenerationID: UUID? = nil,
         growthXP: Int? = nil,
         growthEnergy: Int = 0,
         growthDateKey: String? = nil,
@@ -670,16 +681,16 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.stage = stage
         self.rarity = rarity
         self.variantID = variantID
-        self.activeMutationID = activeMutationID
+        self.activeMutationID = nil
         self.nickname = nickname
         self.personalityID = personalityID
         self.activeAcquisitionEggID = activeAcquisitionEggID
-        self.growthXP = max(
+        self.growthTargetGenerationID = growthTargetGenerationID
+        self.growthXP = CompanionLevelCurve.standard.clampedXP(
             growthXP ?? Self.migratedGrowthXP(
                 stage: stage,
                 growthEnergy: growthEnergy,
-                bondEnergy: bondEnergy),
-            0)
+                bondEnergy: bondEnergy))
         self.growthEnergy = max(growthEnergy, 0)
         self.growthDateKey = growthDateKey
             ?? GrowthLocalDate.key(for: generationCreatedAt)
@@ -755,6 +766,23 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
             : CompanionLevelCurve.standard.level(forXP: self.growthXP)
     }
 
+    public var resolvedGrowthTargetGenerationID: UUID? {
+        guard self.stage != .egg else { return nil }
+        return self.growthTargetGenerationID ?? self.generationID
+    }
+
+    public var growthTargetLevel: Int {
+        guard let targetID = self.resolvedGrowthTargetGenerationID else {
+            return 0
+        }
+        if targetID == self.generationID { return self.level }
+        return self.collection.archivedGenerations.first {
+            $0.generationID == targetID
+        }.map {
+            CompanionLevelCurve.standard.level(forXP: $0.growthXP)
+        } ?? 0
+    }
+
     public var nextEvolution: CompanionEvolutionDefinition? {
         CompanionEvolutionRegistry.next(after: self.stage)
     }
@@ -813,6 +841,12 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
             .archivedGenerations.contains(where: {
                 $0.generationID == self.generationID
             })
+        let growthTargetIsValid = self.growthTargetGenerationID.map { targetID in
+            targetID == self.generationID
+                || self.collection.archivedGenerations.contains {
+                    $0.generationID == targetID
+                }
+        } != false
         guard self.schemaVersion == Self.currentSchemaVersion,
               self.generationNumber >= 1,
               self.growthEnergy >= 0,
@@ -861,6 +895,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
               Set(self.collection.archivedGenerations.map(\.generationID)).count
                 == self.collection.archivedGenerations.count,
               activeGenerationIsNotArchived,
+              growthTargetIsValid,
               archivedGenerationsAreValid,
               showcasedGenerationIsValid,
               self.collection.forms.count
@@ -906,6 +941,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         _ collection: CompanionCollection) -> CompanionCollection
     {
         var migrated = collection
+        migrated.mutations = []
+        migrated.mutationSynthesisCount = 0
         migrated.recentCompletedGenerations = collection
             .recentCompletedGenerations.map { generation in
                 guard generation.growthXP == 0,
@@ -931,6 +968,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                     createdAt: generation.createdAt,
                     completedAt: generation.completedAt)
             }
+            .filter { $0.mutationID == nil }
         return migrated
     }
 
@@ -945,11 +983,12 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
 public enum CompanionGameEvent: Hashable, Sendable {
     case energyApplied(Int)
     case energySpent(Int)
-    case levelIncreased(from: Int, to: Int)
+    case levelIncreased(generationID: UUID, from: Int, to: Int)
     case eggAcquired(CompanionEggDefinitionID)
     case eggOpened(UUID)
     case activeCompanionChanged(UUID)
     case companionSold(UUID, value: Int)
+    case duplicateConverted(generationID: UUID, creditedXP: Int)
     case hatched(
         speciesID: CompanionSpeciesID,
         rarity: CompanionRarity,
@@ -981,6 +1020,7 @@ public enum CompanionGameError: Error, Equatable {
     case archivedGenerationNotFound
     case eggNotFound
     case evolutionLevelRequired(required: Int, current: Int)
+    case maximumLevelReached
 }
 
 public enum CompanionMutationError: Error, Equatable, Sendable {

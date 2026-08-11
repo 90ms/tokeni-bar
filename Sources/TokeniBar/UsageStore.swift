@@ -911,15 +911,28 @@ final class UsageStore: ObservableObject {
                    case let .hatched(
                        speciesID, rarity, isNewSpecies, _) = hatch
                 {
-                    let latest = state.collection
-                        .recentCompletedGenerations.last
+                    let duplicateTargetID = events.compactMap { event -> UUID? in
+                        if case let .duplicateConverted(generationID, _) = event {
+                            return generationID
+                        }
+                        return nil
+                    }.first
+                    let duplicateTarget = duplicateTargetID.flatMap { generationID in
+                        state.collection.archivedGenerations.first {
+                            $0.generationID == generationID
+                        }
+                    }
+                    let latest = duplicateTarget
+                        ?? state.collection.recentCompletedGenerations.last
+                    let duplicateIsActive = duplicateTargetID
+                        == state.generationID
                     self.presentCompanionHatch(
                         speciesID: speciesID,
                         rarity: rarity,
-                        variantID: (opensActivePet
+                        variantID: (opensActivePet || duplicateIsActive
                             ? state.resolvedVariantID
                             : latest?.variantID) ?? .standard,
-                        personalityID: (opensActivePet
+                        personalityID: (opensActivePet || duplicateIsActive
                             ? state.personalityID
                             : latest?.personalityID) ?? .calm,
                         isNewSpecies: isNewSpecies)
@@ -958,6 +971,17 @@ final class UsageStore: ObservableObject {
         self.companionState = state
         self.removeCompanionFromPassiveLineup(generationID)
         self.reconcileCompanionRewards()
+        self.saveCompanionState()
+    }
+
+    func selectCompanionGrowthTarget(_ generationID: UUID) {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionState
+        guard (try? self.companionGameEngine.selectGrowthTarget(
+            generationID,
+            in: &state)) != nil
+        else { return }
+        self.companionState = state
         self.saveCompanionState()
     }
 
@@ -1995,11 +2019,13 @@ final class UsageStore: ObservableObject {
             }
             self.companionState = companion
             var rewards = self.companionRewardState
-            self.companionRewardEngine.reconcileLevelMilestones(
-                generationID: companion.generationID,
-                level: companion.level,
-                at: award.createdAt,
-                in: &rewards)
+            if let targetID = companion.resolvedGrowthTargetGenerationID {
+                self.companionRewardEngine.reconcileLevelMilestones(
+                    generationID: targetID,
+                    level: companion.growthTargetLevel,
+                    at: award.createdAt,
+                    in: &rewards)
+            }
             if rewards != self.companionRewardState {
                 let shardIncrease = max(
                     rewards.starShards

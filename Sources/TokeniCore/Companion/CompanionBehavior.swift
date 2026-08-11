@@ -7,6 +7,70 @@ public enum CompanionBehavior: String, Codable, CaseIterable, Hashable, Sendable
     case warning
     case celebrate
     case sleep
+    /// A species-specific action available only to mutation appearances.
+    case signature
+}
+
+public struct CompanionSpecialActionID:
+    RawRepresentable, Codable, Hashable, Sendable
+{
+    public let rawValue: String
+
+    public init(rawValue: String) {
+        self.rawValue = rawValue
+    }
+}
+
+public struct CompanionSpecialActionDefinition:
+    Identifiable, Hashable, Sendable
+{
+    public let id: CompanionSpecialActionID
+    public let speciesID: CompanionSpeciesID
+    public let requiredVariantID: CompanionVariantID
+    public let behavior: CompanionBehavior
+
+    public init(
+        id: CompanionSpecialActionID,
+        speciesID: CompanionSpeciesID,
+        requiredVariantID: CompanionVariantID,
+        behavior: CompanionBehavior)
+    {
+        self.id = id
+        self.speciesID = speciesID
+        self.requiredVariantID = requiredVariantID
+        self.behavior = behavior
+    }
+}
+
+public enum CompanionSpecialActionRegistry {
+    public static let definitions: [CompanionSpecialActionDefinition] = [
+        Self.mutationAction("bytebot.reassemble", speciesID: .bytebot),
+        Self.mutationAction("cachecat.data-chase", speciesID: .cachecat),
+        Self.mutationAction("stackfox.afterimage", speciesID: .stackfox),
+        Self.mutationAction("promptpup.command-trail", speciesID: .promptpup),
+        Self.mutationAction("nullslime.reform", speciesID: .nullslime),
+    ]
+
+    public static func action(
+        for speciesID: CompanionSpeciesID,
+        variantID: CompanionVariantID) -> CompanionSpecialActionDefinition?
+    {
+        self.definitions.first {
+            $0.speciesID == speciesID
+                && $0.requiredVariantID == variantID
+        }
+    }
+
+    private static func mutationAction(
+        _ rawValue: String,
+        speciesID: CompanionSpeciesID) -> CompanionSpecialActionDefinition
+    {
+        CompanionSpecialActionDefinition(
+            id: CompanionSpecialActionID(rawValue: rawValue),
+            speciesID: speciesID,
+            requiredVariantID: .mutated,
+            behavior: .signature)
+    }
 }
 
 public enum CompanionBehaviorResolver {
