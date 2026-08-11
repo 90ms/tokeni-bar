@@ -312,6 +312,7 @@ struct TokenGrowthLedgerTests {
     func confirmsLargeJump() throws {
         let now = try #require(self.date("2026-07-26T12:00:00Z"))
         let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
             maximumUnconfirmedDelta: 1_000,
             calendar: self.calendar)
         var state = TokenGrowthLedgerState()
