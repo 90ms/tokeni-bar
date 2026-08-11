@@ -2,7 +2,7 @@ import Foundation
 
 public struct TokenGrowthEnergyFormula: Hashable, Sendable {
     public static let standard = TokenGrowthEnergyFormula(
-        tokensPerEnergy: 25_000)
+        tokensPerEnergy: 600_000)
 
     public let tokensPerEnergy: Int64
 

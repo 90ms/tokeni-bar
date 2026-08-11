@@ -22,7 +22,7 @@ providers. Usage-file modification times drive working and sleeping animation
 only; they never create Growth XP.
 
 Verified increases across providers are combined after preventing replayed
-counters from paying twice. Every 25,000 tokens grant one Growth XP.
+counters from paying twice. Every 600,000 tokens grant one Growth XP.
 Unconverted remainder tokens carry across dates, and refreshing the same
 cumulative value never pays twice.
 

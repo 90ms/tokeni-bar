@@ -37,6 +37,10 @@ struct CompanionEggTests {
         #expect(discovery.prefersUndiscoveredSpecies)
         #expect(!mystery.guaranteesPrismatic)
         #expect(!discovery.guaranteesPrismatic)
+        #expect(mystery.prismaticChanceBonus == 0)
+        #expect(mystery.mutationChanceBonus == 0)
+        #expect(discovery.prismaticChanceBonus == 0.02)
+        #expect(discovery.mutationChanceBonus == 0.01)
     }
 
     @Test("Egg seeds produce stable unit values")

@@ -72,6 +72,8 @@ public struct CompanionEggDefinition: Identifiable, Hashable, Sendable {
     public let unlockRequirement: CompanionEggUnlockRequirement
     public let prefersUndiscoveredSpecies: Bool
     public let guaranteesPrismatic: Bool
+    public let prismaticChanceBonus: Double
+    public let mutationChanceBonus: Double
     public let isSellable: Bool
 
     public init(
@@ -81,6 +83,8 @@ public struct CompanionEggDefinition: Identifiable, Hashable, Sendable {
         unlockRequirement: CompanionEggUnlockRequirement,
         prefersUndiscoveredSpecies: Bool = false,
         guaranteesPrismatic: Bool = false,
+        prismaticChanceBonus: Double = 0,
+        mutationChanceBonus: Double = 0,
         isSellable: Bool = true)
     {
         self.id = id
@@ -89,6 +93,8 @@ public struct CompanionEggDefinition: Identifiable, Hashable, Sendable {
         self.unlockRequirement = unlockRequirement
         self.prefersUndiscoveredSpecies = prefersUndiscoveredSpecies
         self.guaranteesPrismatic = guaranteesPrismatic
+        self.prismaticChanceBonus = min(max(prismaticChanceBonus, 0), 1)
+        self.mutationChanceBonus = min(max(mutationChanceBonus, 0), 1)
         self.isSellable = isSellable
     }
 }
@@ -118,7 +124,9 @@ public enum CompanionEggRegistry {
             price: 180,
             resaleValue: 60,
             unlockRequirement: .discoveredSpecies(3),
-            prefersUndiscoveredSpecies: true),
+            prefersUndiscoveredSpecies: true,
+            prismaticChanceBonus: 0.02,
+            mutationChanceBonus: 0.01),
         CompanionEggDefinition(
             id: .prismatic,
             price: nil,

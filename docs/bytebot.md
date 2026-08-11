@@ -9,7 +9,7 @@ state contains no provider name, raw token total, prompt, or response.
 ## Core loop
 
 1. Hatch the free Starter Egg.
-2. Gain one Growth XP per 25,000 verified tokens.
+2. Gain one Growth XP per 600,000 verified tokens.
 3. Manually evolve at levels 10 and 25.
 4. Collect new species and appearances from eggs.
 5. Convert an identical hatch into XP for the existing pet.
@@ -24,17 +24,16 @@ The initial maximum is level 100 at 500 cumulative XP.
 cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)
 ```
 
-A reference user producing about 2.5 million verified tokens per day reaches
-the cap in about five days. Early levels arrive quickly and growth slows toward
-100. Evolution is manual and spends no XP. XP stops at level 100 and overflow
-is not stored.
+Level 100 requires 300 million verified tokens. Early levels arrive quickly and
+growth slows toward 100. Evolution is manual and spends no XP. XP stops at
+level 100 and overflow is not stored.
 
 The displayed companion and growth target are independent. A favorite max-level
 pet can stay visible while another owned pet receives Growth XP.
 
 ## Eggs and duplicate pets
 
-Tokeni supports Starter, Homecoming, Mystery, Discovery, and Prismatic Eggs.
+Tokeni supports Starter, Homecoming, Mystery, Starlight, and Prismatic Eggs.
 Each egg has a UUID and stable seed so interruption cannot reroll its result.
 
 Duplicate identity is `species + appearance`. A repeat hatch creates no new

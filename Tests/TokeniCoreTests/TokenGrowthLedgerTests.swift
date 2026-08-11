@@ -13,7 +13,9 @@ struct TokenGrowthLedgerTests {
     @Test("Aggregates providers before applying the linear conversion")
     func aggregatesProviders() throws {
         let now = try #require(self.date("2026-07-26T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         var state = TokenGrowthLedgerState()
 
         let awards = engine.process(
@@ -33,7 +35,9 @@ struct TokenGrowthLedgerTests {
     @Test("Repeated daily observations never pay twice")
     func dailyIdempotency() throws {
         let now = try #require(self.date("2026-07-26T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         let observation = self.daily(.claude, tokens: 100_000, at: now)
         var state = TokenGrowthLedgerState()
 
@@ -55,7 +59,9 @@ struct TokenGrowthLedgerTests {
     func conversionRemainderCarriesAcrossDates() throws {
         let firstDay = try #require(self.date("2026-07-26T12:00:00Z"))
         let nextDay = try #require(self.date("2026-07-27T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         var state = TokenGrowthLedgerState()
 
         let first = engine.process(
@@ -101,7 +107,9 @@ struct TokenGrowthLedgerTests {
     func delayedDailyBucket() throws {
         let usageDate = try #require(self.date("2026-07-27T12:00:00Z"))
         let observedAt = try #require(self.date("2026-07-28T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         var state = TokenGrowthLedgerState()
         let observation = GrowthUsageObservation.daily(
             providerID: .codex,
@@ -130,7 +138,9 @@ struct TokenGrowthLedgerTests {
     func delayedDailyBucketReconcilesLocalCredit() throws {
         let usageDate = try #require(self.date("2026-07-27T12:00:00Z"))
         let confirmedAt = try #require(self.date("2026-07-28T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         var state = TokenGrowthLedgerState()
 
         _ = engine.process(
@@ -173,7 +183,9 @@ struct TokenGrowthLedgerTests {
     @Test("Daily buckets older than the late window are ignored")
     func rejectsExpiredDailyBucket() throws {
         let observedAt = try #require(self.date("2026-07-28T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         var state = TokenGrowthLedgerState()
 
         let awards = engine.process(
@@ -209,7 +221,9 @@ struct TokenGrowthLedgerTests {
     @Test("Cumulative counters establish a baseline before awarding deltas")
     func cumulativeBaseline() throws {
         let now = try #require(self.date("2026-07-26T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         var state = TokenGrowthLedgerState()
 
         let baseline = GrowthUsageObservation(
@@ -239,7 +253,9 @@ struct TokenGrowthLedgerTests {
     func sessionAndDateBaselines() throws {
         let firstDay = try #require(self.date("2026-07-26T12:00:00Z"))
         let nextDay = try #require(self.date("2026-07-27T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         var state = TokenGrowthLedgerState()
 
         _ = engine.process(
@@ -268,7 +284,9 @@ struct TokenGrowthLedgerTests {
     @Test("Decreasing counters never remove or duplicate energy")
     func decreasingCounter() throws {
         let now = try #require(self.date("2026-07-26T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         var state = TokenGrowthLedgerState()
 
         _ = engine.process(
@@ -313,7 +331,9 @@ struct TokenGrowthLedgerTests {
         let file = directory.appending(path: "ledger.json")
         defer { try? FileManager.default.removeItem(at: directory) }
         let now = try #require(self.date("2026-07-26T12:00:00Z"))
-        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        let engine = TokenGrowthLedgerEngine(
+            formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000),
+            calendar: self.calendar)
         var state = TokenGrowthLedgerState()
         let award = try #require(engine.process(
             observations: [self.daily(.codex, tokens: 100_000, at: now)],

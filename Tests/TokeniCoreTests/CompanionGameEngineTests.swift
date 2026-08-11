@@ -853,6 +853,19 @@ struct CompanionGameEngineTests {
         #expect(abs(mutationActual - 0.01) < 0.002)
     }
 
+    @Test("Starlight egg bonuses raise special variant probabilities")
+    func starlightVariantDistribution() {
+        let engine = CompanionGameEngine(calendar: self.calendar)
+        #expect(engine.rollVariant(
+            unitValue: 0.885,
+            prismaticChanceBonus: 0.02,
+            mutationChanceBonus: 0.01) == .prismatic)
+        #expect(engine.rollVariant(
+            unitValue: 0.985,
+            prismaticChanceBonus: 0.02,
+            mutationChanceBonus: 0.01) == .mutated)
+    }
+
     @Test("Verified growth can target an inactive pet without replacing the companion")
     func inactiveGrowthTarget() throws {
         let targetID = UUID()

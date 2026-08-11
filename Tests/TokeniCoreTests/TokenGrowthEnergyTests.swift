@@ -9,12 +9,12 @@ struct TokenGrowthEnergyTests {
         let formula = TokenGrowthEnergyFormula.standard
 
         #expect(formula.energy(forDailyTokens: 0) == 0)
-        #expect(formula.energy(forDailyTokens: 24_999) == 0)
-        #expect(formula.energy(forDailyTokens: 25_000) == 1)
-        #expect(formula.energy(forDailyTokens: 49_999) == 1)
-        #expect(formula.energy(forDailyTokens: 250_000) == 10)
-        #expect(formula.energy(forDailyTokens: 1_000_000) == 40)
-        #expect(formula.energy(forDailyTokens: 300_000_000) == 12_000)
+        #expect(formula.energy(forDailyTokens: 599_999) == 0)
+        #expect(formula.energy(forDailyTokens: 600_000) == 1)
+        #expect(formula.energy(forDailyTokens: 1_199_999) == 1)
+        #expect(formula.energy(forDailyTokens: 6_000_000) == 10)
+        #expect(formula.energy(forDailyTokens: 60_000_000) == 100)
+        #expect(formula.energy(forDailyTokens: 300_000_000) == 500)
     }
 
     @Test("Never decreases and has no hard cap")
@@ -36,7 +36,7 @@ struct TokenGrowthEnergyTests {
     func nextEnergyBoundary() throws {
         let formula = TokenGrowthEnergyFormula.standard
 
-        for tokens: Int64 in [0, 10_000, 25_000, 100_000, 2_000_000] {
+        for tokens: Int64 in [0, 100_000, 600_000, 1_000_000, 12_000_000] {
             let currentEnergy = formula.energy(forDailyTokens: tokens)
             let additional = try #require(
                 formula.additionalTokensForNextEnergy(afterDailyTokens: tokens))
