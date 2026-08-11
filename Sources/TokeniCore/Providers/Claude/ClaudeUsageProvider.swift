@@ -15,6 +15,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
 
     private let projectsDirectory: URL
     private let calendar: Calendar
+    private let allowKeychain: Bool
     private let credentialLoader: ClaudeOAuthCredentialLoader
     private let credentialCache: ClaudeOAuthCredentialCache
     private let oauthClient: ClaudeOAuthUsageClient
@@ -22,10 +23,11 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         calendar: Calendar = .current,
-        allowKeychain: Bool = true)
+        allowKeychain: Bool = false)
     {
         self.projectsDirectory = homeDirectory.appending(path: ".claude/projects", directoryHint: .isDirectory)
         self.calendar = calendar
+        self.allowKeychain = allowKeychain
         self.credentialLoader = ClaudeOAuthCredentialLoader(
             homeDirectory: homeDirectory,
             allowKeychain: allowKeychain)
@@ -120,7 +122,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
         oauthError: Error) -> ProviderSnapshot
     {
         let errorMessage = (oauthError as? LocalizedError)?.errorDescription
-        let connectionState = Self.connectionState(for: oauthError)
+        let connectionState = self.connectionState(for: oauthError)
         let staleConnectionState: ProviderConnectionState =
             connectionState == .localOnly ? .stale : connectionState
         guard !files.isEmpty else {
@@ -166,15 +168,17 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
                 ?? "Today across local Claude Code sessions")
     }
 
-    private static func connectionState(
+    private func connectionState(
         for error: Error) -> ProviderConnectionState
     {
         guard let error = error as? ClaudeOAuthUsageError else {
             return .localOnly
         }
         switch error {
-        case .authorizationRequired, .credentialsUnavailable:
+        case .authorizationRequired:
             return .authorizationRequired
+        case .credentialsUnavailable:
+            return self.allowKeychain ? .authorizationRequired : .localOnly
         case .expiredCredentials, .unauthorized:
             return .sessionExpired
         default:

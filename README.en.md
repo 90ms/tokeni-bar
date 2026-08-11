@@ -56,17 +56,16 @@ references—not subscription bills.
 
 ### 1. Verified tokens grow a pet to level 100
 
-Every 25,000 verified cumulative tokens grant one Growth XP. A remainder below
-25,000 carries across dates. Active time may change animation, but never creates
+Every 600,000 verified cumulative tokens grant one Growth XP. A remainder below
+600,000 carries across dates. Active time may change animation, but never creates
 XP.
 
 ```text
 cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)
 ```
 
-Level 100 requires 500 cumulative XP. A reference user producing about 2.5
-million verified tokens per day reaches it in about five days. Early levels
-arrive quickly and progression slows toward the cap.
+Level 100 requires 500 cumulative XP, or 300 million verified tokens. Early
+levels arrive quickly and progression slows toward the cap.
 
 The initial level cap is 100. At levels 10 and 25, the player can manually evolve the pet
 into its Juvenile and Adult appearance without spending XP. Delaying evolution
@@ -88,13 +87,14 @@ Users who migrate an existing active pet receive one additional Homecoming Egg.
 | Starter Egg | Once on first launch | Free | Not sellable |
 | Homecoming Egg | Once when migrating an active pet | Not purchasable | Not sellable |
 | Mystery Egg | Highest pet level 5 | 90 shards | 30 |
-| Discovery Egg | Discover 3 different species | 180 shards | 60 |
+| Starlight Egg | Discover 3 different species | 180 shards | 60 |
 | Prismatic Egg | Collection milestones | Not purchasable | 60 |
 
-A Discovery Egg selects an undiscovered species when one remains. A Prismatic
-Egg guarantees the Prismatic variant. Discovering all five species grants one
-Discovery Egg, and discovering 5 and 10 species/variant combinations grants one
-Prismatic Egg at each milestone.
+A Starlight Egg selects an undiscovered species when one remains and rolls a
+10% Prismatic chance and 2% Mutation chance. A Prismatic Egg guarantees the
+Prismatic variant. Discovering all five species grants one Starlight Egg, and
+discovering 5 and 10 species/variant combinations grants one Prismatic Egg at
+each milestone.
 
 Opening another egg never removes the current pet. The hatchling joins the
 owned-pet roster; select one pet at a time to receive Growth XP and switch at any

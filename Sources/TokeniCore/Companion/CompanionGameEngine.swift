@@ -166,7 +166,11 @@ public struct CompanionGameEngine: Sendable {
             ? .prismatic
             : self.rollVariant(
                 unitValue: variantUnitValue,
-                pity: state.variantPity)
+                pity: state.variantPity,
+                prismaticChanceBonus:
+                    eggDefinition?.prismaticChanceBonus ?? 0,
+                mutationChanceBonus:
+                    eggDefinition?.mutationChanceBonus ?? 0)
         let rarity = CompanionVariantRegistry.definition(
             for: variantID).assetRarity
         state.speciesID = speciesID
@@ -733,19 +737,27 @@ public struct CompanionGameEngine: Sendable {
 
     public func rollVariant(
         unitValue requestedValue: Double,
-        pity: CompanionVariantPityState = CompanionVariantPityState())
+        pity: CompanionVariantPityState = CompanionVariantPityState(),
+        prismaticChanceBonus: Double = 0,
+        mutationChanceBonus: Double = 0)
         -> CompanionVariantID
     {
         let value = min(max(requestedValue, 0), 0.999_999_999_999)
-        if value >= 1 - self.rules.mutationChance {
+        let mutationChance = min(
+            self.rules.mutationChance + max(mutationChanceBonus, 0),
+            1)
+        let prismaticChance = min(
+            self.rules.prismaticChance + max(prismaticChanceBonus, 0),
+            max(1 - mutationChance, 0))
+        if value >= 1 - mutationChance {
             return .mutated
         }
         if pity.standardHatches >= self.rules.prismaticPityHatches - 1 {
             return .prismatic
         }
         return value >= 1
-            - self.rules.mutationChance
-            - self.rules.prismaticChance
+            - mutationChance
+            - prismaticChance
             ? .prismatic
             : .standard
     }
@@ -836,7 +848,9 @@ public struct CompanionGameEngine: Sendable {
             ? .prismatic
             : self.rollVariant(
                 unitValue: variantUnitValue,
-                pity: state.variantPity)
+                pity: state.variantPity,
+                prismaticChanceBonus: definition.prismaticChanceBonus,
+                mutationChanceBonus: definition.mutationChanceBonus)
         let rarity = CompanionVariantRegistry.definition(
             for: variantID).assetRarity
         let personality = self.rollPersonality(unitValue: personalityUnitValue)

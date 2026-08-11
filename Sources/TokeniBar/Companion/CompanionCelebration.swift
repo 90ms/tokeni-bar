@@ -147,8 +147,10 @@ struct CompanionCelebrationView: View {
                 .fill(
                     RadialGradient(
                         colors: [
-                            .mint.opacity(self.revealed ? 0.18 : 0.42),
-                            .blue.opacity(self.revealed ? 0.08 : 0.2),
+                            self.primaryAuraColor.opacity(
+                                self.revealed ? 0.18 : 0.48),
+                            self.secondaryAuraColor.opacity(
+                                self.revealed ? 0.08 : 0.24),
                             .clear,
                         ],
                         center: .center,
@@ -161,8 +163,8 @@ struct CompanionCelebrationView: View {
                 Circle()
                     .stroke(
                         index.isMultiple(of: 2)
-                            ? Color.mint.opacity(0.7)
-                            : Color.yellow.opacity(0.62),
+                            ? self.primaryAuraColor.opacity(0.78)
+                            : self.secondaryAuraColor.opacity(0.72),
                         lineWidth: index == 0 ? 3 : 1.5)
                     .frame(
                         width: diameter * (0.24 + CGFloat(index) * 0.17),
@@ -180,10 +182,12 @@ struct CompanionCelebrationView: View {
             ForEach(0..<16, id: \.self) { index in
                 let angle = Double(index) * .pi / 8
                 let distance = diameter * (self.revealed ? 0.38 : 0.08)
-                Image(systemName: index.isMultiple(of: 2) ? "sparkle" : "star.fill")
+                Image(systemName: self.particleSymbol(for: index))
                     .font(.system(size: max(12, diameter * 0.025)))
                     .foregroundStyle(
-                        index.isMultiple(of: 2) ? Color.yellow : Color.mint)
+                        index.isMultiple(of: 2)
+                            ? self.secondaryAuraColor
+                            : self.primaryAuraColor)
                     .offset(
                         x: CGFloat(cos(angle)) * distance,
                         y: CGFloat(sin(angle)) * distance)
@@ -198,6 +202,31 @@ struct CompanionCelebrationView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+
+    private var primaryAuraColor: Color {
+        switch self.celebration.variantID {
+        case .standard: .mint
+        case .prismatic: .pink
+        case .mutated: .purple
+        default: .mint
+        }
+    }
+
+    private var secondaryAuraColor: Color {
+        switch self.celebration.variantID {
+        case .standard: .yellow
+        case .prismatic: .cyan
+        case .mutated: .green
+        default: .yellow
+        }
+    }
+
+    private func particleSymbol(for index: Int) -> String {
+        if self.celebration.variantID == .mutated {
+            return index.isMultiple(of: 2) ? "bolt.fill" : "waveform.path"
+        }
+        return index.isMultiple(of: 2) ? "sparkle" : "star.fill"
     }
 
     private var details: some View {

@@ -23,11 +23,10 @@ hatching, duplicate conversion, rare mutations, the collection, and actions.
 
 ## 2. Levels and evolution
 
-The standard conversion is one Growth XP per 25,000 verified tokens. Level is
+The standard conversion is one Growth XP per 600,000 verified tokens. Level is
 derived from XP and is not stored independently. The initial maximum level is
-100, reached at 500 cumulative XP. This is about 12.5 million verified tokens;
-a reference user producing about 2.5 million tokens per day reaches it in about
-five days. Actual duration follows verified usage.
+100, reached at 500 cumulative XP. This is 300 million verified tokens. Actual
+duration follows verified usage.
 
 ```text
 cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)

@@ -74,6 +74,8 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionGrowthPulse: Int
     @Published private(set) var companionState: CompanionGameState
     @Published private(set) var companionReveal: CompanionHatchReveal?
+    @Published private(set) var companionHatchBatchReveal:
+        CompanionHatchBatchReveal? = nil
     @Published private(set) var companionCelebration: CompanionCelebration?
     @Published private(set) var companionMutationReveal: CompanionMutationReveal?
     @Published private(set) var companionMutationErrorMessage: String?
@@ -783,6 +785,10 @@ final class UsageStore: ObservableObject {
         self.companionReveal = nil
     }
 
+    func dismissCompanionHatchBatchReveal() {
+        self.companionHatchBatchReveal = nil
+    }
+
     func dismissCompanionCelebration() {
         self.companionCelebration = nil
     }
@@ -866,7 +872,10 @@ final class UsageStore: ObservableObject {
         self.saveCompanionState()
     }
 
-    func purchaseCompanionEgg(_ definitionID: CompanionEggDefinitionID) {
+    func purchaseCompanionEgg(
+        _ definitionID: CompanionEggDefinitionID,
+        quantity: Int = 1)
+    {
         guard self.companionEnabled,
               self.companionStateLoaded,
               !self.companionEconomyTransactionInFlight
@@ -876,7 +885,19 @@ final class UsageStore: ObservableObject {
         Task {
             defer { self.companionEconomyTransactionInFlight = false }
             do {
-                try await self.performCompanionEggPurchase(definitionID)
+                let count = min(max(quantity, 1), 10)
+                guard let price = CompanionEggRegistry.definition(
+                    for: definitionID)?.price,
+                    self.companionRewardState.starShards >= price * count
+                else {
+                    throw CompanionEggError.insufficientShards(
+                        required: (CompanionEggRegistry.definition(
+                            for: definitionID)?.price ?? 0) * count,
+                        available: self.companionRewardState.starShards)
+                }
+                for _ in 0..<count {
+                    try await self.performCompanionEggPurchase(definitionID)
+                }
             } catch {
                 self.handleCompanionEconomyFailure(error)
             }
@@ -884,58 +905,57 @@ final class UsageStore: ObservableObject {
     }
 
     func openCompanionEgg(_ eggID: UUID) {
+        self.openCompanionEggs([eggID])
+    }
+
+    func openCompanionEggs(
+        definitionID: CompanionEggDefinitionID,
+        quantity: Int)
+    {
+        let eggIDs = self.companionState.eggs
+            .filter { $0.definitionID == definitionID }
+            .prefix(min(max(quantity, 1), 10))
+            .map(\.id)
+        self.openCompanionEggs(eggIDs)
+    }
+
+    private func openCompanionEggs(_ eggIDs: [UUID]) {
         guard self.companionEnabled,
               self.companionStateLoaded,
               self.companionCelebration == nil,
-              !self.companionEconomyTransactionInFlight
+              !self.companionEconomyTransactionInFlight,
+              !eggIDs.isEmpty
         else { return }
         self.companionEconomyErrorMessage = nil
         self.companionEconomyTransactionInFlight = true
         Task {
             defer { self.companionEconomyTransactionInFlight = false }
             var state = self.companionState
-            let opensActivePet = state.stage == .egg
             do {
-                let events = try self.companionGameEngine.openEgg(
-                    eggID,
-                    in: &state)
+                var reveals: [CompanionHatchReveal] = []
+                for eggID in eggIDs {
+                    let opensActivePet = state.stage == .egg
+                    let events = try self.companionGameEngine.openEgg(
+                        eggID,
+                        in: &state)
+                    if let reveal = self.hatchReveal(
+                        from: events,
+                        opensActivePet: opensActivePet,
+                        state: state)
+                    {
+                        reveals.append(reveal)
+                    }
+                }
                 self.companionStateSaveRevision &+= 1
                 try await self.companionStateStore.save(
                     state,
                     revision: self.companionStateSaveRevision)
                 self.companionState = state
-                if let hatch = events.first(where: {
-                    if case .hatched = $0 { return true }
-                    return false
-                }),
-                   case let .hatched(
-                       speciesID, rarity, isNewSpecies, _) = hatch
-                {
-                    let duplicateTargetID = events.compactMap { event -> UUID? in
-                        if case let .duplicateConverted(generationID, _) = event {
-                            return generationID
-                        }
-                        return nil
-                    }.first
-                    let duplicateTarget = duplicateTargetID.flatMap { generationID in
-                        state.collection.archivedGenerations.first {
-                            $0.generationID == generationID
-                        }
-                    }
-                    let latest = duplicateTarget
-                        ?? state.collection.recentCompletedGenerations.last
-                    let duplicateIsActive = duplicateTargetID
-                        == state.generationID
-                    self.presentCompanionHatch(
-                        speciesID: speciesID,
-                        rarity: rarity,
-                        variantID: (opensActivePet || duplicateIsActive
-                            ? state.resolvedVariantID
-                            : latest?.variantID) ?? .standard,
-                        personalityID: (opensActivePet || duplicateIsActive
-                            ? state.personalityID
-                            : latest?.personalityID) ?? .calm,
-                        isNewSpecies: isNewSpecies)
+                if eggIDs.count == 1, let reveal = reveals.first {
+                    self.presentCompanionHatch(reveal)
+                } else {
+                    self.companionHatchBatchReveal = CompanionHatchBatchReveal(
+                        reveals: reveals)
                 }
                 self.reconcileCompanionRewards()
             } catch {
@@ -1674,6 +1694,10 @@ final class UsageStore: ObservableObject {
             variantID: variantID,
             personalityID: personalityID,
             isNewSpecies: isNewSpecies)
+        self.presentCompanionHatch(reveal)
+    }
+
+    private func presentCompanionHatch(_ reveal: CompanionHatchReveal) {
         guard self.canPresentCompanionCelebration else {
             self.companionReveal = reveal
             return
@@ -1681,11 +1705,48 @@ final class UsageStore: ObservableObject {
         self.companionReveal = nil
         self.companionCelebration = CompanionCelebration(
             kind: .hatch,
-            speciesID: speciesID,
+            speciesID: reveal.speciesID,
             stage: .hatchling,
+            rarity: reveal.rarity,
+            variantID: reveal.variantID,
+            personalityID: reveal.personalityID,
+            isNewSpecies: reveal.isNewSpecies)
+    }
+
+    private func hatchReveal(
+        from events: [CompanionGameEvent],
+        opensActivePet: Bool,
+        state: CompanionGameState) -> CompanionHatchReveal?
+    {
+        guard let hatch = events.first(where: {
+            if case .hatched = $0 { return true }
+            return false
+        }),
+        case let .hatched(speciesID, rarity, isNewSpecies, _) = hatch
+        else { return nil }
+        let duplicateTargetID = events.compactMap { event -> UUID? in
+            if case let .duplicateConverted(generationID, _) = event {
+                return generationID
+            }
+            return nil
+        }.first
+        let duplicateTarget = duplicateTargetID.flatMap { generationID in
+            state.collection.archivedGenerations.first {
+                $0.generationID == generationID
+            }
+        }
+        let latest = duplicateTarget
+            ?? state.collection.recentCompletedGenerations.last
+        let duplicateIsActive = duplicateTargetID == state.generationID
+        return CompanionHatchReveal(
+            speciesID: speciesID,
             rarity: rarity,
-            variantID: variantID,
-            personalityID: personalityID,
+            variantID: (opensActivePet || duplicateIsActive
+                ? state.resolvedVariantID
+                : latest?.variantID) ?? .standard,
+            personalityID: (opensActivePet || duplicateIsActive
+                ? state.personalityID
+                : latest?.personalityID) ?? .calm,
             isNewSpecies: isNewSpecies)
     }
 
