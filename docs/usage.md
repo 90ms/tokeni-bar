@@ -131,16 +131,13 @@ Claude account quotas reuse the existing OAuth sign-in that Claude Code stores
 in the macOS Keychain. Tokeni Bar never copies or separately persists the
 token.
 
-- Automatic refreshes prohibit authentication UI. If access is unavailable or
-  the Mac is locked, the app falls back to local Claude usage without opening a
-  password prompt.
+- App startup and automatic refreshes never query Claude Code's Keychain item.
+  They use local Claude session logs without opening a password prompt.
 - Start the initial connection explicitly under **Settings → General →
   Providers → Connect Claude Code**. Choosing **Always Allow** in
-  the macOS dialog prevents repeat prompts while the same app identity and
-  Keychain item remain in place.
-- A source-built Formula update can change the app signature, and Claude Code
-  can replace its Keychain item. macOS may require approval again in either
-  case; reconnect from Settings.
+  the macOS dialog enables account quota refreshes for the current app session.
+- After restarting Tokeni Bar, Claude returns to local-only usage until the
+  player explicitly connects account quotas again.
 
 Unlocking the Mac alone does not initiate interactive authentication. When
 connection approval is unavailable, the app leaves account quotas unavailable

@@ -367,7 +367,7 @@ struct ProviderParserTests {
         #expect(snapshot.tokenUsage?.totalTokens == 0)
         #expect(snapshot.growthUsageObservation?.scope == .daily)
         #expect(snapshot.growthUsageObservation?.totalTokens == 0)
-        #expect(snapshot.connectionState == .authorizationRequired)
+        #expect(snapshot.connectionState == .localOnly)
         #expect(snapshot.descriptor.capabilities.supportsQuotaWindows)
     }
 

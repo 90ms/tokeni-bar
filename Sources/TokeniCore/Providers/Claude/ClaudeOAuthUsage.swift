@@ -47,7 +47,7 @@ struct ClaudeOAuthCredentialLoader: Sendable {
     private let credentialsFile: URL
     private let allowKeychain: Bool
 
-    init(homeDirectory: URL, allowKeychain: Bool = true) {
+    init(homeDirectory: URL, allowKeychain: Bool = false) {
         self.credentialsFile = homeDirectory.appending(path: ".claude/.credentials.json")
         self.allowKeychain = allowKeychain
     }
@@ -61,7 +61,10 @@ struct ClaudeOAuthCredentialLoader: Sendable {
             guard !credentials.isExpired else { throw ClaudeOAuthUsageError.expiredCredentials }
             return credentials
         }
-        guard self.allowKeychain else {
+        // Automatic refresh stays local-only by default. The explicit Connect
+        // action passes `interactive: true`, which is the only path allowed to
+        // request access to Claude Code's Keychain item.
+        guard self.allowKeychain || interactive else {
             throw ClaudeOAuthUsageError.credentialsUnavailable(errSecItemNotFound)
         }
 

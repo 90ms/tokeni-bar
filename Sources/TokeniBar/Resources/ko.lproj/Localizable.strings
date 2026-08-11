@@ -552,7 +552,7 @@
 "settings.cost.catalogSource.cache" = "캐시";
 "settings.cost.catalogSource.remote" = "업데이트됨";
 "settings.privacy" = "개인정보 보호";
-"settings.privacy.description" = "알려진 로컬 CLI 세션 파일과 OpenCode의 집계 세션 열에서 사용량을 읽습니다. Codex와 Claude 쿼터는 기존 CLI 로그인과 계정 사용량 API를 재사용합니다. 프롬프트, 응답, 쿠키 및 인증 토큰은 저장하지 않습니다.";
+"settings.privacy.description" = "알려진 로컬 CLI 세션 파일과 OpenCode의 집계 세션 열에서 사용량을 읽습니다. Codex는 기존 CLI 로그인을 재사용하고 Claude 계정 쿼터는 현재 앱 실행 중 사용자가 명시적으로 연결한 뒤에만 키체인에 접근합니다. 프롬프트, 응답, 쿠키 및 인증 토큰은 저장하지 않습니다.";
 "notification.usageLow.title" = "%@ 사용량이 부족합니다";
 "notification.usageLow.body" = "%@: %d%% 남음";
 "notification.usageLow.depletionRisk" = "현재 관측 속도라면 갱신 전에 소진될 가능성이 높습니다.";

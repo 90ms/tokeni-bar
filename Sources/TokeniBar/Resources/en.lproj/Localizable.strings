@@ -552,7 +552,7 @@
 "settings.cost.catalogSource.cache" = "Cached";
 "settings.cost.catalogSource.remote" = "Updated";
 "settings.privacy" = "Privacy";
-"settings.privacy.description" = "Usage is read from known local CLI session files and OpenCode's aggregate session columns. Codex and Claude quotas reuse their existing CLI sign-ins with account usage endpoints. Prompts, responses, cookies, and authentication tokens are not stored by this app.";
+"settings.privacy.description" = "Usage is read from known local CLI session files and OpenCode's aggregate session columns. Codex reuses its CLI sign-in; Claude account quotas access Keychain only after you explicitly connect for the current app session. Prompts, responses, cookies, and authentication tokens are not stored by this app.";
 "notification.usageLow.title" = "%@ usage is low";
 "notification.usageLow.body" = "%@: %d%% left";
 "notification.usageLow.depletionRisk" = "At the recently observed rate, it may run out before reset.";
