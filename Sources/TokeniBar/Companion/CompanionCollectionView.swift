@@ -214,6 +214,19 @@ struct CompanionCollectionView: View {
                 dismiss: self.store.dismissCompanionReveal)
         }
         .sheet(item: Binding(
+            get: { self.store.companionHatchBatchReveal },
+            set: { reveal in
+                if reveal == nil {
+                    self.store.dismissCompanionHatchBatchReveal()
+                }
+            }))
+        { batch in
+            CompanionHatchBatchRevealView(
+                batch: batch,
+                animationsEnabled: self.store.companionAnimationsEnabled,
+                dismiss: self.store.dismissCompanionHatchBatchReveal)
+        }
+        .sheet(item: Binding(
             get: { self.store.companionMutationReveal },
             set: { reveal in
                 if reveal == nil {
@@ -324,24 +337,45 @@ struct CompanionCollectionView: View {
                         Text(AppLocalization.string("companion.eggs.empty"))
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(self.store.companionState.eggs) { egg in
+                        ForEach(CompanionEggRegistry.definitions.filter {
+                            definition in
+                            self.store.companionState.eggs.contains {
+                                $0.definitionID == definition.id
+                            }
+                        }) { definition in
+                            let count = self.store.companionState.eggs.filter {
+                                $0.definitionID == definition.id
+                            }.count
                             HStack {
                                 Label(
-                                    AppLocalization.string(
-                                        "companion.egg.\(egg.definitionID.rawValue)"),
+                                    "\(AppLocalization.string("companion.egg.\(definition.id.rawValue)")) × \(count)",
                                     systemImage: "circle.hexagongrid.fill")
                                 Spacer()
-                                Button(AppLocalization.string(
-                                    "companion.eggs.hatch"))
-                                {
-                                    self.store.openCompanionEgg(egg.id)
+                                Button(AppLocalization.format(
+                                    "companion.eggs.hatchCount", 1)) {
+                                    self.store.openCompanionEggs(
+                                        definitionID: definition.id,
+                                        quantity: 1)
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .disabled(self.store
                                     .companionEconomyTransactionInFlight)
-                                if let definition = CompanionEggRegistry.definition(
-                                    for: egg.definitionID),
-                                   definition.isSellable
+                                if count >= 10 {
+                                    Button(AppLocalization.format(
+                                        "companion.eggs.hatchCount", 10)) {
+                                        self.store.openCompanionEggs(
+                                            definitionID: definition.id,
+                                            quantity: 10)
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .disabled(self.store
+                                        .companionEconomyTransactionInFlight)
+                                }
+                                if definition.isSellable,
+                                   let egg = self.store.companionState.eggs
+                                    .first(where: {
+                                        $0.definitionID == definition.id
+                                    })
                                 {
                                     Button(AppLocalization.format(
                                         "companion.eggs.sellValue",
@@ -384,19 +418,38 @@ struct CompanionCollectionView: View {
                                     .foregroundStyle(Color.accentColor)
                             }
                             Spacer()
-                            Button(AppLocalization.format(
-                                "companion.eggs.buy",
-                                definition.price ?? 0))
-                            {
-                                self.store.purchaseCompanionEgg(definition.id)
+                            HStack(spacing: 6) {
+                                Button(AppLocalization.format(
+                                    "companion.eggs.buyCount",
+                                    1,
+                                    definition.price ?? 0)) {
+                                    self.store.purchaseCompanionEgg(
+                                        definition.id,
+                                        quantity: 1)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(
+                                    !unlocked
+                                        || self.store
+                                            .companionEconomyTransactionInFlight
+                                        || self.store.companionRewardState.starShards
+                                            < (definition.price ?? 0))
+                                Button(AppLocalization.format(
+                                    "companion.eggs.buyCount",
+                                    10,
+                                    (definition.price ?? 0) * 10)) {
+                                    self.store.purchaseCompanionEgg(
+                                        definition.id,
+                                        quantity: 10)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(
+                                    !unlocked
+                                        || self.store
+                                            .companionEconomyTransactionInFlight
+                                        || self.store.companionRewardState.starShards
+                                            < (definition.price ?? 0) * 10)
                             }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(
-                                !unlocked
-                                    || self.store
-                                        .companionEconomyTransactionInFlight
-                                    || self.store.companionRewardState.starShards
-                                        < (definition.price ?? 0))
                         }
                     }
                 }
@@ -424,6 +477,10 @@ struct CompanionCollectionView: View {
         if definition.guaranteesPrismatic {
             return AppLocalization.string(
                 "companion.eggs.outcome.prismatic")
+        }
+
+        if definition.id == .discovery {
+            return AppLocalization.string("companion.eggs.outcome.starlight")
         }
 
         let key = definition.prefersUndiscoveredSpecies
@@ -2889,8 +2946,7 @@ struct CompanionCollectionView: View {
             if record != nil {
                 Text(AppLocalization.string("companion.actions.preview"))
                     .font(.headline)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 7) {
+                VStack(alignment: .leading, spacing: 7) {
                         ForEach(behaviors, id: \.self) { behavior in
                             Button {
                                 self.collectionPreviewBehavior = behavior
@@ -2904,8 +2960,8 @@ struct CompanionCollectionView: View {
                                 self.collectionPreviewBehavior == behavior
                                     ? Color.accentColor
                                     : Color.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                    }
                 }
 
                 Text(AppLocalization.format(
