@@ -2,35 +2,41 @@ import Testing
 @testable import TokeniCore
 
 struct CompanionProgressionTests {
-    @Test("The standard curve reaches the published early levels")
+    @Test("The standard curve starts quickly and reaches level 100 at 500 XP")
     func publishedThresholds() {
         let curve = CompanionLevelCurve.standard
 
         #expect(curve.totalXPRequired(forLevel: 1) == 0)
-        #expect(curve.totalXPRequired(forLevel: 10) == 18)
-        #expect(curve.totalXPRequired(forLevel: 25) == 66)
-        #expect(curve.level(forXP: 17) == 9)
-        #expect(curve.level(forXP: 18) == 10)
-        #expect(curve.level(forXP: 66) == 25)
+        #expect(curve.totalXPRequired(forLevel: 100) == 500)
+        #expect(curve.level(forXP: 0) == 1)
+        #expect(curve.level(forXP: 500) == 100)
     }
 
-    @Test("Level costs remain bounded without imposing a maximum level")
-    func unboundedLevels() {
+    @Test("Level costs rise toward a product maximum")
+    func maximumLevel() {
         let curve = CompanionLevelCurve.standard
-        let highLevel = 1_000_000
-        let xp = curve.totalXPRequired(forLevel: highLevel)
 
-        #expect(curve.xpToNextLevel(from: highLevel) == 15)
-        #expect(curve.level(forXP: xp) == highLevel)
-        #expect(curve.level(forXP: xp + 15) == highLevel + 1)
+        #expect(curve.xpToNextLevel(from: 1) < curve.xpToNextLevel(from: 99))
+        #expect(curve.xpToNextLevel(from: 100) == 0)
+        #expect(curve.level(forXP: Int.max) == 100)
+        #expect(curve.totalXPRequired(forLevel: 101) == 500)
+        #expect(curve.clampedXP(Int.max) == 500)
     }
 
     @Test("Progress reports the fractional position inside a level")
     func progress() {
         let curve = CompanionLevelCurve.standard
 
-        #expect(curve.xpIntoLevel(forXP: 19) == 1)
-        #expect(curve.progress(forXP: 19) == 0.5)
+        let level = 50
+        let floor = curve.totalXPRequired(forLevel: level)
+        let required = curve.xpToNextLevel(from: level)
+
+        #expect(curve.xpIntoLevel(forXP: floor) == 0)
+        #expect(curve.progress(forXP: floor) == 0)
+        if required > 1 {
+            #expect(curve.progress(forXP: floor + 1) > 0)
+        }
+        #expect(curve.progress(forXP: curve.maximumXP) == 1)
     }
 
     @Test("Evolution milestones are level-gated")

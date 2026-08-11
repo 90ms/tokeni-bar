@@ -961,6 +961,17 @@ final class UsageStore: ObservableObject {
         self.saveCompanionState()
     }
 
+    func selectCompanionGrowthTarget(_ generationID: UUID) {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionState
+        guard (try? self.companionGameEngine.selectGrowthTarget(
+            generationID,
+            in: &state)) != nil
+        else { return }
+        self.companionState = state
+        self.saveCompanionState()
+    }
+
     func sellCompanion(_ generationID: UUID) {
         guard self.companionEnabled,
               self.companionStateLoaded,
@@ -1995,11 +2006,13 @@ final class UsageStore: ObservableObject {
             }
             self.companionState = companion
             var rewards = self.companionRewardState
-            self.companionRewardEngine.reconcileLevelMilestones(
-                generationID: companion.generationID,
-                level: companion.level,
-                at: award.createdAt,
-                in: &rewards)
+            if let targetID = companion.resolvedGrowthTargetGenerationID {
+                self.companionRewardEngine.reconcileLevelMilestones(
+                    generationID: targetID,
+                    level: companion.growthTargetLevel,
+                    at: award.createdAt,
+                    in: &rewards)
+            }
             if rewards != self.companionRewardState {
                 let shardIncrease = max(
                     rewards.starShards

@@ -128,12 +128,13 @@ public actor CompanionGameStateStore {
                       from: data)
         {
             state = legacy.migrated()
-        } else if version == CompanionGameState.currentSchemaVersion,
+        } else if version == 10 || version == CompanionGameState.currentSchemaVersion,
                   let current = try? decoder.decode(
             CompanionGameState.self,
             from: data)
         {
             state = current
+            state.schemaVersion = CompanionGameState.currentSchemaVersion
         } else {
             throw CompanionGameStateStoreError.invalidState
         }

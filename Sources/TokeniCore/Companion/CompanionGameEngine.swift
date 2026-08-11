@@ -24,7 +24,8 @@ public struct CompanionGameEngine: Sendable {
         state.updatedAt = award.createdAt
         guard award.energy > 0 else { return [] }
 
-        let previousLevel = state.level
+        let targetID = state.resolvedGrowthTargetGenerationID
+        let previousLevel = state.growthTargetLevel
         let credited: Int
         if state.stage == .egg {
             let availableRoom = max(
@@ -34,10 +35,31 @@ public struct CompanionGameEngine: Sendable {
             state.growthEnergy = Self.saturatedAdd(
                 state.growthEnergy,
                 credited)
-        } else {
-            credited = award.energy
+        } else if targetID == state.generationID {
+            let availableRoom = max(
+                CompanionLevelCurve.standard.maximumXP - state.growthXP,
+                0)
+            credited = min(award.energy, availableRoom)
             state.growthXP = Self.saturatedAdd(state.growthXP, credited)
             state.highestPetLevel = max(state.highestPetLevel, state.level)
+        } else if let targetID,
+                  let index = state.collection.recentCompletedGenerations
+                    .firstIndex(where: { $0.generationID == targetID })
+        {
+            let availableRoom = max(
+                CompanionLevelCurve.standard.maximumXP
+                    - state.collection.recentCompletedGenerations[index].growthXP,
+                0)
+            credited = min(award.energy, availableRoom)
+            state.collection.recentCompletedGenerations[index].growthXP =
+                Self.saturatedAdd(
+                    state.collection.recentCompletedGenerations[index].growthXP,
+                    credited)
+            state.highestPetLevel = max(
+                state.highestPetLevel,
+                state.growthTargetLevel)
+        } else {
+            credited = 0
         }
         state.growthEarnedToday = Self.saturatedAdd(
             state.growthEarnedToday,
@@ -55,10 +77,33 @@ public struct CompanionGameEngine: Sendable {
         if credited > 0 {
             events.append(.energyApplied(credited))
         }
-        if state.level > previousLevel {
-            events.append(.levelIncreased(from: previousLevel, to: state.level))
+        if state.growthTargetLevel > previousLevel, let targetID {
+            events.append(.levelIncreased(
+                generationID: targetID,
+                from: previousLevel,
+                to: state.growthTargetLevel))
         }
         return events
+    }
+
+    public func selectGrowthTarget(
+        _ generationID: UUID,
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws
+    {
+        let isActive = state.stage != .egg && generationID == state.generationID
+        let archived = state.collection.archivedGenerations.first {
+            $0.generationID == generationID
+        }
+        guard isActive || archived != nil else {
+            throw CompanionGameError.archivedGenerationNotFound
+        }
+        let xp = isActive ? state.growthXP : archived?.growthXP ?? 0
+        guard CompanionLevelCurve.standard.level(forXP: xp)
+                < CompanionLevelCurve.standard.maximumLevel
+        else { throw CompanionGameError.maximumLevelReached }
+        state.growthTargetGenerationID = generationID
+        state.updatedAt = now
     }
 
     @available(*, deprecated, message: "Use openEgg(_:at:in:) for free egg hatching.")
@@ -369,7 +414,8 @@ public struct CompanionGameEngine: Sendable {
                 eggDefinition: definition,
                 at: now,
                 in: &state)
-            state.growthXP = Self.saturatedAdd(state.growthXP, bankedXP)
+            state.growthXP = CompanionLevelCurve.standard.clampedXP(
+                Self.saturatedAdd(state.growthXP, bankedXP))
             state.highestPetLevel = max(state.highestPetLevel, state.level)
         } else {
             events = self.revealInactiveCompanion(
@@ -573,6 +619,15 @@ public struct CompanionGameEngine: Sendable {
                 || state.collection.recentCompletedGenerations.count > 1
         else { throw CompanionEggError.lastPetCannotBeSold }
         let companion = state.collection.recentCompletedGenerations.remove(at: index)
+        if state.growthTargetGenerationID == generationID {
+            state.growthTargetGenerationID = state.level
+                    < CompanionLevelCurve.standard.maximumLevel
+                ? state.generationID
+                : state.collection.recentCompletedGenerations.first(where: {
+                    CompanionLevelCurve.standard.level(forXP: $0.growthXP)
+                        < CompanionLevelCurve.standard.maximumLevel
+                })?.generationID
+        }
         if state.showcasedGenerationID == generationID {
             state.showcasedGenerationID = nil
         }
