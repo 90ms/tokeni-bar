@@ -167,8 +167,10 @@ public struct CompanionGameEngine: Sendable {
             : self.rollVariant(
                 unitValue: variantUnitValue,
                 pity: state.variantPity,
-                prismaticChanceBonus: eggDefinition.prismaticChanceBonus,
-                mutationChanceBonus: eggDefinition.mutationChanceBonus)
+                prismaticChanceBonus:
+                    eggDefinition?.prismaticChanceBonus ?? 0,
+                mutationChanceBonus:
+                    eggDefinition?.mutationChanceBonus ?? 0)
         let rarity = CompanionVariantRegistry.definition(
             for: variantID).assetRarity
         state.speciesID = speciesID
