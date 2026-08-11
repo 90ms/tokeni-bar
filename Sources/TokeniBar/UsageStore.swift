@@ -911,15 +911,28 @@ final class UsageStore: ObservableObject {
                    case let .hatched(
                        speciesID, rarity, isNewSpecies, _) = hatch
                 {
-                    let latest = state.collection
-                        .recentCompletedGenerations.last
+                    let duplicateTargetID = events.compactMap { event -> UUID? in
+                        if case let .duplicateConverted(generationID, _) = event {
+                            return generationID
+                        }
+                        return nil
+                    }.first
+                    let duplicateTarget = duplicateTargetID.flatMap { generationID in
+                        state.collection.archivedGenerations.first {
+                            $0.generationID == generationID
+                        }
+                    }
+                    let latest = duplicateTarget
+                        ?? state.collection.recentCompletedGenerations.last
+                    let duplicateIsActive = duplicateTargetID
+                        == state.generationID
                     self.presentCompanionHatch(
                         speciesID: speciesID,
                         rarity: rarity,
-                        variantID: (opensActivePet
+                        variantID: (opensActivePet || duplicateIsActive
                             ? state.resolvedVariantID
                             : latest?.variantID) ?? .standard,
-                        personalityID: (opensActivePet
+                        personalityID: (opensActivePet || duplicateIsActive
                             ? state.personalityID
                             : latest?.personalityID) ?? .calm,
                         isNewSpecies: isNewSpecies)
