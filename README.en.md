@@ -45,8 +45,8 @@ brew install --formula tokeni-bar
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
-| Tokeni pets | Unbounded levels, evolution appearances, owned-pet switching, names, personalities, memories, behavior, and an optional desktop overlay |
-| Pet manager, eggs, and rewards | Pet collection and owned roster, species filters for owned pets, Starter Egg and Star Shard shop, 35 collection entries (10 variants + 25 mutations), special eggs, level rewards, boosters, and cosmetics |
+| Tokeni pets | Level 100 cap, evolution appearances, a separate growth target, names, personalities, memories, behavior, and an optional desktop overlay |
+| Pet manager, eggs, and rewards | Collection details and owned roster, duplicate XP, rare mutations, action previews, Starter Egg and Star Shard shop, level rewards, boosters, and cosmetics |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -54,25 +54,24 @@ references—not subscription bills.
 
 ## How Tokeni pets grow
 
-### 1. Verified tokens become unbounded levels
+### 1. Verified tokens grow a pet to level 100
 
 Every 25,000 verified cumulative tokens grant one Growth XP. A remainder below
 25,000 carries across dates. Active time may change animation, but never creates
 XP.
 
 ```text
-XP for next level = min(2 + floor((current level - 1) / 10), 15)
+cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)
 ```
 
-| Goal | Cumulative Growth XP | At 100,000 tokens/day |
-|---|---:|---:|
-| Level 10 | 18 | About 5 days |
-| Level 25 | 66 | About 17 days |
-| Each high level | At most 15 | At most about 4 days |
+Level 100 requires 500 cumulative XP. A reference user producing about 2.5
+million verified tokens per day reaches it in about five days. Early levels
+arrive quickly and progression slows toward the cap.
 
-Levels have no cap. At levels 10 and 25, the player can manually evolve the pet
+The initial level cap is 100. At levels 10 and 25, the player can manually evolve the pet
 into its Juvenile and Adult appearance without spending XP. Delaying evolution
-does not stop level growth.
+does not stop level growth. The displayed companion and XP growth target can be
+selected independently.
 
 Starting at level 30, every ten levels grant 10 Star Shards so adult pets retain
 a recurring goal.
@@ -105,14 +104,13 @@ not increase resale value, and collection discoveries remain recorded.
 ### 3. Manage the collection and owned pets
 
 The pet manager keeps **Collection** and **Owned** in one screen. Collection records
-discovered species, variants, lifecycle forms, and mutations; Owned lists each
+discovered species, appearances, lifecycle forms, and rare mutations; Owned lists each
 hatched pet with its level, name, personality, memories, switching, showcasing, and
 resale actions. In the Owned view, choose a species from **View by pet** to show
 only that species and see the displayed count or an empty-result explanation.
 
-Mutation auras and background effects use a larger display area than the sprite, so
-they remain visible in menu cards, owned-pet cards, detail views, and the on-screen
-overlay.
+Select a collection card to inspect details, discovered growth stages, common
+actions, and a mutation-only signature action with animated previews.
 
 ### 4. Discover five species and their variants
 
@@ -122,21 +120,20 @@ chosen from undiscovered species.
 
 | Variant | Base odds | Power |
 |---|---:|---|
-| Standard | 92% | Equal |
+| Standard | 91% | Equal |
 | Prismatic | 8% | Equal |
+| Mutation | 1% | Equal |
 
 After 11 consecutive Standard hatches, regular hatch 12 is Prismatic. The main
-collection contains ten combinations—five species times Standard and
-Prismatic—while evolution appearances are recorded in each combination's
+collection contains 15 combinations—five species times Standard, Prismatic,
+and Mutation—while evolution appearances are recorded in each combination's
 growth album.
 
-Three inactive duplicate pets of the same species can be combined in the
-Mutation Lab. The source pets are consumed, and the result discovers one of
-five visual mutations for that species: Neon, Shadow, Crystal, Glitch, or
-Aurora. Every third synthesis guarantees an undiscovered mutation. Mutations
-never affect growth, odds, stats, or resale value. The full collection contains
-35 entries: ten variants and 25 mutations. A first mutation discovery grants
-30 Star Shards once.
+A normal egg has a 1% chance to hatch that species' rare Mutation appearance.
+It changes the species sprite and adds a signature action without changing
+power. Hatching the same `species + appearance` again grants the matching pet
+25% of its next-level XP requirement instead of creating another pet. Mutation
+appearances are registered in the collection with Standard and Prismatic.
 
 ### 5. Earn rewards from levels and activity
 
@@ -234,7 +231,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 | Stored locally | Never stored |
 |---|---|
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
-| Pet IDs, level/XP, stage, variant, name, personality, egg inventory, owned roster, memories, collection, mutation records, equipped mutation, and guarantees | Access tokens, refresh tokens, and cookies |
+| Pet IDs, level/XP, stage, appearance, growth target, name, personality, egg inventory, owned roster, memories, collection, and guarantees | Access tokens, refresh tokens, and cookies |
 | Star Shards, egg transaction IDs, attendance dates, purchased cosmetics, boosters, and awarded milestone IDs | Account secrets and server telemetry |
 | On-screen pet preferences and last position | Screen captures and input content |
 | Local progress-validation data | Remote game accounts and analytics telemetry |

@@ -1610,10 +1610,14 @@ struct CompanionCollectionView: View {
                                 systemImage: "shippingbox.fill")
                         }
                         .buttonStyle(.borderedProminent)
-                        Text(AppLocalization.format(
-                            "companion.level.nextReward",
-                            self.store.companionNextRecurringRewardLevel,
-                            CompanionRewardEngine.recurringLevelRewardShards))
+                        Text(self.store.companionLevel
+                                == CompanionLevelCurve.standard.maximumLevel
+                            ? AppLocalization.string(
+                                "companion.maxLevel.growthHint")
+                            : AppLocalization.format(
+                                "companion.level.nextReward",
+                                self.store.companionNextRecurringRewardLevel,
+                                CompanionRewardEngine.recurringLevelRewardShards))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1621,29 +1625,6 @@ struct CompanionCollectionView: View {
                 }
             }
 
-            if ownedLevel == CompanionLevelCurve.standard.maximumLevel {
-                Button {
-                    self.collectionSpeechMessageKey = (1...7)
-                        .map { "companion.maxLevel.message.\($0)" }
-                        .filter { $0 != self.collectionSpeechMessageKey }
-                        .randomElement()
-                } label: {
-                    Label(
-                        AppLocalization.string(
-                            "companion.maxLevel.action"),
-                        systemImage: "bubble.left.fill")
-                }
-                .buttonStyle(.bordered)
-                if let collectionSpeechMessageKey {
-                    Text(AppLocalization.string(collectionSpeechMessageKey))
-                        .font(.callout)
-                        .padding(10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            .quaternary,
-                            in: RoundedRectangle(cornerRadius: 10))
-                }
-            }
         }
         .padding(14)
         .background(
@@ -2878,6 +2859,30 @@ struct CompanionCollectionView: View {
                                 ? "checkmark.seal.fill"
                                 : "arrow.up.circle.fill")
                     }
+                }
+            }
+
+            if ownedLevel == CompanionLevelCurve.standard.maximumLevel {
+                Button {
+                    self.collectionSpeechMessageKey = (1...7)
+                        .map { "companion.maxLevel.message.\($0)" }
+                        .filter { $0 != self.collectionSpeechMessageKey }
+                        .randomElement()
+                } label: {
+                    Label(
+                        AppLocalization.string(
+                            "companion.maxLevel.action"),
+                        systemImage: "bubble.left.fill")
+                }
+                .buttonStyle(.bordered)
+                if let collectionSpeechMessageKey {
+                    Text(AppLocalization.string(collectionSpeechMessageKey))
+                        .font(.callout)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            .quaternary,
+                            in: RoundedRectangle(cornerRadius: 10))
                 }
             }
 

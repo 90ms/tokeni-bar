@@ -2,170 +2,147 @@
 
 [한국어](companion-policy.ko.md) | **English**
 
-- Policy version: 2.5.0
-- Updated: 2026-08-06
+- Policy version: 3.0.0
+- Updated: 2026-08-11
 - Status: implemented
 
-This document defines the invariants for unbounded levels, evolution, the egg
-economy, owned pets, the Mutation Lab, collection rewards, persistence, and
-privacy.
+This document defines the product rules for level-100 growth, owned pets, egg
+hatching, duplicate conversion, rare mutations, the collection, and actions.
 
 ## 1. Invariants
 
 - Growth XP comes only from verified cumulative token increases.
-- Active time may alter behavior but cannot create XP.
+- Active time may change behavior and animation but cannot create XP.
 - Unverifiable usage is never estimated.
-- Species, variants, personalities, eggs, and cosmetics create no growth,
-  price, reward, or probability multipliers.
-- Mutation pets are independent owned generations, but the mutation itself is
-  visual-only and never affects Growth XP, hatch odds, stats, or resale value.
+- Species, appearances, mutations, personalities, eggs, and cosmetics create no
+  growth multiplier or power advantage.
 - Only timed boosters multiply newly verified base XP.
 - Hunger, illness, death, streak loss, and limited-time FOMO are excluded.
 - Pet state never stores provider names, raw token totals, prompts, responses,
   or credentials.
 
-## 2. Growth and evolution
+## 2. Levels and evolution
 
 The standard conversion is one Growth XP per 25,000 verified tokens. Level is
-derived from XP, is not stored independently, and has no product maximum.
+derived from XP and is not stored independently. The initial maximum level is
+100, reached at 500 cumulative XP. This is about 12.5 million verified tokens;
+a reference user producing about 2.5 million tokens per day reaches it in about
+five days. Actual duration follows verified usage.
 
 ```text
-next-level XP = min(2 + floor((current level - 1) / 10), 15)
+cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)
+level range = 1...100
 ```
 
-Hatchling, junior, and adult forms correspond to levels 1, 10, and 25.
-Evolution is manual and does not spend XP. Passing a threshold does not change
-the form until evolution is requested. Growth continues after level 25.
-Starting at level 30, every ten levels grant 10 Star Shards.
+Every adjacent level is normalized to differ by at least one XP. Early levels
+arrive quickly and progression slows toward level 100. Hatchling, junior, and
+adult forms correspond to levels 1, 10, and 25. Evolution is manual and spends
+no XP.
 
-## 3. Owned pets and eggs
+XP clamps to 500 at level 100 and overflow is not stored. A later cap increase
+changes the maximum-level and cumulative-XP policy values together; hidden XP
+beyond the previous cap is never banked.
 
-New state contains one non-sellable Starter Egg. A migration that imports an
-active pet grants one non-sellable Homecoming Egg. Hatched pets have UUIDs, one
-pet is selected for growth, and another hatch adds to the roster without
-deleting or completing the current pet. Switching preserves XP, form, name,
-personality, and memories.
+## 3. Displayed companion and growth target
 
-Egg definitions contain only a stable ID, buy and resale prices, unlock
-requirements, species candidates, variant rules, guarantees, and sellability.
-The Mystery Egg unlocks at highest pet level 5 for 90 shards. The Discovery Egg
-unlocks after three species for 180 shards. Their resale values are 30 and 60.
-There are no real-money purchases, limited-time offers, or player trading.
+The menu-bar companion and the pet receiving verified Growth XP are selected
+independently. A favorite max-level pet can remain visible while another owned
+pet grows. A level-100 pet cannot be selected as a new growth target. Selling or
+removing the target safely falls back to the active pet or another growable pet.
 
-The active pet cannot be sent away. Inactive standard and prismatic pets return
-30 and 60 shards. Level never increases resale value, and discoveries remain.
+On first reaching level 100, the pet shows one randomly selected, predefined
+speech-bubble message. The player can talk to a max-level pet again, and the
+bubble leads to the collection to choose the next growth target. Messages are
+localized static strings and contain no usage content or token numbers.
 
-Exactly three inactive standard, mutation-free archived pets of the same species
-can be combined in the Mutation Lab. Prismatic and existing mutation pets are
-excluded from the material pool. The three source generations are consumed, and
-a new standard mutation pet is added to the archive at hatchling stage and level
-1. The current active pet can never be used as a source.
+## 4. Owned pets, eggs, and duplicates
 
-## 4. Collection and guarantees
+New state contains one non-sellable Starter Egg. Hatch results are fixed by the
+egg UUID and stable seed, and state is saved before presentation. A new
+appearance creates an owned pet with its own UUID.
 
-Five species have equal base odds. Five duplicate hatches guarantee an
-undiscovered species while one remains. Standard and prismatic odds are 92% and
-8%; the twelfth normal hatch after 11 standard results is prismatic.
+A duplicate is the same `species + appearance`; name, personality, and growth
+stage do not affect identity. A repeat hatch does not create another pet. It
+grants the matching owned pet 25% of its current next-level requirement, rounded
+up with a minimum of one XP. Duplicate XP also respects level 100. Collection
+discovery and encounter counts are recorded before conversion.
 
-The main collection has ten species/variant combinations. Forms remain in a
-growth album. Five species grant a Discovery Egg; five and ten combinations
-each grant one Prismatic Egg. Discovery and Prismatic Eggs guarantee their
-documented result pools.
+While undiscovered species remain, five duplicate-species hatches guarantee
+that the next normal hatch chooses an undiscovered species. The active pet
+cannot be sold, and resale never exceeds purchase cost.
 
-Each species has five visual mutations—Neon, Shadow, Crystal, Glitch, and
-Aurora—for 25 mutation entries. The full collection denominator is 35: ten
-Standard/Prismatic entries plus 25 mutations. Every third synthesis globally
-guarantees an undiscovered mutation for the selected species while one remains.
-Repeats strengthen resonance instead of adding an entry, and each first mutation
-discovery grants 30 Star Shards once. Mutation entries do not count toward the
-species/variant milestones that grant special eggs.
+## 5. Rare mutations
 
-## 5. Level rewards and cosmetics
+The Mutation Lab, three-pet synthesis, and undiscovered-mutation guarantee are
+removed. A normal egg has a 1% seeded chance to hatch the selected species'
+mutation appearance. Mutation has no synthesis pity counter.
 
-Each pet grants a 2x booster, 3x booster, Firefly aura, and the 5x booster plus
-Orbit aura at levels 5, 10, 20, and 25. Legacy bond rewards suppress the matching
-level reward so migration cannot duplicate grants.
+A mutation changes species-specific sprite colors and features instead of
+adding a shared aura. It never changes XP, benefits, resale value, or other
+odds. The existing Prismatic appearance and its guarantee rules remain a
+separate appearance.
 
-Star Shards come from attendance, verified growth, discoveries, collection
-milestones, and stable-version gifts. They buy eggs, boosters, and visual
-cosmetics. Resale remains below purchase price and XP cannot become a repeatable
-currency farm.
+Schema v11 discards legacy synthesis records, counts, and inactive synthesized
+mutation pets. An active legacy mutation decoration is cleared while the pet
+remains safely available in its standard appearance. New mutations use the
+stable `mutated` appearance ID.
 
-## 6. Identity and memories
+## 6. Collection and details
 
-Each pet has a UUID, species, variant, form, XP, local name, registered
-personality ID, and creation date. An optional equipped mutation ID is stored on
-the generation; discovered mutations and resonance are account-level collection
-records. At most 40 content-free memories per pet and
-2,000 across the account are kept.
-Legacy hatch, evolution, pat, bond, and journey records remain after migration.
-No work content or raw usage number enters a memory.
+The collection unit is `species + collectible appearance`. Standard,
+Prismatic, and Mutation are currently collectible. Growth stages remain inside
+each card's journey album and do not inflate the denominator. A mutation hatch
+is registered immediately.
 
-## 7. Persistence and transaction safety
+Selecting a collection card shows:
 
-Eggs have UUIDs and stable random seeds. Purchase and resale are first written
-to a journal and use transaction UUIDs to reject duplicate pet and currency
-processing; hatching is keyed by the egg ID
-and its seed. State and guarantee counters are updated before reveal animation
-so interruption cannot reroll an egg or duplicate a reward.
+- species, appearance, discovery state, and discovered growth stages;
+- ownership and current level;
+- previews for idle, working, waiting, warning, celebrate, and sleep;
+- the discovered mutation pet's species-specific signature action;
+- the level-100 speech action; and
+- an action to select an owned, non-max pet for growth.
 
-Schema v10 stores the active pet, inactive owned pets, acquisition egg source,
-eggs, Growth XP, highest level, egg milestones, mutation records, synthesis
-count, equipped mutation, mutation reward keys, and processed egg transactions.
-If a prismatic archived pet is missing after a mutation synthesis but remains in
-the pre-synthesis backup, only that missing generation is merged back; the
-current state is never rolled back wholesale.
-The new fields are optional-compatible, so existing v10 files remain readable.
-Corrupt data uses a recoverable backup or becomes unavailable rather than fabricated.
+Undiscovered appearances remain silhouettes and do not reveal their actions.
 
-Provider JSONL is processed one line at a time without constructing a complete
-file or event array. Companion sprite sheets load on demand under bounded sheet
-and frame caches. Hiding the overlay releases its hosting view and animation
-tasks.
+## 7. Actions
 
-## 8. Migration and compatibility
+Every pet has idle, working, waiting, warning, celebrate, and sleep actions.
+Activity state selects an action but cannot create growth. Each species'
+mutation appearance adds one signature action:
 
-- Dedicated readers migrate schemas v2 through v9 into v10.
-- Hatchling, junior, and adult states receive at least levels 1, 10, and 25.
-- The greater useful legacy action balance or adult bond progress is added to
-  XP, then the duplicate action balance is removed.
-- Completed pets become inactive, sellable owned pets.
-- An imported active pet receives one Homecoming Egg; a legacy empty egg state
-  is restored with one Starter Egg.
-- Imported pets do not backfill every passed level reward, but earn the next new
-  milestone normally.
-- Guarantees, identity, memories, shards, cosmetics, and boosters remain.
-- Missing mutation records, synthesis count, equipped mutation, and mutation
-  reward keys default to an empty collection, zero, none, and empty keys.
+- ByteBot: Reassemble
+- CacheCat: Data Chase
+- StackFox: Afterimage Split
+- PromptPup: Command Trail
+- NullSlime: Reform
 
-## 9. Adding content
+The initial signature slot points at a bundled species animation row and can be
+replaced with independent frames later while preserving its stable action ID.
+Reduce Motion, disabled animations, and Low Power Mode remain respected.
 
-1. Register stable species, variant, mutation, evolution, or egg IDs.
-2. Add every required sprite and manifest entry for a new form.
-3. Document egg price, resale, odds, guarantees, and unlock rules.
-4. Declare collection denominator and special-egg milestone behavior.
-5. Define mutation visuals and duplicate-synthesis guarantees; add round-trip,
-   migration, duplicate-transaction, and probability tests.
-6. Update Korean and English strings and documentation together.
+## 8. Rewards and benefits
 
-## 10. Version 2.3.0 redesign
+Existing one-time boosters and cosmetics at levels 5, 10, 20, and 25 remain.
+Ten-level shard rewards start at level 30, but the UI never advertises a target
+beyond level 100. First mutation discovery is handled once as an appearance
+discovery. A mutation appearance never grants stronger benefits than Standard.
 
-- Replaced spendable lifecycle growth with unbounded levels and level evolution.
-- Increased early growth speed and capped next-level XP at 15.
-- Removed adult completion and action-energy journey resets.
-- Added Starter Eggs, the Egg Vault, a shard shop, resale, and special eggs.
-- Unified current and completed companions into a switchable owned roster.
-- Moved bond rewards to levels 5, 10, 20, and 25.
-- Added 10 Star Shards every ten levels starting at level 30.
+## 9. Persistence and safety
 
-## 11. Version 2.5.0 Mutation Lab
+Schema v11 stores XP normalized to level 100 and an optional growth-target UUID.
+Version 10 loads into v11, discarding synthesis data and XP beyond the cap. The
+growth target must refer to the active pet or an owned inactive pet.
 
-- Added a Mutation Lab that consumes three inactive standard, mutation-free
-  same-species duplicates and protects prismatic/mutation pets.
-- Added 25 visual mutation entries, five for each species, and an equip slot.
-- Made each synthesis create an independent hatchling mutation pet that can be
-  raised, activated, showcased, or assigned to a passive slot.
-- Guaranteed an undiscovered mutation every third synthesis and awarded 30 Star
-  Shards once per first discovery.
-- Kept mutation visuals separate from growth, odds, stats, and the special-egg
-  milestones.
+Egg purchases and sales use a transaction journal and UUIDs to reject duplicate
+processing. Corrupt data uses a recoverable backup or becomes unavailable.
+Collection and speech state contain no work content or raw usage values.
+
+## 10. Adding content
+
+1. Register stable species, appearance, action, or egg IDs.
+2. Add every growth-stage sprite and manifest entry.
+3. Document egg odds, price, resale, and unlock rules.
+4. Declare duplicate identity and collection-denominator behavior.
+5. Add probability-boundary, duplicate-XP, round-trip, and migration tests.
+6. Update Korean and English strings, policy docs, and a change fragment.
