@@ -60,6 +60,12 @@
       "framesPerSecond": 8,
       "loops": true
     },
+    "signature": {
+      "row": 4,
+      "frameCount": 6,
+      "framesPerSecond": 8,
+      "loops": true
+    },
     "sleep": {
       "row": 5,
       "frameCount": 4,

@@ -155,6 +155,12 @@
 "companion.variant.standard" = "Standard";
 "companion.variant.prismatic" = "Prismatic";
 "companion.variant.mutated" = "Mutation";
+"companion.behavior.signature" = "Mutation signature";
+"companion.specialAction.bytebot.reassemble" = "Reassemble";
+"companion.specialAction.cachecat.data-chase" = "Data Chase";
+"companion.specialAction.stackfox.afterimage" = "Afterimage Split";
+"companion.specialAction.promptpup.command-trail" = "Command Trail";
+"companion.specialAction.nullslime.reform" = "Reform";
 "companion.variant.legacy-azure" = "Legacy Azure";
 "companion.variant.legacy-violet" = "Legacy Violet";
 "companion.personality.calm" = "Calm";

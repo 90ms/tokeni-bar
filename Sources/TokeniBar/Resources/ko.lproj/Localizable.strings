@@ -155,6 +155,12 @@
 "companion.variant.standard" = "기본색";
 "companion.variant.prismatic" = "프리즘";
 "companion.variant.mutated" = "변이";
+"companion.behavior.signature" = "변이 전용 행동";
+"companion.specialAction.bytebot.reassemble" = "재조립";
+"companion.specialAction.cachecat.data-chase" = "데이터 추적";
+"companion.specialAction.stackfox.afterimage" = "잔상 분신";
+"companion.specialAction.promptpup.command-trail" = "명령어 궤적";
+"companion.specialAction.nullslime.reform" = "형태 복원";
 "companion.variant.legacy-azure" = "레거시 블루";
 "companion.variant.legacy-violet" = "레거시 바이올렛";
 "companion.personality.calm" = "차분한 성격";

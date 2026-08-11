@@ -805,6 +805,21 @@ struct CompanionGameEngineTests {
             at: now) == .sleep)
     }
 
+    @Test("Each species has one mutation-only signature action")
+    func mutationSignatureActions() {
+        #expect(CompanionSpecialActionRegistry.definitions.count
+            == CompanionSpeciesID.allCases.count)
+        for speciesID in CompanionSpeciesID.allCases {
+            let action = CompanionSpecialActionRegistry.action(
+                for: speciesID,
+                variantID: .mutated)
+            #expect(action?.behavior == .signature)
+            #expect(CompanionSpecialActionRegistry.action(
+                for: speciesID,
+                variantID: .standard) == nil)
+        }
+    }
+
     @Test("Rejects graded eggs and ungraded evolved companions")
     func rejectsInvalidState() {
         let gradedEgg = CompanionGameState(rarity: .normal)
