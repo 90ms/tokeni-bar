@@ -23,4 +23,9 @@ enum CompanionOverlaySize: String, CaseIterable, Identifiable {
         CompanionMutationDecoration.displayDimension(
             for: self.spriteDimension) + 16
     }
+
+    var panelSize: CGSize {
+        CGSize(width: max(self.panelDimension, 220),
+               height: self.panelDimension + 72)
+    }
 }

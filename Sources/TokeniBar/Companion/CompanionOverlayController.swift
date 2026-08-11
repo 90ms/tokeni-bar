@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import TokeniCore
 
 @MainActor
 final class CompanionOverlayController: NSObject, ObservableObject {
@@ -88,9 +89,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
 
     func setSize(_ size: CompanionOverlaySize) {
         guard let panel else { return }
-        let panelSize = NSSize(
-            width: size.panelDimension,
-            height: size.panelDimension)
+        let panelSize = size.panelSize
         guard panel.frame.size != panelSize else { return }
         let currentCenter = NSPoint(
             x: panel.frame.midX,
@@ -116,9 +115,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
 
     func resetPosition(size: CompanionOverlaySize) {
         guard let panel else { return }
-        let panelSize = NSSize(
-            width: size.panelDimension,
-            height: size.panelDimension)
+        let panelSize = size.panelSize
         panel.setFrameOrigin(self.defaultOrigin(panelSize: panelSize))
     }
 
@@ -138,9 +135,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
     }
 
     private func makePanel(store: UsageStore) -> CompanionOverlayPanel {
-        let panelSize = NSSize(
-            width: store.companionOverlaySize.panelDimension,
-            height: store.companionOverlaySize.panelDimension)
+        let panelSize = store.companionOverlaySize.panelSize
         let frame = NSRect(
             origin: self.restoredOrigin(panelSize: panelSize),
             size: panelSize)
@@ -237,24 +232,44 @@ private final class CompanionCelebrationPanel: NSPanel {
 
 private struct CompanionOverlayView: View {
     @ObservedObject var store: UsageStore
+    @State private var speechMessageKey: String?
 
     var body: some View {
-        ByteBotTransitionView(
-            speciesID: self.store.displayedCompanionSpeciesID,
-            stage: self.store.displayedCompanionStage,
-            rarity: self.store.displayedCompanionRarity,
-            behavior: self.store.companionBehavior,
-            mutationID: self.store.displayedCompanionMutationID,
-            cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
-            dimension: self.store.companionOverlaySize.spriteDimension,
-            animationsEnabled: self.store.companionAnimationsEnabled,
-            animationIntensity: self.store
-                .companionAnimationIntensity.motionScale,
-            interactionPulse: self.store.companionInteractionPulse,
-            growthPulse: self.store.isShowingArchivedCompanion
-                ? 0
-                : self.store.companionGrowthPulse)
-            .padding(8)
+        VStack(spacing: 2) {
+            if let speechMessageKey {
+                Text(AppLocalization.string(speechMessageKey))
+                    .font(.caption2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 7)
+                    .frame(maxWidth: 210)
+                    .background(
+                        .regularMaterial,
+                        in: RoundedRectangle(cornerRadius: 10))
+                    .transition(.scale.combined(with: .opacity))
+            } else {
+                Color.clear.frame(height: 58)
+            }
+
+            ByteBotTransitionView(
+                speciesID: self.store.displayedCompanionSpeciesID,
+                stage: self.store.displayedCompanionStage,
+                rarity: self.store.displayedCompanionRarity,
+                behavior: self.store.companionBehavior,
+                mutationID: self.store.displayedCompanionMutationID,
+                cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
+                dimension: self.store.companionOverlaySize.spriteDimension,
+                animationsEnabled: self.store.companionAnimationsEnabled,
+                animationIntensity: self.store
+                    .companionAnimationIntensity.motionScale,
+                interactionPulse: self.store.companionInteractionPulse,
+                growthPulse: self.store.isShowingArchivedCompanion
+                    ? 0
+                    : self.store.companionGrowthPulse)
+                .padding(8)
+        }
+            .animation(.easeInOut(duration: 0.2), value: self.speechMessageKey)
             .contentShape(Rectangle())
             .onTapGesture {
                 self.store.patCompanion()
@@ -266,5 +281,25 @@ private struct CompanionOverlayView: View {
                 self.store.companionOverlayPositionLocked
                     ? "companion.overlay.locked"
                     : "companion.overlay.drag"))
+            .task(id: self.store.displayedCompanionLevel) {
+                guard self.store.displayedCompanionLevel
+                    == CompanionLevelCurve.standard.maximumLevel
+                else {
+                    self.speechMessageKey = nil
+                    return
+                }
+                while !Task.isCancelled {
+                    let keys = (1...7).map {
+                        "companion.maxLevel.message.\($0)"
+                    }
+                    self.speechMessageKey = keys
+                        .filter { $0 != self.speechMessageKey }
+                        .randomElement()
+                    try? await Task.sleep(for: .milliseconds(1800))
+                    self.speechMessageKey = nil
+                    let delay = Int.random(in: 180...420)
+                    try? await Task.sleep(for: .seconds(delay))
+                }
+            }
     }
 }

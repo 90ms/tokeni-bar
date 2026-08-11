@@ -250,6 +250,19 @@ struct CompanionCard: View {
                 animationsEnabled: self.store.companionAnimationsEnabled,
                 dismiss: self.store.dismissCompanionReveal)
         }
+        .sheet(item: Binding(
+            get: { self.store.companionHatchBatchReveal },
+            set: { reveal in
+                if reveal == nil {
+                    self.store.dismissCompanionHatchBatchReveal()
+                }
+            }))
+        { batch in
+            CompanionHatchBatchRevealView(
+                batch: batch,
+                animationsEnabled: self.store.companionAnimationsEnabled,
+                dismiss: self.store.dismissCompanionHatchBatchReveal)
+        }
     }
 
     private func showMaxLevelMessage() {
@@ -258,7 +271,7 @@ struct CompanionCard: View {
         guard let key = candidates.randomElement() else { return }
         self.maxLevelMessageKey = key
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(7))
+            try? await Task.sleep(for: .milliseconds(1800))
             if self.maxLevelMessageKey == key {
                 self.maxLevelMessageKey = nil
             }
