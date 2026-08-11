@@ -139,10 +139,15 @@ struct CompanionRewardEngineTests {
             at: now,
             in: &state)
 
-        #expect(first == [CompanionRewardGrant(
-            amount: 30,
-            reason: .variantDiscovered(.mutated))])
-        #expect(state.starShards == 30)
+        #expect(first == [
+            CompanionRewardGrant(
+                amount: 20,
+                reason: .speciesDiscovered(.bytebot)),
+            CompanionRewardGrant(
+                amount: 30,
+                reason: .variantDiscovered(.mutated)),
+        ])
+        #expect(state.starShards == 50)
         #expect(state.rewardedVariantIDs == [.mutated])
         #expect(repeated.isEmpty)
     }

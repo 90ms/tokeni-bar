@@ -570,7 +570,8 @@ struct CompanionGameEngineTests {
         #expect(state.schemaVersion == CompanionGameState.currentSchemaVersion)
         #expect(state.stage == .adult)
         #expect(state.level >= 25)
-        #expect(state.growthXP >= 106)
+        #expect(state.growthXP >= CompanionLevelCurve.standard
+            .totalXPRequired(forLevel: 25))
         #expect(state.growthEnergy == 0)
         #expect(state.legacyMigratedGenerationIDs.contains(state.generationID))
         #expect(state.eggs.contains { $0.source == .migrationGift })

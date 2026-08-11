@@ -139,15 +139,21 @@ struct CompanionEggTests {
             eggs: [])
         let activeID = state.generationID
         let transactionID = UUID()
+        let seedValue = try #require((0..<100_000).first { candidate in
+            CompanionEggRegistry.unitValue(
+                seed: UInt64(candidate),
+                salt: 1) >= 0.2
+        })
+        let seed = UInt64(seedValue)
         _ = try engine.acquireEgg(
             definitionID: .mystery,
-            seed: 99,
+            seed: seed,
             source: .shop,
             transactionID: transactionID,
             in: &state)
         _ = try engine.acquireEgg(
             definitionID: .mystery,
-            seed: 99,
+            seed: seed,
             source: .shop,
             transactionID: transactionID,
             in: &state)
