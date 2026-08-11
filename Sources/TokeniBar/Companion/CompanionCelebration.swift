@@ -209,6 +209,7 @@ struct CompanionCelebrationView: View {
         case .standard: .mint
         case .prismatic: .pink
         case .mutated: .purple
+        default: .mint
         }
     }
 
@@ -217,6 +218,7 @@ struct CompanionCelebrationView: View {
         case .standard: .yellow
         case .prismatic: .cyan
         case .mutated: .green
+        default: .yellow
         }
     }
 

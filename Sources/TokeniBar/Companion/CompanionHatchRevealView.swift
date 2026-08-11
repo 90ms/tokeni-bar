@@ -48,7 +48,7 @@ struct CompanionHatchBatchRevealView: View {
                     .padding(8)
                     .frame(maxWidth: .infinity)
                     .background(
-                        self.cardColor(for: reveal.variantID),
+                        self.cardColor(reveal.variantID),
                         in: RoundedRectangle(cornerRadius: 12))
                 }
             }
@@ -67,6 +67,7 @@ struct CompanionHatchBatchRevealView: View {
         case .standard: Color.secondary.opacity(0.08)
         case .prismatic: Color.pink.opacity(0.18)
         case .mutated: Color.purple.opacity(0.2)
+        default: Color.secondary.opacity(0.08)
         }
     }
 }
@@ -147,6 +148,8 @@ struct CompanionHatchRevealView: View {
                 .overlay(Image(systemName: "waveform.path.ecg")
                     .font(.system(size: 110))
                     .foregroundStyle(.purple.opacity(0.24)))
+        default:
+            Color.clear
         }
     }
 
