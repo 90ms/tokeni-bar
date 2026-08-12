@@ -2,8 +2,8 @@
 
 [한국어](companion-policy.ko.md) | **English**
 
-- Policy version: 3.0.0
-- Updated: 2026-08-11
+- Policy version: 3.1.0
+- Updated: 2026-08-12
 - Status: implemented
 
 This document defines the product rules for level-100 growth, owned pets, egg
@@ -38,7 +38,10 @@ arrive quickly and progression slows toward level 100. Hatchling, junior, and
 adult forms correspond to levels 1, 10, and 25. Evolution is manual and spends
 no XP.
 
-XP clamps to 500 at level 100 and overflow is not stored. A later cap increase
+XP clamps to 500 at level 100 and overflow is not stored as XP. Verified base
+Growth Energy earned while a level-100 pet is the target enters a separate
+repeatable conversion: each 100 energy grants 5 Star Shards, with the remainder
+kept per pet. Booster multipliers do not apply to this conversion. A later cap increase
 changes the maximum-level and cumulative-XP policy values together; hidden XP
 beyond the previous cap is never banked.
 
@@ -46,13 +49,13 @@ beyond the previous cap is never banked.
 
 The menu-bar companion and the pet receiving verified Growth XP are selected
 independently. A favorite max-level pet can remain visible while another owned
-pet grows. A level-100 pet cannot be selected as a new growth target. Selling or
-removing the target safely falls back to the active pet or another growable pet.
+pet grows. A level-100 pet can also remain the growth target for repeatable shard
+conversion. Selling or removing the target safely falls back to the active pet
+or another owned pet.
 
-On first reaching level 100, the pet shows one randomly selected, predefined
-speech-bubble message. The player can talk to a max-level pet again, and the
-bubble leads to the collection to choose the next growth target. Messages are
-localized static strings and contain no usage content or token numbers.
+The menu popover does not show a separate max-level conversation button. The
+collection detail may still preview predefined localized pet messages; they
+contain no usage content or token numbers.
 
 ## 4. Owned pets, eggs, and duplicates
 
@@ -100,7 +103,7 @@ Selecting a collection card shows:
 - previews for idle, working, waiting, warning, celebrate, and sleep;
 - the discovered mutation pet's species-specific signature action;
 - the level-100 speech action; and
-- an action to select an owned, non-max pet for growth.
+- an action to select any owned pet as the growth target.
 
 Undiscovered appearances remain silhouettes and do not reveal their actions.
 
@@ -123,13 +126,21 @@ Reduce Motion, disabled animations, and Low Power Mode remain respected.
 ## 8. Rewards and benefits
 
 Existing one-time boosters and cosmetics at levels 5, 10, 20, and 25 remain.
-Ten-level shard rewards start at level 30, but the UI never advertises a target
-beyond level 100. First mutation discovery is handled once as an appearance
+Shard rewards occur at levels 30 and 40, every five levels from 50, every three
+levels from 60, and every level from 70. The complete level journey grants 460
+shards. Level 100 grants 50 of that total. First mutation discovery is handled once as an appearance
 discovery. A mutation appearance never grants stronger benefits than Standard.
+
+The first verified growth activity of each local day grants 12 shards and one
+Starlight Egg. Booster items of the same multiplier extend the active expiry by
+their full duration. Activating a different multiplier replaces the active
+booster and discards its remaining time after explicit confirmation.
 
 ## 9. Persistence and safety
 
 Schema v11 stores XP normalized to level 100 and an optional growth-target UUID.
+Reward schema v8 stores per-pet max-level conversion remainders and processed
+award IDs without storing raw token totals.
 Version 10 loads into v11, discarding synthesis data and XP beyond the cap. The
 growth target must refer to the active pet or an owned inactive pet.
 

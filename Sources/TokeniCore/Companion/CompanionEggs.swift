@@ -21,6 +21,7 @@ public enum CompanionEggSource: String, Codable, Hashable, Sendable {
     case migrationGift
     case shop
     case collectionMilestone
+    case dailyAttendance
 }
 
 public struct CompanionEggInstance: Codable, Hashable, Identifiable, Sendable {

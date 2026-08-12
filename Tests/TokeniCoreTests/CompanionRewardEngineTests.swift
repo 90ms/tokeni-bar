@@ -26,8 +26,8 @@ struct CompanionRewardEngineTests {
             total += grants.reduce(0) { $0 + $1.amount }
         }
 
-        #expect(total == 130)
-        #expect(state.starShards == 130)
+        #expect(total == 144)
+        #expect(state.starShards == 144)
         #expect(engine.attendanceCountThisWeek(
             at: start,
             in: state) == 7)
@@ -82,7 +82,7 @@ struct CompanionRewardEngineTests {
             try engine.checkIn(at: earlier, in: &state)
         }
         #expect(state.attendanceRecords.count == 1)
-        #expect(state.starShards == 10)
+        #expect(state.starShards == 12)
     }
 
     @Test("Collection and journey rewards reconcile idempotently")
@@ -318,12 +318,31 @@ struct CompanionRewardEngineTests {
         #expect(engine.energyMultiplier(
             at: now.addingTimeInterval(20 * 60),
             in: state) == 1)
-        #expect(throws: CompanionRewardError.energyBoosterAlreadyActive) {
-            try engine.activateEnergyBooster(
-                .triple20Minutes,
-                at: now.addingTimeInterval(1),
-                in: &state)
-        }
+    }
+
+    @Test("Same boosters extend time and different boosters replace it")
+    func stackAndReplaceEnergyBooster() throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let engine = CompanionRewardEngine(calendar: self.calendar)
+        var state = CompanionRewardState(energyBoosterInventory: [
+            .quintuple10Minutes: 2,
+            .double30Minutes: 1,
+        ])
+
+        try engine.activateEnergyBooster(.quintuple10Minutes, at: now, in: &state)
+        try engine.activateEnergyBooster(
+            .quintuple10Minutes,
+            at: now.addingTimeInterval(60),
+            in: &state)
+        #expect(state.activeEnergyBooster?.expiresAt
+            == now.addingTimeInterval(20 * 60))
+        try engine.activateEnergyBooster(
+            .double30Minutes,
+            at: now.addingTimeInterval(120),
+            in: &state)
+        #expect(state.activeEnergyBooster?.id == .double30Minutes)
+        #expect(state.activeEnergyBooster?.expiresAt
+            == now.addingTimeInterval(32 * 60))
     }
 
     @Test("Reward state persists without companion or provider data")
@@ -453,10 +472,49 @@ struct CompanionRewardEngineTests {
             level: 50,
             in: &state)
 
-        #expect(state.starShards == 30)
+        #expect(state.starShards == 35)
         #expect(CompanionRewardEngine.nextRecurringRewardLevel(after: 29) == 30)
         #expect(CompanionRewardEngine.nextRecurringRewardLevel(after: 30) == 40)
         #expect(CompanionRewardEngine.nextRecurringRewardLevel(after: 49) == 50)
+    }
+
+    @Test("A full pet journey awards enough shards for five mystery eggs")
+    func completeLevelRewardJourney() {
+        let engine = CompanionRewardEngine()
+        var state = CompanionRewardState()
+
+        engine.reconcileLevelMilestones(
+            generationID: UUID(),
+            level: 100,
+            in: &state)
+
+        #expect(state.starShards == 460)
+    }
+
+    @Test("Maximum-level base growth repeatedly converts to shards")
+    func maximumLevelGrowthConversion() {
+        let engine = CompanionRewardEngine()
+        let generationID = UUID()
+        let firstAwardID = UUID()
+        var state = CompanionRewardState()
+
+        #expect(engine.consumeMaxLevelGrowth(
+            generationID: generationID,
+            awardID: firstAwardID,
+            baseEnergy: 250,
+            in: &state) == 10)
+        #expect(state.maxLevelGrowthRemainders[generationID] == 50)
+        #expect(engine.consumeMaxLevelGrowth(
+            generationID: generationID,
+            awardID: firstAwardID,
+            baseEnergy: 250,
+            in: &state) == 0)
+        #expect(engine.consumeMaxLevelGrowth(
+            generationID: generationID,
+            awardID: UUID(),
+            baseEnergy: 50,
+            in: &state) == 5)
+        #expect(state.starShards == 15)
     }
 
     @Test("Imported pets skip historical rewards but earn future milestones")

@@ -9,7 +9,7 @@ time by default. Expand **Show details** for additional quota windows, token
 totals, API-equivalent reference costs, data source, and update time. The
 header and footer actions stay fixed while the center scrolls when many
 providers or expanded details need more room.
-Usage cards come first, followed by an always-visible companion card. Compact
+The pet status card comes first, followed by provider usage cards. Compact
 mode keeps the same path to expanded provider details.
 
 **Usage History** in the footer opens the 30-day local aggregate window
@@ -31,6 +31,9 @@ Growth XP produced by the ledger. The award creation time determines
 whether the booster is active, and an already-applied award ID never pays
 again. Booster-added XP is never treated as another base award and does not
 multiply other bonus XP again.
+Using another booster with the same multiplier extends the current expiry by
+its full duration. A different multiplier replaces the active booster after a
+confirmation that its remaining time will not be restored.
 
 Counter scope differs by provider:
 

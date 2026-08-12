@@ -2,7 +2,7 @@ import Foundation
 
 public struct CompanionRewardRules: Sendable {
     public static let standard = CompanionRewardRules(
-        dailyAttendance: 10,
+        dailyAttendance: 12,
         weeklyAttendance: [3: 10, 5: 20, 7: 30],
         monthlyAttendanceDays: 20,
         monthlyAttendanceReward: 50,
@@ -63,9 +63,9 @@ public struct CompanionRewardRules: Sendable {
 }
 
 public struct CompanionRewardEngine: Sendable {
+    public static let maxLevelGrowthCost = 100
+    public static let maxLevelGrowthShardReward = 5
     public static let recurringLevelRewardStart = 30
-    public static let recurringLevelRewardInterval = 10
-    public static let recurringLevelRewardShards = 10
 
     public let rules: CompanionRewardRules
     public let cosmetics: [CompanionCosmetic]
@@ -317,16 +317,24 @@ public struct CompanionRewardEngine: Sendable {
         at date: Date = .now,
         in state: inout CompanionRewardState) throws
     {
-        guard state.activeEnergyBooster?.isActive(at: date) != true else {
-            throw CompanionRewardError.energyBoosterAlreadyActive
-        }
         guard state.energyBoosterInventory[boosterID, default: 0] > 0 else {
             throw CompanionRewardError.energyBoosterNotOwned
         }
         state.energyBoosterInventory[boosterID, default: 0] -= 1
-        state.activeEnergyBooster = CompanionActiveEnergyBooster(
-            id: boosterID,
-            activatedAt: date)
+        if let active = state.activeEnergyBooster,
+           active.isActive(at: date),
+           active.id == boosterID
+        {
+            state.activeEnergyBooster = CompanionActiveEnergyBooster(
+                id: boosterID,
+                activatedAt: active.activatedAt,
+                expiresAt: active.expiresAt.addingTimeInterval(
+                    boosterID.duration))
+        } else {
+            state.activeEnergyBooster = CompanionActiveEnergyBooster(
+                id: boosterID,
+                activatedAt: date)
+        }
         state.updatedAt = date
     }
 
@@ -398,6 +406,34 @@ public struct CompanionRewardEngine: Sendable {
         return booster.id.multiplier
     }
 
+    @discardableResult
+    public func consumeMaxLevelGrowth(
+        generationID: UUID,
+        awardID: UUID,
+        baseEnergy: Int,
+        at date: Date = .now,
+        in state: inout CompanionRewardState) -> Int
+    {
+        guard baseEnergy > 0,
+              !state.processedMaxLevelGrowthAwardIDs.contains(awardID)
+        else { return 0 }
+        state.processedMaxLevelGrowthAwardIDs.append(awardID)
+        state.processedMaxLevelGrowthAwardIDs = Array(
+            state.processedMaxLevelGrowthAwardIDs.suffix(512))
+        let accumulated = Self.saturatedAdd(
+            state.maxLevelGrowthRemainders[generationID, default: 0],
+            baseEnergy)
+        let cycles = accumulated / Self.maxLevelGrowthCost
+        state.maxLevelGrowthRemainders[generationID] =
+            accumulated % Self.maxLevelGrowthCost
+        let shards = Self.saturatedMultiply(
+            cycles,
+            Self.maxLevelGrowthShardReward)
+        state.starShards = Self.saturatedAdd(state.starShards, shards)
+        state.updatedAt = date
+        return shards
+    }
+
     public func reconcileBondMilestones(
         generationID: UUID,
         bondEnergy: Int,
@@ -462,20 +498,20 @@ public struct CompanionRewardEngine: Sendable {
             }
         }
         if level >= Self.recurringLevelRewardStart {
-            let milestoneLevel = level
-                - level % Self.recurringLevelRewardInterval
+            let milestoneLevel = Self.levelRewardMilestones
+                .last(where: { $0.level <= level })?.level ?? 0
             let previousLevel = self.highestRecurringRewardLevel(
                 generationID: generationID,
                 in: state)
             if milestoneLevel > previousLevel {
-                let rewardCount = (milestoneLevel
-                    - max(previousLevel, 20))
-                    / Self.recurringLevelRewardInterval
+                let shards = Self.levelRewardMilestones
+                    .filter {
+                        $0.level > previousLevel && $0.level <= milestoneLevel
+                    }
+                    .reduce(0) { Self.saturatedAdd($0, $1.shards) }
                 state.starShards = Self.saturatedAdd(
                     state.starShards,
-                    Self.saturatedMultiply(
-                        rewardCount,
-                        Self.recurringLevelRewardShards))
+                    shards)
                 self.recordRecurringRewardCheckpoint(
                     generationID: generationID,
                     level: milestoneLevel,
@@ -486,19 +522,23 @@ public struct CompanionRewardEngine: Sendable {
     }
 
     public static func nextRecurringRewardLevel(after level: Int) -> Int {
-        guard level >= Self.recurringLevelRewardStart else {
-            return Self.recurringLevelRewardStart
-        }
-        let completedIntervals =
-            (level - Self.recurringLevelRewardStart)
-                / Self.recurringLevelRewardInterval
-        let offset = Self.saturatedMultiply(
-            completedIntervals + 1,
-            Self.recurringLevelRewardInterval)
-        return Self.saturatedAdd(
-            Self.recurringLevelRewardStart,
-            offset)
+        Self.levelRewardMilestones.first(where: { $0.level > level })?.level
+            ?? CompanionLevelCurve.standard.maximumLevel
     }
+
+    public static func levelRewardShards(at level: Int) -> Int {
+        Self.levelRewardMilestones.first(where: { $0.level == level })?.shards
+            ?? 0
+    }
+
+    /// One pet earns 460 shards while progressing through all reward milestones.
+    public static let levelRewardMilestones: [(level: Int, shards: Int)] = {
+        var rewards = [(30, 10), (40, 10), (50, 15), (55, 15)]
+        rewards += stride(from: 60, through: 69, by: 3).map { ($0, 15) }
+        rewards += (70...99).map { ($0, 10) }
+        rewards.append((100, 50))
+        return rewards
+    }()
 
     /// Records the level rewards an imported pet had already passed without
     /// retroactively granting every historical per-pet reward.
@@ -519,7 +559,8 @@ public struct CompanionRewardEngine: Sendable {
         if level >= Self.recurringLevelRewardStart {
             self.recordRecurringRewardCheckpoint(
                 generationID: generationID,
-                level: level - level % Self.recurringLevelRewardInterval,
+                level: Self.levelRewardMilestones
+                    .last(where: { $0.level <= level })?.level ?? 0,
                 in: &state)
         }
         state.updatedAt = date

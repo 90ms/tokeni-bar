@@ -98,10 +98,6 @@ public struct CompanionGameEngine: Sendable {
         guard isActive || archived != nil else {
             throw CompanionGameError.archivedGenerationNotFound
         }
-        let xp = isActive ? state.growthXP : archived?.growthXP ?? 0
-        guard CompanionLevelCurve.standard.level(forXP: xp)
-                < CompanionLevelCurve.standard.maximumLevel
-        else { throw CompanionGameError.maximumLevelReached }
         state.growthTargetGenerationID = generationID
         state.updatedAt = now
     }

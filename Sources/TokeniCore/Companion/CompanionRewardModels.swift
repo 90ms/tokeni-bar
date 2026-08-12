@@ -84,6 +84,16 @@ public struct CompanionActiveEnergyBooster: Codable, Hashable, Sendable {
         self.expiresAt = activatedAt.addingTimeInterval(id.duration)
     }
 
+    public init(
+        id: CompanionEnergyBoosterID,
+        activatedAt: Date,
+        expiresAt: Date)
+    {
+        self.id = id
+        self.activatedAt = activatedAt
+        self.expiresAt = max(expiresAt, activatedAt)
+    }
+
     public func isActive(at date: Date) -> Bool {
         date >= self.activatedAt && date < self.expiresAt
     }
@@ -109,7 +119,7 @@ public struct CompanionAttendanceRecord: Codable, Hashable, Sendable {
 }
 
 public struct CompanionRewardState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 7
+    public static let currentSchemaVersion = 8
 
     public var schemaVersion: Int
     public var starShards: Int
@@ -130,6 +140,8 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
     public var activeEnergyBooster: CompanionActiveEnergyBooster?
     public var rewardedBondMilestoneIDs: Set<String>
     public var processedEggTransactionIDs: [UUID]
+    public var maxLevelGrowthRemainders: [UUID: Int]
+    public var processedMaxLevelGrowthAwardIDs: [UUID]
     public var updatedAt: Date
 
     public init(
@@ -152,6 +164,8 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         activeEnergyBooster: CompanionActiveEnergyBooster? = nil,
         rewardedBondMilestoneIDs: Set<String> = [],
         processedEggTransactionIDs: [UUID] = [],
+        maxLevelGrowthRemainders: [UUID: Int] = [:],
+        processedMaxLevelGrowthAwardIDs: [UUID] = [],
         updatedAt: Date = .now)
     {
         let removedCosmetics: Set<CompanionCosmeticID> = [.nightRing]
@@ -177,6 +191,11 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         self.rewardedBondMilestoneIDs = rewardedBondMilestoneIDs
         self.processedEggTransactionIDs = Array(
             processedEggTransactionIDs.suffix(512))
+        self.maxLevelGrowthRemainders = maxLevelGrowthRemainders.mapValues {
+            max($0, 0)
+        }
+        self.processedMaxLevelGrowthAwardIDs = Array(
+            processedMaxLevelGrowthAwardIDs.suffix(512))
         self.updatedAt = updatedAt
     }
 
@@ -208,6 +227,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             && self.energyBoosterInventory.values.allSatisfy { $0 >= 0 }
             && Set(self.processedEggTransactionIDs).count
                 == self.processedEggTransactionIDs.count
+            && self.maxLevelGrowthRemainders.values.allSatisfy { $0 >= 0 }
+            && Set(self.processedMaxLevelGrowthAwardIDs).count
+                == self.processedMaxLevelGrowthAwardIDs.count
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -231,6 +253,8 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         case activeEnergyBooster
         case rewardedBondMilestoneIDs
         case processedEggTransactionIDs
+        case maxLevelGrowthRemainders
+        case processedMaxLevelGrowthAwardIDs
         case updatedAt
     }
 
@@ -318,6 +342,12 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             processedEggTransactionIDs: try container.decodeIfPresent(
                 [UUID].self,
                 forKey: .processedEggTransactionIDs) ?? [],
+            maxLevelGrowthRemainders: try container.decodeIfPresent(
+                [UUID: Int].self,
+                forKey: .maxLevelGrowthRemainders) ?? [:],
+            processedMaxLevelGrowthAwardIDs: try container.decodeIfPresent(
+                [UUID].self,
+                forKey: .processedMaxLevelGrowthAwardIDs) ?? [],
             updatedAt: try container.decodeIfPresent(
                 Date.self,
                 forKey: .updatedAt) ?? .now)
@@ -376,6 +406,12 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         try container.encode(
             self.processedEggTransactionIDs,
             forKey: .processedEggTransactionIDs)
+        try container.encode(
+            self.maxLevelGrowthRemainders,
+            forKey: .maxLevelGrowthRemainders)
+        try container.encode(
+            self.processedMaxLevelGrowthAwardIDs,
+            forKey: .processedMaxLevelGrowthAwardIDs)
         try container.encode(self.updatedAt, forKey: .updatedAt)
     }
 }

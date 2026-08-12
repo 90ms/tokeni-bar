@@ -1311,10 +1311,25 @@ final class UsageStore: ObservableObject {
             let grants = try self.companionRewardEngine.checkIn(
                 at: date,
                 in: &state)
+            var companion = self.companionState
+            let dateKey = GrowthLocalDate.key(for: date)
+            if !companion.eggs.contains(where: {
+                $0.source == .dailyAttendance
+                    && GrowthLocalDate.key(for: $0.acquiredAt) == dateKey
+            }) {
+                try self.companionGameEngine.acquireEgg(
+                    definitionID: .discovery,
+                    seed: UInt64.random(in: 0...UInt64(Int64.max)),
+                    source: .dailyAttendance,
+                    at: date,
+                    in: &companion)
+            }
             self.companionRewardState = state
+            self.companionState = companion
             self.companionRewardNoticeAmount = grants.reduce(0) { $0 + $1.amount }
             self.companionAttendanceError = nil
             self.saveCompanionRewardState()
+            self.saveCompanionState()
         } catch let error as CompanionRewardError {
             self.companionRewardNoticeAmount = nil
             self.companionAttendanceError = error
@@ -1553,6 +1568,11 @@ final class UsageStore: ObservableObject {
     var companionNextRecurringRewardLevel: Int {
         CompanionRewardEngine.nextRecurringRewardLevel(
             after: self.companionState.level)
+    }
+
+    var companionNextRecurringRewardShards: Int {
+        CompanionRewardEngine.levelRewardShards(
+            at: self.companionNextRecurringRewardLevel)
     }
 
     var activeBenefitCompanion: CompanionBenefitCompanion? {
@@ -2055,6 +2075,8 @@ final class UsageStore: ObservableObject {
         guard self.companionStateLoaded else { return }
         for award in self.tokenGrowthLedgerState.pendingAwards {
             var companion = self.companionState
+            let wasMaximumLevel = companion.growthTargetLevel
+                >= CompanionLevelCurve.standard.maximumLevel
             let multiplier = self.companionRewardEngine.energyMultiplier(
                 at: award.createdAt,
                 in: self.companionRewardState)
@@ -2080,6 +2102,20 @@ final class UsageStore: ObservableObject {
             }
             self.companionState = companion
             var rewards = self.companionRewardState
+            if wasMaximumLevel,
+               let targetID = companion.resolvedGrowthTargetGenerationID
+            {
+                let shardIncrease = self.companionRewardEngine
+                    .consumeMaxLevelGrowth(
+                        generationID: targetID,
+                        awardID: award.id,
+                        baseEnergy: award.energy,
+                        at: award.createdAt,
+                        in: &rewards)
+                if shardIncrease > 0 {
+                    self.companionRewardNoticeAmount = shardIncrease
+                }
+            }
             if let targetID = companion.resolvedGrowthTargetGenerationID {
                 self.companionRewardEngine.reconcileLevelMilestones(
                     generationID: targetID,

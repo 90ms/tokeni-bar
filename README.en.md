@@ -77,6 +77,10 @@ a recurring goal.
 
 ### 2. Collect new pets through eggs
 
+Level rewards arrive at 30 and 40, every five levels from 50, every three levels
+from 60, and every level from 70. A full journey grants 460 shards. A level-100
+growth target converts each 100 base Growth Energy into 5 shards repeatedly.
+
 The first launch grants one non-sellable Starter Egg, which hatches for free.
 Further pets come from the Egg Vault and shop without completing or replacing
 the current pet.
@@ -87,7 +91,7 @@ Users who migrate an existing active pet receive one additional Homecoming Egg.
 | Starter Egg | Once on first launch | Free | Not sellable |
 | Homecoming Egg | Once when migrating an active pet | Not purchasable | Not sellable |
 | Mystery Egg | Highest pet level 5 | 90 shards | 30 |
-| Starlight Egg | Discover 3 different species | 180 shards | 60 |
+| Starlight Egg | First daily growth activity or discover 3 species | 180 shards | 60 |
 | Prismatic Egg | Collection milestones | Not purchasable | 60 |
 
 A Starlight Egg selects an undiscovered species when one remains and rolls a
@@ -144,6 +148,7 @@ appearances are registered in the collection with Standard and Prismatic.
 | 20 | Firefly Aura |
 | 25 | 5x, 10-minute booster and Orbit Aura |
 
+The first growth activity each day grants 12 Star Shards and one Starlight Egg.
 Automatic activity attendance, the first verified growth of a day, weekly and
 monthly activity, species and variant discoveries, and stable-release gifts
 also grant Star Shards. Shards are shared across eggs, cosmetics, and boosters.
@@ -160,8 +165,9 @@ Every menu-bar display mode uses a native monochrome status icon. A red badge
 appears when an egg can be opened or a level 10 or 25 evolution is ready.
 
 The menu popover keeps its header and history, settings, and quit actions
-fixed while the center content scrolls. Usage appears before an always-visible
-pet card. Each provider card leads with its primary quota and reset time;
+fixed while the center content scrolls. The pet status card appears first,
+followed by usage. Growable and max-level owned pets are separated by ordering,
+badges, and color. Each provider card leads with its primary quota and reset time;
 expand **Show details** for additional quotas, tokens, reference costs, and
 source information, including in compact mode.
 
@@ -253,7 +259,7 @@ analytics or remote game server.
 | Claude password prompt repeats after unlock | Update the app and connect once under **Settings → General → Providers**. Background refreshes never open authentication UI |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Pet progress cannot be read | Restart the app to retry local recovery, then review diagnostics if the issue continues |
-| Cannot use a booster | Check whether another booster is active and whether you own one or have enough Star Shards to buy it |
+| Cannot use a booster | Check inventory or shard balance. The same multiplier extends time; a different one replaces and discards the active boost's remaining time |
 | Memory use is temporarily high | Check whether a large provider log just refreshed or a new pet sprite appeared for the first time. Disable the on-screen pet when unused; if memory keeps growing, restart and report diagnostics with reproduction steps |
 
 ## Development
