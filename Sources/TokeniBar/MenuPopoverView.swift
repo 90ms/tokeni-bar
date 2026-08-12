@@ -16,6 +16,10 @@ struct MenuPopoverView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
+                    if self.store.companionEnabled {
+                        self.companionSummary
+                    }
+
                     if !self.store.snapshots.isEmpty {
                         Text(AppLocalization.string("settings.tab.usage"))
                             .font(.caption.weight(.semibold))
@@ -32,9 +36,6 @@ struct MenuPopoverView: View {
                             destination: result.latestRelease.pageURL)
                     }
 
-                    if self.store.companionEnabled {
-                        self.companionSummary
-                    }
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)

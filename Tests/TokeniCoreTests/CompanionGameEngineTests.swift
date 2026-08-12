@@ -909,8 +909,8 @@ struct CompanionGameEngineTests {
         })
     }
 
-    @Test("Level 100 clamps XP and cannot remain a growth target")
-    func maximumLevelGrowth() {
+    @Test("Level 100 clamps XP and can remain a growth target")
+    func maximumLevelGrowth() throws {
         let engine = CompanionGameEngine(calendar: self.calendar)
         var state = CompanionGameState(
             speciesID: .bytebot,
@@ -929,9 +929,7 @@ struct CompanionGameEngineTests {
 
         #expect(state.level == 100)
         #expect(state.growthXP == CompanionLevelCurve.standard.maximumXP)
-        #expect(throws: CompanionGameError.maximumLevelReached) {
-            try engine.selectGrowthTarget(state.generationID, in: &state)
-        }
+        try engine.selectGrowthTarget(state.generationID, in: &state)
     }
 
     private func date(_ value: String) -> Date? {

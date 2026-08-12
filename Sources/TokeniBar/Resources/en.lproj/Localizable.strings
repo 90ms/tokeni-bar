@@ -167,7 +167,7 @@
 "companion.maxLevel.talk" = "Talk to your fully grown friend";
 "companion.maxLevel.action" = "A grown friend’s request";
 "companion.level.maximum" = "Level 100 · Fully grown";
-"companion.maxLevel.growthHint" = "Choose another friend as the growth target.";
+"companion.maxLevel.growthHint" = "Earn 5 Star Shards for every 100 Growth Energy collected.";
 "companion.maxLevel.message.1" = "I’m all grown up! Shall we help another friend?";
 "companion.maxLevel.message.2" = "Thanks for raising me. Another friend is waiting for you!";
 "companion.maxLevel.message.3" = "I’m ready! Let’s help someone else grow.";
@@ -316,6 +316,8 @@
 "companion.archive.putAway" = "Put Away";
 "companion.archive.showCurrent" = "Show Growing Pet";
 "companion.archive.status.together" = "Together";
+"companion.archive.status.maximum" = "Max level";
+"companion.archive.status.growing" = "Can grow";
 "companion.archive.details" = "View companion details";
 "companion.archive.memories.empty" = "No memories were recorded.";
 "companion.archive.status.passiveSlot" = "Passive %d";
@@ -395,9 +397,9 @@
 "companion.rewards.title" = "Star Shard Rewards";
 "companion.rewards.balance" = "%d Star Shards";
 "companion.rewards.description" = "Earn Star Shards from attendance, verified growth, discoveries, and collection milestones, then unlock boosters and auras at level milestones.";
-"companion.rewards.description.simplified" = "Earn Star Shards from verified growth, pet discoveries, and collection milestones.";
+"companion.rewards.description.simplified" = "Your first growth activity each day grants 12 Star Shards and one Starlight Egg, with more shards from growth and collection milestones.";
 "companion.rewards.sources" = "Each stable release also includes a one-time gift on first launch.";
-"companion.rewards.sources.simplified" = "Growth rewards · Discovery and collection rewards";
+"companion.rewards.sources.simplified" = "Daily attendance · Growth rewards · Discovery and collection rewards";
 "companion.rewards.received" = "Received %d Star Shards!";
 "companion.cosmetic.shop" = "Star Shard cosmetics";
 "companion.cosmetic.description" = "Purchased cosmetics are permanent and never affect growth or rarity.";
@@ -445,6 +447,9 @@
 "companion.booster.count" = "%d owned";
 "companion.booster.price" = "%d shards";
 "companion.booster.levelDescription" = "Reach pet levels 5, 10, 20, and 25 to earn boosters and exclusive auras. Boosters apply only to newly verified base Growth XP.";
+"companion.booster.replace.title" = "Replace the booster?";
+"companion.booster.replace.message" = "The active boost's remaining time will be lost and the used booster will not be returned. Using the same multiplier extends its total duration.";
+"companion.booster.replace.action" = "Replace";
 "companion.attendance.claim" = "Check in today";
 "companion.attendance.claimed" = "Checked in today";
 "companion.attendance.automaticComplete" = "Today's activity confirmed";

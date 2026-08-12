@@ -6,7 +6,6 @@ struct CompanionCard: View {
     @ObservedObject var store: UsageStore
     @Environment(\.openWindow) private var openWindow
     var compact = false
-    @State private var maxLevelMessageKey: String?
 
     var body: some View {
         if self.store.companionDataUnavailable {
@@ -39,8 +38,7 @@ struct CompanionCard: View {
                     .foregroundStyle(.orange)
             }
             HStack(alignment: .top, spacing: 10) {
-                ZStack(alignment: .topLeading) {
-                    ByteBotTransitionView(
+                ByteBotTransitionView(
                         speciesID: self.store.displayedCompanionSpeciesID,
                         stage: self.store.displayedCompanionStage,
                         rarity: self.store.displayedCompanionRarity,
@@ -55,24 +53,6 @@ struct CompanionCard: View {
                         growthPulse: self.store.isShowingArchivedCompanion
                             ? 0
                             : self.store.companionGrowthPulse)
-
-                    if let maxLevelMessageKey {
-                        Button {
-                            self.openCompanionCollection()
-                        } label: {
-                            Text(AppLocalization.string(maxLevelMessageKey))
-                                .font(.caption2)
-                                .multilineTextAlignment(.leading)
-                                .padding(7)
-                                .frame(width: 170, alignment: .leading)
-                                .background(.regularMaterial, in: RoundedRectangle(
-                                    cornerRadius: 9))
-                        }
-                        .buttonStyle(.plain)
-                        .offset(x: 44, y: -14)
-                        .zIndex(2)
-                    }
-                }
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(self.companionName)
@@ -189,7 +169,7 @@ struct CompanionCard: View {
                         Text(AppLocalization.format(
                             "companion.level.nextReward",
                             self.store.companionNextRecurringRewardLevel,
-                            CompanionRewardEngine.recurringLevelRewardShards))
+                            self.store.companionNextRecurringRewardShards))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -211,32 +191,12 @@ struct CompanionCard: View {
                 .help(AppLocalization.string("companion.pat"))
                 .accessibilityLabel(AppLocalization.string("companion.pat"))
 
-                if self.store.displayedCompanionLevel
-                    == CompanionLevelCurve.standard.maximumLevel
-                {
-                    Button {
-                        self.showMaxLevelMessage()
-                    } label: {
-                        Image(systemName: "bubble.left.fill")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help(AppLocalization.string(
-                        "companion.maxLevel.talk"))
-                }
             }
         }
         .padding(10)
         .background(
             .quaternary.opacity(0.5),
             in: RoundedRectangle(cornerRadius: 10))
-        .onChange(of: self.store.displayedCompanionLevel) { oldLevel, newLevel in
-            if oldLevel < CompanionLevelCurve.standard.maximumLevel,
-               newLevel == CompanionLevelCurve.standard.maximumLevel
-            {
-                self.showMaxLevelMessage()
-            }
-        }
         .sheet(item: Binding(
             get: { self.store.companionReveal },
             set: { reveal in
@@ -262,19 +222,6 @@ struct CompanionCard: View {
                 batch: batch,
                 animationsEnabled: self.store.companionAnimationsEnabled,
                 dismiss: self.store.dismissCompanionHatchBatchReveal)
-        }
-    }
-
-    private func showMaxLevelMessage() {
-        let keys = (1...7).map { "companion.maxLevel.message.\($0)" }
-        let candidates = keys.filter { $0 != self.maxLevelMessageKey }
-        guard let key = candidates.randomElement() else { return }
-        self.maxLevelMessageKey = key
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(1800))
-            if self.maxLevelMessageKey == key {
-                self.maxLevelMessageKey = nil
-            }
         }
     }
 

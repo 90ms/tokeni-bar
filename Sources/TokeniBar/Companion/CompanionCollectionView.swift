@@ -107,6 +107,7 @@ struct CompanionCollectionView: View {
     @State private var pendingCosmeticPurchaseID: CompanionCosmeticID?
     @State private var pendingEggSale: CompanionEggInstance?
     @State private var pendingPetSale: CompletedCompanionGeneration?
+    @State private var pendingBoosterReplacement: CompanionEnergyBoosterID?
     @State private var nicknameDraft = ""
 
     private let stages: [CompanionGameStage] = [.hatchling, .junior, .adult]
@@ -199,6 +200,28 @@ struct CompanionCollectionView: View {
                         self.store.sellCompanion(companion.generationID)
                     },
                 secondaryButton: .cancel())
+        }
+        .confirmationDialog(
+            AppLocalization.string("companion.booster.replace.title"),
+            isPresented: Binding(
+                get: { self.pendingBoosterReplacement != nil },
+                set: { shown in
+                    if !shown { self.pendingBoosterReplacement = nil }
+                }),
+            titleVisibility: .visible)
+        {
+            Button(
+                AppLocalization.string("companion.booster.replace.action"),
+                role: .destructive)
+            {
+                if let boosterID = self.pendingBoosterReplacement {
+                    self.store.activateCompanionEnergyBooster(boosterID)
+                }
+                self.pendingBoosterReplacement = nil
+            }
+            Button(AppLocalization.string("action.cancel"), role: .cancel) {}
+        } message: {
+            Text(AppLocalization.string("companion.booster.replace.message"))
         }
         .sheet(item: Binding(
             get: { self.store.companionReveal },
@@ -831,8 +854,15 @@ struct CompanionCollectionView: View {
                                 .energyBoosterInventory[boosterID, default: 0]
                             Button {
                                 if count > 0 {
-                                    self.store.activateCompanionEnergyBooster(
-                                        boosterID)
+                                    if let active = self.store
+                                        .companionActiveEnergyBooster,
+                                       active.id != boosterID
+                                    {
+                                        self.pendingBoosterReplacement = boosterID
+                                    } else {
+                                        self.store.activateCompanionEnergyBooster(
+                                            boosterID)
+                                    }
                                 } else {
                                     self.store.purchaseCompanionEnergyBooster(
                                         boosterID)
@@ -853,10 +883,9 @@ struct CompanionCollectionView: View {
                             }
                             .buttonStyle(.bordered)
                             .disabled(
-                                self.store.companionActiveEnergyBooster != nil
-                                    || (count == 0
+                                count == 0
                                         && self.store.companionRewardState
-                                            .starShards < boosterID.cost))
+                                            .starShards < boosterID.cost)
                         }
                     }
                     Text(AppLocalization.string(
@@ -1674,7 +1703,7 @@ struct CompanionCollectionView: View {
                             : AppLocalization.format(
                                 "companion.level.nextReward",
                                 self.store.companionNextRecurringRewardLevel,
-                                CompanionRewardEngine.recurringLevelRewardShards))
+                                self.store.companionNextRecurringRewardShards))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -2445,9 +2474,7 @@ struct CompanionCollectionView: View {
                             count: 2),
                         spacing: 8)
                     {
-                        ForEach(Array(
-                            self.filteredArchivedGenerations.reversed()))
-                        { generation in
+                        ForEach(self.filteredArchivedGenerations) { generation in
                             self.archivedCompanionCard(generation)
                         }
                     }
@@ -2499,6 +2526,17 @@ struct CompanionCollectionView: View {
             guard let selectedOwnedSpeciesID = self.selectedOwnedSpeciesID
             else { return true }
             return $0.speciesID == selectedOwnedSpeciesID
+        }.sorted { lhs, rhs in
+            let lhsIsMaximum = CompanionLevelCurve.standard.level(
+                forXP: lhs.growthXP)
+                == CompanionLevelCurve.standard.maximumLevel
+            let rhsIsMaximum = CompanionLevelCurve.standard.level(
+                forXP: rhs.growthXP)
+                == CompanionLevelCurve.standard.maximumLevel
+            if lhsIsMaximum != rhsIsMaximum {
+                return !lhsIsMaximum
+            }
+            return lhs.completedAt > rhs.completedAt
         }
     }
 
@@ -2515,6 +2553,10 @@ struct CompanionCollectionView: View {
         let displayDimension = generation.mutationID.map { _ in
             CompanionMutationDecoration.displayDimension(for: 52)
         } ?? 64
+        let level = CompanionLevelCurve.standard.level(
+            forXP: generation.growthXP)
+        let isMaximumLevel = level
+            == CompanionLevelCurve.standard.maximumLevel
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ZStack {
@@ -2541,6 +2583,23 @@ struct CompanionCollectionView: View {
                         "companion.species.\(generation.speciesID.rawValue).name"))
                         .font(.caption.weight(.semibold))
                         .lineLimit(1)
+                    Label(
+                        AppLocalization.string(
+                            isMaximumLevel
+                                ? "companion.archive.status.maximum"
+                                : "companion.archive.status.growing"),
+                        systemImage: isMaximumLevel
+                            ? "checkmark.seal.fill"
+                            : "arrow.up.circle.fill")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(
+                            isMaximumLevel ? Color.orange : Color.green)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            (isMaximumLevel ? Color.orange : Color.green)
+                                .opacity(0.12),
+                            in: Capsule())
                     HStack(spacing: 5) {
                         CompanionVariantBadge(variantID: variantID)
                         if let mutationID = generation.mutationID {
@@ -2564,8 +2623,7 @@ struct CompanionCollectionView: View {
                     }
                     Text(AppLocalization.format(
                         "companion.archive.identity",
-                        CompanionLevelCurve.standard.level(
-                            forXP: generation.growthXP),
+                        level,
                         self.memoryCount(for: generation.generationID)))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -2611,11 +2669,7 @@ struct CompanionCollectionView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled(
-                    isGrowthTarget
-                        || CompanionLevelCurve.standard.level(
-                            forXP: generation.growthXP)
-                            == CompanionLevelCurve.standard.maximumLevel)
+                .disabled(isGrowthTarget)
                 .help(AppLocalization.string(
                     isGrowthTarget
                         ? "companion.growthTarget.current"
@@ -2652,8 +2706,17 @@ struct CompanionCollectionView: View {
         .background(
             isShowcased
                 ? Color.accentColor.opacity(0.14)
-                : Color.secondary.opacity(0.08),
+                : isMaximumLevel
+                    ? Color.orange.opacity(0.10)
+                    : Color.green.opacity(0.12),
             in: RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(
+                    isMaximumLevel
+                        ? Color.orange.opacity(0.45)
+                        : Color.green.opacity(0.5),
+                    lineWidth: isMaximumLevel ? 1 : 1.5))
     }
 
     private func archivedCompanionDetail(
@@ -2993,9 +3056,7 @@ struct CompanionCollectionView: View {
                     self.selectedCollectionEntry = nil
                 }
                 Spacer()
-                if let ownedID,
-                   ownedLevel != CompanionLevelCurve.standard.maximumLevel
-                {
+                if let ownedID {
                     Button {
                         self.store.selectCompanionGrowthTarget(ownedID)
                         self.selectedCollectionEntry = nil
