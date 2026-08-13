@@ -502,7 +502,7 @@ struct CompanionRewardEngineTests {
             generationID: generationID,
             awardID: firstAwardID,
             baseEnergy: 250,
-            in: &state) == 10)
+            in: &state) == 40)
         #expect(state.maxLevelGrowthRemainders[generationID] == 50)
         #expect(engine.consumeMaxLevelGrowth(
             generationID: generationID,
@@ -513,8 +513,8 @@ struct CompanionRewardEngineTests {
             generationID: generationID,
             awardID: UUID(),
             baseEnergy: 50,
-            in: &state) == 5)
-        #expect(state.starShards == 15)
+            in: &state) == 20)
+        #expect(state.starShards == 60)
     }
 
     @Test("Imported pets skip historical rewards but earn future milestones")

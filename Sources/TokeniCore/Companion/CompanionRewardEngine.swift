@@ -64,7 +64,7 @@ public struct CompanionRewardRules: Sendable {
 
 public struct CompanionRewardEngine: Sendable {
     public static let maxLevelGrowthCost = 100
-    public static let maxLevelGrowthShardReward = 5
+    public static let maxLevelGrowthShardReward = 20
     public static let recurringLevelRewardStart = 30
 
     public let rules: CompanionRewardRules

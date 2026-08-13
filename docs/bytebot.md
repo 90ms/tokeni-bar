@@ -27,7 +27,7 @@ cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)
 Level 100 requires 300 million verified tokens. Early levels arrive quickly and
 growth slows toward 100. Evolution is manual and spends no XP. XP stops at
 level 100 and overflow is not stored as XP. A level-100 growth target instead
-converts every 100 verified base Growth Energy into 5 Star Shards. Booster
+converts every 100 verified base Growth Energy into 20 Star Shards. Booster
 multipliers do not affect this conversion.
 
 The displayed companion and growth target are independent. A favorite max-level
