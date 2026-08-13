@@ -79,7 +79,7 @@ a recurring goal.
 
 Level rewards arrive at 30 and 40, every five levels from 50, every three levels
 from 60, and every level from 70. A full journey grants 460 shards. A level-100
-growth target converts each 100 base Growth Energy into 5 shards repeatedly.
+growth target converts each 100 base Growth Energy into 20 shards repeatedly.
 
 The first launch grants one non-sellable Starter Egg, which hatches for free.
 Further pets come from the Egg Vault and shop without completing or replacing

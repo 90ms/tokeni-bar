@@ -167,7 +167,7 @@
 "companion.maxLevel.talk" = "다 자란 친구와 대화하기";
 "companion.maxLevel.action" = "다 자란 친구의 부탁";
 "companion.level.maximum" = "레벨 100 · 성장 완료";
-"companion.maxLevel.growthHint" = "성장 에너지 100을 모을 때마다 별조각 5개를 얻습니다.";
+"companion.maxLevel.growthHint" = "검증된 기본 성장 에너지 100마다 별조각 20개를 얻습니다.";
 "companion.maxLevel.message.1" = "난 이제 다 컸어! 다른 친구도 만나볼까?";
 "companion.maxLevel.message.2" = "여기까지 함께해 줘서 고마워. 다음 친구도 잘 부탁해!";
 "companion.maxLevel.message.3" = "나는 준비 완료! 이제 다른 친구의 성장을 도와줘.";
@@ -510,7 +510,7 @@
 "settings.companion.animationIntensity.full" = "풍부하게";
 "settings.companion.motion" = "동작 줄이기 또는 저전력 모드에서는 애니메이션이 자동으로 멈춥니다.";
 "settings.companion.growth" = "성장";
-"settings.companion.rules" = "검증된 토큰 60만 개마다 성장 XP 1을 얻어 최대 100레벨까지 오릅니다. 레벨 10·25 진화는 직접 실행하며, 레벨 30부터 10레벨마다 별조각을 받습니다.";
+"settings.companion.rules" = "검증된 토큰 60만 개마다 성장 XP 1을 얻어 최대 100레벨까지 오릅니다. 레벨 10·25 진화는 직접 실행하며, 레벨 30부터 단계별 별조각을 받고 100레벨 이후 기본 성장 에너지 100마다 별조각 20개를 얻습니다.";
 "settings.companion.today" = "오늘: 토큰 %lld → 에너지 +%d";
 "settings.companion.wallet" = "현재 에너지 %d · 오늘 이월 %d";
 "settings.companion.providers" = "연결된 제공자 %d/%d개의 성장 데이터를 반영합니다.";

@@ -167,7 +167,7 @@
 "companion.maxLevel.talk" = "Talk to your fully grown friend";
 "companion.maxLevel.action" = "A grown friend’s request";
 "companion.level.maximum" = "Level 100 · Fully grown";
-"companion.maxLevel.growthHint" = "Earn 5 Star Shards for every 100 Growth Energy collected.";
+"companion.maxLevel.growthHint" = "Earn 20 Star Shards for every 100 verified base Growth Energy.";
 "companion.maxLevel.message.1" = "I’m all grown up! Shall we help another friend?";
 "companion.maxLevel.message.2" = "Thanks for raising me. Another friend is waiting for you!";
 "companion.maxLevel.message.3" = "I’m ready! Let’s help someone else grow.";
@@ -510,7 +510,7 @@
 "settings.companion.animationIntensity.full" = "Full";
 "settings.companion.motion" = "Animations pause automatically with Reduce Motion or Low Power Mode.";
 "settings.companion.growth" = "Growth";
-"settings.companion.rules" = "Every 600,000 verified tokens grant one Growth XP up to level 100. Evolution is manual at levels 10 and 25; every ten levels from 30 grants Star Shards.";
+"settings.companion.rules" = "Every 600,000 verified tokens grant one Growth XP up to level 100. Evolution is manual at levels 10 and 25; milestone levels from 30 grant Star Shards, and every 100 base Growth Energy after level 100 grants 20 shards.";
 "settings.companion.today" = "Today: %lld tokens → +%d energy";
 "settings.companion.wallet" = "Current energy %d · carried today %d";
 "settings.companion.providers" = "Growth data available from %d of %d connected providers.";

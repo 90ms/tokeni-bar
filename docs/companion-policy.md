@@ -40,7 +40,7 @@ no XP.
 
 XP clamps to 500 at level 100 and overflow is not stored as XP. Verified base
 Growth Energy earned while a level-100 pet is the target enters a separate
-repeatable conversion: each 100 energy grants 5 Star Shards, with the remainder
+repeatable conversion: each 100 energy grants 20 Star Shards, with the remainder
 kept per pet. Booster multipliers do not apply to this conversion. A later cap increase
 changes the maximum-level and cumulative-XP policy values together; hidden XP
 beyond the previous cap is never banked.
