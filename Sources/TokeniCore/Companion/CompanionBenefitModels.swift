@@ -51,6 +51,26 @@ public enum CompanionBenefitRegistry {
             id: .rewardAbsorption,
             speciesID: .nullslime,
             activation: .passive),
+        CompanionBenefitDefinition(
+            id: .tokenOptimization,
+            speciesID: .queryowl,
+            activation: .active),
+        CompanionBenefitDefinition(
+            id: .rewardAbsorption,
+            speciesID: .patchpanda,
+            activation: .passive),
+        CompanionBenefitDefinition(
+            id: .luckyCheer,
+            speciesID: .loophare,
+            activation: .passive),
+        CompanionBenefitDefinition(
+            id: .starlightCache,
+            speciesID: .relayray,
+            activation: .active),
+        CompanionBenefitDefinition(
+            id: .stackOptimization,
+            speciesID: .kernelcrab,
+            activation: .passive),
     ]
 
     public static func definition(

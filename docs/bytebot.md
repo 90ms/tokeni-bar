@@ -39,7 +39,10 @@ growth target for repeatable shard conversion.
 Tokeni supports Starter, Homecoming, Mystery, Starlight, and Prismatic Eggs.
 Each egg has a UUID and stable seed so interruption cannot reroll its result.
 The first verified growth activity each local day grants one Starlight Egg and
-12 Star Shards.
+100 Star Shards.
+The available content generation is frozen when an egg is acquired. Eggs saved
+before the update keep the generation-one pool; newly acquired eggs include
+generation two without changing an older seed's outcome.
 
 Duplicate identity is `species + appearance`. A repeat hatch creates no new
 pet; it grants the matching pet 25% of its current next-level XP requirement,
@@ -65,10 +68,28 @@ power. It enters the collection on hatch and provides a signature action:
 - StackFox: Afterimage Split
 - PromptPup: Command Trail
 - NullSlime: Reform
+- QueryOwl: Signal Scan
+- PatchPanda: Pixel Mend
+- LoopHare: Recursive Dash
+- RelayRay: Packet Wave
+- KernelCrab: Core Open
+
+## Generation 2: Signal Expedition
+
+Generation 2 contains QueryOwl, PatchPanda, LoopHare, RelayRay, and KernelCrab.
+Every growth stage and Standard, Prismatic, and Mutation appearance has its own
+sprite. A visible signal core persists across modes, while wings, ears, fins,
+and shells shift during working, warning, and signature actions.
+
+Benefits are not stronger than generation 1. QueryOwl and RelayRay reuse the
+active benefits of ByteBot and CacheCat. KernelCrab, LoopHare, and PatchPanda
+reuse the passive benefits of StackFox, PromptPup, and NullSlime at identical
+values. Finding three generation-two species unlocks Hologram Platform; finding
+all five unlocks the Mini Drone sidekick.
 
 ## Collection and actions
 
-The collection target is 15 combinations: five species times Standard,
+The collection target is 30 combinations: ten species times Standard,
 Prismatic, and Mutation. Hatchling, Junior, and Adult remain inside each card's
 growth album. Selecting a card previews discovered stages, owned level, and the
 idle, working, waiting, warning, celebrate, and sleep animations. Mutation-only
@@ -82,6 +103,11 @@ levels from 60, and every level from 70. One pet grants 460 level-reward shards
 by level 100. Reusing the same booster multiplier extends its expiry by the
 booster's full duration. Choosing a different multiplier replaces the active
 booster and discards its remaining time after confirmation.
+
+Collection milestones grant one Prismatic Egg at 5, 10, 20, and 30 discovered
+species/appearance combinations, and one Starlight Egg at 5 and 10 distinct
+species. Ground and Sidekick cosmetics use independent slots, so they can be
+equipped alongside an aura, background, and palette.
 
 ## Persistence and privacy
 

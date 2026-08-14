@@ -8,6 +8,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
 
     private var panel: CompanionOverlayPanel?
     private var celebrationPanel: CompanionCelebrationPanel?
+    private var mouseRoutingTimer: Timer?
     private weak var store: UsageStore?
 
     override init() {
@@ -30,6 +31,8 @@ final class CompanionOverlayController: NSObject, ObservableObject {
                 self.panel = self.makePanel(store: store)
             }
             guard let panel else { return }
+            self.startMouseRouting()
+            self.updateMouseEventRouting()
             panel.orderFrontRegardless()
         } else {
             self.closeOverlayPanel()
@@ -110,7 +113,11 @@ final class CompanionOverlayController: NSObject, ObservableObject {
     }
 
     func setClickThroughEnabled(_ enabled: Bool) {
-        self.panel?.ignoresMouseEvents = enabled
+        if enabled {
+            self.panel?.ignoresMouseEvents = true
+        } else {
+            self.updateMouseEventRouting()
+        }
     }
 
     func resetPosition(size: CompanionOverlaySize) {
@@ -169,12 +176,78 @@ final class CompanionOverlayController: NSObject, ObservableObject {
 
     private func closeOverlayPanel() {
         self.dismissCelebration()
+        self.mouseRoutingTimer?.invalidate()
+        self.mouseRoutingTimer = nil
         guard let panel else { return }
         panel.orderOut(nil)
         panel.contentView = nil
         panel.delegate = nil
         panel.close()
         self.panel = nil
+    }
+
+    private func startMouseRouting() {
+        guard self.mouseRoutingTimer == nil else { return }
+        let timer = Timer(
+            timeInterval: 1.0 / 30.0,
+            target: self,
+            selector: #selector(self.routeMouseEvents(_:)),
+            userInfo: nil,
+            repeats: true)
+        RunLoop.main.add(timer, forMode: .common)
+        self.mouseRoutingTimer = timer
+    }
+
+    @objc
+    private func routeMouseEvents(_ timer: Timer) {
+        self.updateMouseEventRouting()
+    }
+
+    private func updateMouseEventRouting() {
+        guard let panel, let store else { return }
+        guard !store.companionOverlayClickThroughEnabled else {
+            if !panel.ignoresMouseEvents {
+                panel.ignoresMouseEvents = true
+            }
+            return
+        }
+        let shouldIgnore = !self.companionInteractionFrame(
+            panel: panel,
+            size: store.companionOverlaySize,
+            stage: store.displayedCompanionStage)
+            .contains(NSEvent.mouseLocation)
+        if panel.ignoresMouseEvents != shouldIgnore {
+            panel.ignoresMouseEvents = shouldIgnore
+        }
+    }
+
+    private func companionInteractionFrame(
+        panel: NSPanel,
+        size: CompanionOverlaySize,
+        stage: CompanionGameStage) -> NSRect
+    {
+        let spriteDimension = size.spriteDimension
+        let scale: CGSize = switch stage {
+        case .egg:
+            CGSize(width: 0.70, height: 0.72)
+        case .hatchling:
+            CGSize(width: 0.66, height: 0.68)
+        case .junior:
+            CGSize(width: 0.86, height: 0.84)
+        case .adult:
+            CGSize(width: 0.92, height: 0.90)
+        }
+        let interactionSize = CGSize(
+            width: spriteDimension * scale.width,
+            height: spriteDimension * scale.height)
+        let center = NSPoint(
+            x: panel.frame.midX,
+            y: panel.frame.minY + size.panelDimension / 2 + 6)
+        return NSRect(
+            x: center.x - interactionSize.width / 2,
+            y: center.y - interactionSize.height / 2,
+            width: interactionSize.width,
+            height: interactionSize.height)
     }
 
     private func restoredOrigin(panelSize: NSSize) -> NSPoint {

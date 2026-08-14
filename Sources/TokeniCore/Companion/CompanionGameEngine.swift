@@ -126,6 +126,7 @@ public struct CompanionGameEngine: Sendable {
             speciesUnitValue: speciesUnitValue,
             variantUnitValue: variantUnitValue,
             personalityUnitValue: personalityUnitValue,
+            availableSpecies: egg.availableSpecies,
             eggDefinition: definition,
             at: now,
             in: &state)
@@ -139,12 +140,13 @@ public struct CompanionGameEngine: Sendable {
         speciesUnitValue: Double,
         variantUnitValue: Double,
         personalityUnitValue: Double,
+        availableSpecies: [CompanionSpeciesID] = CompanionSpeciesID.allCases,
         eggDefinition: CompanionEggDefinition? = nil,
         at now: Date,
         in state: inout CompanionGameState) -> [CompanionGameEvent]
     {
         let discoveredSpecies = state.collection.discoveredSpeciesIDs
-        let missingSpecies = CompanionSpeciesID.allCases.filter {
+        let missingSpecies = availableSpecies.filter {
             !discoveredSpecies.contains($0)
         }
         let pityApplies = !missingSpecies.isEmpty
@@ -155,7 +157,7 @@ public struct CompanionGameEngine: Sendable {
         let speciesID = self.rollSpecies(
             from: pityApplies || eggPrefersMissing
                 ? missingSpecies
-                : CompanionSpeciesID.allCases,
+                : availableSpecies,
             unitValue: speciesUnitValue)
         let isNewSpecies = !discoveredSpecies.contains(speciesID)
         let variantID: CompanionVariantID = eggDefinition?.guaranteesPrismatic == true
@@ -411,6 +413,7 @@ public struct CompanionGameEngine: Sendable {
                 speciesUnitValue: speciesValue,
                 variantUnitValue: variantValue,
                 personalityUnitValue: personalityValue,
+                availableSpecies: egg.availableSpecies,
                 eggDefinition: definition,
                 at: now,
                 in: &state)
@@ -826,7 +829,8 @@ public struct CompanionGameEngine: Sendable {
         in state: inout CompanionGameState) -> [CompanionGameEvent]
     {
         let discoveredSpecies = state.collection.discoveredSpeciesIDs
-        let missingSpecies = CompanionSpeciesID.allCases.filter {
+        let availableSpecies = egg.availableSpecies
+        let missingSpecies = availableSpecies.filter {
             !discoveredSpecies.contains($0)
         }
         let pityApplies = !missingSpecies.isEmpty
@@ -837,7 +841,7 @@ public struct CompanionGameEngine: Sendable {
         let speciesID = self.rollSpecies(
             from: pityApplies || prefersMissing
                 ? missingSpecies
-                : CompanionSpeciesID.allCases,
+                : availableSpecies,
             unitValue: speciesUnitValue)
         let isNewSpecies = !discoveredSpecies.contains(speciesID)
         let variantID: CompanionVariantID = definition.guaranteesPrismatic
@@ -1017,10 +1021,16 @@ public struct CompanionGameEngine: Sendable {
         let candidates: [(String, CompanionEggDefinitionID, Bool)] = [
             ("species-5", .discovery,
              state.collection.discoveredSpeciesIDs.count >= 5),
+            ("species-10", .discovery,
+             state.collection.discoveredSpeciesIDs.count >= 10),
             ("variants-5", .prismatic,
              state.collection.discoveredCollectibleVariantCount >= 5),
             ("variants-10", .prismatic,
              state.collection.discoveredCollectibleVariantCount >= 10),
+            ("variants-20", .prismatic,
+             state.collection.discoveredCollectibleVariantCount >= 20),
+            ("variants-30", .prismatic,
+             state.collection.discoveredCollectibleVariantCount >= 30),
         ]
         var events: [CompanionGameEvent] = []
         for (milestoneID, definitionID, reached) in candidates

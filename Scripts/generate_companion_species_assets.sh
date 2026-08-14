@@ -196,4 +196,6 @@ write_manifest stackfox "StackFox" '"#0A1834", "#E85F18", "#FF9B2F", "#FFF0B3"'
 write_manifest promptpup "PromptPup" '"#073B42", "#218C78", "#7CDBA7", "#F4F3C1"'
 write_manifest nullslime "NullSlime" '"#171347", "#6331B5", "#A468FF", "#54E5F2"'
 
-echo "Generated companion sprite sheets in $asset_root"
+"$root/Scripts/generate_generation_two_assets.sh"
+
+echo "Generated all companion sprite sheets in $asset_root"

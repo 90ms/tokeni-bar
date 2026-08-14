@@ -16,10 +16,50 @@ struct CompanionBenefitEngineTests {
             Set(CompanionBenefitRegistry.definitions.map(\.speciesID))
                 == Set(CompanionSpeciesID.allCases))
         #expect(
-            Set(CompanionBenefitRegistry.definitions.map(\.id)).count
-                == CompanionBenefitRegistry.definitions.count)
-        #expect(CompanionSpeciesID.totalRegisteredFormCount == 75)
-        #expect(CompanionSpeciesID.totalCollectibleVariantCount == 15)
+            CompanionBenefitRegistry.definitions.count
+                == CompanionSpeciesID.allCases.count)
+        #expect(
+            Set(CompanionBenefitRegistry.definitions.map(\.id))
+                == Set<CompanionBenefitID>([
+                    .tokenOptimization,
+                    .starlightCache,
+                    .stackOptimization,
+                    .luckyCheer,
+                    .rewardAbsorption,
+                ]))
+        #expect(CompanionSpeciesID.totalRegisteredFormCount == 150)
+        #expect(CompanionSpeciesID.totalCollectibleVariantCount == 30)
+    }
+
+    @Test("Generation two reuses balanced benefits without stacking copies")
+    func generationTwoBenefits() {
+        let engine = CompanionBenefitEngine(calendar: self.calendar)
+        let queryOwl = CompanionBenefitCompanion(
+            generationID: UUID(),
+            speciesID: .queryowl,
+            rarity: .normal)
+        let kernelCrab = CompanionBenefitCompanion(
+            generationID: UUID(),
+            speciesID: .kernelcrab,
+            rarity: .legendary)
+        let stackFox = CompanionBenefitCompanion(
+            generationID: UUID(),
+            speciesID: .stackfox,
+            rarity: .normal)
+        var state = CompanionBenefitState(dailyDateKey: "2027-01-15")
+
+        engine.processVerifiedBaseEnergy(
+            100,
+            sourceAwardID: UUID(),
+            activeCompanion: queryOwl,
+            at: self.date("2027-01-15T12:00:00Z"),
+            in: &state)
+
+        #expect(!state.pendingEnergyBonuses.isEmpty)
+        #expect(engine.actionCostDiscountBasisPoints(
+            passives: [kernelCrab, stackFox])
+            == CompanionBenefitRegistry.stackOptimizationBasisPoints(
+                for: .legendary))
     }
 
     @Test("Passive slots unlock permanently at collection thresholds")

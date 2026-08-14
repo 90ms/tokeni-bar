@@ -50,6 +50,8 @@ private enum CompanionCosmeticSlotFilter:
     case aura
     case background
     case palette
+    case ground
+    case sidekick
 
     var id: Self { self }
 
@@ -59,6 +61,8 @@ private enum CompanionCosmeticSlotFilter:
         case .aura: .aura
         case .background: .background
         case .palette: .palette
+        case .ground: .ground
+        case .sidekick: .sidekick
         }
     }
 }
@@ -1873,6 +1877,9 @@ struct CompanionCollectionView: View {
         GroupBox(AppLocalization.string("companion.collection.title")) {
             VStack(alignment: .leading, spacing: 12) {
                 self.collectionFilters
+                if self.selectedGeneration == 2 {
+                    self.generationTwoBanner
+                }
 
                 if self.filteredSpeciesIDs.isEmpty {
                     ContentUnavailableView(
@@ -1929,6 +1936,40 @@ struct CompanionCollectionView: View {
             }
             .padding(.vertical, 8)
         }
+    }
+
+    private var generationTwoBanner: some View {
+        let generationTwoSpecies = Set(
+            CompanionSpeciesID.species(inContentGeneration: 2))
+        let discoveredCount = self.store.companionState.collection
+            .discoveredSpeciesIDs
+            .intersection(generationTwoSpecies)
+            .count
+        return HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "dot.radiowaves.left.and.right")
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(AppLocalization.string(
+                    "companion.collection.generation2.title"))
+                    .font(.caption.weight(.bold))
+                Text(AppLocalization.string(
+                    "companion.collection.generation2.description"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(AppLocalization.format(
+                    "companion.collection.generation2.progress",
+                    discoveredCount,
+                    generationTwoSpecies.count))
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(
+            Color.accentColor.opacity(0.08),
+            in: RoundedRectangle(cornerRadius: 9))
     }
 
     private var mutationLab: some View {

@@ -26,8 +26,8 @@ struct CompanionRewardEngineTests {
             total += grants.reduce(0) { $0 + $1.amount }
         }
 
-        #expect(total == 144)
-        #expect(state.starShards == 144)
+        #expect(total == 760)
+        #expect(state.starShards == 760)
         #expect(engine.attendanceCountThisWeek(
             at: start,
             in: state) == 7)
@@ -82,7 +82,7 @@ struct CompanionRewardEngineTests {
             try engine.checkIn(at: earlier, in: &state)
         }
         #expect(state.attendanceRecords.count == 1)
-        #expect(state.starShards == 12)
+        #expect(state.starShards == 100)
     }
 
     @Test("Collection and journey rewards reconcile idempotently")
@@ -104,13 +104,45 @@ struct CompanionRewardEngineTests {
             at: now,
             in: &state)
 
-        #expect(first.reduce(0) { $0 + $1.amount } == 220)
-        #expect(state.starShards == 220)
+        #expect(first.reduce(0) { $0 + $1.amount } == 420)
+        #expect(state.starShards == 420)
         #expect(state.rewardedSpeciesIDs == Set(CompanionSpeciesID.allCases))
         #expect(state.rewardedVariantIDs == [.prismatic])
         #expect(state.rewardedJourneyCount == 2)
-        #expect(state.rewardedFormMilestones == [5])
+        #expect(state.rewardedFormMilestones == [5, 10])
+        #expect(state.unlockedCosmeticIDs.contains(.hologramPlatform))
+        #expect(state.unlockedCosmeticIDs.contains(.miniDrone))
         #expect(repeated.isEmpty)
+    }
+
+    @Test("Generation-two discovery cosmetics unlock at three and five species")
+    func generationTwoCosmeticMilestones() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let generationTwo = CompanionSpeciesID.species(inContentGeneration: 2)
+        let standardForms = self.forms(at: now).filter {
+            $0.variantID == .standard && generationTwo.contains($0.speciesID)
+        }
+        let engine = CompanionRewardEngine(calendar: self.calendar)
+        var state = CompanionRewardState()
+
+        _ = engine.reconcile(
+            collection: CompanionCollection(forms: Array(standardForms.prefix(2))),
+            at: now,
+            in: &state)
+        #expect(!state.unlockedCosmeticIDs.contains(.hologramPlatform))
+
+        _ = engine.reconcile(
+            collection: CompanionCollection(forms: Array(standardForms.prefix(3))),
+            at: now,
+            in: &state)
+        #expect(state.unlockedCosmeticIDs.contains(.hologramPlatform))
+        #expect(!state.unlockedCosmeticIDs.contains(.miniDrone))
+
+        _ = engine.reconcile(
+            collection: CompanionCollection(forms: standardForms),
+            at: now,
+            in: &state)
+        #expect(state.unlockedCosmeticIDs.contains(.miniDrone))
     }
 
     @Test("Mutation variant discoveries grant shards once")
@@ -199,14 +231,14 @@ struct CompanionRewardEngineTests {
     func cosmeticPurchase() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         let engine = CompanionRewardEngine(calendar: self.calendar)
-        var state = CompanionRewardState(starShards: 250)
+        var state = CompanionRewardState(starShards: 1_000)
 
         try engine.purchase(
             cosmeticID: .terminalNight,
             at: now,
             in: &state)
 
-        #expect(state.starShards == 90)
+        #expect(state.starShards == 200)
         #expect(state.unlockedCosmeticIDs == [.terminalNight])
         #expect(state.selectedCosmeticIDs == [.terminalNight])
         #expect(state.updatedAt == now)
@@ -219,7 +251,7 @@ struct CompanionRewardEngineTests {
         try engine.select(cosmeticID: .terminalNight, at: now, in: &state)
         #expect(state.selectedCosmeticIDs == [.terminalNight])
 
-        state.starShards = 500
+        state.starShards = 4_000
         try engine.purchase(cosmeticID: .sparkleAura, at: now, in: &state)
         #expect(state.selectedCosmeticIDs == [.terminalNight, .sparkleAura])
         try engine.purchase(cosmeticID: .pixelHearts, at: now, in: &state)
@@ -236,12 +268,24 @@ struct CompanionRewardEngineTests {
             .pixelHearts,
             .violetPalette,
         ])
+        try engine.purchase(cosmeticID: .cloudCushion, at: now, in: &state)
+        #expect(state.selectedCosmeticIDs.contains(.cloudCushion))
+        try engine.purchase(cosmeticID: .hologramPlatform, at: now, in: &state)
+        #expect(!state.selectedCosmeticIDs.contains(.cloudCushion))
+        #expect(state.selectedCosmeticIDs.contains(.hologramPlatform))
+        try engine.purchase(cosmeticID: .pixelChick, at: now, in: &state)
+        #expect(state.selectedCosmeticIDs.contains(.pixelChick))
+        try engine.purchase(cosmeticID: .starSprite, at: now, in: &state)
+        #expect(!state.selectedCosmeticIDs.contains(.pixelChick))
+        #expect(state.selectedCosmeticIDs.contains(.starSprite))
+        #expect(state.starShards == 0)
+        #expect(state.isValid())
     }
 
     @Test("Cosmetics reject insufficient balances and locked selections")
     func cosmeticPurchaseFailures() {
         let engine = CompanionRewardEngine(calendar: self.calendar)
-        var state = CompanionRewardState(starShards: 59)
+        var state = CompanionRewardState(starShards: 299)
 
         #expect(throws: CompanionRewardError.insufficientStarShards) {
             try engine.purchase(cosmeticID: .sparkleAura, in: &state)
@@ -249,7 +293,7 @@ struct CompanionRewardEngineTests {
         #expect(throws: CompanionRewardError.cosmeticNotOwned) {
             try engine.select(cosmeticID: .sparkleAura, in: &state)
         }
-        #expect(state.starShards == 59)
+        #expect(state.starShards == 299)
         #expect(state.unlockedCosmeticIDs.isEmpty)
         #expect(state.selectedCosmeticIDs.isEmpty)
         #expect(state.rewardedRarities.isEmpty)
@@ -563,14 +607,9 @@ struct CompanionRewardEngineTests {
     }
 
     private func forms(at date: Date) -> [CompanionFormRecord] {
-        let combinations: [(CompanionSpeciesID, CompanionVariantID)] = [
-            (.bytebot, .standard),
-            (.bytebot, .prismatic),
-            (.cachecat, .standard),
-            (.stackfox, .standard),
-            (.promptpup, .standard),
-            (.nullslime, .standard),
-        ]
+        let combinations = CompanionSpeciesID.allCases.map {
+            ($0, CompanionVariantID.standard)
+        } + [(.bytebot, .prismatic)]
         return combinations.map { combination in
             let (speciesID, variantID) = combination
             let rarity = CompanionVariantRegistry.definition(

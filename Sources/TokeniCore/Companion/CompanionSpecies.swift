@@ -6,6 +6,11 @@ public enum CompanionSpeciesID: String, Codable, CaseIterable, Hashable, Sendabl
     case stackfox
     case promptpup
     case nullslime
+    case queryowl
+    case patchpanda
+    case loophare
+    case relayray
+    case kernelcrab
 
     /// The asset release generation this species belongs to.
     ///
@@ -15,7 +20,13 @@ public enum CompanionSpeciesID: String, Codable, CaseIterable, Hashable, Sendabl
         switch self {
         case .bytebot, .cachecat, .stackfox, .promptpup, .nullslime:
             1
+        case .queryowl, .patchpanda, .loophare, .relayray, .kernelcrab:
+            2
         }
+    }
+
+    public static func species(inContentGeneration generation: Int) -> [Self] {
+        Self.allCases.filter { $0.contentGeneration == generation }
     }
 
     public static var latestContentGeneration: Int {

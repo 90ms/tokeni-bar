@@ -11,7 +11,8 @@
 </p>
 
 A macOS menu-bar app for tracking AI coding-agent **tokens and quotas** while
-discovering and raising five pixel-pet species with real token usage.
+discovering and raising ten pixel-pet species across two generations with real
+token usage.
 
 ## Quick install
 
@@ -96,9 +97,13 @@ Users who migrate an existing active pet receive one additional Homecoming Egg.
 
 A Starlight Egg selects an undiscovered species when one remains and rolls a
 10% Prismatic chance and 2% Mutation chance. A Prismatic Egg guarantees the
-Prismatic variant. Discovering all five species grants one Starlight Egg, and
-discovering 5 and 10 species/variant combinations grants one Prismatic Egg at
-each milestone.
+Prismatic variant. Discovering 5 and 10 species grants a Starlight Egg at each
+milestone; discovering 5, 10, 20, and 30 species/variant combinations grants a
+Prismatic Egg at each milestone.
+
+Unopened eggs acquired before the update retain the generation-one species
+pool. Eggs acquired after the update include all ten species at equal base
+odds, so adding content cannot change an outcome already fixed by a saved seed.
 
 Opening another egg never removes the current pet. The hatchling joins the
 owned-pet roster; select one pet at a time to receive Growth XP and switch at any
@@ -116,11 +121,19 @@ only that species and see the displayed count or an empty-result explanation.
 Select a collection card to inspect details, discovered growth stages, common
 actions, and a mutation-only signature action with animated previews.
 
-### 4. Discover five species and their variants
+### 4. Discover ten species across two generations
 
-ByteBot, CacheCat, StackFox, PromptPup, and NullSlime have equal base odds. While
+Generation 1 contains ByteBot, CacheCat, StackFox, PromptPup, and NullSlime.
+Generation 2, the **Signal Expedition**, contains QueryOwl, PatchPanda, LoopHare,
+RelayRay, and KernelCrab. All ten have equal base odds in newly acquired eggs. While
 any species is still missing, the next regular hatch after five duplicates is
 chosen from undiscovered species.
+
+Generation 2 is visually distinct through a visible signal core and behavior
+mode shifts: wings, ears, fins, or shells change silhouette during work,
+warning, and signature actions. It has no power advantage and maps to the same
+five balanced benefits as generation 1. Finding three generation-two species
+unlocks Hologram Platform; finding all five unlocks the Mini Drone sidekick.
 
 | Variant | Base odds | Power |
 |---|---:|---|
@@ -129,7 +142,7 @@ chosen from undiscovered species.
 | Mutation | 1% | Equal |
 
 After 11 consecutive Standard hatches, regular hatch 12 is Prismatic. The main
-collection contains 15 combinations—five species times Standard, Prismatic,
+collection contains 30 combinations—ten species times Standard, Prismatic,
 and Mutation—while evolution appearances are recorded in each combination's
 growth album.
 
@@ -148,7 +161,11 @@ appearances are registered in the collection with Standard and Prismatic.
 | 20 | Firefly Aura |
 | 25 | 5x, 10-minute booster and Orbit Aura |
 
-The first growth activity each day grants 12 Star Shards and one Starlight Egg.
+Cosmetics now include independent Ground and Sidekick slots alongside existing
+auras, backgrounds, and palettes. Cloud Cushion, Hologram Platform, and Meadow
+Patch sit beneath a pet; Pixel Chick, Star Sprite, and Mini Drone move beside it.
+
+The first growth activity each day grants 100 Star Shards and one Starlight Egg.
 Automatic activity attendance, the first verified growth of a day, weekly and
 monthly activity, species and variant discoveries, and stable-release gifts
 also grant Star Shards. Shards are shared across eggs, cosmetics, and boosters.
@@ -177,6 +194,7 @@ panel above other apps.
 - Choose a Small, Medium, or Large display size.
 - Click the pet to trigger its existing happy frames and a side-to-side hop.
 - Drag the pet to a position that is restored on the next launch.
+- Transparent space outside the visible pet passes clicks to the app below.
 - Lock the position to prevent accidental movement.
 - Click-through sends pointer input to the app beneath the pet. Patting and
   moving the pet are unavailable until click-through is turned off.

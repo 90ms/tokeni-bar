@@ -49,6 +49,11 @@ public enum CompanionSpecialActionRegistry {
         Self.mutationAction("stackfox.afterimage", speciesID: .stackfox),
         Self.mutationAction("promptpup.command-trail", speciesID: .promptpup),
         Self.mutationAction("nullslime.reform", speciesID: .nullslime),
+        Self.mutationAction("queryowl.signal-scan", speciesID: .queryowl),
+        Self.mutationAction("patchpanda.pixel-mend", speciesID: .patchpanda),
+        Self.mutationAction("loophare.recursive-dash", speciesID: .loophare),
+        Self.mutationAction("relayray.packet-wave", speciesID: .relayray),
+        Self.mutationAction("kernelcrab.core-open", speciesID: .kernelcrab),
     ]
 
     public static func action(
