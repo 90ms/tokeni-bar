@@ -13,13 +13,18 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             supportsCredits: true))
 
     private let sessionsDirectory: URL
+    private let calendar: Calendar
     private let credentialLoader: CodexAccountCredentialLoader
     private let accountClient: CodexAccountUsageClient
     private let accountTokenUsageClient: CodexAccountTokenUsageClient
     private let resetCreditsClient: CodexResetCreditsClient
 
-    public init(homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) {
+    public init(
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
+        calendar: Calendar = .current)
+    {
         self.sessionsDirectory = homeDirectory.appending(path: ".codex/sessions", directoryHint: .isDirectory)
+        self.calendar = calendar
         self.credentialLoader = CodexAccountCredentialLoader(homeDirectory: homeDirectory)
         self.accountClient = CodexAccountUsageClient()
         self.accountTokenUsageClient = CodexAccountTokenUsageClient(
@@ -28,7 +33,8 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
-        let localUsage = self.latestLocalUsage()
+        let latestLocalUsage = self.latestLocalUsage()
+        let todayUsage = self.todayLocalUsage()
         async let accountTokenUsageTask = self.fetchAccountTokenUsage()
 
         do {
@@ -41,10 +47,10 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             let resetCredits = resetCreditsResult?.response.summary()
             let accountTokenUsage = self.accountTokenUsage(from: accountTokenUsageResult)
             let growthObservation = self.growthObservation(
+                todayUsage: todayUsage,
                 accountUsage: accountTokenUsage,
                 accountObservedAt: accountTokenUsageResult?.fetchedAt,
-                localUsage: localUsage)
-            let referenceCost = self.referenceCost(for: accountTokenUsage)
+                localUsage: latestLocalUsage)
             let accountUsage = result.response
             let plan = accountUsage.planType?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -58,21 +64,24 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
                 availability: .available,
                 source: .officialAPI,
                 quotaWindows: accountUsage.quotaWindows(),
-                tokenUsage: accountTokenUsage.map {
-                    TokenUsage(label: "This month · account", totalTokens: $0.currentMonthTokens)
-                },
-                costEstimate: referenceCost,
+                tokenUsage: todayUsage?.tokenUsage,
+                costEstimate: todayUsage?.costEstimate,
                 accountTokenUsage: accountTokenUsage,
                 accountTokenUsageIssue: accountTokenUsageFetch.issue,
                 credits: accountUsage.creditBalance,
                 quotaResetCredits: resetCredits,
                 growthUsageObservation: growthObservation,
-                detail: detail,
-                updatedAt: max(result.fetchedAt, accountTokenUsageResult?.fetchedAt ?? .distantPast))
+                detail: todayUsage.map {
+                    "\(detail) · today across \($0.sessionCount) local sessions"
+                } ?? detail,
+                updatedAt: max(
+                    todayUsage?.observedAt ?? .distantPast,
+                    max(result.fetchedAt, accountTokenUsageResult?.fetchedAt ?? .distantPast)))
         } catch {
             let accountTokenUsageFetch = await accountTokenUsageTask
             return self.localFallback(
-                localUsage: localUsage,
+                latestLocalUsage: latestLocalUsage,
+                todayUsage: todayUsage,
                 accountTokenUsageResult: accountTokenUsageFetch.result,
                 accountTokenUsageIssue: accountTokenUsageFetch.issue,
                 accountError: error)
@@ -106,8 +115,19 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
         return nil
     }
 
+    private func todayLocalUsage() -> CodexTodayUsage? {
+        let startOfDay = self.calendar.startOfDay(for: .now)
+        let files = LocalFiles.newestFiles(
+            below: self.sessionsDirectory,
+            extension: "jsonl",
+            modifiedAfter: startOfDay,
+            limit: 512)
+        return CodexTodayLogParser.aggregate(files: files, since: startOfDay)
+    }
+
     private func localFallback(
-        localUsage: CodexParsedUsage?,
+        latestLocalUsage: CodexParsedUsage?,
+        todayUsage: CodexTodayUsage?,
         accountTokenUsageResult: CodexAccountTokenUsageResult?,
         accountTokenUsageIssue: AccountTokenUsageIssue?,
         accountError: Error) -> ProviderSnapshot
@@ -115,28 +135,26 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
         let errorMessage = (accountError as? LocalizedError)?.errorDescription
         let accountTokenUsage = self.accountTokenUsage(from: accountTokenUsageResult)
         let growthObservation = self.growthObservation(
+            todayUsage: todayUsage,
             accountUsage: accountTokenUsage,
             accountObservedAt: accountTokenUsageResult?.fetchedAt,
-            localUsage: localUsage)
-        let referenceCost = self.referenceCost(for: accountTokenUsage)
-        if localUsage != nil || accountTokenUsage != nil {
+            localUsage: latestLocalUsage)
+        if latestLocalUsage != nil || todayUsage != nil || accountTokenUsage != nil {
             return .init(
                 descriptor: self.descriptor,
                 availability: .available,
                 source: accountTokenUsage == nil ? .localSessionLog : .localProtocol,
-                quotaWindows: localUsage?.quotaWindows ?? [],
-                tokenUsage: accountTokenUsage.map {
-                    TokenUsage(label: "This month · account", totalTokens: $0.currentMonthTokens)
-                },
-                costEstimate: referenceCost,
+                quotaWindows: latestLocalUsage?.quotaWindows ?? [],
+                tokenUsage: todayUsage?.tokenUsage,
+                costEstimate: todayUsage?.costEstimate,
                 accountTokenUsage: accountTokenUsage,
                 accountTokenUsageIssue: accountTokenUsageIssue,
-                credits: localUsage?.credits,
+                credits: latestLocalUsage?.credits,
                 growthUsageObservation: growthObservation,
                 detail: errorMessage.map { "Partial Codex data · \($0)" }
                     ?? "Partial Codex data",
                 updatedAt: max(
-                    localUsage?.timestamp ?? .now,
+                    todayUsage?.observedAt ?? latestLocalUsage?.timestamp ?? .now,
                     accountTokenUsageResult?.fetchedAt ?? .distantPast))
         }
         return .init(
@@ -184,24 +202,21 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             lifetimeTokens: lifetimeTokens)
     }
 
-    private func referenceCost(
-        for usage: AccountTokenUsageSummary?) -> TokenCostEstimate?
-    {
-        guard let usage,
-              let estimator = AccountTokenReferenceCostEstimator
-                .codexInputOutputReferenceV1()
-        else { return nil }
-        return TokenCostEstimate(
-            label: "This month · API-equivalent reference",
-            amountUSD: estimator.estimate(tokenCount: usage.currentMonthTokens).amountUSD,
-            modelIDs: [estimator.assumption.referenceModelID])
-    }
-
     func growthObservation(
+        todayUsage: CodexTodayUsage? = nil,
         accountUsage: AccountTokenUsageSummary?,
         accountObservedAt: Date?,
         localUsage: CodexParsedUsage?) -> GrowthUsageObservation?
     {
+        if let todayUsage {
+            return .daily(
+                providerID: .codex,
+                dateKey: GrowthLocalDate.key(
+                    for: todayUsage.observedAt,
+                    calendar: self.calendar),
+                totalTokens: todayUsage.tokenUsage.totalTokens,
+                observedAt: todayUsage.observedAt)
+        }
         if let accountUsage,
            let latestBucketDate = accountUsage.latestBucketDate,
            let latestDailyTokens = accountUsage.latestDailyTokens

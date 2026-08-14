@@ -1,6 +1,28 @@
 import Foundation
 
 public enum UsageCostSummary {
+    public static func dailyCumulativeUSD(
+        in records: [UsageHistoryRecord],
+        since startDate: Date,
+        calendar: Calendar = .current) -> Double
+    {
+        var maxima: [DailyProviderKey: Double] = [:]
+        for record in records {
+            guard record.timestamp >= startDate,
+                  let cost = record.costUSD,
+                  cost.isFinite,
+                  cost >= 0
+            else { continue }
+            let key = DailyProviderKey(
+                providerID: record.providerID,
+                dateKey: GrowthLocalDate.key(
+                    for: record.timestamp,
+                    calendar: calendar))
+            maxima[key] = max(maxima[key] ?? 0, cost)
+        }
+        return maxima.values.reduce(0, +)
+    }
+
     public static func accumulatedUSD(
         in records: [UsageHistoryRecord],
         since startDate: Date,
@@ -36,5 +58,10 @@ public enum UsageCostSummary {
             previous = cost
         }
         return total
+    }
+
+    private struct DailyProviderKey: Hashable {
+        let providerID: ProviderID
+        let dateKey: String
     }
 }

@@ -119,6 +119,14 @@ final class UsageStore: ObservableObject {
     private var lastCompanionActivityPersistenceAt: Date?
     private var appUpdateInstallationTask: Task<Void, Never>?
     private static let enabledProvidersKey = "enabledProviderIDs"
+    private static let providerCatalogVersionKey = "providerCatalogVersion"
+    private static let dailyCostAccountingStartKey = "dailyCostAccountingStart"
+    private static let currentProviderCatalogVersion = 2
+    private static let providerCatalogV2Additions: Set<ProviderID> = [
+        .copilot,
+        .cline,
+        .antigravity,
+    ]
     private static let legacyShowsRemainingInMenuBarKey = "showsRemainingInMenuBar"
     private static let menuBarDisplayModeKey = "menuBarDisplayMode"
     private static let selectedMenuBarProviderIDKey = "selectedMenuBarProviderID"
@@ -311,11 +319,26 @@ final class UsageStore: ObservableObject {
         self.companionGrowthDataUnavailable = false
         self.companionEconomyTransactionInFlight = false
         self.companionEconomyErrorMessage = nil
-        let enabledIDs: Set<ProviderID>
+        var enabledIDs: Set<ProviderID>
         if let stored = UserDefaults.standard.stringArray(forKey: Self.enabledProvidersKey) {
             enabledIDs = Set(stored.map { ProviderID(rawValue: $0) }).intersection(knownIDs)
         } else {
             enabledIDs = knownIDs
+        }
+        if UserDefaults.standard.integer(forKey: Self.providerCatalogVersionKey)
+            < Self.currentProviderCatalogVersion,
+            Self.providerCatalogV2Additions.isSubset(of: knownIDs)
+        {
+            enabledIDs.formUnion(Self.providerCatalogV2Additions)
+            UserDefaults.standard.set(
+                enabledIDs.map(\.rawValue).sorted(),
+                forKey: Self.enabledProvidersKey)
+            UserDefaults.standard.set(
+                Self.currentProviderCatalogVersion,
+                forKey: Self.providerCatalogVersionKey)
+            UserDefaults.standard.set(
+                Date.now,
+                forKey: Self.dailyCostAccountingStartKey)
         }
         self.enabledProviderIDs = enabledIDs
         if let stored = UserDefaults.standard.stringArray(forKey: Self.notificationProviderIDsKey) {
@@ -1349,6 +1372,18 @@ final class UsageStore: ObservableObject {
         self.saveCompanionRewardState()
     }
 
+    func claimCompanionUpdateReward() {
+        guard self.companionEnabled, self.companionStateLoaded else { return }
+        var state = self.companionRewardState
+        guard let grant = self.companionRewardEngine.claimReleaseGift(
+            appVersion: self.currentAppVersion,
+            in: &state)
+        else { return }
+        self.companionRewardState = state
+        self.companionRewardNoticeAmount = grant.amount
+        self.saveCompanionRewardState()
+    }
+
     func selectCompanionCosmetic(_ cosmeticID: CompanionCosmeticID) {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionRewardState
@@ -1864,8 +1899,13 @@ final class UsageStore: ObservableObject {
                     usageDateKey: total?.dateKey,
                     wasSettledToday: total?.dateKey != dateKey
                         && creditedDateKey == dateKey,
-                    isTodayPending: snapshot?.accountTokenUsage.map {
-                        $0.todayTokens == nil
+                    isTodayPending: snapshot.map {
+                        let hasTodayObservation =
+                            $0.growthUsageObservation?.scope == .daily
+                                && $0.growthUsageObservation?.scopeID == dateKey
+                        return $0.accountTokenUsage?.todayTokens == nil
+                            && $0.accountTokenUsage != nil
+                            && !hasTodayObservation
                     } ?? false,
                     accountIssue: snapshot?.accountTokenUsageIssue)
             }
@@ -1897,6 +1937,18 @@ final class UsageStore: ObservableObject {
         self.companionRewardEngine.cosmetics
     }
 
+    var companionUpdateRewardAmount: Int {
+        self.companionRewardEngine.rules.releaseGift
+    }
+
+    var companionUpdateRewardAvailable: Bool {
+        self.companionEnabled
+            && self.companionStateLoaded
+            && self.companionRewardEngine.isReleaseGiftAvailable(
+                appVersion: self.currentAppVersion,
+                in: self.companionRewardState)
+    }
+
     var companionActiveEnergyBooster: CompanionActiveEnergyBooster? {
         guard let booster = self.companionRewardState.activeEnergyBooster,
               booster.isActive(at: .now)
@@ -1926,12 +1978,28 @@ final class UsageStore: ObservableObject {
     var monthlyEstimatedSpendUSD: Double {
         let startOfMonth = Calendar.current.dateInterval(of: .month, for: .now)?.start
             ?? .distantPast
-        let recordedProviderSpend = UsageCostSummary.accumulatedUSD(
-            in: self.historyRecords.filter { $0.providerID != .codex },
-            since: startOfMonth)
-        let codexAccountReference = self.snapshots.first(where: { $0.id == .codex })?
-            .costEstimate?.amountUSD ?? 0
-        return recordedProviderSpend + codexAccountReference
+        let dailyAccountingStart = UserDefaults.standard.object(
+            forKey: Self.dailyCostAccountingStartKey) as? Date ?? startOfMonth
+        let accountingStart = max(startOfMonth, dailyAccountingStart)
+        let currentProviderIDs = Set(self.providers.map { $0.descriptor.id })
+        let currentHistory = self.historyRecords.filter {
+            currentProviderIDs.contains($0.providerID)
+        }
+        let currentSamples = self.snapshots.compactMap { snapshot -> UsageHistoryRecord? in
+            guard snapshot.availability == .available,
+                  let costUSD = snapshot.costEstimate?.amountUSD
+            else { return nil }
+            return UsageHistoryRecord(
+                timestamp: .now,
+                providerID: snapshot.id,
+                providerName: snapshot.descriptor.displayName,
+                windows: [],
+                tokenTotal: snapshot.tokenUsage?.totalTokens,
+                costUSD: costUSD)
+        }
+        return UsageCostSummary.dailyCumulativeUSD(
+            in: currentHistory + currentSamples,
+            since: accountingStart)
     }
 
     var monthlyBudgetUSD: Double? {
@@ -2253,9 +2321,6 @@ final class UsageStore: ObservableObject {
             in: &state)
         _ = self.companionRewardEngine.rewardVerifiedGrowth(
             energy: self.companionState.growthEarnedToday,
-            in: &state)
-        _ = self.companionRewardEngine.claimReleaseGift(
-            appVersion: self.currentAppVersion,
             in: &state)
         if self.companionState.stage != .egg {
             self.companionRewardEngine.reconcileLevelMilestones(

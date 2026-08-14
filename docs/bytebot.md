@@ -109,6 +109,10 @@ species/appearance combinations, and one Starlight Egg at 5 and 10 distinct
 species. Ground and Sidekick cosmetics use independent slots, so they can be
 equipped alongside an aura, background, and palette.
 
+Each stable app version shows a one-time update-reward button in the Customize
+tab. Claiming it manually grants 300 Star Shards, and the claimed version is
+recorded in local reward state so it cannot pay twice.
+
 ## Persistence and privacy
 
 Schema v11 stores pet UUIDs, species, appearance, Growth XP normalized to the

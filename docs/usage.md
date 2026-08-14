@@ -35,18 +35,13 @@ Using another booster with the same multiplier extends the current expiry by
 its full duration. A different multiplier replaces the active booster after a
 confirmation that its remaining time will not be restored.
 
-Counter scope differs by provider:
+Codex, Claude Code, GitHub Copilot, Cline, Antigravity, and Grok Build all
+produce a **daily counter** from timestamped local observations. Codex derives
+same-day deltas from its cumulative session events, including sessions that
+cross midnight. Duplicate or incomplete records never increase the counter.
 
-- **Daily counters:** confirmed dated Codex and Claude totals credit that date.
-- **Session counters:** Gemini and Grok establish a baseline on first
-  observation and credit only later increases in that session.
-- **Lifetime counters:** OpenCode establishes a baseline first and credits only
-  later increases.
-- Codex uses current-session increases the same way when a daily total is
-  unavailable.
-
-A counter drop or reset never removes awarded XP. Session and lifetime
-increases are not guessed across a date boundary while the app was closed.
+A counter drop or reset never removes awarded XP. Changes without a
+trustworthy timestamp are not guessed across a date boundary.
 An implausibly large increase must be confirmed by a later observation before
 it credits. Complete daily totals that arrive late may credit up to three
 recent days.
@@ -66,10 +61,10 @@ See [Tokeni pet growth and eggs](bytebot.md) for levels, evolution, and eggs.
 
 ## Resource and memory management
 
-Codex and Claude local JSONL files are decoded one line at a time from 64 KiB
-chunks instead of retaining the complete file and every event in memory. Files
-over the safety limit and symbolic links are rejected; a file that grows past
-the limit while being read is discarded as well.
+Codex, Claude, Copilot, and Grok Build JSONL files are decoded one line at a
+time from 64 KiB chunks instead of retaining the complete file and every event
+in memory. Files over the safety limit and symbolic links are rejected; a file
+that grows past the limit while being read is discarded as well.
 
 Sprite manifests are checked at launch, but image sheets load lazily only for
 the species, form, and variant being displayed. Cropped frames are detached
@@ -84,22 +79,45 @@ RSS for reuse, so the displayed footprint does not always fall immediately.
 Memory that keeps increasing independently of log refreshes or newly displayed
 sprites should be reported with diagnostics and reproduction steps.
 
+## Local daily provider sources
+
+- **Copilot:** the preferred source is the official OTel JSONL file selected by
+  `COPILOT_OTEL_FILE_EXPORTER_PATH`. OTel is opt-in. If it is not available,
+  only completed CLI sessions that began today are used.
+
+  ```bash
+  mkdir -p "$HOME/.copilot/otel"
+  COPILOT_OTEL_FILE_EXPORTER_PATH="$HOME/.copilot/otel/usage.jsonl" copilot
+  ```
+
+  Keeping the file under `~/.copilot/otel` lets Tokeni Bar discover it even
+  when the menu-bar app does not inherit the terminal environment. Copilot's
+  message-content capture remains off unless the user enables it separately.
+- **Cline:** timestamped `api_req_started` usage records are read from Cline's
+  VS Code, VS Code Insiders, VSCodium, Cursor, and standalone local task data.
+- **Antigravity:** timestamped usage metadata is read from current SQLite
+  conversation databases. Antigravity's own Google sign-in is sufficient;
+  Tokeni Bar does not require or store a separate provider credential.
+- **Grok Build:** completed `turn_completed` records are read from the current
+  `updates.jsonl` format. Incomplete usage and partial cost are rejected.
+
 ## Codex account token activity
 
 Codex account activity reuses the existing sign-in from the installed Codex
 CLI. A dated total may arrive after its calendar day ends, and its settlement
 delay and boundary time are not guaranteed.
 
-The popover shows:
+The main token row uses cumulative local Codex session events to show **Today**
+without waiting for the account service. The account detail still shows:
 
 - **Latest daily (`yyyy-MM-dd`)**: valid bucket totals for the newest date
 - **This month**: valid returned buckets in the current local calendar month
 - **Lifetime**: the account-service lifetime total
 
-The popover distinguishes **Today's usage confirmed** from
-**Today pending · confirmed through yyyy-MM-dd**. If the newest confirmed bucket
-arrives within three days, the provider and usage date form an idempotent
-settlement key. A later increase to that bucket credits only the difference.
+When a local Today total exists while the account bucket is still delayed, the
+popover says **Local usage today · account total pending**. The local daily
+observation drives growth immediately; delayed account totals remain visible
+for historical account context and are not added a second time.
 
 Negative, future-dated, and otherwise invalid values are discarded. If there
 is no valid daily bucket, the app leaves it unavailable instead of inventing a
@@ -174,10 +192,12 @@ Each provider, quota window, and reset cycle can notify only once.
 Cost is an API-price-equivalent reference for the available token data. It is
 not an API invoice or a subscription bill.
 
-Codex account activity does not include the historical model, input/output,
-cache, or reasoning-token split needed for exact API pricing. Daily, monthly,
-and lifetime estimates therefore use a versioned reference profile bundled
-with the app. Token totals remain authoritative.
+Codex and Claude use model-specific public API prices where the local log has a
+complete token split. Cline and Grok Build prefer complete costs recorded by
+the provider. Copilot and Antigravity remain without a USD amount when their
+local data does not provide a trustworthy currency value. Codex account
+daily, monthly, and lifetime totals still use a versioned reference profile
+because those account totals have no historical model or token-category split.
 
 - USD/KRW is checked once per Seoul calendar day through
   [Frankfurter](https://frankfurter.dev/) using its ECB provider.

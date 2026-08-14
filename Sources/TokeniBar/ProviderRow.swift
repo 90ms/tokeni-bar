@@ -176,8 +176,7 @@ struct ProviderRow: View {
                 }
             }
 
-            if snapshot.accountTokenUsage == nil,
-               let tokenUsage = snapshot.tokenUsage
+            if let tokenUsage = snapshot.tokenUsage
             {
                 HStack {
                     Text(tokenUsage.label)
@@ -190,8 +189,7 @@ struct ProviderRow: View {
                 .foregroundStyle(.secondary)
             }
 
-            if snapshot.accountTokenUsage == nil,
-               let estimate = snapshot.costEstimate,
+            if let estimate = snapshot.costEstimate,
                let formattedCost = self.formattedCost(estimate.amountUSD)
             {
                 HStack {
@@ -236,6 +234,12 @@ struct ProviderRow: View {
                     systemImage: "checkmark.circle.fill")
                     .font(.caption2)
                     .foregroundStyle(.green)
+            } else if self.snapshot.tokenUsage?.label == "Today" {
+                Label(
+                    AppLocalization.string("usage.accountTokens.todayLocal"),
+                    systemImage: "checkmark.circle")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             } else {
                 Label(
                     accountUsage.latestBucketDate.map {

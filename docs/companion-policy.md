@@ -154,6 +154,10 @@ Starlight Egg. Booster items of the same multiplier extend the active expiry by
 their full duration. Activating a different multiplier replaces the active
 booster and discards its remaining time after explicit confirmation.
 
+Each stable app version offers a 300-shard update reward. It pays only after the
+player explicitly uses the Customize-tab button. The most recently claimed
+version prevents duplicate claims and claims after downgrading.
+
 Collection milestones grant one Prismatic Egg at 5, 10, 20, and 30 discovered
 species/appearance combinations, and one Starlight Egg at 5 and 10 distinct
 species. Finding three generation-two species unlocks Hologram Platform;

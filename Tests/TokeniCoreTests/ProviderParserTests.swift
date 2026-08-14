@@ -152,13 +152,14 @@ struct ProviderParserTests {
     func defaultRegistryIncludesSupportedProviders() {
         let descriptors = ProviderRegistry.defaultProviders().map(\.descriptor)
         let ids = descriptors.map(\.id)
-        #expect(ids == [.codex, .claude, .grok, .gemini, .openCode])
+        #expect(ids == [.codex, .claude, .copilot, .cline, .antigravity, .grok])
         #expect(descriptors.map(\.iconAssetName) == [
             "openai",
             "claude",
+            nil,
+            nil,
+            nil,
             "grok",
-            "gemini",
-            "opencode",
         ])
     }
 
