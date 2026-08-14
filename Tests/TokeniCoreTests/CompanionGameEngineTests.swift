@@ -140,12 +140,12 @@ struct CompanionGameEngineTests {
             variantUnitValue: 0,
             in: &state)
 
-        #expect(state.speciesID == .stackfox)
+        #expect(state.speciesID == .cachecat)
         #expect(state.variantID == .standard)
         #expect(state.consecutiveDuplicateHatches == 0)
         #expect(events.contains {
             if case .hatched(
-                speciesID: .stackfox,
+                speciesID: .cachecat,
                 rarity: .normal,
                 isNewSpecies: true,
                 unlockedFormIDs: _) = $0
@@ -332,7 +332,7 @@ struct CompanionGameEngineTests {
             in: &state)
 
         #expect(state.stage == .hatchling)
-        #expect(state.speciesID == .cachecat)
+        #expect(state.speciesID == .stackfox)
         #expect(state.rarity == .normal)
         #expect(state.variantID == .standard)
         #expect(state.generationNumber == 2)
@@ -345,7 +345,7 @@ struct CompanionGameEngineTests {
         #expect(events.contains(.energySpent(800)))
         #expect(events.contains {
             if case .hatched(
-                speciesID: .cachecat,
+                speciesID: .stackfox,
                 rarity: .normal,
                 isNewSpecies: true,
                 unlockedFormIDs: _) = $0
