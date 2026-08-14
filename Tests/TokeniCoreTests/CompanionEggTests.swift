@@ -55,6 +55,32 @@ struct CompanionEggTests {
                 == CompanionEggRegistry.deterministicSeed(for: "species-5"))
     }
 
+    @Test("Saved eggs keep their acquisition-time species pool")
+    func stableSpeciesPool() throws {
+        let current = CompanionEggInstance(
+            definitionID: .mystery,
+            seed: 42,
+            source: .shop)
+        let encoded = try JSONEncoder().encode(current)
+        var legacyObject = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        legacyObject.removeValue(forKey: "speciesPoolGeneration")
+        let legacyData = try JSONSerialization.data(withJSONObject: legacyObject)
+        let legacy = try JSONDecoder().decode(
+            CompanionEggInstance.self,
+            from: legacyData)
+
+        #expect(current.speciesPoolGeneration == 2)
+        #expect(current.availableSpecies == CompanionSpeciesID.allCases)
+        #expect(legacy.speciesPoolGeneration == 1)
+        #expect(legacy.availableSpecies == CompanionSpeciesID.species(
+            inContentGeneration: 1))
+
+        var state = CompanionGameState(eggs: [legacy])
+        _ = try CompanionGameEngine().openEgg(legacy.id, in: &state)
+        #expect(state.speciesID?.contentGeneration == 1)
+    }
+
     @Test("The starter egg hatches for free and becomes the active pet")
     func starterEgg() throws {
         let egg = CompanionEggInstance.starter(seed: 42)
@@ -146,7 +172,7 @@ struct CompanionEggTests {
         let seedValue = try #require((0..<100_000).first { candidate in
             CompanionEggRegistry.unitValue(
                 seed: UInt64(candidate),
-                salt: 1) >= 0.2
+                salt: 1) >= 0.1
         })
         let seed = UInt64(seedValue)
         _ = try engine.acquireEgg(
@@ -202,10 +228,15 @@ struct CompanionEggTests {
         _ = engine.reconcileEggMilestones(at: now, in: &state)
         _ = engine.reconcileEggMilestones(at: now, in: &state)
 
-        #expect(state.eggs.count == 2)
+        #expect(state.eggs.count == 4)
         #expect(state.eggs.map(\.definitionID).contains(.discovery))
         #expect(state.eggs.map(\.definitionID).contains(.prismatic))
-        #expect(state.claimedEggMilestoneIDs == ["species-5", "variants-5"])
+        #expect(state.claimedEggMilestoneIDs == [
+            "species-10",
+            "species-5",
+            "variants-10",
+            "variants-5",
+        ])
         let seeds = state.eggs.map(\.seed)
         var secondState = CompanionGameState(
             collection: CompanionCollection(forms: forms),
@@ -274,7 +305,7 @@ struct CompanionEggTests {
     func duplicateHatchXP() throws {
         let engine = CompanionGameEngine()
         let seed = try #require((0..<100_000).map(UInt64.init).first { seed in
-            CompanionEggRegistry.unitValue(seed: seed, salt: 1) < 0.2
+            CompanionEggRegistry.unitValue(seed: seed, salt: 1) < 0.1
                 && engine.rollVariant(unitValue: CompanionEggRegistry.unitValue(
                     seed: seed,
                     salt: 2)) == .standard

@@ -2,8 +2,8 @@
 
 [한국어](companion-policy.ko.md) | **English**
 
-- Policy version: 3.1.0
-- Updated: 2026-08-12
+- Policy version: 3.2.0
+- Updated: 2026-08-14
 - Status: implemented
 
 This document defines the product rules for level-100 growth, owned pets, egg
@@ -63,6 +63,12 @@ New state contains one non-sellable Starter Egg. Hatch results are fixed by the
 egg UUID and stable seed, and state is saved before presentation. A new
 appearance creates an owned pet with its own UUID.
 
+An egg also stores the latest content generation available at acquisition as
+its species-pool ceiling. Older saved eggs without this field resolve to the
+generation-one pool. Content additions therefore cannot change a saved seed's
+result; newly acquired eggs include generation two at equal per-species base
+odds.
+
 A duplicate is the same `species + appearance`; name, personality, and growth
 stage do not affect identity. A repeat hatch does not create another pet. It
 grants the matching owned pet 25% of its current next-level requirement, rounded
@@ -118,10 +124,22 @@ mutation appearance adds one signature action:
 - StackFox: Afterimage Split
 - PromptPup: Command Trail
 - NullSlime: Reform
+- QueryOwl: Signal Scan
+- PatchPanda: Pixel Mend
+- LoopHare: Recursive Dash
+- RelayRay: Packet Wave
+- KernelCrab: Core Open
 
 The initial signature slot points at a bundled species animation row and can be
 replaced with independent frames later while preserving its stable action ID.
 Reduce Motion, disabled animations, and Low Power Mode remain respected.
+
+Generation 2, the **Signal Expedition**, contains QueryOwl, PatchPanda,
+LoopHare, RelayRay, and KernelCrab. Every growth stage and appearance has an
+independent sprite. A persistent signal core and behavior-specific wing, ear,
+fin, and shell mode shifts distinguish it from generation 1. Its benefit
+mappings reuse the five generation-one active and passive values and add no
+higher tier.
 
 ## 8. Rewards and benefits
 
@@ -131,10 +149,17 @@ levels from 60, and every level from 70. The complete level journey grants 460
 shards. Level 100 grants 50 of that total. First mutation discovery is handled once as an appearance
 discovery. A mutation appearance never grants stronger benefits than Standard.
 
-The first verified growth activity of each local day grants 12 shards and one
+The first verified growth activity of each local day grants 100 shards and one
 Starlight Egg. Booster items of the same multiplier extend the active expiry by
 their full duration. Activating a different multiplier replaces the active
 booster and discards its remaining time after explicit confirmation.
+
+Collection milestones grant one Prismatic Egg at 5, 10, 20, and 30 discovered
+species/appearance combinations, and one Starlight Egg at 5 and 10 distinct
+species. Finding three generation-two species unlocks Hologram Platform;
+finding all five unlocks the Mini Drone sidekick. Ground and Sidekick are
+independent cosmetic slots that can be equipped with an aura, background, and
+palette.
 
 ## 9. Persistence and safety
 

@@ -83,6 +83,12 @@ public struct CompanionVariantDefinition: Identifiable, Hashable, Sendable {
 }
 
 public enum CompanionVariantRegistry {
+    public static let collectionDisplayOrder: [CompanionVariantID] = [
+        .standard,
+        .prismatic,
+        .mutated,
+    ]
+
     public static let definitions: [CompanionVariantDefinition] = [
         CompanionVariantDefinition(
             id: .standard,
@@ -112,7 +118,15 @@ public enum CompanionVariantRegistry {
     ]
 
     public static var collectibleIDs: [CompanionVariantID] {
-        self.definitions.filter(\.isCollectible).map(\.id)
+        let collectible = Set(
+            self.definitions.filter(\.isCollectible).map(\.id))
+        let ordered = self.collectionDisplayOrder.filter {
+            collectible.contains($0)
+        }
+        let remaining = self.definitions
+            .filter { $0.isCollectible && !ordered.contains($0.id) }
+            .map(\.id)
+        return ordered + remaining
     }
 
     public static func definition(

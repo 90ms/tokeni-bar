@@ -4,6 +4,15 @@ import Testing
 
 @Suite("Companion game")
 struct CompanionGameEngineTests {
+    @Test("Collection variants follow their player-facing rarity order")
+    func collectionVariantOrder() {
+        #expect(CompanionVariantRegistry.collectibleIDs == [
+            .standard,
+            .prismatic,
+            .mutated,
+        ])
+    }
+
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
@@ -92,12 +101,18 @@ struct CompanionGameEngineTests {
     func equalSpeciesIntervals() {
         let engine = CompanionGameEngine(calendar: self.calendar)
 
+        #expect(engine.rollSpecies(unitValue: 0.05) == .bytebot)
+        #expect(engine.rollSpecies(unitValue: 0.15) == .cachecat)
+        #expect(engine.rollSpecies(unitValue: 0.25) == .stackfox)
+        #expect(engine.rollSpecies(unitValue: 0.35) == .promptpup)
+        #expect(engine.rollSpecies(unitValue: 0.45) == .nullslime)
+        #expect(engine.rollSpecies(unitValue: 0.55) == .queryowl)
+        #expect(engine.rollSpecies(unitValue: 0.65) == .patchpanda)
+        #expect(engine.rollSpecies(unitValue: 0.75) == .loophare)
+        #expect(engine.rollSpecies(unitValue: 0.85) == .relayray)
+        #expect(engine.rollSpecies(unitValue: 0.95) == .kernelcrab)
         #expect(engine.rollSpecies(unitValue: 0) == .bytebot)
-        #expect(engine.rollSpecies(unitValue: 0.20) == .cachecat)
-        #expect(engine.rollSpecies(unitValue: 0.40) == .stackfox)
-        #expect(engine.rollSpecies(unitValue: 0.60) == .promptpup)
-        #expect(engine.rollSpecies(unitValue: 0.80) == .nullslime)
-        #expect(engine.rollSpecies(unitValue: 1) == .nullslime)
+        #expect(engine.rollSpecies(unitValue: 1) == .kernelcrab)
     }
 
     @Test("Five duplicate hatches guarantee a missing species next")
@@ -317,7 +332,7 @@ struct CompanionGameEngineTests {
             in: &state)
 
         #expect(state.stage == .hatchling)
-        #expect(state.speciesID == .cachecat)
+        #expect(state.speciesID == .stackfox)
         #expect(state.rarity == .normal)
         #expect(state.variantID == .standard)
         #expect(state.generationNumber == 2)
@@ -330,7 +345,7 @@ struct CompanionGameEngineTests {
         #expect(events.contains(.energySpent(800)))
         #expect(events.contains {
             if case .hatched(
-                speciesID: .cachecat,
+                speciesID: .stackfox,
                 rarity: .normal,
                 isNewSpecies: true,
                 unlockedFormIDs: _) = $0
@@ -375,12 +390,23 @@ struct CompanionGameEngineTests {
         }
     }
 
-    @Test("Every currently bundled pet belongs to asset generation one")
-    func currentSpeciesAreGenerationOne() {
-        #expect(CompanionSpeciesID.allCases.allSatisfy {
-            $0.contentGeneration == 1
-        })
-        #expect(CompanionSpeciesID.latestContentGeneration == 1)
+    @Test("Bundled pets are divided into two complete content generations")
+    func currentSpeciesGenerations() {
+        #expect(CompanionSpeciesID.species(inContentGeneration: 1) == [
+            .bytebot,
+            .cachecat,
+            .stackfox,
+            .promptpup,
+            .nullslime,
+        ])
+        #expect(CompanionSpeciesID.species(inContentGeneration: 2) == [
+            .queryowl,
+            .patchpanda,
+            .loophare,
+            .relayray,
+            .kernelcrab,
+        ])
+        #expect(CompanionSpeciesID.latestContentGeneration == 2)
     }
 
     @Test("Restarting spends energy but preserves collection and variant pity")

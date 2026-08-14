@@ -2,7 +2,7 @@ import Foundation
 
 public struct CompanionRewardRules: Sendable {
     public static let standard = CompanionRewardRules(
-        dailyAttendance: 12,
+        dailyAttendance: 100,
         weeklyAttendance: [3: 10, 5: 20, 7: 30],
         monthlyAttendanceDays: 20,
         monthlyAttendanceReward: 50,
@@ -10,7 +10,7 @@ public struct CompanionRewardRules: Sendable {
         mutationDiscovery: 30,
         variantDiscovery: [.mutated: 30, .prismatic: 50],
         journeyCompletion: 25,
-        collectionVariants: [5: 20, 10: 100],
+        collectionVariants: [5: 20, 10: 100, 20: 250, 30: 500],
         dailyVerifiedGrowth: 5,
         releaseGift: 20)
 
@@ -74,16 +74,22 @@ public struct CompanionRewardEngine: Sendable {
     public init(
         rules: CompanionRewardRules = .standard,
         cosmetics: [CompanionCosmetic] = [
-            CompanionCosmetic(id: .sparkleAura, cost: 60),
-            CompanionCosmetic(id: .pixelHearts, cost: 80),
-            CompanionCosmetic(id: .azurePalette, cost: 90),
-            CompanionCosmetic(id: .violetPalette, cost: 110),
-            CompanionCosmetic(id: .fireflyAura, cost: 130),
-            CompanionCosmetic(id: .terminalNight, cost: 160),
-            CompanionCosmetic(id: .orbitAura, cost: 180),
-            CompanionCosmetic(id: .cloudGarden, cost: 220),
-            CompanionCosmetic(id: .sunsetGrid, cost: 240),
-            CompanionCosmetic(id: .pixelForest, cost: 260),
+            CompanionCosmetic(id: .sparkleAura, cost: 300),
+            CompanionCosmetic(id: .pixelHearts, cost: 400),
+            CompanionCosmetic(id: .azurePalette, cost: 450),
+            CompanionCosmetic(id: .cloudCushion, cost: 450),
+            CompanionCosmetic(id: .pixelChick, cost: 500),
+            CompanionCosmetic(id: .violetPalette, cost: 550),
+            CompanionCosmetic(id: .fireflyAura, cost: 650),
+            CompanionCosmetic(id: .hologramPlatform, cost: 650),
+            CompanionCosmetic(id: .starSprite, cost: 700),
+            CompanionCosmetic(id: .terminalNight, cost: 800),
+            CompanionCosmetic(id: .meadowPatch, cost: 850),
+            CompanionCosmetic(id: .orbitAura, cost: 900),
+            CompanionCosmetic(id: .miniDrone, cost: 950),
+            CompanionCosmetic(id: .cloudGarden, cost: 1_100),
+            CompanionCosmetic(id: .sunsetGrid, cost: 1_200),
+            CompanionCosmetic(id: .pixelForest, cost: 1_300),
         ],
         calendar: Calendar = .current)
     {
@@ -212,6 +218,17 @@ public struct CompanionRewardEngine: Sendable {
             grants.append(CompanionRewardGrant(
                 amount: self.rules.collectionVariants[threshold, default: 0],
                 reason: .collectionVariants(threshold)))
+        }
+
+        let generationTwoSpecies = Set(
+            CompanionSpeciesID.species(inContentGeneration: 2))
+        let discoveredGenerationTwo = collection.discoveredSpeciesIDs
+            .intersection(generationTwoSpecies)
+        if discoveredGenerationTwo.count >= 3 {
+            state.unlockedCosmeticIDs.insert(.hologramPlatform)
+        }
+        if discoveredGenerationTwo == generationTwoSpecies {
+            state.unlockedCosmeticIDs.insert(.miniDrone)
         }
 
         self.apply(grants, at: date, to: &state)

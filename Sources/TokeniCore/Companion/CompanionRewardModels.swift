@@ -12,6 +12,12 @@ public enum CompanionCosmeticID: String, Codable, CaseIterable, Hashable, Sendab
     case pixelForest
     case azurePalette
     case violetPalette
+    case cloudCushion
+    case hologramPlatform
+    case meadowPatch
+    case miniDrone
+    case starSprite
+    case pixelChick
 
     public var slot: CompanionCosmeticSlot {
         switch self {
@@ -21,6 +27,10 @@ public enum CompanionCosmeticID: String, Codable, CaseIterable, Hashable, Sendab
             .background
         case .azurePalette, .violetPalette:
             .palette
+        case .cloudCushion, .hologramPlatform, .meadowPatch:
+            .ground
+        case .miniDrone, .starSprite, .pixelChick:
+            .sidekick
         }
     }
 }
@@ -29,6 +39,8 @@ public enum CompanionCosmeticSlot: String, Codable, CaseIterable, Hashable, Send
     case aura
     case background
     case palette
+    case ground
+    case sidekick
 }
 
 public struct CompanionCosmetic: Identifiable, Hashable, Sendable {

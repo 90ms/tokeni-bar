@@ -30,19 +30,31 @@ public struct CompanionEggInstance: Codable, Hashable, Identifiable, Sendable {
     public let seed: UInt64
     public let acquiredAt: Date
     public let source: CompanionEggSource
+    /// Freezes the species pool at acquisition time so a content update cannot
+    /// change the deterministic result of an unopened egg.
+    public let speciesPoolGeneration: Int
 
     public init(
         id: UUID = UUID(),
         definitionID: CompanionEggDefinitionID,
         seed: UInt64,
         acquiredAt: Date = .now,
-        source: CompanionEggSource)
+        source: CompanionEggSource,
+        speciesPoolGeneration: Int = CompanionSpeciesID.latestContentGeneration)
     {
         self.id = id
         self.definitionID = definitionID
         self.seed = seed
         self.acquiredAt = acquiredAt
         self.source = source
+        self.speciesPoolGeneration = max(speciesPoolGeneration, 1)
+    }
+
+    public var availableSpecies: [CompanionSpeciesID] {
+        let species = CompanionSpeciesID.allCases.filter {
+            $0.contentGeneration <= self.speciesPoolGeneration
+        }
+        return species.isEmpty ? CompanionSpeciesID.allCases : species
     }
 
     public static func starter(
@@ -56,6 +68,43 @@ public struct CompanionEggInstance: Codable, Hashable, Identifiable, Sendable {
             seed: seed,
             acquiredAt: date,
             source: .starter)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case definitionID
+        case seed
+        case acquiredAt
+        case source
+        case speciesPoolGeneration
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self.definitionID = try container.decode(
+            CompanionEggDefinitionID.self,
+            forKey: .definitionID)
+        self.seed = try container.decode(UInt64.self, forKey: .seed)
+        self.acquiredAt = try container.decode(Date.self, forKey: .acquiredAt)
+        self.source = try container.decode(CompanionEggSource.self, forKey: .source)
+        self.speciesPoolGeneration = max(
+            try container.decodeIfPresent(
+                Int.self,
+                forKey: .speciesPoolGeneration) ?? 1,
+            1)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.id, forKey: .id)
+        try container.encode(self.definitionID, forKey: .definitionID)
+        try container.encode(self.seed, forKey: .seed)
+        try container.encode(self.acquiredAt, forKey: .acquiredAt)
+        try container.encode(self.source, forKey: .source)
+        try container.encode(
+            self.speciesPoolGeneration,
+            forKey: .speciesPoolGeneration)
     }
 }
 

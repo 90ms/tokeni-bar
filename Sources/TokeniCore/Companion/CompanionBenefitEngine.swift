@@ -111,7 +111,10 @@ public struct CompanionBenefitEngine: Sendable {
         passives: [CompanionBenefitCompanion]) -> Int
     {
         passives
-            .filter { $0.speciesID == .stackfox }
+            .filter {
+                CompanionBenefitRegistry.definition(for: $0.speciesID)?.id
+                    == .stackOptimization
+            }
             .map {
                 CompanionBenefitRegistry.stackOptimizationBasisPoints(
                     for: $0.rarity)
@@ -123,7 +126,10 @@ public struct CompanionBenefitEngine: Sendable {
         passives: [CompanionBenefitCompanion]) -> Int
     {
         passives
-            .filter { $0.speciesID == .promptpup }
+            .filter {
+                CompanionBenefitRegistry.definition(for: $0.speciesID)?.id
+                    == .luckyCheer
+            }
             .map {
                 CompanionBenefitRegistry.luckyCheerBasisPoints(for: $0.rarity)
             }
@@ -134,7 +140,10 @@ public struct CompanionBenefitEngine: Sendable {
         passives: [CompanionBenefitCompanion]) -> Int
     {
         passives
-            .filter { $0.speciesID == .nullslime }
+            .filter {
+                CompanionBenefitRegistry.definition(for: $0.speciesID)?.id
+                    == .rewardAbsorption
+            }
             .map {
                 CompanionBenefitRegistry.rewardAbsorptionBasisPoints(
                     for: $0.rarity)
@@ -156,7 +165,8 @@ public struct CompanionBenefitEngine: Sendable {
             state.processedGrowthAwardIDs.suffix(512))
         guard energy > 0,
               let activeCompanion,
-              activeCompanion.speciesID == .bytebot
+              CompanionBenefitRegistry.definition(
+                  for: activeCompanion.speciesID)?.id == .tokenOptimization
         else {
             state.updatedAt = date
             return
@@ -212,7 +222,8 @@ public struct CompanionBenefitEngine: Sendable {
             state.updatedAt = date
         }
         guard let activeCompanion,
-              activeCompanion.speciesID == .cachecat
+              CompanionBenefitRegistry.definition(
+                  for: activeCompanion.speciesID)?.id == .starlightCache
         else { return 0 }
         guard state.activeGenerationID == activeCompanion.generationID,
               let previous = state.lastTimeEvaluationAt,

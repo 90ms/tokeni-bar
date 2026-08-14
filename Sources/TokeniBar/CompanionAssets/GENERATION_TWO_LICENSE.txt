@@ -1,0 +1,8 @@
+Generation-two companion pixel art assets
+
+Copyright (c) 2026 Tokeni Bar contributors
+
+QueryOwl, PatchPanda, LoopHare, RelayRay, and KernelCrab are original assets
+generated from the repository's deterministic pixel-art source script. They are
+distributed under the same MIT License as Tokeni Bar. See the repository's root
+LICENSE file for the complete license text.
