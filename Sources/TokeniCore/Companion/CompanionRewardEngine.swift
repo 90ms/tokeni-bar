@@ -12,7 +12,7 @@ public struct CompanionRewardRules: Sendable {
         journeyCompletion: 25,
         collectionVariants: [5: 20, 10: 100, 20: 250, 30: 500],
         dailyVerifiedGrowth: 5,
-        releaseGift: 20)
+        releaseGift: 300)
 
     public let dailyAttendance: Int
     public let weeklyAttendance: [Int: Int]
@@ -262,21 +262,30 @@ public struct CompanionRewardEngine: Sendable {
         at date: Date = .now,
         in state: inout CompanionRewardState) -> CompanionRewardGrant?
     {
-        guard let current = SemanticVersion(appVersion),
-              current.prerelease.isEmpty
+        guard self.isReleaseGiftAvailable(
+            appVersion: appVersion,
+            in: state),
+            let current = SemanticVersion(appVersion)
         else { return nil }
-        if let previousValue = state.latestRewardedAppVersion,
-           let previous = SemanticVersion(previousValue),
-           current <= previous
-        {
-            return nil
-        }
         state.latestRewardedAppVersion = current.description
         let grant = CompanionRewardGrant(
             amount: self.rules.releaseGift,
             reason: .releaseGift(version: current.description))
         self.apply([grant], at: date, to: &state)
         return grant
+    }
+
+    public func isReleaseGiftAvailable(
+        appVersion: String,
+        in state: CompanionRewardState) -> Bool
+    {
+        guard let current = SemanticVersion(appVersion),
+              current.prerelease.isEmpty
+        else { return false }
+        guard let previousValue = state.latestRewardedAppVersion,
+              let previous = SemanticVersion(previousValue)
+        else { return true }
+        return current > previous
     }
 
     public func purchase(

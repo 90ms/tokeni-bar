@@ -13,7 +13,7 @@
 "empty.description" = "설정에서 제공자를 활성화하세요.";
 "usage.percentLeft" = "% 남음";
 "usage.tokens" = "토큰";
-"usage.apiCostEstimate" = "API 비용 추정";
+"usage.apiCostEstimate" = "사용 비용 참고";
 "usage.accountTokens.title" = "계정 토큰 사용량";
 "usage.accountTokens.today" = "오늘";
 "usage.accountTokens.latestDaily" = "최근 일일 사용량 (%@)";
@@ -25,6 +25,7 @@
 "usage.accountTokens.dataThrough" = "계정 데이터 %@까지";
 "usage.accountTokens.unavailable" = "집계 대기 중";
 "usage.accountTokens.todayConfirmed" = "오늘 사용량 확정";
+"usage.accountTokens.todayLocal" = "오늘 로컬 사용량 확인 · 계정 합계 대기";
 "usage.accountTokens.todayPending" = "오늘 사용량 집계 대기";
 "usage.accountTokens.todayPendingThrough" = "오늘 집계 대기 · %@까지 확정";
 "usage.accountTokens.issue.executableUnavailable" = "Codex CLI를 찾을 수 없음";
@@ -416,9 +417,12 @@
 "companion.rewards.balance" = "별조각 %d개";
 "companion.rewards.description" = "출석, 검증된 성장, 새로운 펫·외형 발견과 도감 달성으로 별조각을 얻고 레벨 구간에서 부스터와 오라를 해금합니다.";
 "companion.rewards.description.simplified" = "매일 첫 성장 활동으로 별조각 100개와 별빛 알 1개를 받고, 성장과 도감 달성으로 추가 별조각을 얻습니다.";
-"companion.rewards.sources" = "새 안정 버전의 첫 실행에도 릴리스 선물이 한 번 지급됩니다.";
-"companion.rewards.sources.simplified" = "일일 출석 · 성장 보상 · 발견 및 도감 보상";
+"companion.rewards.sources" = "새 안정 버전마다 별조각 300개를 버튼으로 직접 받을 수 있습니다.";
+"companion.rewards.sources.simplified" = "일일 출석 · 성장 및 도감 보상 · 업데이트 보상";
 "companion.rewards.received" = "별조각 %d개를 받았습니다!";
+"companion.updateReward.title" = "버전 %@ 업데이트 보상";
+"companion.updateReward.description" = "이 버전의 별조각 %d개를 한 번 받을 수 있습니다.";
+"companion.updateReward.claim" = "%d개 받기";
 "companion.cosmetic.shop" = "별조각 꾸미기";
 "companion.cosmetic.description" = "구매한 꾸미기는 영구 보관되며 펫의 성장이나 등급에는 영향을 주지 않습니다.";
 "companion.cosmetic.earning" = "별조각은 검증된 성장과 펫 발견·도감 달성으로 얻습니다.";
@@ -577,7 +581,7 @@
 "settings.cost.krw" = "원화 (₩)";
 "settings.cost.rate" = "1 USD = ₩%@ · ECB %@ 기준";
 "settings.cost.rateUnavailable" = "아직 USD/KRW 환율을 가져오지 못했습니다.";
-"settings.cost.disclaimer" = "확인 가능한 계정 또는 로컬 토큰 합계와 공개 API 단가로 계산한 거친 참고값입니다. Codex, Claude 또는 Grok 구독 청구액과는 다릅니다.";
+"settings.cost.disclaimer" = "완전한 제공자 기록 비용 또는 확인 가능한 공개 API 단가를 사용한 거친 참고값이며 구독 청구액과는 다릅니다.";
 "settings.cost.catalog" = "가격표 v%d · %@ 기준 · %@";
 "settings.cost.catalogRefresh" = "지금 확인";
 "settings.cost.catalogFailed" = "가격표를 갱신하지 못했습니다. 마지막으로 검증된 번들 또는 캐시 가격표를 계속 사용합니다.";
@@ -585,7 +589,7 @@
 "settings.cost.catalogSource.cache" = "캐시";
 "settings.cost.catalogSource.remote" = "업데이트됨";
 "settings.privacy" = "개인정보 보호";
-"settings.privacy.description" = "알려진 로컬 CLI 세션 파일과 OpenCode의 집계 세션 열에서 사용량을 읽습니다. Codex는 기존 CLI 로그인을 재사용하고 Claude 계정 쿼터는 현재 앱 실행 중 사용자가 명시적으로 연결한 뒤에만 키체인에 접근합니다. 프롬프트, 응답, 쿠키 및 인증 토큰은 저장하지 않습니다.";
+"settings.privacy.description" = "알려진 로컬 CLI 세션 파일과 Antigravity 대화 메타데이터에서 사용량을 읽습니다. Codex는 기존 CLI 로그인을 재사용하고 Claude 계정 쿼터는 현재 앱 실행 중 사용자가 명시적으로 연결한 뒤에만 키체인에 접근합니다. 프롬프트, 응답, 쿠키 및 인증 토큰은 저장하지 않습니다.";
 "notification.usageLow.title" = "%@ 사용량이 부족합니다";
 "notification.usageLow.body" = "%@: %d%% 남음";
 "notification.usageLow.depletionRisk" = "현재 관측 속도라면 갱신 전에 소진될 가능성이 높습니다.";
@@ -605,7 +609,7 @@
 "settings.budget.amount" = "예산";
 "settings.budget.spent" = "이번 달 예상: %@ / %@";
 "settings.budget.noRate" = "원화 예산을 계산하려면 현재 환율이 필요합니다.";
-"settings.budget.description" = "사용량 알림이 켜져 있으면 50%%, 80%% 및 100%%에서 알립니다. Codex는 현재 계정의 월 참고 비용을 사용하고, 다른 제공자는 로컬 기록에서 관측한 사용량만 합산합니다.";
+"settings.budget.description" = "사용량 알림이 켜져 있으면 50%%, 80%% 및 100%%에서 알립니다. 이번 달 로컬 기록에서 확인된 신뢰 가능한 일일 비용 참고값만 합산합니다.";
 "history.metric" = "지표";
 "history.metric.quota" = "쿼터";
 "history.metric.cost" = "비용";

@@ -779,6 +779,39 @@ struct CompanionCollectionView: View {
                                 : Color.secondary)
                 }
 
+                if self.store.companionUpdateRewardAvailable {
+                    HStack(alignment: .center, spacing: 12) {
+                        Image(systemName: "gift.fill")
+                            .font(.title2)
+                            .foregroundStyle(.yellow)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(AppLocalization.format(
+                                "companion.updateReward.title",
+                                self.store.currentAppVersion))
+                                .font(.subheadline.weight(.semibold))
+                            Text(AppLocalization.format(
+                                "companion.updateReward.description",
+                                self.store.companionUpdateRewardAmount))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button(AppLocalization.format(
+                            "companion.updateReward.claim",
+                            self.store.companionUpdateRewardAmount))
+                        {
+                            self.store.claimCompanionUpdateReward()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding(12)
+                    .background(
+                        Color.yellow.opacity(0.1),
+                        in: RoundedRectangle(
+                            cornerRadius: TokeniLayout.cornerRadius))
+                }
+
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(AppLocalization.format(

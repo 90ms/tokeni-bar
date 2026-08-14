@@ -184,7 +184,7 @@ struct CompanionRewardEngineTests {
         #expect(repeated.isEmpty)
     }
 
-    @Test("Verified growth and stable release gifts are awarded once")
+    @Test("Verified growth and manually claimed stable release gifts are awarded once")
     func recurringRewards() throws {
         let engine = CompanionRewardEngine(calendar: self.calendar)
         let firstDay = try #require(self.date("2027-01-04T12:00:00Z"))
@@ -204,10 +204,16 @@ struct CompanionRewardEngineTests {
             at: secondDay,
             in: &state)?.amount == 5)
 
+        #expect(engine.isReleaseGiftAvailable(
+            appVersion: "1.2.0",
+            in: state))
         #expect(engine.claimReleaseGift(
             appVersion: "1.2.0",
             at: firstDay,
-            in: &state)?.amount == 20)
+            in: &state)?.amount == 300)
+        #expect(!engine.isReleaseGiftAvailable(
+            appVersion: "1.2.0",
+            in: state))
         #expect(engine.claimReleaseGift(
             appVersion: "1.2.0",
             at: secondDay,
@@ -223,8 +229,8 @@ struct CompanionRewardEngineTests {
         #expect(engine.claimReleaseGift(
             appVersion: "1.3.0",
             at: secondDay,
-            in: &state)?.amount == 20)
-        #expect(state.starShards == 50)
+            in: &state)?.amount == 300)
+        #expect(state.starShards == 610)
     }
 
     @Test("Cosmetics spend shards once and can be equipped")

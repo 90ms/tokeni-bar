@@ -13,7 +13,7 @@
 "empty.description" = "Enable a provider in Settings.";
 "usage.percentLeft" = "% left";
 "usage.tokens" = "tokens";
-"usage.apiCostEstimate" = "API cost estimate";
+"usage.apiCostEstimate" = "Usage cost reference";
 "usage.accountTokens.title" = "Account token activity";
 "usage.accountTokens.today" = "Today";
 "usage.accountTokens.latestDaily" = "Latest daily (%@)";
@@ -25,6 +25,7 @@
 "usage.accountTokens.dataThrough" = "Account data through %@";
 "usage.accountTokens.unavailable" = "Pending";
 "usage.accountTokens.todayConfirmed" = "Today's usage confirmed";
+"usage.accountTokens.todayLocal" = "Local usage today · account total pending";
 "usage.accountTokens.todayPending" = "Waiting for today's usage";
 "usage.accountTokens.todayPendingThrough" = "Today pending · confirmed through %@";
 "usage.accountTokens.issue.executableUnavailable" = "Codex CLI not found";
@@ -416,9 +417,12 @@
 "companion.rewards.balance" = "%d Star Shards";
 "companion.rewards.description" = "Earn Star Shards from attendance, verified growth, discoveries, and collection milestones, then unlock boosters and auras at level milestones.";
 "companion.rewards.description.simplified" = "Your first growth activity each day grants 100 Star Shards and one Starlight Egg, with more shards from growth and collection milestones.";
-"companion.rewards.sources" = "Each stable release also includes a one-time gift on first launch.";
-"companion.rewards.sources.simplified" = "Daily attendance · Growth rewards · Discovery and collection rewards";
+"companion.rewards.sources" = "Each stable release also includes a 300 Star Shard reward that you claim manually.";
+"companion.rewards.sources.simplified" = "Daily attendance · Growth and collection rewards · Update rewards";
 "companion.rewards.received" = "Received %d Star Shards!";
+"companion.updateReward.title" = "Version %@ update reward";
+"companion.updateReward.description" = "Claim %d Star Shards once for this version.";
+"companion.updateReward.claim" = "Claim %d";
 "companion.cosmetic.shop" = "Star Shard cosmetics";
 "companion.cosmetic.description" = "Purchased cosmetics are permanent and never affect growth or rarity.";
 "companion.cosmetic.earning" = "Earn Star Shards through verified growth, pet discoveries, and collection milestones.";
@@ -577,7 +581,7 @@
 "settings.cost.krw" = "KRW (₩)";
 "settings.cost.rate" = "1 USD = ₩%@ · ECB rate dated %@";
 "settings.cost.rateUnavailable" = "The USD/KRW exchange rate is not available yet.";
-"settings.cost.disclaimer" = "Calculated from available account or local token totals using public API prices. This is a rough reference, not your Codex, Claude, or Grok subscription bill.";
+"settings.cost.disclaimer" = "Uses complete provider-recorded costs or public API prices when available. This is a rough reference, not a subscription bill.";
 "settings.cost.catalog" = "Price catalog v%d · effective %@ · %@";
 "settings.cost.catalogRefresh" = "Check Now";
 "settings.cost.catalogFailed" = "Could not update prices. The last validated bundled or cached catalog remains active.";
@@ -585,7 +589,7 @@
 "settings.cost.catalogSource.cache" = "Cached";
 "settings.cost.catalogSource.remote" = "Updated";
 "settings.privacy" = "Privacy";
-"settings.privacy.description" = "Usage is read from known local CLI session files and OpenCode's aggregate session columns. Codex reuses its CLI sign-in; Claude account quotas access Keychain only after you explicitly connect for the current app session. Prompts, responses, cookies, and authentication tokens are not stored by this app.";
+"settings.privacy.description" = "Usage is read from known local CLI session files and Antigravity conversation metadata. Codex reuses its CLI sign-in; Claude account quotas access Keychain only after you explicitly connect for the current app session. Prompts, responses, cookies, and authentication tokens are not stored by this app.";
 "notification.usageLow.title" = "%@ usage is low";
 "notification.usageLow.body" = "%@: %d%% left";
 "notification.usageLow.depletionRisk" = "At the recently observed rate, it may run out before reset.";
@@ -605,7 +609,7 @@
 "settings.budget.amount" = "Budget";
 "settings.budget.spent" = "Estimated this month: %@ of %@";
 "settings.budget.noRate" = "A current exchange rate is required for a KRW budget.";
-"settings.budget.description" = "Alerts are sent at 50%%, 80%%, and 100%% when usage notifications are enabled. Codex uses its current account-month reference; other providers include only usage observed in local history.";
+"settings.budget.description" = "Alerts are sent at 50%%, 80%%, and 100%% when usage notifications are enabled. Only trustworthy daily local cost references observed this month are included.";
 "history.metric" = "Metric";
 "history.metric.quota" = "Quota";
 "history.metric.cost" = "Cost";

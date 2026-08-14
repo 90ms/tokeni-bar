@@ -1,0 +1,26 @@
+[
+  {
+    "type": "say",
+    "say": "api_req_started",
+    "ts": "not-a-timestamp",
+    "text": "{\"tokensIn\":9999,\"tokensOut\":9999,\"cost\":9.99}"
+  },
+  {
+    "type": "say",
+    "say": "api_req_started",
+    "ts": 1786666200000,
+    "text": "{\"tokensIn\":700,\"tokensOut\":300,\"cacheReads\":200,\"cacheWrites\":100,\"cost\":0.01}"
+  },
+  {
+    "type": "say",
+    "say": "api_req_started",
+    "ts": 1786669200000,
+    "text": "{\"tokensIn\":400,\"tokensOut\":200,\"cacheReads\":100,\"cacheWrites\":0,\"cost\":0.02}"
+  },
+  {
+    "type": "say",
+    "say": "text",
+    "ts": 1786669200000,
+    "text": "Sanitized non-usage event"
+  }
+]

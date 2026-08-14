@@ -39,10 +39,10 @@ struct ProviderActivityTests {
         let files = [
             ".codex/sessions/2026/session.jsonl",
             ".claude/projects/project/session.jsonl",
-            ".grok/sessions/current/signals.json",
-            ".gemini/tmp/project/chats/session-sanitized.json",
-            ".local/share/opencode/opencode.db",
-            ".local/share/opencode/opencode.db-wal",
+            ".copilot/otel/usage.jsonl",
+            "Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/task/ui_messages.json",
+            ".gemini/antigravity-cli/conversations/conversation.db",
+            ".grok/sessions/current/updates.jsonl",
         ]
         for path in files {
             let file = home.appending(path: path)
@@ -58,9 +58,10 @@ struct ProviderActivityTests {
         let providers: [any UsageActivityProviding] = [
             CodexUsageProvider(homeDirectory: home),
             ClaudeUsageProvider(homeDirectory: home, allowKeychain: false),
+            CopilotUsageProvider(homeDirectory: home),
+            ClineUsageProvider(homeDirectory: home),
+            AntigravityUsageProvider(homeDirectory: home),
             GrokUsageProvider(homeDirectory: home),
-            GeminiUsageProvider(homeDirectory: home),
-            OpenCodeUsageProvider(homeDirectory: home),
         ]
         let cutoff = now.addingTimeInterval(-15)
 

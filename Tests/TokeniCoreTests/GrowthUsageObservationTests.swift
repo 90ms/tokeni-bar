@@ -17,8 +17,8 @@ struct GrowthUsageObservationTests {
         #expect(!observation.measurementKey.contains("/"))
     }
 
-    @Test("Grok combines compacted and current session tokens for growth")
-    func grokCompactionTotal() async throws {
+    @Test("Grok uses complete local turns as today's growth observation")
+    func grokDailyTotal() async throws {
         let home = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         let directory = home.appending(
@@ -26,22 +26,18 @@ struct GrowthUsageObservationTests {
             directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: home) }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let timestamp = UInt64(Date.now.timeIntervalSince1970)
         try Data(
             """
-            {
-              "contextTokensUsed": 1200,
-              "contextWindowTokens": 10000,
-              "totalTokensBeforeCompaction": 3400,
-              "primaryModelId": "grok-test"
-            }
+            {"timestamp":\(timestamp),"method":"_x.ai/session/update","params":{"sessionId":"session-sanitized","update":{"sessionUpdate":"turn_completed","prompt_id":"prompt-1","usage":{"inputTokens":1200,"outputTokens":300,"totalTokens":1500,"modelUsage":{"grok-test":{}}}}}}
             """.utf8)
-            .write(to: directory.appending(path: "signals.json"))
+            .write(to: directory.appending(path: "updates.jsonl"))
 
         let snapshot = await GrokUsageProvider(homeDirectory: home).fetchUsage()
 
-        #expect(snapshot.tokenUsage?.totalTokens == 1_200)
-        #expect(snapshot.growthUsageObservation?.scope == .session)
-        #expect(snapshot.growthUsageObservation?.scopeID == "session-sanitized")
-        #expect(snapshot.growthUsageObservation?.totalTokens == 4_600)
+        #expect(snapshot.tokenUsage?.totalTokens == 1_500)
+        #expect(snapshot.growthUsageObservation?.scope == .daily)
+        #expect(snapshot.growthUsageObservation?.scopeID == GrowthLocalDate.key(for: .now))
+        #expect(snapshot.growthUsageObservation?.totalTokens == 1_500)
     }
 }

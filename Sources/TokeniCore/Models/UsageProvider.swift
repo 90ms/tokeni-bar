@@ -66,9 +66,10 @@ public enum ProviderRegistry {
         [
             CodexUsageProvider(homeDirectory: homeDirectory),
             ClaudeUsageProvider(homeDirectory: homeDirectory),
+            CopilotUsageProvider(homeDirectory: homeDirectory),
+            ClineUsageProvider(homeDirectory: homeDirectory),
+            AntigravityUsageProvider(homeDirectory: homeDirectory),
             GrokUsageProvider(homeDirectory: homeDirectory),
-            GeminiUsageProvider(homeDirectory: homeDirectory),
-            OpenCodeUsageProvider(homeDirectory: homeDirectory),
         ]
     }
 }

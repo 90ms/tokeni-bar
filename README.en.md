@@ -26,7 +26,7 @@ tokeni-bar
 |---|---|
 | Operating system | macOS 14 Sonoma or later |
 | Build tools | Current Xcode Command Line Tools (`xcode-select --install`) |
-| Agent | At least one of Codex, Claude Code, Grok, Gemini CLI, or OpenCode |
+| Agent | At least one of Codex, Claude Code, GitHub Copilot, Cline, Antigravity, or Grok Build |
 
 The Formula builds and ad-hoc signs the app on your Mac. It requires neither an
 Apple Developer ID nor the full Xcode app.
@@ -167,8 +167,9 @@ Patch sit beneath a pet; Pixel Chick, Star Sprite, and Mini Drone move beside it
 
 The first growth activity each day grants 100 Star Shards and one Starlight Egg.
 Automatic activity attendance, the first verified growth of a day, weekly and
-monthly activity, species and variant discoveries, and stable-release gifts
-also grant Star Shards. Shards are shared across eggs, cosmetics, and boosters.
+monthly activity, species and variant discoveries, and a manually claimed
+300-shard reward for each stable app version also grant Star Shards. Shards are
+shared across eggs, cosmetics, and boosters.
 There are no real-money purchases, limited-time shops, player trading, or lost
 login streaks.
 
@@ -205,14 +206,15 @@ panel above other apps.
 
 | Provider | Account quota | Token and cost display | Pet growth source |
 |---|---|---|---|
-| Codex | Weekly and model-scoped limits; reset credits | Latest confirmed daily, month, and lifetime tokens; aggregation state; reference cost | Confirmed daily totals arriving within three days, or session increases |
+| Codex | Weekly and model-scoped limits; reset credits | Today's local tokens and reference cost; account daily, month, and lifetime totals | Verified local total for today |
 | Claude Code | 5-hour, weekly, and model-scoped limits | Local daily tokens; cache-aware reference cost | Confirmed daily total |
-| Grok | Not available | Current local session context | Session increases after the first observation |
-| Gemini CLI | Not available | Latest local session tokens | Session increases after the first observation |
-| OpenCode | Not available | Local aggregate tokens and recorded cost | Aggregate increases after the first observation |
+| GitHub Copilot | Not available | Today's tokens from OTel or completed local CLI sessions | Confirmed daily total |
+| Cline | Not available | Today's tokens and recorded cost from local VS Code-family tasks | Confirmed daily total |
+| Antigravity | Not available | Today's tokens from local conversation databases | Confirmed daily total |
+| Grok Build | Local context only | Today's tokens and recorded cost from completed local turns | Confirmed daily total |
 
-Session and lifetime counters establish a baseline first so existing usage is
-not awarded as new growth. See
+Only timestamped local records are included in today's total. Incomplete or
+undated values remain unavailable instead of becoming a guessed zero. See
 [usage display and growth accounting](docs/usage.md) for details.
 
 ## First use

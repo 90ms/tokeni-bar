@@ -16,6 +16,9 @@ public struct ProviderID: RawRepresentable, Codable, Hashable, Sendable, Identif
 
     public static let codex: Self = "codex"
     public static let claude: Self = "claude"
+    public static let copilot: Self = "copilot"
+    public static let cline: Self = "cline"
+    public static let antigravity: Self = "antigravity"
     public static let grok: Self = "grok"
     public static let gemini: Self = "gemini"
     public static let openCode: Self = "opencode"
