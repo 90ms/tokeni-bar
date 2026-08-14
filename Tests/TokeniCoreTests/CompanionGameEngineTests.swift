@@ -140,12 +140,12 @@ struct CompanionGameEngineTests {
             variantUnitValue: 0,
             in: &state)
 
-        #expect(state.speciesID == .cachecat)
+        #expect(state.speciesID == .stackfox)
         #expect(state.variantID == .standard)
         #expect(state.consecutiveDuplicateHatches == 0)
         #expect(events.contains {
             if case .hatched(
-                speciesID: .cachecat,
+                speciesID: .stackfox,
                 rarity: .normal,
                 isNewSpecies: true,
                 unlockedFormIDs: _) = $0

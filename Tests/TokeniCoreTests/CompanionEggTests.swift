@@ -232,10 +232,10 @@ struct CompanionEggTests {
         #expect(state.eggs.map(\.definitionID).contains(.discovery))
         #expect(state.eggs.map(\.definitionID).contains(.prismatic))
         #expect(state.claimedEggMilestoneIDs == [
-            "species-5",
             "species-10",
-            "variants-5",
+            "species-5",
             "variants-10",
+            "variants-5",
         ])
         let seeds = state.eggs.map(\.seed)
         var secondState = CompanionGameState(
