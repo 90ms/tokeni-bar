@@ -7,6 +7,7 @@
 - [사용량 표시와 성장 집계](usage.ko.md) · [English](usage.md)
 - [Tokeni 펫 성장과 알 도감](bytebot.ko.md) · [English](bytebot.md)
 - [Homebrew 설치·업데이트·이전 안내](HOMEBREW.ko.md) · [English](HOMEBREW.md)
+- [릴리스 및 배포 절차](RELEASING.ko.md) · [English](RELEASING.md)
 
 ## 정책 문서
 

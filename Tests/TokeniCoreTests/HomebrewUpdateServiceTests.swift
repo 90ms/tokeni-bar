@@ -57,10 +57,10 @@ struct HomebrewUpdateServiceTests {
         let brew = "/opt/homebrew/bin/brew"
 
         #expect(HomebrewUpdateService.infoCommand(brew: brew).arguments == [
-            "info", "--json=v1", "90ms/tap/tokeni-bar",
+            "info", "--formula", "--json=v1", "90ms/tap/tokeni-bar",
         ])
         #expect(HomebrewUpdateService.upgradeCommand(brew: brew).arguments == [
-            "upgrade", "90ms/tap/tokeni-bar",
+            "upgrade", "--formula", "90ms/tap/tokeni-bar",
         ])
         #expect(HomebrewUpdateService.relinkCommand(brew: brew) == ProcessCommand(
             executable: "/opt/homebrew/bin/tokeni-bar",
@@ -106,7 +106,7 @@ struct HomebrewUpdateServiceTests {
             "/opt/homebrew/bin/tokeni-bar",
         ])
         #expect(commands.map(\.arguments) == [
-            ["upgrade", "90ms/tap/tokeni-bar"],
+            ["upgrade", "--formula", "90ms/tap/tokeni-bar"],
             ["--install-app"],
         ])
     }
