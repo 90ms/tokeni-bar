@@ -30,11 +30,26 @@ palette_for() {
     outline="#071426"
     core="#57F2E3"
     case "$species" in
-        queryowl) body="#4267A8"; detail="#8EB8E8"; accent="#FFD76A" ;;
-        patchpanda) body="#F1E7D2"; detail="#34435B"; accent="#FF829F" ;;
-        loophare) body="#D99AEF"; detail="#704B9B"; accent="#70E6C1" ;;
-        relayray) body="#5FB7C6"; detail="#23637D"; accent="#F3DA75" ;;
-        kernelcrab) body="#E26D62"; detail="#813D55"; accent="#FFB65C" ;;
+        queryowl)
+            body="#4267A8"; detail="#8EB8E8"; accent="#FFD76A"
+            shadow="#294675"; highlight="#B9D5F4"; soft="#E9F1DB"
+            ;;
+        patchpanda)
+            body="#F1E7D2"; detail="#34435B"; accent="#FF829F"
+            shadow="#C8BFAF"; highlight="#FFF8E8"; soft="#64748B"
+            ;;
+        loophare)
+            body="#D99AEF"; detail="#704B9B"; accent="#70E6C1"
+            shadow="#A969C4"; highlight="#F0C8FA"; soft="#FFE8F6"
+            ;;
+        relayray)
+            body="#5FB7C6"; detail="#23637D"; accent="#F3DA75"
+            shadow="#31899D"; highlight="#A4E3DF"; soft="#D8F5E8"
+            ;;
+        kernelcrab)
+            body="#E26D62"; detail="#813D55"; accent="#FFB65C"
+            shadow="#B84B50"; highlight="#FF9A7E"; soft="#FFE0A3"
+            ;;
     esac
     case "$rarity" in
         rare)
@@ -44,11 +59,17 @@ palette_for() {
         epic)
             body="#7456B8"
             detail="#C190F2"
+            shadow="#49377F"
+            highlight="#E2C5FF"
+            soft="#F6E9FF"
             core="#69F7FF"
             ;;
         legendary)
             body="#FFF3C4"
             detail="#8BE2E8"
+            shadow="#D2B989"
+            highlight="#FFFFFF"
+            soft="#FFF8E8"
             accent="#FF86C8"
             core="#FFFFFF"
             ;;
@@ -123,106 +144,108 @@ variant_marks() {
 
 draw_queryowl() {
     local stage="$1" behavior="$2" frame="$3"
-    local head_x=8 head_y=7 head_w=16 body_x=10 body_y=16 body_w=12
-    local wing_left=6 wing_right=23 wing_w=4
+    local inset=2 head_top=7 body_bottom=28 wing_tip=5
     case "$stage" in
-        junior)
-            head_x=7; head_y=6; head_w=18; body_x=9; body_y=15; body_w=14
-            wing_left=4; wing_right=23; wing_w=5
-            ;;
-        adult)
-            head_x=6; head_y=5; head_w=20; body_x=8; body_y=14; body_w=16
-            wing_left=2; wing_right=24; wing_w=6
-            ;;
+        junior) inset=1; head_top=5; body_bottom=29; wing_tip=3 ;;
+        adult) inset=0; head_top=3; body_bottom=30; wing_tip=1 ;;
     esac
     if [[ "$behavior" == working || "$behavior" == signature ]]; then
-        wing_left=0; wing_right=25; wing_w=7
+        wing_tip=0
     fi
-    polygon "$wing_left,16 $((wing_left + wing_w)),13 $((wing_left + wing_w)),25 $wing_left,22" "$outline"
-    polygon "$((wing_left + 1)),17 $((wing_left + wing_w - 1)),15 $((wing_left + wing_w - 1)),23 $((wing_left + 1)),21" "$detail"
-    polygon "$wing_right,13 $((wing_right + wing_w)),16 $((wing_right + wing_w)),22 $wing_right,25" "$outline"
-    polygon "$((wing_right + 1)),15 $((wing_right + wing_w - 1)),17 $((wing_right + wing_w - 1)),21 $((wing_right + 1)),23" "$detail"
-    rect "$body_x" "$body_y" "$body_w" 11 "$outline"
-    rect $((body_x + 1)) $((body_y + 1)) $((body_w - 2)) 9 "$body"
-    polygon "$head_x,$((head_y + 4)) $((head_x + 3)),$head_y $((head_x + 6)),$((head_y + 4))" "$outline"
-    polygon "$((head_x + head_w)),$((head_y + 4)) $((head_x + head_w - 3)),$head_y $((head_x + head_w - 6)),$((head_y + 4))" "$outline"
-    rect "$head_x" $((head_y + 3)) "$head_w" 11 "$outline"
-    rect $((head_x + 1)) $((head_y + 4)) $((head_w - 2)) 9 "$body"
-    rect $((head_x + 3)) $((head_y + 6)) 4 4 "$detail"
-    rect $((head_x + head_w - 7)) $((head_y + 6)) 4 4 "$detail"
-    rect $((head_x + 4)) $((head_y + 7)) 2 2 "$core"
-    rect $((head_x + head_w - 6)) $((head_y + 7)) 2 2 "$core"
-    polygon "15,$((head_y + 10)) 17,$((head_y + 10)) 16,$((head_y + 12))" "$accent"
-    rect 14 19 4 4 "$outline"
-    rect 15 20 2 2 "$core"
-    rect 9 27 5 2 "$outline"
-    rect 18 27 5 2 "$outline"
+    # Layered feather fans replace the old rectangular wings.
+    polygon "$wing_tip,17 $((7 + inset)),13 $((11 + inset)),17 $((10 + inset)),25 $((6 + inset)),28 $((3 + inset)),24" "$outline"
+    polygon "$((wing_tip + 2)),18 $((8 + inset)),15 $((9 + inset)),18 $((8 + inset)),24 $((6 + inset)),26 $((5 + inset)),22" "$detail"
+    polygon "$((32 - wing_tip)),17 $((25 - inset)),13 $((21 - inset)),17 $((22 - inset)),25 $((26 - inset)),28 $((29 - inset)),24" "$outline"
+    polygon "$((30 - wing_tip)),18 $((24 - inset)),15 $((23 - inset)),18 $((24 - inset)),24 $((26 - inset)),26 $((27 - inset)),22" "$detail"
+    polygon "$((9 + inset)),15 $((12 + inset)),13 $((20 - inset)),13 $((23 - inset)),15 $((24 - inset)),$((body_bottom - 4)) $((20 - inset)),$body_bottom $((12 + inset)),$body_bottom $((8 + inset)),$((body_bottom - 4))" "$outline"
+    polygon "$((11 + inset)),16 $((13 + inset)),15 $((19 - inset)),15 $((21 - inset)),16 $((22 - inset)),$((body_bottom - 5)) $((19 - inset)),$((body_bottom - 2)) $((13 + inset)),$((body_bottom - 2)) $((10 + inset)),$((body_bottom - 5))" "$body"
+    polygon "$((10 + inset)),$((head_top + 3)) $((12 + inset)),$head_top $((15 + inset)),$((head_top + 3)) $((17 - inset)),$((head_top + 3)) $((20 - inset)),$head_top $((22 - inset)),$((head_top + 3)) $((25 - inset)),$((head_top + 7)) $((24 - inset)),$((head_top + 13)) $((20 - inset)),$((head_top + 17)) $((12 + inset)),$((head_top + 17)) $((8 + inset)),$((head_top + 13)) $((7 + inset)),$((head_top + 7))" "$outline"
+    polygon "$((11 + inset)),$((head_top + 4)) $((13 + inset)),$((head_top + 2)) $((15 + inset)),$((head_top + 4)) $((17 - inset)),$((head_top + 4)) $((19 - inset)),$((head_top + 2)) $((21 - inset)),$((head_top + 4)) $((23 - inset)),$((head_top + 7)) $((22 - inset)),$((head_top + 12)) $((19 - inset)),$((head_top + 15)) $((13 + inset)),$((head_top + 15)) $((10 + inset)),$((head_top + 12)) $((9 + inset)),$((head_top + 7))" "$body"
+    rect $((11 + inset)) $((head_top + 7)) 5 5 "$soft"
+    rect $((16 - inset)) $((head_top + 7)) 5 5 "$soft"
+    rect $((12 + inset)) $((head_top + 8)) 3 3 "$outline"
+    rect $((17 - inset)) $((head_top + 8)) 3 3 "$outline"
+    rect $((13 + inset)) $((head_top + 8)) 1 1 "$core"
+    rect $((18 - inset)) $((head_top + 8)) 1 1 "$core"
+    polygon "14,$((head_top + 12)) 18,$((head_top + 12)) 16,$((head_top + 15))" "$accent"
+    rect 11 $((head_top + 5)) 2 1 "$highlight"
+    rect 14 21 4 5 "$outline"
+    rect 15 22 2 3 "$core"
+    rect 11 $((body_bottom - 1)) 4 2 "$accent"
+    rect 18 $((body_bottom - 1)) 4 2 "$accent"
 }
 
 draw_patchpanda() {
     local stage="$1" behavior="$2" frame="$3"
-    local head_x=8 head_y=7 head_w=16 body_x=10 body_y=17 body_w=12
+    local inset=2 top=7 bottom=29
     case "$stage" in
-        junior) head_x=7; head_y=6; head_w=18; body_x=8; body_y=17; body_w=16 ;;
-        adult) head_x=6; head_y=5; head_w=20; body_x=7; body_y=16; body_w=18 ;;
+        junior) inset=1; top=5; bottom=30 ;;
+        adult) inset=0; top=3; bottom=31 ;;
     esac
-    rect "$head_x" "$head_y" 5 5 "$outline"
-    rect $((head_x + head_w - 5)) "$head_y" 5 5 "$outline"
-    rect "$body_x" "$body_y" "$body_w" 11 "$outline"
-    rect $((body_x + 1)) $((body_y + 1)) $((body_w - 2)) 9 "$body"
+    polygon "$((7 + inset)),$((top + 3)) $((8 + inset)),$top $((12 + inset)),$((top - 1)) $((14 + inset)),$((top + 3))" "$outline"
+    polygon "$((25 - inset)),$((top + 3)) $((24 - inset)),$top $((20 - inset)),$((top - 1)) $((18 - inset)),$((top + 3))" "$outline"
+    rect $((9 + inset)) $((top + 1)) 3 3 "$detail"
+    rect $((20 - inset)) $((top + 1)) 3 3 "$detail"
+    polygon "$((9 + inset)),18 $((12 + inset)),16 $((20 - inset)),16 $((23 - inset)),18 $((25 - inset)),25 $((22 - inset)),$bottom $((10 + inset)),$bottom $((7 + inset)),25" "$outline"
+    polygon "$((11 + inset)),18 $((13 + inset)),17 $((19 - inset)),17 $((21 - inset)),18 $((23 - inset)),25 $((20 - inset)),$((bottom - 2)) $((12 + inset)),$((bottom - 2)) $((9 + inset)),25" "$detail"
     if [[ "$behavior" == working || "$behavior" == signature ]]; then
-        rect 3 18 8 4 "$outline"
-        rect 4 19 7 2 "$detail"
-        rect 21 18 8 4 "$outline"
-        rect 21 19 7 2 "$detail"
+        polygon "9,18 3,19 2,22 9,23 13,21" "$outline"
+        polygon "23,18 29,19 30,22 23,23 19,21" "$outline"
+        rect 4 20 6 2 "$detail"
+        rect 22 20 6 2 "$detail"
     else
-        rect $((body_x - 2)) 19 3 7 "$outline"
-        rect $((body_x + body_w - 1)) 19 3 7 "$outline"
+        polygon "$((9 + inset)),19 $((6 + inset)),21 $((7 + inset)),27 $((11 + inset)),26" "$outline"
+        polygon "$((23 - inset)),19 $((26 - inset)),21 $((25 - inset)),27 $((21 - inset)),26" "$outline"
     fi
-    rect "$head_x" $((head_y + 3)) "$head_w" 12 "$outline"
-    rect $((head_x + 1)) $((head_y + 4)) $((head_w - 2)) 10 "$body"
-    rect $((head_x + 3)) $((head_y + 7)) 5 4 "$detail"
-    rect $((head_x + head_w - 8)) $((head_y + 7)) 5 4 "$detail"
-    rect $((head_x + 5)) $((head_y + 8)) 1 2 "$core"
-    rect $((head_x + head_w - 6)) $((head_y + 8)) 1 2 "$core"
-    rect 14 $((head_y + 11)) 4 2 "$detail"
-    rect 14 20 4 4 "$outline"
-    rect 15 21 2 2 "$core"
-    rect $((body_x + 1)) 27 5 2 "$detail"
-    rect $((body_x + body_w - 6)) 27 5 2 "$detail"
+    polygon "$((8 + inset)),$((top + 4)) $((11 + inset)),$((top + 2)) $((21 - inset)),$((top + 2)) $((24 - inset)),$((top + 4)) $((26 - inset)),$((top + 10)) $((24 - inset)),$((top + 16)) $((20 - inset)),$((top + 19)) $((12 + inset)),$((top + 19)) $((8 + inset)),$((top + 16)) $((6 + inset)),$((top + 10))" "$outline"
+    polygon "$((10 + inset)),$((top + 4)) $((12 + inset)),$((top + 3)) $((20 - inset)),$((top + 3)) $((22 - inset)),$((top + 4)) $((24 - inset)),$((top + 10)) $((22 - inset)),$((top + 15)) $((19 - inset)),$((top + 17)) $((13 + inset)),$((top + 17)) $((10 + inset)),$((top + 15)) $((8 + inset)),$((top + 10))" "$body"
+    polygon "$((10 + inset)),$((top + 8)) $((13 + inset)),$((top + 6)) $((16 + inset)),$((top + 9)) $((14 + inset)),$((top + 13)) $((11 + inset)),$((top + 12))" "$detail"
+    polygon "$((22 - inset)),$((top + 8)) $((19 - inset)),$((top + 6)) $((16 - inset)),$((top + 9)) $((18 - inset)),$((top + 13)) $((21 - inset)),$((top + 12))" "$detail"
+    rect $((12 + inset)) $((top + 9)) 2 2 "$outline"
+    rect $((18 - inset)) $((top + 9)) 2 2 "$outline"
+    rect $((13 + inset)) $((top + 9)) 1 1 "$core"
+    rect $((18 - inset)) $((top + 9)) 1 1 "$core"
+    polygon "14,$((top + 13)) 18,$((top + 13)) 17,$((top + 15)) 15,$((top + 15))" "$outline"
+    rect 15 $((top + 13)) 2 1 "$soft"
+    polygon "12,20 16,18 20,20 19,26 16,28 13,26" "$accent"
+    rect 14 21 4 5 "$outline"
+    rect 15 22 2 3 "$core"
+    rect $((9 + inset)) $((bottom - 2)) 6 2 "$detail"
+    rect $((17 - inset)) $((bottom - 2)) 6 2 "$detail"
 }
 
 draw_loophare() {
     local stage="$1" behavior="$2" frame="$3"
-    local head_x=9 head_y=10 head_w=14 body_x=10 body_y=19 body_w=12 ear_top=2
+    local inset=2 head_top=11 ear_top=3 bottom=29
     case "$stage" in
-        junior) head_x=8; head_y=9; head_w=16; body_x=8; body_y=18; body_w=16; ear_top=1 ;;
-        adult) head_x=7; head_y=8; head_w=18; body_x=7; body_y=17; body_w=18; ear_top=0 ;;
+        junior) inset=1; head_top=9; ear_top=1; bottom=30 ;;
+        adult) inset=0; head_top=8; ear_top=0; bottom=31 ;;
     esac
     if [[ "$behavior" == working || "$behavior" == signature ]]; then
-        rect 2 4 9 4 "$outline"
-        rect 3 5 7 2 "$body"
-        rect 21 4 9 4 "$outline"
-        rect 22 5 7 2 "$body"
-        rect 7 6 4 7 "$outline"
-        rect 21 6 4 7 "$outline"
+        polygon "13,10 8,9 3,5 1,6 6,12 12,14" "$outline"
+        polygon "19,10 24,9 29,5 31,6 26,12 20,14" "$outline"
+        polygon "12,11 8,10 4,7 6,11 11,13" "$accent"
+        polygon "20,11 24,10 28,7 26,11 21,13" "$accent"
     else
-        rect $((head_x + 2)) "$ear_top" 4 $((head_y - ear_top + 2)) "$outline"
-        rect $((head_x + 3)) $((ear_top + 1)) 2 $((head_y - ear_top)) "$accent"
-        rect $((head_x + head_w - 6)) "$ear_top" 4 $((head_y - ear_top + 2)) "$outline"
-        rect $((head_x + head_w - 5)) $((ear_top + 1)) 2 $((head_y - ear_top)) "$accent"
+        polygon "$((9 + inset)),$((head_top + 3)) $((8 + inset)),$((ear_top + 3)) $((10 + inset)),$ear_top $((14 + inset)),$((ear_top + 2)) $((15 + inset)),$((head_top + 4))" "$outline"
+        polygon "$((23 - inset)),$((head_top + 3)) $((24 - inset)),$((ear_top + 3)) $((22 - inset)),$ear_top $((18 - inset)),$((ear_top + 2)) $((17 - inset)),$((head_top + 4))" "$outline"
+        polygon "$((10 + inset)),$((head_top + 1)) $((10 + inset)),$((ear_top + 3)) $((11 + inset)),$((ear_top + 2)) $((13 + inset)),$((ear_top + 3)) $((13 + inset)),$head_top" "$accent"
+        polygon "$((22 - inset)),$((head_top + 1)) $((22 - inset)),$((ear_top + 3)) $((21 - inset)),$((ear_top + 2)) $((19 - inset)),$((ear_top + 3)) $((19 - inset)),$head_top" "$accent"
     fi
-    rect "$body_x" "$body_y" "$body_w" 9 "$outline"
-    rect $((body_x + 1)) $((body_y + 1)) $((body_w - 2)) 7 "$body"
-    rect "$head_x" "$head_y" "$head_w" 11 "$outline"
-    rect $((head_x + 1)) $((head_y + 1)) $((head_w - 2)) 9 "$body"
-    rect $((head_x + 3)) $((head_y + 4)) 2 2 "$core"
-    rect $((head_x + head_w - 5)) $((head_y + 4)) 2 2 "$core"
-    rect 15 $((head_y + 7)) 2 2 "$accent"
-    rect 14 21 4 4 "$outline"
-    rect 15 22 2 2 "$core"
-    rect $((body_x - 2)) 27 7 2 "$outline"
-    rect $((body_x + body_w - 5)) 27 7 2 "$outline"
+    polygon "$((10 + inset)),19 $((13 + inset)),17 $((20 - inset)),18 $((24 - inset)),22 $((24 - inset)),27 $((21 - inset)),$bottom $((11 + inset)),$bottom $((7 + inset)),27 $((8 + inset)),22" "$outline"
+    polygon "$((12 + inset)),20 $((14 + inset)),19 $((19 - inset)),20 $((22 - inset)),22 $((22 - inset)),26 $((19 - inset)),$((bottom - 2)) $((12 + inset)),$((bottom - 2)) $((9 + inset)),26 $((10 + inset)),22" "$body"
+    polygon "$((9 + inset)),$((head_top + 3)) $((12 + inset)),$head_top $((20 - inset)),$head_top $((23 - inset)),$((head_top + 3)) $((24 - inset)),$((head_top + 9)) $((21 - inset)),$((head_top + 14)) $((17 - inset)),$((head_top + 16)) $((12 + inset)),$((head_top + 14)) $((8 + inset)),$((head_top + 10)) $((8 + inset)),$((head_top + 5))" "$outline"
+    polygon "$((11 + inset)),$((head_top + 3)) $((13 + inset)),$((head_top + 2)) $((19 - inset)),$((head_top + 2)) $((21 - inset)),$((head_top + 4)) $((22 - inset)),$((head_top + 9)) $((19 - inset)),$((head_top + 13)) $((16 - inset)),$((head_top + 14)) $((13 + inset)),$((head_top + 12)) $((10 + inset)),$((head_top + 9)) $((10 + inset)),$((head_top + 5))" "$body"
+    rect $((12 + inset)) $((head_top + 6)) 2 3 "$outline"
+    rect $((18 - inset)) $((head_top + 6)) 2 3 "$outline"
+    rect $((13 + inset)) $((head_top + 6)) 1 1 "$core"
+    rect $((18 - inset)) $((head_top + 6)) 1 1 "$core"
+    rect 15 $((head_top + 10)) 2 2 "$accent"
+    rect 12 $((head_top + 11)) 2 1 "$highlight"
+    rect 14 22 4 5 "$outline"
+    rect 15 23 2 3 "$core"
+    polygon "$((7 + inset)),$((bottom - 3)) $((12 + inset)),$((bottom - 5)) $((16 + inset)),$((bottom - 2)) $((15 + inset)),$bottom $((6 + inset)),$bottom" "$outline"
+    polygon "$((25 - inset)),$((bottom - 3)) $((20 - inset)),$((bottom - 5)) $((16 - inset)),$((bottom - 2)) $((17 - inset)),$bottom $((26 - inset)),$bottom" "$outline"
 }
 
 draw_relayray() {
@@ -236,15 +259,18 @@ draw_relayray() {
     if [[ "$behavior" == working || "$behavior" == signature ]]; then
         top=$((top - 2)); left=0; right=32
     fi
-    polygon "$left,15 16,$top $right,15 20,$bottom 16,$((bottom - 2)) 12,$bottom" "$outline"
-    polygon "$((left + 2)),15 16,$((top + 2)) $((right - 2)),15 20,$((bottom - 2)) 16,$((bottom - 4)) 12,$((bottom - 2))" "$body"
-    polygon "15,$((bottom - 2)) 17,$((bottom - 2)) 18,$tail 16,$((tail - 2)) 14,$tail" "$detail"
-    rect 10 14 3 2 "$detail"
-    rect 19 14 3 2 "$detail"
-    rect 11 14 1 1 "$core"
-    rect 20 14 1 1 "$core"
-    rect 14 17 4 4 "$outline"
-    rect 15 18 2 2 "$core"
+    polygon "$left,15 $((left + 3)),13 $((left + 5)),10 11,$((top + 2)) 14,$top 16,$((top - 2)) 18,$top 21,$((top + 2)) $((right - 5)),10 $((right - 3)),13 $right,15 $((right - 2)),19 $((right - 6)),21 22,$bottom 19,$((bottom + 1)) 16,$((bottom - 1)) 13,$((bottom + 1)) 10,$bottom $((left + 6)),21 $((left + 2)),19" "$outline"
+    polygon "$((left + 2)),15 $((left + 5)),13 $((left + 7)),11 12,$((top + 3)) 16,$top 20,$((top + 3)) $((right - 7)),11 $((right - 5)),13 $((right - 2)),15 $((right - 4)),18 $((right - 7)),19 21,$((bottom - 1)) 18,$bottom 16,$((bottom - 2)) 14,$bottom 11,$((bottom - 1)) $((left + 7)),19 $((left + 4)),18" "$body"
+    polygon "$((left + 4)),15 13,$((top + 3)) 16,$((top + 1)) 19,$((top + 3)) $((right - 4)),15 20,$((top + 5)) 12,$((top + 5))" "$highlight"
+    polygon "14,$((bottom - 1)) 18,$((bottom - 1)) 19,$((tail - 3)) 17,$tail 16,$((tail - 1)) 15,$tail 13,$((tail - 3))" "$outline"
+    polygon "15,$bottom 17,$bottom 17,$((tail - 3)) 16,$((tail - 1)) 15,$((tail - 3))" "$detail"
+    rect 11 14 3 3 "$outline"
+    rect 18 14 3 3 "$outline"
+    rect 12 15 1 1 "$core"
+    rect 19 15 1 1 "$core"
+    rect 15 17 2 1 "$outline"
+    rect 14 19 4 5 "$outline"
+    rect 15 20 2 3 "$core"
     if [[ "$behavior" == waiting ]]; then
         rect 7 22 2 1 "$accent"
         rect 23 22 2 1 "$accent"
@@ -261,26 +287,30 @@ draw_kernelcrab() {
     if [[ "$behavior" == working || "$behavior" == signature ]]; then
         shell_y=$((shell_y - 2))
     fi
-    rect 1 10 "$claw" 7 "$outline"
-    rect 2 11 $((claw - 2)) 5 "$accent"
-    rect $((31 - claw)) 10 "$claw" 7 "$outline"
-    rect $((32 - claw)) 11 $((claw - 2)) 5 "$accent"
-    rect "$shell_x" "$shell_y" "$shell_w" 14 "$outline"
-    rect $((shell_x + 1)) $((shell_y + 1)) $((shell_w - 2)) 12 "$body"
+    polygon "$((shell_x + 2)),$((shell_y + 6)) 7,11 4,13 7,17 $((shell_x + 2)),$((shell_y + 11))" "$outline"
+    polygon "$((shell_x + shell_w - 2)),$((shell_y + 6)) 25,11 28,13 25,17 $((shell_x + shell_w - 2)),$((shell_y + 11))" "$outline"
+    polygon "7,15 $((5 - claw / 2)),14 1,11 0,7 3,5 $((claw + 2)),6 $((claw + 3)),9 $((claw + 1)),11 8,12" "$outline"
+    polygon "5,13 3,12 2,10 2,8 4,7 $((claw + 1)),8 $((claw + 1)),9 4,10 6,11" "$accent"
+    polygon "25,15 $((27 + claw / 2)),14 31,11 32,7 29,5 $((30 - claw)),6 $((29 - claw)),9 $((31 - claw)),11 24,12" "$outline"
+    polygon "27,13 29,12 30,10 30,8 28,7 $((31 - claw)),8 $((31 - claw)),9 28,10 26,11" "$accent"
+    polygon "$shell_x,$((shell_y + 5)) $((shell_x + 2)),$((shell_y + 1)) $((shell_x + 6)),$shell_y $((shell_x + shell_w - 6)),$shell_y $((shell_x + shell_w - 2)),$((shell_y + 1)) $((shell_x + shell_w)),$((shell_y + 5)) $((shell_x + shell_w - 1)),$((shell_y + 12)) $((shell_x + shell_w - 5)),$((shell_y + 15)) $((shell_x + 5)),$((shell_y + 15)) $((shell_x + 1)),$((shell_y + 12))" "$outline"
+    polygon "$((shell_x + 2)),$((shell_y + 5)) $((shell_x + 3)),$((shell_y + 3)) $((shell_x + 7)),$((shell_y + 2)) $((shell_x + shell_w - 7)),$((shell_y + 2)) $((shell_x + shell_w - 3)),$((shell_y + 3)) $((shell_x + shell_w - 2)),$((shell_y + 6)) $((shell_x + shell_w - 3)),$((shell_y + 11)) $((shell_x + shell_w - 6)),$((shell_y + 13)) $((shell_x + 6)),$((shell_y + 13)) $((shell_x + 3)),$((shell_y + 11))" "$body"
+    rect $((shell_x + 4)) $((shell_y + 3)) $((shell_w - 8)) 2 "$highlight"
     if [[ "$behavior" == working || "$behavior" == signature ]]; then
-        rect $((shell_x + 2)) $((shell_y + 6)) $((shell_w - 4)) 2 "$outline"
-        rect 13 $((shell_y + 7)) 6 6 "$outline"
-        rect 14 $((shell_y + 8)) 4 4 "$core"
+        polygon "$((shell_x + 2)),$((shell_y + 7)) 13,$((shell_y + 5)) 16,$((shell_y + 7)) 19,$((shell_y + 5)) $((shell_x + shell_w - 2)),$((shell_y + 7)) $((shell_x + shell_w - 4)),$((shell_y + 12)) 19,$((shell_y + 14)) 13,$((shell_y + 14)) $((shell_x + 4)),$((shell_y + 12))" "$detail"
+        rect 12 $((shell_y + 7)) 8 7 "$outline"
+        rect 14 $((shell_y + 9)) 4 3 "$core"
     else
-        rect 14 $((shell_y + 6)) 4 4 "$outline"
-        rect 15 $((shell_y + 7)) 2 2 "$core"
+        polygon "12,$((shell_y + 6)) 16,$((shell_y + 4)) 20,$((shell_y + 6)) 19,$((shell_y + 12)) 16,$((shell_y + 14)) 13,$((shell_y + 12))" "$detail"
+        rect 13 $((shell_y + 7)) 6 6 "$outline"
+        rect 15 $((shell_y + 9)) 2 2 "$core"
     fi
-    rect $((shell_x + 3)) $((shell_y + 3)) 2 2 "$detail"
-    rect $((shell_x + shell_w - 5)) $((shell_y + 3)) 2 2 "$detail"
-    rect 5 24 5 2 "$outline"
-    rect 2 27 7 2 "$outline"
-    rect 22 24 5 2 "$outline"
-    rect 23 27 7 2 "$outline"
+    rect $((shell_x + 3)) $((shell_y + 6)) 2 2 "$outline"
+    rect $((shell_x + shell_w - 5)) $((shell_y + 6)) 2 2 "$outline"
+    rect $((shell_x + 4)) $((shell_y + 6)) 1 1 "$soft"
+    rect $((shell_x + shell_w - 4)) $((shell_y + 6)) 1 1 "$soft"
+    polygon "10,23 7,24 5,27 2,28 2,30 8,30 11,27 13,27" "$outline"
+    polygon "22,23 25,24 27,27 30,28 30,30 24,30 21,27 19,27" "$outline"
 }
 
 render_frame() {
