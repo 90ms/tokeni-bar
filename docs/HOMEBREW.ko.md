@@ -54,8 +54,20 @@ GitHub Releases 확인 결과 새 버전이 있으면 **설정 → 일반 → �
 **설치 후 재실행**을 선택할 수 있습니다.
 
 새 버전 확인은 자동이지만 설치는 사용자가 버튼을 누른 경우에만 시작합니다.
+앱은 같은 이름의 Cask가 함께 배포되더라도 Formula 설치본만 조회하고 업데이트하도록
+Homebrew의 `--formula` 옵션을 명시합니다.
 터미널에서 직접 업데이트한 경우 `tokeni-bar --install-app`을 다시 실행해 앱
 링크를 최신 버전으로 맞추세요.
+
+0.25.1 이하에서 Formula/Cask 모호성 오류가 발생하면 다음 명령으로 한 번
+업데이트한 뒤 앱을 다시 실행합니다. 신뢰 검사를 전체 비활성화할 필요는 없습니다.
+
+```bash
+brew trust --formula 90ms/tap/tokeni-bar
+brew update
+brew upgrade --formula 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+```
 
 <a id="migrating-from-the-cask"></a>
 
@@ -109,6 +121,8 @@ ZIP과 체크섬을 받을 수 있습니다. 위 명령으로 빌드 출처와 �
 
 - 신뢰 오류가 나면 tap 전체가 아니라 `tokeni-bar` Formula만 신뢰했는지
   확인하세요.
+- Formula와 Cask 중 하나를 선택하라는 오류가 나면 명령에 `--formula`를
+  추가하세요. 앱 내 업데이트는 0.25.2부터 이를 자동으로 지정합니다.
 - 업데이트 뒤 이전 버전이 열리면 `tokeni-bar --install-app`을 다시
   실행하세요.
 - 실행 직후 종료되면 터미널에서 Formula를 업데이트한 뒤 앱 링크를

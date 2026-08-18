@@ -60,7 +60,7 @@ public struct HomebrewUpdateService: Sendable {
     public static func infoCommand(brew: String) -> ProcessCommand {
         ProcessCommand(
             executable: brew,
-            arguments: ["info", "--json=v1", self.formulaName],
+            arguments: ["info", "--formula", "--json=v1", self.formulaName],
             timeout: 60)
     }
 
@@ -71,7 +71,7 @@ public struct HomebrewUpdateService: Sendable {
     public static func upgradeCommand(brew: String) -> ProcessCommand {
         ProcessCommand(
             executable: brew,
-            arguments: ["upgrade", self.formulaName],
+            arguments: ["upgrade", "--formula", self.formulaName],
             timeout: 1_800)
     }
 

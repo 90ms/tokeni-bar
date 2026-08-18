@@ -55,8 +55,21 @@ When the GitHub Releases check finds a new version, choose **Install & Restart**
 under **Settings → General → App Updates**.
 
 Update checks are automatic; installation starts only after an explicit click.
+The app explicitly passes Homebrew's `--formula` option so it only inspects and
+upgrades the Formula even though a Cask with the same name is also published.
 After a manual Terminal update, run `tokeni-bar --install-app` again so the app
 link points at the current version.
+
+If version 0.25.1 or earlier reports a Formula/Cask ambiguity, perform this
+one-time update and restart the app. There is no need to disable trust checks
+globally.
+
+```bash
+brew trust --formula 90ms/tap/tokeni-bar
+brew update
+brew upgrade --formula 90ms/tap/tokeni-bar
+tokeni-bar --install-app
+```
 
 <a id="migrating-from-the-cask"></a>
 
@@ -111,6 +124,8 @@ launching it.
 
 - For a trust error, confirm that only the `tokeni-bar` Formula—not the entire
   tap—was trusted.
+- If Homebrew asks you to choose between the Formula and Cask, add `--formula`
+  to the command. In-app updates do this automatically starting with 0.25.2.
 - If an older version opens after an update, run
   `tokeni-bar --install-app` again.
 - If the app exits immediately, update the Formula in Terminal and recreate
