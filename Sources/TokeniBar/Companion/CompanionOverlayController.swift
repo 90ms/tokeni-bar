@@ -213,8 +213,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
         }
         let shouldIgnore = !self.companionInteractionFrame(
             panel: panel,
-            size: store.companionOverlaySize,
-            stage: store.displayedCompanionStage)
+            size: store.companionOverlaySize)
             .contains(NSEvent.mouseLocation)
         if panel.ignoresMouseEvents != shouldIgnore {
             panel.ignoresMouseEvents = shouldIgnore
@@ -223,23 +222,15 @@ final class CompanionOverlayController: NSObject, ObservableObject {
 
     private func companionInteractionFrame(
         panel: NSPanel,
-        size: CompanionOverlaySize,
-        stage: CompanionGameStage) -> NSRect
+        size: CompanionOverlaySize) -> NSRect
     {
-        let spriteDimension = size.spriteDimension
-        let scale: CGSize = switch stage {
-        case .egg:
-            CGSize(width: 0.70, height: 0.72)
-        case .hatchling:
-            CGSize(width: 0.66, height: 0.68)
-        case .junior:
-            CGSize(width: 0.86, height: 0.84)
-        case .adult:
-            CGSize(width: 0.92, height: 0.90)
-        }
+        // Route events across the complete sprite canvas and its SwiftUI
+        // padding. A stage-based inner rectangle excluded ears, wings, claws,
+        // and other species-specific silhouettes from dragging.
+        let interactionDimension = size.spriteDimension + 16
         let interactionSize = CGSize(
-            width: spriteDimension * scale.width,
-            height: spriteDimension * scale.height)
+            width: interactionDimension,
+            height: interactionDimension)
         let center = NSPoint(
             x: panel.frame.midX,
             y: panel.frame.minY + size.panelDimension / 2 + 6)
