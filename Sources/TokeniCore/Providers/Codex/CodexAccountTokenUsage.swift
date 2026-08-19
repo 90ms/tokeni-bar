@@ -217,7 +217,7 @@ struct CodexAccountTokenUsageClient: Sendable {
         }
 
         let runner = CodexAppServerUsageRunner(executableURL: executableURL)
-        let response = try await CodexAppServerClient.run(
+        let response: CodexAccountTokenUsageResponse = try await CodexAppServerClient.run(
             runner,
             request: CodexAppServerUsageRunner.accountUsageRequest,
             responseID: 2,
