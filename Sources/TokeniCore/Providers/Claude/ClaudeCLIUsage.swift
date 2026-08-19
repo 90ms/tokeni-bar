@@ -161,27 +161,170 @@ enum ClaudeCLIUsageParser {
 
         let resetTimeZone = self.parenthesizedValue(in: String(remainder))
             .flatMap { TimeZone(identifier: $0) } ?? timeZone
-        let normalized = dateText
-            .replacingOccurrences(of: "am", with: "AM", options: .caseInsensitive)
-            .replacingOccurrences(of: "pm", with: "PM", options: .caseInsensitive)
+        let normalized = self.normalizedDateText(dateText)
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = resetTimeZone
-        let year = calendar.component(.year, from: now)
-        let formats = ["yyyy MMM d, h:mma", "yyyy MMM d, ha"]
+
+        let dateFormats = [
+            "yyyy MMM d, h:mma",
+            "yyyy MMM d, ha",
+            "yyyy MMM d, h:mm a",
+            "yyyy MMM d, h a",
+            "yyyy MMM d h:mma",
+            "yyyy MMM d ha",
+            "yyyy MMM d h:mm a",
+            "yyyy MMM d h a",
+            "MMM d, h:mma",
+            "MMM d, ha",
+            "MMM d, h:mm a",
+            "MMM d, h a",
+            "MMM d h:mma",
+            "MMM d ha",
+            "MMM d h:mm a",
+            "MMM d h a",
+        ]
+        if let date = self.date(
+            from: normalized,
+            formats: dateFormats,
+            calendar: calendar,
+            defaultDate: now)
+        {
+            return self.nextDate(
+                after: date,
+                adding: .year,
+                calendar: calendar,
+                now: now)
+        }
+
+        let parts = normalized.split(whereSeparator: \.isWhitespace)
+        if let first = parts.first,
+           let weekday = self.weekdayNumber(for: String(first)),
+           parts.count > 1,
+           let components = self.timeComponents(
+               from: parts.dropFirst().joined(separator: " "),
+               calendar: calendar,
+               now: now),
+           let date = self.date(
+               weekday: weekday,
+               time: components,
+               calendar: calendar,
+               now: now)
+        {
+            return date
+        }
+
+        guard let components = self.timeComponents(
+            from: normalized,
+            calendar: calendar,
+            now: now),
+            let date = calendar.date(
+                bySettingHour: components.hour ?? 0,
+                minute: components.minute ?? 0,
+                second: 0,
+                of: now)
+        else { return nil }
+
+        return self.nextDate(
+            after: date,
+            adding: .day,
+            calendar: calendar,
+            now: now)
+    }
+
+    private static func normalizedDateText(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+            .replacingOccurrences(of: "\u{202F}", with: " ")
+            .replacingOccurrences(of: "am", with: "AM", options: .caseInsensitive)
+            .replacingOccurrences(of: "pm", with: "PM", options: .caseInsensitive)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func date(
+        from text: String,
+        formats: [String],
+        calendar: Calendar,
+        defaultDate: Date) -> Date?
+    {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = resetTimeZone
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.defaultDate = defaultDate
+        formatter.isLenient = false
 
         for format in formats {
             formatter.dateFormat = format
-            if let date = formatter.date(from: String(year) + " " + normalized) {
-                if date.timeIntervalSince(now) < -24 * 60 * 60 {
-                    return formatter.date(from: String(year + 1) + " " + normalized) ?? date
-                }
-                return date
-            }
+            if let date = formatter.date(from: text) { return date }
         }
         return nil
+    }
+
+    private static func timeComponents(
+        from text: String,
+        calendar: Calendar,
+        now: Date) -> DateComponents?
+    {
+        let formats = ["h:mma", "ha", "h:mm a", "h a"]
+        guard let date = self.date(
+            from: text,
+            formats: formats,
+            calendar: calendar,
+            defaultDate: calendar.startOfDay(for: now))
+        else { return nil }
+        return calendar.dateComponents([.hour, .minute], from: date)
+    }
+
+    private static func weekdayNumber(for value: String) -> Int? {
+        switch value.lowercased() {
+        case "sun", "sunday": return 1
+        case "mon", "monday": return 2
+        case "tue", "tues", "tuesday": return 3
+        case "wed", "wednesday": return 4
+        case "thu", "thur", "thurs", "thursday": return 5
+        case "fri", "friday": return 6
+        case "sat", "saturday": return 7
+        default: return nil
+        }
+    }
+
+    private static func date(
+        weekday: Int,
+        time: DateComponents,
+        calendar: Calendar,
+        now: Date) -> Date?
+    {
+        let startOfDay = calendar.startOfDay(for: now)
+        guard let sameDay = calendar.date(
+            bySettingHour: time.hour ?? 0,
+            minute: time.minute ?? 0,
+            second: 0,
+            of: startOfDay)
+        else { return nil }
+
+        let currentWeekday = calendar.component(.weekday, from: now)
+        let daysAhead = (weekday - currentWeekday + 7) % 7
+        guard let candidate = calendar.date(
+            byAdding: .day,
+            value: daysAhead,
+            to: sameDay)
+        else { return nil }
+
+        return self.nextDate(
+            after: candidate,
+            adding: .weekOfYear,
+            calendar: calendar,
+            now: now)
+    }
+
+    private static func nextDate(
+        after date: Date,
+        adding component: Calendar.Component,
+        calendar: Calendar,
+        now: Date) -> Date
+    {
+        guard date <= now else { return date }
+        return calendar.date(byAdding: component, value: 1, to: date) ?? date
     }
 }
 
