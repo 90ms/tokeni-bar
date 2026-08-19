@@ -14,8 +14,7 @@ let package = Package(
         .target(
             name: "TokeniCore",
             resources: [.copy("Resources")],
-            swiftSettings: [.enableUpcomingFeature("StrictConcurrency")],
-            linkerSettings: [.linkedFramework("Security", .when(platforms: [.macOS]))]),
+            swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]),
         .executableTarget(
             name: "TokeniBar",
             dependencies: ["TokeniCore"],

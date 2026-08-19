@@ -57,7 +57,7 @@ struct ProviderActivityTests {
 
         let providers: [any UsageActivityProviding] = [
             CodexUsageProvider(homeDirectory: home),
-            ClaudeUsageProvider(homeDirectory: home, allowKeychain: false),
+            ClaudeUsageProvider(homeDirectory: home),
             CopilotUsageProvider(homeDirectory: home),
             ClineUsageProvider(homeDirectory: home),
             AntigravityUsageProvider(homeDirectory: home),

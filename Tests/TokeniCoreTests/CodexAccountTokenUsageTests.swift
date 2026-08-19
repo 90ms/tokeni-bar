@@ -57,6 +57,40 @@ struct CodexAccountTokenUsageTests {
     }
 
     @Test
+    func launchesCodexCLIForAccountRateLimitsWithoutReadingAuthFiles() async throws {
+        let fixture = try #require(Bundle.module.url(
+            forResource: "codex-cli-rate-limits",
+            withExtension: "json",
+            subdirectory: "Fixtures"))
+        let fixtureJSON = try String(contentsOf: fixture, encoding: .utf8)
+            .replacingOccurrences(of: "\n", with: "")
+        let executable = try self.makeExecutableScript(
+            """
+            #!/bin/sh
+            IFS= read -r initialize_request
+            printf '%s\n' '{"id":1,"result":{}}'
+            IFS= read -r initialized_notification
+            IFS= read -r rate_limits_request
+            case "$rate_limits_request" in
+              *'account/rateLimits/read'*) ;;
+              *) exit 7 ;;
+            esac
+            printf '%s\n' '{"id":2,"result":\(fixtureJSON)}'
+            """)
+        defer { try? FileManager.default.removeItem(at: executable.deletingLastPathComponent()) }
+
+        let client = CodexAccountUsageClient(
+            executableURL: executable,
+            cache: CodexAccountUsageCache(),
+            timeout: 2)
+        let result = try await client.fetch()
+
+        #expect(result.response.planType == "prolite")
+        #expect(result.response.quotaWindows().first?.usedPercent == 28)
+        #expect(result.quotaResetCredits?.availableCount == 2)
+    }
+
+    @Test
     func launchesVersionManagedCodexWithSiblingRuntime() async throws {
         let fixture = try #require(Bundle.module.url(
             forResource: "codex-account-token-usage",

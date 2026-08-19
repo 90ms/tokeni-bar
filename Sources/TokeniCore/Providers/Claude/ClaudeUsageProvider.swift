@@ -15,24 +15,26 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
 
     private let projectsDirectory: URL
     private let calendar: Calendar
-    private let allowKeychain: Bool
-    private let credentialLoader: ClaudeOAuthCredentialLoader
-    private let credentialCache: ClaudeOAuthCredentialCache
-    private let oauthClient: ClaudeOAuthUsageClient
+    private let cliClient: ClaudeCLIUsageClient
 
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
-        calendar: Calendar = .current,
-        allowKeychain: Bool = false)
+        calendar: Calendar = .current)
+    {
+        self.init(
+            homeDirectory: homeDirectory,
+            calendar: calendar,
+            cliClient: ClaudeCLIUsageClient(homeDirectory: homeDirectory))
+    }
+
+    init(
+        homeDirectory: URL,
+        calendar: Calendar,
+        cliClient: ClaudeCLIUsageClient)
     {
         self.projectsDirectory = homeDirectory.appending(path: ".claude/projects", directoryHint: .isDirectory)
         self.calendar = calendar
-        self.allowKeychain = allowKeychain
-        self.credentialLoader = ClaudeOAuthCredentialLoader(
-            homeDirectory: homeDirectory,
-            allowKeychain: allowKeychain)
-        self.credentialCache = ClaudeOAuthCredentialCache()
-        self.oauthClient = ClaudeOAuthUsageClient()
+        self.cliClient = cliClient
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
@@ -59,44 +61,33 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
         }
 
         do {
-            let credentials = try await self.credentials(interactive: false)
-            let result = try await self.oauthClient.fetch(accessToken: credentials.accessToken)
-            let oauthUsage = result.response
-            let plan = credentials.subscriptionType ?? credentials.rateLimitTier
-            let detail = [plan, "Claude Code OAuth"]
-                .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-                .joined(separator: " · ")
+            let result = try await self.cliClient.fetch()
             return .init(
                 descriptor: self.descriptor,
                 availability: .available,
-                source: .officialAPI,
-                quotaWindows: oauthUsage.quotaWindows(),
+                source: .cli,
+                quotaWindows: result.response.quotaWindows,
                 tokenUsage: localTokenUsage,
                 costEstimate: localTokenUsage == nil ? nil : aggregate?.costEstimate,
                 growthUsageObservation: growthObservation,
                 connectionState: .connected,
-                detail: detail.isEmpty ? "Claude Code OAuth" : detail,
+                detail: "Claude Code CLI",
                 updatedAt: result.fetchedAt)
         } catch {
-            if case ClaudeOAuthUsageError.unauthorized = error {
-                await self.credentialCache.invalidate()
-            }
             return self.localFallback(
                 files: files,
                 aggregate: aggregate,
                 growthObservation: growthObservation,
-                oauthError: error)
+                cliError: error)
         }
     }
 
     public func requestUsageAuthorization() async throws {
-        _ = try await self.credentials(interactive: true)
-        await self.oauthClient.invalidateCache()
+        _ = try await self.cliClient.fetch(forceRefresh: true)
     }
 
     public func invalidateUsageCache() async {
-        await self.oauthClient.invalidateCache()
+        await self.cliClient.invalidateCache()
     }
 
     public func latestActivityDate(since cutoff: Date) -> Date? {
@@ -106,23 +97,14 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
             matching: { $0.pathExtension == "jsonl" })
     }
 
-    private func credentials(interactive: Bool) async throws -> ClaudeOAuthCredentials {
-        if let cached = await self.credentialCache.value() {
-            return cached
-        }
-        let credentials = try self.credentialLoader.load(interactive: interactive)
-        await self.credentialCache.store(credentials)
-        return credentials
-    }
-
     private func localFallback(
         files: [URL],
         aggregate: ClaudeAggregatedUsage?,
         growthObservation: GrowthUsageObservation?,
-        oauthError: Error) -> ProviderSnapshot
+        cliError: Error) -> ProviderSnapshot
     {
-        let errorMessage = (oauthError as? LocalizedError)?.errorDescription
-        let connectionState = self.connectionState(for: oauthError)
+        let errorMessage = (cliError as? LocalizedError)?.errorDescription
+        let connectionState = self.connectionState(for: cliError)
         let staleConnectionState: ProviderConnectionState =
             connectionState == .localOnly ? .stale : connectionState
         guard !files.isEmpty else {
@@ -171,15 +153,13 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
     private func connectionState(
         for error: Error) -> ProviderConnectionState
     {
-        guard let error = error as? ClaudeOAuthUsageError else {
+        guard let error = error as? ClaudeCLIUsageError else {
             return .localOnly
         }
         switch error {
-        case .authorizationRequired:
+        case .signInRequired:
             return .authorizationRequired
-        case .credentialsUnavailable:
-            return self.allowKeychain ? .authorizationRequired : .localOnly
-        case .expiredCredentials, .unauthorized:
+        case .sessionExpired:
             return .sessionExpired
         default:
             return .localOnly

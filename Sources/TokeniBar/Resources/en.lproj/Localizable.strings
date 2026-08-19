@@ -45,6 +45,7 @@
 "provider.status.failed" = "Error";
 "source.localSessionLog" = "Local session";
 "source.localProtocol" = "Local protocol";
+"source.cli" = "CLI";
 "source.officialAPI" = "Account API";
 "source.estimated" = "Estimated";
 "settings.providers" = "Providers";
@@ -52,10 +53,10 @@
 "settings.connections.connect" = "Connect";
 "settings.connections.connected" = "%@ connected.";
 "settings.connections.failed" = "Could not connect %@. Open its CLI once, then try again.";
-"settings.connections.description" = "Keychain approval is requested only when you choose Connect. Background refreshes never open an approval dialog.";
+"settings.connections.description" = "Claude and Codex reuse their existing CLI sign-in. Background refreshes never open a sign-in or Keychain approval dialog.";
 "settings.connections.state.connected" = "Connected to account usage";
 "settings.connections.state.localOnly" = "Using local usage only";
-"settings.connections.state.authorizationRequired" = "Keychain approval required";
+"settings.connections.state.authorizationRequired" = "CLI sign-in required";
 "settings.connections.state.sessionExpired" = "Session expired · sign in with the CLI again";
 "settings.connections.state.stale" = "Connection status unavailable";
 "settings.tab.general" = "General";
@@ -589,7 +590,7 @@
 "settings.cost.catalogSource.cache" = "Cached";
 "settings.cost.catalogSource.remote" = "Updated";
 "settings.privacy" = "Privacy";
-"settings.privacy.description" = "Usage is read from known local CLI session files and Antigravity conversation metadata. Codex reuses its CLI sign-in; Claude account quotas access Keychain only after you explicitly connect for the current app session. Prompts, responses, cookies, and authentication tokens are not stored by this app.";
+"settings.privacy.description" = "Usage is read from known local CLI session files and Antigravity conversation metadata. Claude and Codex account quotas are queried through each CLI's non-interactive command, so this app never reads or stores authentication credentials. Prompts, responses, cookies, and authentication tokens are not stored by this app.";
 "notification.usageLow.title" = "%@ usage is low";
 "notification.usageLow.body" = "%@: %d%% left";
 "notification.usageLow.depletionRisk" = "At the recently observed rate, it may run out before reset.";

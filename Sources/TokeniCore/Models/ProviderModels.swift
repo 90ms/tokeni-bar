@@ -87,6 +87,7 @@ public enum ProviderConnectionState: String, Hashable, Sendable {
 public enum UsageDataSource: String, Codable, Hashable, Sendable {
     case localSessionLog
     case localProtocol
+    case cli
     case officialAPI
     case estimated
 
@@ -94,6 +95,7 @@ public enum UsageDataSource: String, Codable, Hashable, Sendable {
         switch self {
         case .localSessionLog: "Local session"
         case .localProtocol: "Local protocol"
+        case .cli: "CLI"
         case .officialAPI: "Account API"
         case .estimated: "Estimated"
         }

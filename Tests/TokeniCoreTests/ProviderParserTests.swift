@@ -1,7 +1,5 @@
 @testable import TokeniCore
 import Foundation
-import LocalAuthentication
-import Security
 import Testing
 
 struct ProviderParserTests {
@@ -67,14 +65,28 @@ struct ProviderParserTests {
     }
 
     @Test
-    func codexCredentialParserAcceptsSnakeAndCamelCaseWithoutExposingToken() throws {
-        let snake = try CodexAccountCredentials.decode(Data(
-            #"{"tokens":{"access_token":"fake-token","account_id":"account-1"}}"#.utf8))
-        let camel = try CodexAccountCredentials.decode(Data(
-            #"{"tokens":{"accessToken":"fake-token","accountId":"account-2"}}"#.utf8))
+    func codexCLIMapsRateLimitsAndResetCredits() throws {
+        let file = try #require(Bundle.module.url(
+            forResource: "codex-cli-rate-limits",
+            withExtension: "json",
+            subdirectory: "Fixtures"))
+        let response = try JSONDecoder().decode(
+            CodexCLIRateLimitsResponse.self,
+            from: Data(contentsOf: file))
+        let accountUsage = try #require(response.accountUsageResponse())
+        let windows = accountUsage.quotaWindows()
+        let resetCredits = try #require(response.quotaResetCreditsSummary())
 
-        #expect(snake.accountID == "account-1")
-        #expect(camel.accountID == "account-2")
+        #expect(accountUsage.planType == "prolite")
+        #expect(windows.map(\.label) == [
+            "Weekly",
+            "5-hour",
+            "Codex Spark weekly",
+        ])
+        #expect(windows.map(\.usedPercent) == [28, 3, 3])
+        #expect(accountUsage.creditBalance?.balance == "0")
+        #expect(resetCredits.availableCount == 2)
+        #expect(resetCredits.credits.map(\.title) == ["Full reset"])
     }
 
     @Test
@@ -359,10 +371,14 @@ struct ProviderParserTests {
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "Asia/Seoul"))
+        let missingClaude = temporaryHome.appending(path: "missing-claude")
         let snapshot = await ClaudeUsageProvider(
             homeDirectory: temporaryHome,
             calendar: calendar,
-            allowKeychain: false).fetchUsage()
+            cliClient: ClaudeCLIUsageClient(
+                executableURL: missingClaude,
+                pathEnvironment: "",
+                homeDirectory: temporaryHome)).fetchUsage()
 
         #expect(snapshot.availability == .available)
         #expect(snapshot.tokenUsage?.totalTokens == 0)
@@ -373,24 +389,32 @@ struct ProviderParserTests {
     }
 
     @Test
-    func claudeOAuthMapsSessionWeeklyAndScopedLimits() throws {
+    func claudeCLIMapsSessionWeeklyAndScopedLimits() throws {
         let file = try #require(Bundle.module.url(
-            forResource: "claude-oauth-usage",
+            forResource: "claude-cli-usage",
             withExtension: "json",
             subdirectory: "Fixtures"))
         let data = try Data(contentsOf: file)
-        let response = try JSONDecoder().decode(ClaudeOAuthUsageResponse.self, from: data)
-        let windows = response.quotaWindows()
+        let now = try #require(
+            ISO8601DateFormatter().date(from: "2026-08-19T06:00:00+09:00"))
+        let timeZone = try #require(TimeZone(identifier: "Asia/Seoul"))
+        let response = try ClaudeCLIUsageParser.parse(
+            data,
+            now: now,
+            timeZone: timeZone)
+        let windows = response.quotaWindows
         let snapshot = ProviderSnapshot(
             descriptor: ClaudeUsageProvider().descriptor,
             availability: .available,
-            source: .officialAPI,
+            source: .cli,
             quotaWindows: windows)
 
         #expect(windows.map(\.label) == ["5-hour", "Weekly", "Fable weekly"])
         #expect(windows.map(\.id) == ["five-hour", "seven-day", "scoped-weekly-fable"])
         #expect(windows.map(\.usedPercent) == [12, 34, 25])
-        #expect(windows.allSatisfy { $0.resetsAt != nil })
+        #expect(windows[0].resetsAt != nil)
+        #expect(windows[1].resetsAt != nil)
+        #expect(windows[2].resetsAt == nil)
         #expect(UsageSummary.remainingPercent(
             in: [snapshot],
             for: .claude,
@@ -407,54 +431,5 @@ struct ProviderParserTests {
             in: [snapshot],
             for: .claude,
             windowID: "missing-window") == nil)
-    }
-
-    @Test
-    func claudeCredentialParserNeverNeedsToExposeToken() throws {
-        let data = Data(#"{"claudeAiOauth":{"accessToken":"fake-access-token","expiresAt":4102444800000,"rateLimitTier":"default_claude_max_5x","subscriptionType":"max"}}"#.utf8)
-        let credentials = try ClaudeOAuthCredentials.decode(data)
-
-        #expect(credentials.subscriptionType == "max")
-        #expect(credentials.rateLimitTier == "default_claude_max_5x")
-        #expect(!credentials.isExpired)
-    }
-
-    @Test
-    func claudeBackgroundKeychainQuerySuppressesAuthenticationUI() {
-        let background = ClaudeOAuthCredentialLoader.keychainQuery(interactive: false)
-        let interactive = ClaudeOAuthCredentialLoader.keychainQuery(interactive: true)
-
-        let backgroundContext = background[kSecUseAuthenticationContext] as? LAContext
-        let backgroundAuthenticationUI = background[kSecUseAuthenticationUI]
-        #expect(backgroundContext?.interactionNotAllowed == true)
-        #expect(backgroundAuthenticationUI != nil)
-        if let backgroundAuthenticationUI {
-            #expect(CFEqual(
-                backgroundAuthenticationUI as CFTypeRef,
-                kSecUseAuthenticationUISkip))
-        }
-        #expect(interactive[kSecUseAuthenticationContext] == nil)
-        #expect(interactive[kSecUseAuthenticationUI] == nil)
-    }
-
-    @Test
-    func claudeCredentialCacheKeepsValidCredentialsAndDropsExpiredOnes() async {
-        let cache = ClaudeOAuthCredentialCache()
-        let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let valid = ClaudeOAuthCredentials(
-            accessToken: "fake-valid-token",
-            expiresAt: now.addingTimeInterval(60),
-            rateLimitTier: nil,
-            subscriptionType: "max")
-        let expired = ClaudeOAuthCredentials(
-            accessToken: "fake-expired-token",
-            expiresAt: now.addingTimeInterval(-1),
-            rateLimitTier: nil,
-            subscriptionType: "max")
-
-        await cache.store(valid)
-        #expect(await cache.value(at: now)?.accessToken == "fake-valid-token")
-        await cache.store(expired)
-        #expect(await cache.value(at: now) == nil)
     }
 }

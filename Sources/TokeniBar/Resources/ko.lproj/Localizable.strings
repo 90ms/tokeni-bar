@@ -45,6 +45,7 @@
 "provider.status.failed" = "오류";
 "source.localSessionLog" = "로컬 세션";
 "source.localProtocol" = "로컬 프로토콜";
+"source.cli" = "CLI";
 "source.officialAPI" = "계정 API";
 "source.estimated" = "추정치";
 "settings.providers" = "제공자";
@@ -52,10 +53,10 @@
 "settings.connections.connect" = "연결";
 "settings.connections.connected" = "%@ 연결됨.";
 "settings.connections.failed" = "%@에 연결하지 못했습니다. 해당 CLI를 한 번 실행한 후 다시 시도하세요.";
-"settings.connections.description" = "연결을 선택할 때만 키체인 승인을 요청합니다. 백그라운드 갱신 중에는 승인 창을 열지 않습니다.";
+"settings.connections.description" = "Claude와 Codex CLI의 기존 로그인 세션을 사용합니다. 백그라운드 갱신 중에는 로그인 또는 키체인 승인 창을 열지 않습니다.";
 "settings.connections.state.connected" = "계정 사용량에 연결됨";
 "settings.connections.state.localOnly" = "로컬 사용량만 확인 중";
-"settings.connections.state.authorizationRequired" = "키체인 승인이 필요함";
+"settings.connections.state.authorizationRequired" = "CLI 로그인이 필요함";
 "settings.connections.state.sessionExpired" = "세션 만료 · CLI에서 다시 로그인하세요";
 "settings.connections.state.stale" = "연결 상태를 확인할 수 없음";
 "settings.tab.general" = "일반";
@@ -589,7 +590,7 @@
 "settings.cost.catalogSource.cache" = "캐시";
 "settings.cost.catalogSource.remote" = "업데이트됨";
 "settings.privacy" = "개인정보 보호";
-"settings.privacy.description" = "알려진 로컬 CLI 세션 파일과 Antigravity 대화 메타데이터에서 사용량을 읽습니다. Codex는 기존 CLI 로그인을 재사용하고 Claude 계정 쿼터는 현재 앱 실행 중 사용자가 명시적으로 연결한 뒤에만 키체인에 접근합니다. 프롬프트, 응답, 쿠키 및 인증 토큰은 저장하지 않습니다.";
+"settings.privacy.description" = "알려진 로컬 CLI 세션 파일과 Antigravity 대화 메타데이터에서 사용량을 읽습니다. Claude와 Codex 계정 쿼터는 각 CLI의 비대화형 명령을 통해 확인하며 앱이 인증정보를 읽거나 저장하지 않습니다. 프롬프트, 응답, 쿠키 및 인증 토큰은 저장하지 않습니다.";
 "notification.usageLow.title" = "%@ 사용량이 부족합니다";
 "notification.usageLow.body" = "%@: %d%% 남음";
 "notification.usageLow.depletionRisk" = "현재 관측 속도라면 갱신 전에 소진될 가능성이 높습니다.";
