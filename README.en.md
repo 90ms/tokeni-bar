@@ -283,6 +283,7 @@ analytics or remote game server.
 | Claude or Codex connection fails | Run the affected CLI once in Terminal to sign in, then check **Settings → General → Providers**. Tokeni Bar uses non-interactive CLI commands and never opens a login dialog |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Update asks to choose Formula or Cask | Run `brew upgrade --formula 90ms/tap/tokeni-bar`, then `tokeni-bar --install-app`. In-app updates select the Formula automatically starting with 0.25.2 |
+| In-app Homebrew update reports a `$HOME` error | Update to the latest version, then retry. For an older version, run `brew upgrade --formula 90ms/tap/tokeni-bar && tokeni-bar --install-app` in Terminal |
 | Pet progress cannot be read | Restart the app to retry local recovery, then review diagnostics if the issue continues |
 | Cannot use a booster | Check inventory or shard balance. The same multiplier extends time; a different one replaces and discards the active boost's remaining time |
 | Memory use is temporarily high | Check whether a large provider log just refreshed or a new pet sprite appeared for the first time. A single log scan stops at 128 MiB, and the on-screen pet can be disabled when unused; if memory keeps growing, restart and report diagnostics with reproduction steps |

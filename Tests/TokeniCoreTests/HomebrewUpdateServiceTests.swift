@@ -143,6 +143,47 @@ struct HomebrewUpdateServiceTests {
     }
 }
 
+@Suite("Process environment")
+struct ProcessEnvironmentTests {
+    @Test
+    func suppliesHomeAndCommonPathsToCommandsWithoutAnExplicitEnvironment() {
+        let environment = CLIProcessEnvironment.make(for: ProcessCommand(
+            executable: "/opt/homebrew/bin/brew",
+            arguments: [],
+            environment: [:]))
+
+        #expect(environment["HOME"] == FileManager.default.homeDirectoryForCurrentUser.path)
+        let paths = environment["PATH"]?.split(separator: ":").map(String.init) ?? []
+        #expect(paths.contains("/opt/homebrew/bin"))
+        #expect(paths.contains("/usr/local/bin"))
+    }
+
+    @Test
+    func preservesAnExplicitHomeDirectory() {
+        let home = FileManager.default.temporaryDirectory
+            .appending(path: "tokeni-home", directoryHint: .isDirectory)
+        let environment = CLIProcessEnvironment.make(for: ProcessCommand(
+            executable: "/opt/homebrew/bin/brew",
+            arguments: [],
+            environment: ["HOME": home.path, "PATH": "/custom/bin"]))
+
+        #expect(environment["HOME"] == home.path)
+        let paths = environment["PATH"]?.split(separator: ":").map(String.init) ?? []
+        #expect(paths.contains("/custom/bin"))
+    }
+
+    @Test
+    func systemRunnerPassesHomeToAChildWithAnEmptyEnvironment() async throws {
+        let result = try await SystemProcessRunner().run(ProcessCommand(
+            executable: "/bin/sh",
+            arguments: ["-c", "printf '%s' \"$HOME\""],
+            environment: [:]))
+
+        #expect(result.succeeded)
+        #expect(result.standardOutput == FileManager.default.homeDirectoryForCurrentUser.path)
+    }
+}
+
 private actor RecordingProcessRunner: ProcessRunning {
     private var commands: [ProcessCommand] = []
     private let result: CommandResult

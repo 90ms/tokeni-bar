@@ -270,6 +270,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 | Claude 또는 Codex 연결 실패 | 해당 CLI를 터미널에서 한 번 실행해 로그인한 뒤 **설정 → 일반 → 제공자**에서 연결 상태를 확인. Tokeni Bar는 비대화형 CLI 명령만 실행하며 로그인창을 열지 않음 |
 | Homebrew 신뢰 오류 | `brew trust --formula 90ms/tap/tokeni-bar` 실행 |
 | Formula와 Cask 중 선택하라는 업데이트 오류 | `brew upgrade --formula 90ms/tap/tokeni-bar` 실행 후 `tokeni-bar --install-app`. 앱 내 업데이트는 0.25.2부터 Formula를 자동 지정 |
+| 앱 내 Homebrew 업데이트에서 `$HOME` 오류 | 최신 버전으로 업데이트한 뒤 다시 시도. 이전 버전은 터미널에서 `brew upgrade --formula 90ms/tap/tokeni-bar && tokeni-bar --install-app` 실행 |
 | 펫 진행을 읽지 못함 | 앱을 다시 실행해 로컬 자동 복구를 시도하고, 계속되면 진단 정보 확인 |
 | 부스터를 사용할 수 없음 | 보유 수량 또는 구매할 별조각이 충분한지 확인. 같은 배율은 시간을 연장하고 다른 배율은 기존 남은 시간을 버리고 교체 |
 | 메모리 사용량이 일시적으로 큼 | 대형 제공자 로그 갱신이나 새 펫 스프라이트 첫 표시 직후인지 확인. 한 번의 로그 스캔은 128MiB에서 중단되며, 사용하지 않는 화면 위 펫을 끌 수 있음. 지속적으로 증가하면 앱을 다시 실행한 뒤 진단 정보와 재현 절차를 함께 보고 |
