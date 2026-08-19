@@ -23,7 +23,7 @@ struct CodexAccountTokenUsageResult: Sendable {
     let fetchedAt: Date
 }
 
-enum CodexAccountTokenUsageError: LocalizedError, Sendable, Equatable {
+enum CodexCLIUsageError: LocalizedError, Sendable, Equatable {
     case executableUnavailable
     case launchFailed
     case timedOut
@@ -39,18 +39,21 @@ enum CodexAccountTokenUsageError: LocalizedError, Sendable, Equatable {
         case .launchFailed:
             "Codex app-server could not be started."
         case .timedOut:
-            "Codex account token usage timed out."
+            "Codex CLI account usage timed out."
         case .unsupported:
-            "This Codex CLI version does not support account token usage."
+            "This Codex CLI version does not support account usage."
         case .accountUnavailable:
-            "Codex account token usage is unavailable. Run Codex once to sign in."
+            "Codex CLI account usage is unavailable. Run Codex once to sign in."
         case let .server(code):
-            "Codex account token usage failed with error \(code)."
+            "Codex CLI account usage failed with error \(code)."
         case .invalidResponse:
-            "Codex account token usage returned an invalid response."
+            "Codex CLI returned an invalid account usage response."
         }
     }
 }
+
+typealias CodexAccountTokenUsageError = CodexCLIUsageError
+typealias CodexAccountUsageError = CodexCLIUsageError
 
 actor CodexAccountTokenUsageCache {
     static let shared = CodexAccountTokenUsageCache()
@@ -113,6 +116,7 @@ struct CodexExecutableLocator: Sendable {
 
         for relativePath in [
             ".local/bin/codex",
+            ".npm-global/bin/codex",
             ".volta/bin/codex",
             ".asdf/shims/codex",
             ".bun/bin/codex",
@@ -213,7 +217,11 @@ struct CodexAccountTokenUsageClient: Sendable {
         }
 
         let runner = CodexAppServerUsageRunner(executableURL: executableURL)
-        let response = try await Self.run(runner, timeout: self.timeout)
+        let response = try await CodexAppServerClient.run(
+            runner,
+            request: CodexAppServerUsageRunner.accountUsageRequest,
+            responseID: 2,
+            timeout: self.timeout)
         let fetchedAt = Date.now
         await self.cache.store(response, accountID: accountID, fetchedAt: fetchedAt)
         return .init(response: response, fetchedAt: fetchedAt)
@@ -223,36 +231,46 @@ struct CodexAccountTokenUsageClient: Sendable {
         await self.cache.invalidate()
     }
 
-    private static func run(
+}
+
+enum CodexAppServerClient {
+    static func run<Result: Decodable & Sendable>(
         _ runner: CodexAppServerUsageRunner,
-        timeout: TimeInterval) async throws -> CodexAccountTokenUsageResponse
+        request: Data,
+        responseID: Int,
+        timeout: TimeInterval) async throws -> Result
     {
-        try await withThrowingTaskGroup(of: CodexAccountTokenUsageResponse.self) { group in
+        try await withThrowingTaskGroup(of: Result.self) { group in
             group.addTask {
-                try runner.run()
+                try runner.run(
+                    request: request,
+                    responseID: responseID,
+                    resultType: Result.self)
             }
             group.addTask {
                 let nanoseconds = UInt64(max(timeout, 0) * 1_000_000_000)
                 try await Task.sleep(nanoseconds: nanoseconds)
                 runner.cancel()
-                throw CodexAccountTokenUsageError.timedOut
+                throw CodexCLIUsageError.timedOut
             }
 
             defer { group.cancelAll() }
             guard let first = try await group.next() else {
-                throw CodexAccountTokenUsageError.invalidResponse
+                throw CodexCLIUsageError.invalidResponse
             }
             return first
         }
     }
 }
 
-private final class CodexAppServerUsageRunner: @unchecked Sendable {
-    private static let initializeRequest = Data(
+final class CodexAppServerUsageRunner: @unchecked Sendable {
+    static let initializeRequest = Data(
         #"{"id":1,"method":"initialize","params":{"clientInfo":{"name":"tokeni-bar","version":"0.5.0"},"capabilities":{"experimentalApi":true}}}"#.utf8)
-    private static let initializedNotification = Data(#"{"method":"initialized"}"#.utf8)
-    private static let usageRequest = Data(
+    static let initializedNotification = Data(#"{"method":"initialized"}"#.utf8)
+    static let accountUsageRequest = Data(
         #"{"id":2,"method":"account/usage/read","params":null}"#.utf8)
+    static let rateLimitsRequest = Data(
+        #"{"id":2,"method":"account/rateLimits/read","params":null}"#.utf8)
 
     private let executableURL: URL
     private let lock = NSLock()
@@ -264,7 +282,12 @@ private final class CodexAppServerUsageRunner: @unchecked Sendable {
         self.executableURL = executableURL
     }
 
-    func run() throws -> CodexAccountTokenUsageResponse {
+    func run<Result: Decodable & Sendable>(
+        request: Data,
+        responseID: Int,
+        resultType: Result.Type) throws -> Result
+    {
+        _ = resultType
         let process = Process()
         let inputPipe = Pipe()
         let outputPipe = Pipe()
@@ -308,8 +331,8 @@ private final class CodexAppServerUsageRunner: @unchecked Sendable {
         let _: CodexEmptyResult = try self.readResponse(id: 1, from: reader)
 
         try Self.write(Self.initializedNotification, to: inputPipe.fileHandleForWriting)
-        try Self.write(Self.usageRequest, to: inputPipe.fileHandleForWriting)
-        return try self.readResponse(id: 2, from: reader)
+        try Self.write(request, to: inputPipe.fileHandleForWriting)
+        return try self.readResponse(id: responseID, from: reader)
     }
 
     func cancel() {
@@ -325,7 +348,7 @@ private final class CodexAppServerUsageRunner: @unchecked Sendable {
         }
     }
 
-    private func readResponse<Result: Decodable>(
+    private func readResponse<Result: Decodable & Sendable>(
         id: Int,
         from reader: CodexJSONLineReader) throws -> Result
     {

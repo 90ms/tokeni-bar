@@ -224,7 +224,7 @@ undated values remain unavailable instead of becoming a guessed zero. See
 | 1 | Run and sign in to each CLI you want to use |
 | 2 | Start Tokeni Bar and open its status icon in the menu bar |
 | 3 | Choose providers and the menu-bar display under **Settings → General** |
-| 4 | For Claude account quotas, choose **Providers → Connect** |
+| 4 | For account quotas, choose **Providers → Connect**; the app reuses each CLI's existing sign-in |
 | 5 | Use an agent; the first growth activity checks in automatically, then grow the pet, try Star Shard cosmetics, and optionally enable the on-screen pet |
 
 ## Update and uninstall
@@ -265,7 +265,9 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 Usage history stays on the Mac for 30 days. If progress data is damaged, the
 app attempts recovery from retained local copies. Copied diagnostics exclude
 token totals and model identifiers by default; prompts, responses,
-credentials, cookies, and file paths are always excluded. There is no
+credentials, cookies, and file paths are always excluded. Claude and Codex
+account quotas are queried through each CLI's non-interactive command, so
+Tokeni Bar never reads or stores CLI authentication credentials. There is no
 analytics or remote game server.
 
 ## Troubleshooting
@@ -276,7 +278,7 @@ analytics or remote game server.
 | Cannot move the on-screen pet | Turn off position lock and click-through under **Settings → Tokeni** |
 | Cannot find the on-screen pet | Choose **Settings → Tokeni → Reset pet position** |
 | Provider unavailable | Confirm the CLI is installed and signed in, then run it once |
-| Claude password prompt repeats after unlock | Update the app and connect once under **Settings → General → Providers**. Background refreshes never open authentication UI |
+| Claude or Codex connection fails | Run the affected CLI once in Terminal to sign in, then check **Settings → General → Providers**. Tokeni Bar uses non-interactive CLI commands and never opens a login dialog |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Update asks to choose Formula or Cask | Run `brew upgrade --formula 90ms/tap/tokeni-bar`, then `tokeni-bar --install-app`. In-app updates select the Formula automatically starting with 0.25.2 |
 | Pet progress cannot be read | Restart the app to retry local recovery, then review diagnostics if the issue continues |

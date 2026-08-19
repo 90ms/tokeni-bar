@@ -1,6 +1,8 @@
 import Foundation
 
-public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageCacheInvalidating {
+public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
+    UsageAuthorizationProviding, UsageCacheInvalidating
+{
     public let descriptor = ProviderDescriptor(
         id: .codex,
         displayName: "Codex",
@@ -14,10 +16,8 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
 
     private let sessionsDirectory: URL
     private let calendar: Calendar
-    private let credentialLoader: CodexAccountCredentialLoader
     private let accountClient: CodexAccountUsageClient
     private let accountTokenUsageClient: CodexAccountTokenUsageClient
-    private let resetCreditsClient: CodexResetCreditsClient
 
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
@@ -25,11 +25,9 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
     {
         self.sessionsDirectory = homeDirectory.appending(path: ".codex/sessions", directoryHint: .isDirectory)
         self.calendar = calendar
-        self.credentialLoader = CodexAccountCredentialLoader(homeDirectory: homeDirectory)
-        self.accountClient = CodexAccountUsageClient()
+        self.accountClient = CodexAccountUsageClient(homeDirectory: homeDirectory)
         self.accountTokenUsageClient = CodexAccountTokenUsageClient(
             homeDirectory: homeDirectory)
-        self.resetCreditsClient = CodexResetCreditsClient()
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
@@ -38,13 +36,9 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
         async let accountTokenUsageTask = self.fetchAccountTokenUsage()
 
         do {
-            let credentials = try self.credentialLoader.load()
-            async let resetCreditsFetch = try? self.resetCreditsClient.fetch(credentials: credentials)
-            let result = try await self.accountClient.fetch(credentials: credentials)
-            let resetCreditsResult = await resetCreditsFetch
+            let result = try await self.accountClient.fetch()
             let accountTokenUsageFetch = await accountTokenUsageTask
             let accountTokenUsageResult = accountTokenUsageFetch.result
-            let resetCredits = resetCreditsResult?.response.summary()
             let accountTokenUsage = self.accountTokenUsage(from: accountTokenUsageResult)
             let growthObservation = self.growthObservation(
                 todayUsage: todayUsage,
@@ -55,22 +49,23 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             let plan = accountUsage.planType?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .capitalized
-            let detail = [plan, "Codex account usage"]
+            let detail = [plan, "Codex CLI account usage"]
                 .compactMap { $0 }
                 .filter { !$0.isEmpty }
                 .joined(separator: " · ")
             return .init(
                 descriptor: self.descriptor,
                 availability: .available,
-                source: .officialAPI,
+                source: .cli,
                 quotaWindows: accountUsage.quotaWindows(),
                 tokenUsage: todayUsage?.tokenUsage,
                 costEstimate: todayUsage?.costEstimate,
                 accountTokenUsage: accountTokenUsage,
                 accountTokenUsageIssue: accountTokenUsageFetch.issue,
                 credits: accountUsage.creditBalance,
-                quotaResetCredits: resetCredits,
+                quotaResetCredits: result.quotaResetCredits,
                 growthUsageObservation: growthObservation,
+                connectionState: .connected,
                 detail: todayUsage.map {
                     "\(detail) · today across \($0.sessionCount) local sessions"
                 } ?? detail,
@@ -91,7 +86,6 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
     public func invalidateUsageCache() async {
         await self.accountClient.invalidateCache()
         await self.accountTokenUsageClient.invalidateCache()
-        await self.resetCreditsClient.invalidateCache()
     }
 
     public func latestActivityDate(since cutoff: Date) -> Date? {
@@ -151,6 +145,7 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
                 accountTokenUsageIssue: accountTokenUsageIssue,
                 credits: latestLocalUsage?.credits,
                 growthUsageObservation: growthObservation,
+                connectionState: self.connectionState(for: accountError),
                 detail: errorMessage.map { "Partial Codex data · \($0)" }
                     ?? "Partial Codex data",
                 updatedAt: max(
@@ -162,7 +157,12 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             availability: .stale,
             source: .localSessionLog,
             accountTokenUsageIssue: accountTokenUsageIssue,
+            connectionState: self.connectionState(for: accountError),
             detail: errorMessage ?? "No Codex usage event was found in ~/.codex/sessions")
+    }
+
+    public func requestUsageAuthorization() async throws {
+        _ = try await self.accountClient.fetch(forceRefresh: true)
     }
 
     private func fetchAccountTokenUsage() async -> (
@@ -185,6 +185,16 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding, UsageC
             return (nil, issue)
         } catch {
             return (nil, .failed)
+        }
+    }
+
+    private func connectionState(for error: Error) -> ProviderConnectionState {
+        guard let error = error as? CodexCLIUsageError else { return .localOnly }
+        switch error {
+        case .accountUnavailable:
+            return .authorizationRequired
+        default:
+            return .localOnly
         }
     }
 

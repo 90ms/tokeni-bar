@@ -1,92 +1,5 @@
 import Foundation
 
-struct CodexAccountCredentials: Sendable {
-    let accessToken: String
-    let accountID: String?
-
-    static func decode(_ data: Data) throws -> Self {
-        let root = try JSONDecoder().decode(Root.self, from: data)
-        guard let accessToken = root.tokens?.accessToken?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-            !accessToken.isEmpty
-        else { throw CodexAccountUsageError.invalidCredentials }
-
-        let accountID = root.tokens?.accountID?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return Self(
-            accessToken: accessToken,
-            accountID: accountID?.isEmpty == false ? accountID : nil)
-    }
-
-    private struct Root: Decodable {
-        let tokens: Tokens?
-    }
-
-    private struct Tokens: Decodable {
-        let accessToken: String?
-        let accountID: String?
-
-        enum CodingKeys: String, CodingKey {
-            case accessToken = "access_token"
-            case accessTokenCamel = "accessToken"
-            case accountID = "account_id"
-            case accountIDCamel = "accountId"
-        }
-
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.accessToken = try container.decodeIfPresent(String.self, forKey: .accessToken)
-                ?? container.decodeIfPresent(String.self, forKey: .accessTokenCamel)
-            self.accountID = try container.decodeIfPresent(String.self, forKey: .accountID)
-                ?? container.decodeIfPresent(String.self, forKey: .accountIDCamel)
-        }
-    }
-}
-
-struct CodexAccountCredentialLoader: Sendable {
-    private let credentialsFile: URL
-
-    init(homeDirectory: URL) {
-        self.credentialsFile = homeDirectory.appending(path: ".codex/auth.json")
-    }
-
-    func load() throws -> CodexAccountCredentials {
-        guard let data = LocalFiles.data(
-            in: self.credentialsFile,
-            maximumBytes: 1 * 1_024 * 1_024)
-        else {
-            throw CodexAccountUsageError.credentialsUnavailable
-        }
-        return try CodexAccountCredentials.decode(data)
-    }
-}
-
-enum CodexAccountUsageError: LocalizedError, Sendable {
-    case credentialsUnavailable
-    case invalidCredentials
-    case unauthorized
-    case rateLimited
-    case server(Int)
-    case invalidResponse
-
-    var errorDescription: String? {
-        switch self {
-        case .credentialsUnavailable:
-            "Codex account credentials are unavailable. Run Codex once to sign in."
-        case .invalidCredentials:
-            "Codex account credentials have an unsupported format."
-        case .unauthorized:
-            "Codex sign-in expired. Run Codex once to sign in again."
-        case .rateLimited:
-            "Codex usage is temporarily rate limited."
-        case let .server(status):
-            "Codex usage request failed with HTTP \(status)."
-        case .invalidResponse:
-            "Codex usage response was invalid."
-        }
-    }
-}
-
 struct CodexAccountUsageResponse: Decodable, Sendable {
     let planType: String?
     let rateLimit: RateLimit?
@@ -143,6 +56,12 @@ struct CodexAccountUsageResponse: Decodable, Sendable {
             case hasCredits = "has_credits"
             case unlimited
             case balance
+        }
+
+        init(hasCredits: Bool, unlimited: Bool, balance: String?) {
+            self.hasCredits = hasCredits
+            self.unlimited = unlimited
+            self.balance = balance
         }
 
         init(from decoder: Decoder) throws {
@@ -223,12 +142,24 @@ private extension CodexAccountUsageResponse.Window {
 struct CodexAccountUsageResult: Sendable {
     let response: CodexAccountUsageResponse
     let fetchedAt: Date
+    let quotaResetCredits: QuotaResetCreditSummary?
+
+    init(
+        response: CodexAccountUsageResponse,
+        fetchedAt: Date,
+        quotaResetCredits: QuotaResetCreditSummary? = nil)
+    {
+        self.response = response
+        self.fetchedAt = fetchedAt
+        self.quotaResetCredits = quotaResetCredits
+    }
 }
 
 actor CodexAccountUsageCache {
     static let shared = CodexAccountUsageCache()
 
     private var response: CodexAccountUsageResponse?
+    private var quotaResetCredits: QuotaResetCreditSummary?
     private var accountID: String?
     private var fetchedAt: Date?
 
@@ -243,67 +174,85 @@ actor CodexAccountUsageCache {
               now.timeIntervalSince(fetchedAt) < maxAge,
               !response.hasElapsedReset(at: now)
         else { return nil }
-        return CodexAccountUsageResult(response: response, fetchedAt: fetchedAt)
+        return CodexAccountUsageResult(
+            response: response,
+            fetchedAt: fetchedAt,
+            quotaResetCredits: self.quotaResetCredits)
     }
 
-    func store(_ response: CodexAccountUsageResponse, accountID: String?, fetchedAt: Date) {
+    func store(
+        _ response: CodexAccountUsageResponse,
+        accountID: String?,
+        fetchedAt: Date,
+        quotaResetCredits: QuotaResetCreditSummary? = nil)
+    {
         self.response = response
         self.accountID = accountID
         self.fetchedAt = fetchedAt
+        self.quotaResetCredits = quotaResetCredits
     }
 
     func invalidate() {
         self.response = nil
+        self.quotaResetCredits = nil
         self.accountID = nil
         self.fetchedAt = nil
     }
 }
 
 struct CodexAccountUsageClient: Sendable {
-    private let session: URLSession
+    private let locator: CodexExecutableLocator
     private let cache: CodexAccountUsageCache
+    private let cacheMaxAge: TimeInterval
+    private let timeout: TimeInterval
 
-    init(session: URLSession = .shared, cache: CodexAccountUsageCache = .shared) {
-        self.session = session
+    init(
+        executableURL: URL? = nil,
+        pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"],
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
+        cache: CodexAccountUsageCache = .shared,
+        cacheMaxAge: TimeInterval = 60,
+        timeout: TimeInterval = 15)
+    {
+        self.locator = .init(
+            explicitURL: executableURL,
+            pathEnvironment: pathEnvironment,
+            homeDirectory: homeDirectory)
         self.cache = cache
+        self.cacheMaxAge = cacheMaxAge
+        self.timeout = timeout
     }
 
-    func fetch(credentials: CodexAccountCredentials) async throws -> CodexAccountUsageResult {
-        if let cached = await cache.value(accountID: credentials.accountID, maxAge: 60) {
+    func fetch(forceRefresh: Bool = false) async throws -> CodexAccountUsageResult {
+        if !forceRefresh,
+           let cached = await self.cache.value(accountID: nil, maxAge: self.cacheMaxAge)
+        {
             return cached
         }
-        guard let url = URL(string: "https://chatgpt.com/backend-api/wham/usage") else {
-            throw CodexAccountUsageError.invalidResponse
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 20
-        request.setValue("Bearer \(credentials.accessToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("tokeni-bar/0.2.0", forHTTPHeaderField: "User-Agent")
-        if let accountID = credentials.accountID {
-            request.setValue(accountID, forHTTPHeaderField: "ChatGPT-Account-Id")
+        guard let executableURL = self.locator.resolve() else {
+            throw CodexAccountUsageError.executableUnavailable
         }
 
-        let (data, response) = try await self.session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
+        let runner = CodexAppServerUsageRunner(executableURL: executableURL)
+        let cliResponse: CodexCLIRateLimitsResponse = try await CodexAppServerClient.run(
+            runner,
+            request: CodexAppServerUsageRunner.rateLimitsRequest,
+            responseID: 2,
+            timeout: self.timeout)
+        guard let response = cliResponse.accountUsageResponse() else {
             throw CodexAccountUsageError.invalidResponse
         }
-        switch http.statusCode {
-        case 200:
-            guard let usage = try? JSONDecoder().decode(CodexAccountUsageResponse.self, from: data) else {
-                throw CodexAccountUsageError.invalidResponse
-            }
-            let fetchedAt = Date.now
-            await self.cache.store(usage, accountID: credentials.accountID, fetchedAt: fetchedAt)
-            return CodexAccountUsageResult(response: usage, fetchedAt: fetchedAt)
-        case 401, 403:
-            throw CodexAccountUsageError.unauthorized
-        case 429:
-            throw CodexAccountUsageError.rateLimited
-        default:
-            throw CodexAccountUsageError.server(http.statusCode)
-        }
+        let fetchedAt = Date.now
+        let quotaResetCredits = cliResponse.quotaResetCreditsSummary()
+        await self.cache.store(
+            response,
+            accountID: nil,
+            fetchedAt: fetchedAt,
+            quotaResetCredits: quotaResetCredits)
+        return CodexAccountUsageResult(
+            response: response,
+            fetchedAt: fetchedAt,
+            quotaResetCredits: quotaResetCredits)
     }
 
     func invalidateCache() async {

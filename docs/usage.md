@@ -146,27 +146,25 @@ Fable is the default and the selection is stored locally. If the selected
 window is absent from the account response, Claude remains unavailable instead
 of silently substituting another quota.
 
-### Claude Keychain connection
+### Claude Code CLI connection
 
-Claude account quotas reuse the existing OAuth sign-in that Claude Code stores
-in the macOS Keychain. Tokeni Bar never copies or separately persists the
+Claude account quotas are queried through the installed Claude Code CLI's
+non-interactive `/usage` command. Tokeni Bar never reads Claude Code's
+credential files or Keychain item, and never copies or separately persists a
 token.
 
-- App startup and automatic refreshes never query Claude Code's Keychain item.
-  They use local Claude session logs without opening a password prompt.
-- Start the initial connection explicitly under **Settings → General →
-  Providers → Connect Claude Code**. Choosing **Always Allow** in
-  the macOS dialog enables account quota refreshes for the current app session.
-- After restarting Tokeni Bar, Claude returns to local-only usage until the
-  player explicitly connects account quotas again.
-
-Unlocking the Mac alone does not initiate interactive authentication. When
-connection approval is unavailable, the app leaves account quotas unavailable
-rather than inventing values and continues showing local-session usage.
+- App startup and automatic refreshes reuse the CLI's existing sign-in without
+  opening a password or login prompt.
+- **Settings → General → Providers → Connect Claude Code** runs the same
+  non-interactive command with a fresh result. It does not start a separate
+  authentication flow.
+- If the CLI is missing or not signed in, the app keeps local session usage and
+  leaves account quotas unavailable. Run `claude` once in Terminal to install,
+  sign in, or update the CLI, then try Connect again.
 
 The connection row distinguishes **Connected to account usage**, **Using local
-usage only**, **Keychain approval required**, **Session expired**, and
-**Connection status unavailable**.
+usage only**, **CLI sign-in required**, **Session expired**, and **Connection
+status unavailable**.
 
 ## Usage notifications
 
