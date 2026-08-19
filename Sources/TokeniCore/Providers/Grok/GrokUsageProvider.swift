@@ -115,6 +115,7 @@ struct GrokTodayUsage {
 
 enum GrokTodayLogParser {
     static func aggregate(files: [URL], since startDate: Date) -> GrokTodayUsage? {
+        guard LocalFiles.totalSize(of: files) != nil else { return nil }
         let decoder = JSONDecoder()
         var seenTurns: Set<String> = []
         var sessionIDs: Set<String> = []

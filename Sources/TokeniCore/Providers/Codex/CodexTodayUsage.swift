@@ -12,6 +12,7 @@ enum CodexTodayLogParser {
         files: [URL],
         since startDate: Date) -> CodexTodayUsage?
     {
+        guard LocalFiles.totalSize(of: files) != nil else { return nil }
         var input: Int64 = 0
         var cached: Int64 = 0
         var output: Int64 = 0

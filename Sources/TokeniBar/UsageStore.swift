@@ -116,6 +116,9 @@ final class UsageStore: ObservableObject {
     private var companionRewardSaveRevision: UInt64 = 0
     private var companionBenefitSaveRevision: UInt64 = 0
     private var tokenGrowthLedgerSaveRevision: UInt64 = 0
+    private var companionStateSaveTask: Task<Void, Never>?
+    private var companionRewardSaveTask: Task<Void, Never>?
+    private var companionBenefitSaveTask: Task<Void, Never>?
     private var lastCompanionActivityPersistenceAt: Date?
     private var appUpdateInstallationTask: Task<Void, Never>?
     private static let enabledProvidersKey = "enabledProviderIDs"
@@ -397,6 +400,9 @@ final class UsageStore: ObservableObject {
         self.refreshLoop?.cancel()
         self.activityLoop?.cancel()
         self.appUpdateInstallationTask?.cancel()
+        self.companionStateSaveTask?.cancel()
+        self.companionRewardSaveTask?.cancel()
+        self.companionBenefitSaveTask?.cancel()
     }
 
     func start() {
@@ -2109,12 +2115,6 @@ final class UsageStore: ObservableObject {
         self.companionGameEngine.rollOverEnergyIfNeeded(
             at: now,
             in: &state)
-        self.companionGameEngine.recordActivity(
-            isActive: self.hasActiveSession,
-            at: now,
-            in: &state)
-        guard state != previousState else { return }
-        self.companionState = state
         let didRollOver = state.growthDateKey != previousState.growthDateKey
         let shouldPersistActivity = self.hasActiveSession
             && self.lastCompanionActivityPersistenceAt.map {
@@ -2122,7 +2122,15 @@ final class UsageStore: ObservableObject {
                     >= Self.companionActivityPersistenceInterval
             } != false
         guard didRollOver || shouldPersistActivity else { return }
-        self.lastCompanionActivityPersistenceAt = now
+        self.companionGameEngine.recordActivity(
+            isActive: self.hasActiveSession,
+            at: now,
+            in: &state)
+        guard state != previousState else { return }
+        self.companionState = state
+        if shouldPersistActivity {
+            self.lastCompanionActivityPersistenceAt = now
+        }
         self.saveCompanionState()
     }
 
@@ -2284,8 +2292,15 @@ final class UsageStore: ObservableObject {
         let state = self.companionState
         self.companionStateSaveRevision &+= 1
         let revision = self.companionStateSaveRevision
-        Task {
-            try? await self.companionStateStore.save(state, revision: revision)
+        let store = self.companionStateStore
+        self.companionStateSaveTask?.cancel()
+        self.companionStateSaveTask = Task { [weak self, store] in
+            guard !Task.isCancelled else { return }
+            try? await store.save(state, revision: revision)
+            guard let self,
+                  self.companionStateSaveRevision == revision
+            else { return }
+            self.companionStateSaveTask = nil
         }
     }
 
@@ -2293,10 +2308,17 @@ final class UsageStore: ObservableObject {
         let state = self.companionBenefitState
         self.companionBenefitSaveRevision &+= 1
         let revision = self.companionBenefitSaveRevision
-        Task {
-            try? await self.companionBenefitStateStore.save(
+        let store = self.companionBenefitStateStore
+        self.companionBenefitSaveTask?.cancel()
+        self.companionBenefitSaveTask = Task { [weak self, store] in
+            guard !Task.isCancelled else { return }
+            try? await store.save(
                 state,
                 revision: revision)
+            guard let self,
+                  self.companionBenefitSaveRevision == revision
+            else { return }
+            self.companionBenefitSaveTask = nil
         }
     }
 
@@ -2377,8 +2399,15 @@ final class UsageStore: ObservableObject {
         let state = self.companionRewardState
         self.companionRewardSaveRevision &+= 1
         let revision = self.companionRewardSaveRevision
-        Task {
-            try? await self.companionRewardStateStore.save(state, revision: revision)
+        let store = self.companionRewardStateStore
+        self.companionRewardSaveTask?.cancel()
+        self.companionRewardSaveTask = Task { [weak self, store] in
+            guard !Task.isCancelled else { return }
+            try? await store.save(state, revision: revision)
+            guard let self,
+                  self.companionRewardSaveRevision == revision
+            else { return }
+            self.companionRewardSaveTask = nil
         }
     }
 

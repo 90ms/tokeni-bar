@@ -57,4 +57,28 @@ struct LocalFileSafetyTests {
             Issue.record("An oversized file must not be consumed")
         })
     }
+
+    @Test("JSONL aggregate budget rejects a set of oversized files")
+    func rejectsOversizedJSONLinesAggregate() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true)
+        let first = directory.appending(path: "first.jsonl")
+        let second = directory.appending(path: "second.jsonl")
+        try Data("12345".utf8).write(to: first)
+        try Data("67890".utf8).write(to: second)
+
+        #expect(LocalFiles.totalSize(of: [first, second], maximumBytes: 10) == 10)
+        #expect(LocalFiles.totalSize(of: [first, second], maximumBytes: 9) == nil)
+    }
+
+    @Test("Timestamp parser handles the common ISO-8601 forms")
+    func parsesISO8601Timestamps() {
+        #expect(TimestampParser.parse("2026-08-14T00:00:00Z") != nil)
+        #expect(TimestampParser.parse("2026-08-14T00:00:00.123Z") != nil)
+        #expect(TimestampParser.parse(nil) == nil)
+    }
 }

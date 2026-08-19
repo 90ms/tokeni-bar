@@ -285,7 +285,7 @@ analytics or remote game server.
 | Update asks to choose Formula or Cask | Run `brew upgrade --formula 90ms/tap/tokeni-bar`, then `tokeni-bar --install-app`. In-app updates select the Formula automatically starting with 0.25.2 |
 | Pet progress cannot be read | Restart the app to retry local recovery, then review diagnostics if the issue continues |
 | Cannot use a booster | Check inventory or shard balance. The same multiplier extends time; a different one replaces and discards the active boost's remaining time |
-| Memory use is temporarily high | Check whether a large provider log just refreshed or a new pet sprite appeared for the first time. Disable the on-screen pet when unused; if memory keeps growing, restart and report diagnostics with reproduction steps |
+| Memory use is temporarily high | Check whether a large provider log just refreshed or a new pet sprite appeared for the first time. A single log scan stops at 128 MiB, and the on-screen pet can be disabled when unused; if memory keeps growing, restart and report diagnostics with reproduction steps |
 
 ## Development
 

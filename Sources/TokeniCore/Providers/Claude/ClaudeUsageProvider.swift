@@ -219,6 +219,7 @@ enum ClaudeLogParser {
         files: [URL],
         since startDate: Date) -> ClaudeAggregatedUsage?
     {
+        guard LocalFiles.totalSize(of: files) != nil else { return nil }
         var seenMessageIDs: Set<String> = []
         var input: Int64 = 0
         var cacheCreation: Int64 = 0

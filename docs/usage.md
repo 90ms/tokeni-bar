@@ -66,6 +66,11 @@ time from 64 KiB chunks instead of retaining the complete file and every event
 in memory. Files over the safety limit and symbolic links are rejected; a file
 that grows past the limit while being read is discarded as well.
 
+Each refresh also caps the combined JSONL scan at 128 MiB. If the selected
+session set is larger, the provider keeps its previous/stale state instead of
+building a partial total. Temporary Foundation objects are released after each
+line so repeated refreshes do not accumulate parser autorelease allocations.
+
 Unchanged local session files are not parsed again on every refresh; a bounded
 result cache keyed by file size and modification time is reused. When a CLI is
 missing or fails, Tokeni Bar also backs off repeated process launches briefly,
@@ -80,8 +85,10 @@ hosting view and animation tasks.
 
 Provider directories are checked every ten seconds for activity animation.
 While activity continues, pet-state persistence is limited to once per minute
-except for a date rollover. macOS may retain released allocations in process
-RSS for reuse, so the displayed footprint does not always fall immediately.
+except for a date rollover, and overlapping background state saves are
+coalesced. Unchanged history samples are not re-encoded. macOS may retain
+released allocations in process RSS for reuse, so the displayed footprint does
+not always fall immediately.
 Memory that keeps increasing independently of log refreshes or newly displayed
 sprites should be reported with diagnostics and reproduction steps.
 
