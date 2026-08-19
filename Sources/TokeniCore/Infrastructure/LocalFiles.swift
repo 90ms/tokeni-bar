@@ -1,5 +1,11 @@
 import Foundation
 
+struct LocalFileSignature: Hashable, Sendable {
+    let path: String
+    let fileSize: Int?
+    let modifiedAt: Date?
+}
+
 enum LocalFiles {
     static let maximumJSONBytes = 16 * 1_024 * 1_024
     static let maximumJSONLinesBytes = 64 * 1_024 * 1_024
@@ -65,6 +71,17 @@ enum LocalFiles {
             .sorted { $0.modifiedAt > $1.modifiedAt }
             .prefix(limit)
             .map(\.url)
+    }
+
+    static func signatures(for files: [URL]) -> [LocalFileSignature] {
+        files.map { file in
+            let values = try? file.resourceValues(
+                forKeys: [.fileSizeKey, .contentModificationDateKey])
+            return LocalFileSignature(
+                path: file.path,
+                fileSize: values?.fileSize,
+                modifiedAt: values?.contentModificationDate)
+        }
     }
 
     static func data(

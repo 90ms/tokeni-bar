@@ -589,9 +589,18 @@ final class UsageStore: ObservableObject {
                     provider.descriptor.displayName)
                 await self.refresh(forceProviderReload: true)
             } catch {
-                self.providerAuthorizationMessages[id] = AppLocalization.format(
-                    "settings.connections.failed",
-                    provider.descriptor.displayName)
+                if let message = (error as? LocalizedError)?.errorDescription,
+                   !message.isEmpty
+                {
+                    self.providerAuthorizationMessages[id] = AppLocalization.format(
+                        "settings.connections.failed.detail",
+                        provider.descriptor.displayName,
+                        message)
+                } else {
+                    self.providerAuthorizationMessages[id] = AppLocalization.format(
+                        "settings.connections.failed",
+                        provider.descriptor.displayName)
+                }
             }
             self.authorizingProviderIDs.remove(id)
         }

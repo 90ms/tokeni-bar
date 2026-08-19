@@ -96,6 +96,11 @@ idle, working, waiting, warning, celebrate, and sleep animations. Mutation-only
 and level-100 speech actions remain in collection details. The menu popover has
 no separate max-level talk button.
 
+In Settings, the **Pets** screen combines the current companion, growth status,
+Collection, and Owned sections. Collection shows every species in separate
+Generation 1 and Generation 2 sections without a search or generation filter.
+Owned can still be narrowed with **View by pet**.
+
 ## Level rewards and boosters
 
 Shard rewards occur at levels 30 and 40, every five levels from 50, every three

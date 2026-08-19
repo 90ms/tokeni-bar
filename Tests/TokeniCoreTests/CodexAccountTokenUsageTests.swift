@@ -225,6 +225,24 @@ struct CodexAccountTokenUsageTests {
             now: fetchedAt) == nil)
     }
 
+    @Test
+    func backsOffFailedAccountUsageUntilTheRetryWindowExpires() async {
+        let cache = CodexAccountTokenUsageCache()
+        let now = Date(timeIntervalSince1970: 2_000_000_000)
+
+        await cache.storeFailure(
+            .timedOut,
+            accountID: nil,
+            retryAfter: 90,
+            now: now)
+        #expect(await cache.failure(
+            accountID: nil,
+            now: now.addingTimeInterval(89)) == .timedOut)
+        #expect(await cache.failure(
+            accountID: nil,
+            now: now.addingTimeInterval(90)) == nil)
+    }
+
     private func makeExecutableScript(
         _ contents: String,
         named name: String = "codex",

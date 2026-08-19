@@ -21,15 +21,18 @@ public struct ProcessCommand: Sendable, Equatable {
     public let executable: String
     public let arguments: [String]
     public let timeout: TimeInterval?
+    public let environment: [String: String]?
 
     public init(
         executable: String,
         arguments: [String],
-        timeout: TimeInterval? = nil)
+        timeout: TimeInterval? = nil,
+        environment: [String: String]? = nil)
     {
         self.executable = executable
         self.arguments = arguments
         self.timeout = timeout
+        self.environment = environment
     }
 }
 
@@ -40,6 +43,84 @@ public enum ProcessRunnerError: Error, Sendable, Equatable {
 
 public protocol ProcessRunning: Sendable {
     func run(_ command: ProcessCommand) async throws -> CommandResult
+}
+
+enum CLIProcessEnvironment {
+    static func make(
+        executableURL: URL,
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
+        base: [String: String] = ProcessInfo.processInfo.environment) -> [String: String]
+    {
+        var environment = base
+        environment["HOME"] = homeDirectory.path
+
+        var searchPaths = [
+            executableURL.deletingLastPathComponent().path,
+            homeDirectory.appending(path: ".local/bin").path,
+            homeDirectory.appending(path: ".npm-global/bin").path,
+            homeDirectory.appending(path: ".bun/bin").path,
+            homeDirectory.appending(path: ".volta/bin").path,
+            homeDirectory.appending(path: ".asdf/shims").path,
+            homeDirectory.appending(path: ".local/share/mise/shims").path,
+            homeDirectory.appending(path: ".mise/shims").path,
+            homeDirectory.appending(path: ".nvm/current/bin").path,
+            homeDirectory.appending(path: ".fnm/current/bin").path,
+            homeDirectory.appending(path: ".local/share/fnm/current/bin").path,
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+        ]
+
+        searchPaths.append(contentsOf: self.versionManagedRuntimePaths(
+            homeDirectory: homeDirectory))
+        searchPaths.append(contentsOf: (base["PATH"] ?? "")
+            .split(separator: ":")
+            .map(String.init))
+
+        var seen = Set<String>()
+        searchPaths = searchPaths.filter { path in
+            !path.isEmpty && seen.insert(path).inserted
+        }
+        environment["PATH"] = searchPaths.joined(separator: ":")
+        return environment
+    }
+
+    private static func versionManagedRuntimePaths(
+        homeDirectory: URL) -> [String]
+    {
+        let roots: [(URL, String)] = [
+            (
+                homeDirectory.appending(
+                    path: ".nvm/versions/node",
+                    directoryHint: .isDirectory),
+                "bin"),
+            (
+                homeDirectory.appending(
+                    path: ".local/share/fnm/node-versions",
+                    directoryHint: .isDirectory),
+                "installation/bin"),
+            (
+                homeDirectory.appending(
+                    path: ".fnm/node-versions",
+                    directoryHint: .isDirectory),
+                "installation/bin"),
+        ]
+
+        return roots.flatMap { root, runtimePath in
+            let versions = (try? FileManager.default.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles])) ?? []
+            return versions.sorted {
+                $0.lastPathComponent.compare(
+                    $1.lastPathComponent,
+                    options: .numeric) == .orderedDescending
+            }.map {
+                $0.appending(path: runtimePath).path
+            }
+        }
+    }
 }
 
 public final class SystemProcessRunner: ProcessRunning {
@@ -59,6 +140,7 @@ public final class SystemProcessRunner: ProcessRunning {
                     let process = Process()
                     process.executableURL = URL(fileURLWithPath: command.executable)
                     process.arguments = command.arguments
+                    process.environment = command.environment
                     let outputPipe = Pipe()
                     let errorPipe = Pipe()
                     process.standardOutput = outputPipe
