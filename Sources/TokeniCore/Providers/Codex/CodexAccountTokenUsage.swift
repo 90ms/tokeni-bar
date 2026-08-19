@@ -59,6 +59,7 @@ actor CodexAccountTokenUsageCache {
     static let shared = CodexAccountTokenUsageCache()
 
     private var entries: [String: CodexAccountTokenUsageResult] = [:]
+    private var failures: [String: (error: CodexCLIUsageError, retryAt: Date)] = [:]
 
     func value(
         accountID: String?,
@@ -78,13 +79,40 @@ actor CodexAccountTokenUsageCache {
         accountID: String?,
         fetchedAt: Date)
     {
-        self.entries[Self.key(for: accountID)] = .init(
+        let key = Self.key(for: accountID)
+        self.entries[key] = .init(
             response: response,
             fetchedAt: fetchedAt)
+        self.failures[key] = nil
+    }
+
+    func failure(
+        accountID: String?,
+        now: Date = .now) -> CodexCLIUsageError?
+    {
+        let key = Self.key(for: accountID)
+        guard let failure = self.failures[key] else { return nil }
+        guard now < failure.retryAt else {
+            self.failures[key] = nil
+            return nil
+        }
+        return failure.error
+    }
+
+    func storeFailure(
+        _ error: CodexCLIUsageError,
+        accountID: String?,
+        retryAfter: TimeInterval,
+        now: Date = .now)
+    {
+        self.failures[Self.key(for: accountID)] = (
+            error: error,
+            retryAt: now.addingTimeInterval(max(retryAfter, 0)))
     }
 
     func invalidate() {
         self.entries.removeAll()
+        self.failures.removeAll()
     }
 
     private static func key(for accountID: String?) -> String {
@@ -186,6 +214,9 @@ struct CodexAccountTokenUsageClient: Sendable {
     private let cache: CodexAccountTokenUsageCache
     private let cacheMaxAge: TimeInterval
     private let timeout: TimeInterval
+    private let homeDirectory: URL
+
+    private static let failureRetryInterval: TimeInterval = 90
 
     init(
         executableURL: URL? = nil,
@@ -202,6 +233,7 @@ struct CodexAccountTokenUsageClient: Sendable {
         self.cache = cache
         self.cacheMaxAge = cacheMaxAge
         self.timeout = timeout
+        self.homeDirectory = homeDirectory
     }
 
     func fetch(accountID: String? = nil) async throws -> CodexAccountTokenUsageResult {
@@ -211,17 +243,45 @@ struct CodexAccountTokenUsageClient: Sendable {
         {
             return cached
         }
-
-        guard let executableURL = self.locator.resolve() else {
-            throw CodexAccountTokenUsageError.executableUnavailable
+        if let failure = await self.cache.failure(accountID: accountID) {
+            throw failure
         }
 
-        let runner = CodexAppServerUsageRunner(executableURL: executableURL)
-        let response: CodexAccountTokenUsageResponse = try await CodexAppServerClient.run(
-            runner,
-            request: CodexAppServerUsageRunner.accountUsageRequest,
-            responseID: 2,
-            timeout: self.timeout)
+        guard let executableURL = self.locator.resolve() else {
+            let error = CodexAccountTokenUsageError.executableUnavailable
+            await self.cache.storeFailure(
+                error,
+                accountID: accountID,
+                retryAfter: Self.failureRetryInterval)
+            throw error
+        }
+
+        let runner = CodexAppServerUsageRunner(
+            executableURL: executableURL,
+            homeDirectory: self.homeDirectory)
+        let response: CodexAccountTokenUsageResponse
+        do {
+            response = try await CodexAppServerClient.run(
+                runner,
+                request: CodexAppServerUsageRunner.accountUsageRequest,
+                responseID: 2,
+                timeout: self.timeout)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as CodexCLIUsageError {
+            await self.cache.storeFailure(
+                error,
+                accountID: accountID,
+                retryAfter: Self.failureRetryInterval)
+            throw error
+        } catch {
+            let usageError = CodexAccountTokenUsageError.invalidResponse
+            await self.cache.storeFailure(
+                usageError,
+                accountID: accountID,
+                retryAfter: Self.failureRetryInterval)
+            throw usageError
+        }
         let fetchedAt = Date.now
         await self.cache.store(response, accountID: accountID, fetchedAt: fetchedAt)
         return .init(response: response, fetchedAt: fetchedAt)
@@ -273,13 +333,18 @@ final class CodexAppServerUsageRunner: @unchecked Sendable {
         #"{"id":2,"method":"account/rateLimits/read","params":null}"#.utf8)
 
     private let executableURL: URL
+    private let homeDirectory: URL
     private let lock = NSLock()
     private var process: Process?
     private var input: FileHandle?
     private var cancelled = false
 
-    init(executableURL: URL) {
+    init(
+        executableURL: URL,
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser)
+    {
         self.executableURL = executableURL
+        self.homeDirectory = homeDirectory
     }
 
     func run<Result: Decodable & Sendable>(
@@ -293,14 +358,9 @@ final class CodexAppServerUsageRunner: @unchecked Sendable {
         let outputPipe = Pipe()
         process.executableURL = self.executableURL
         process.arguments = ["app-server", "--stdio"]
-        var environment = ProcessInfo.processInfo.environment
-        let executableDirectory = self.executableURL.deletingLastPathComponent().path
-        if let path = environment["PATH"], !path.isEmpty {
-            environment["PATH"] = "\(executableDirectory):\(path)"
-        } else {
-            environment["PATH"] = executableDirectory
-        }
-        process.environment = environment
+        process.environment = CLIProcessEnvironment.make(
+            executableURL: self.executableURL,
+            homeDirectory: self.homeDirectory)
         process.standardInput = inputPipe
         process.standardOutput = outputPipe
         process.standardError = FileHandle.nullDevice

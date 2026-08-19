@@ -162,6 +162,7 @@ actor CodexAccountUsageCache {
     private var quotaResetCredits: QuotaResetCreditSummary?
     private var accountID: String?
     private var fetchedAt: Date?
+    private var cachedFailure: (error: CodexCLIUsageError, retryAt: Date)?
 
     func value(
         accountID: String?,
@@ -190,6 +191,26 @@ actor CodexAccountUsageCache {
         self.accountID = accountID
         self.fetchedAt = fetchedAt
         self.quotaResetCredits = quotaResetCredits
+        self.cachedFailure = nil
+    }
+
+    func failure(now: Date = .now) -> CodexCLIUsageError? {
+        guard let failure = self.cachedFailure else { return nil }
+        guard now < failure.retryAt else {
+            self.cachedFailure = nil
+            return nil
+        }
+        return failure.error
+    }
+
+    func storeFailure(
+        _ error: CodexCLIUsageError,
+        retryAfter: TimeInterval,
+        now: Date = .now)
+    {
+        self.cachedFailure = (
+            error: error,
+            retryAt: now.addingTimeInterval(max(retryAfter, 0)))
     }
 
     func invalidate() {
@@ -197,6 +218,7 @@ actor CodexAccountUsageCache {
         self.quotaResetCredits = nil
         self.accountID = nil
         self.fetchedAt = nil
+        self.cachedFailure = nil
     }
 }
 
@@ -205,6 +227,9 @@ struct CodexAccountUsageClient: Sendable {
     private let cache: CodexAccountUsageCache
     private let cacheMaxAge: TimeInterval
     private let timeout: TimeInterval
+    private let homeDirectory: URL
+
+    private static let failureRetryInterval: TimeInterval = 90
 
     init(
         executableURL: URL? = nil,
@@ -221,6 +246,7 @@ struct CodexAccountUsageClient: Sendable {
         self.cache = cache
         self.cacheMaxAge = cacheMaxAge
         self.timeout = timeout
+        self.homeDirectory = homeDirectory
     }
 
     func fetch(forceRefresh: Bool = false) async throws -> CodexAccountUsageResult {
@@ -229,18 +255,49 @@ struct CodexAccountUsageClient: Sendable {
         {
             return cached
         }
+        if !forceRefresh,
+           let failure = await self.cache.failure()
+        {
+            throw failure
+        }
         guard let executableURL = self.locator.resolve() else {
-            throw CodexAccountUsageError.executableUnavailable
+            let error = CodexAccountUsageError.executableUnavailable
+            await self.cache.storeFailure(
+                error,
+                retryAfter: Self.failureRetryInterval)
+            throw error
         }
 
-        let runner = CodexAppServerUsageRunner(executableURL: executableURL)
-        let cliResponse: CodexCLIRateLimitsResponse = try await CodexAppServerClient.run(
-            runner,
-            request: CodexAppServerUsageRunner.rateLimitsRequest,
-            responseID: 2,
-            timeout: self.timeout)
+        let runner = CodexAppServerUsageRunner(
+            executableURL: executableURL,
+            homeDirectory: self.homeDirectory)
+        let cliResponse: CodexCLIRateLimitsResponse
+        do {
+            cliResponse = try await CodexAppServerClient.run(
+                runner,
+                request: CodexAppServerUsageRunner.rateLimitsRequest,
+                responseID: 2,
+                timeout: self.timeout)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as CodexCLIUsageError {
+            await self.cache.storeFailure(
+                error,
+                retryAfter: Self.failureRetryInterval)
+            throw error
+        } catch {
+            let usageError = CodexAccountUsageError.invalidResponse
+            await self.cache.storeFailure(
+                usageError,
+                retryAfter: Self.failureRetryInterval)
+            throw usageError
+        }
         guard let response = cliResponse.accountUsageResponse() else {
-            throw CodexAccountUsageError.invalidResponse
+            let error = CodexAccountUsageError.invalidResponse
+            await self.cache.storeFailure(
+                error,
+                retryAfter: Self.failureRetryInterval)
+            throw error
         }
         let fetchedAt = Date.now
         let quotaResetCredits = cliResponse.quotaResetCreditsSummary()

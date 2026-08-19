@@ -16,6 +16,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
     private let projectsDirectory: URL
     private let calendar: Calendar
     private let cliClient: ClaudeCLIUsageClient
+    private let localUsageCache: ClaudeLocalUsageCache
 
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
@@ -30,11 +31,13 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
     init(
         homeDirectory: URL,
         calendar: Calendar,
-        cliClient: ClaudeCLIUsageClient)
+        cliClient: ClaudeCLIUsageClient,
+        localUsageCache: ClaudeLocalUsageCache = ClaudeLocalUsageCache())
     {
         self.projectsDirectory = homeDirectory.appending(path: ".claude/projects", directoryHint: .isDirectory)
         self.calendar = calendar
         self.cliClient = cliClient
+        self.localUsageCache = localUsageCache
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
@@ -44,7 +47,9 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
             extension: "jsonl",
             modifiedAfter: startOfDay,
             limit: 200)
-        let aggregate = ClaudeLogParser.aggregate(files: files, since: startOfDay)
+        let aggregate = await self.localUsageCache.aggregate(
+            files: files,
+            since: startOfDay)
         let usage = aggregate?.tokenUsage
         let localTokenUsage = files.isEmpty ? nil : usage.map {
             $0.totalTokens > 0
@@ -88,6 +93,7 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
 
     public func invalidateUsageCache() async {
         await self.cliClient.invalidateCache()
+        await self.localUsageCache.invalidate()
     }
 
     public func latestActivityDate(since cutoff: Date) -> Date? {
@@ -167,7 +173,43 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
     }
 }
 
-struct ClaudeAggregatedUsage {
+actor ClaudeLocalUsageCache {
+    private var signatures: [LocalFileSignature]?
+    private var startDate: Date?
+    private var cachedAggregate: ClaudeAggregatedUsage?
+    private var hasCachedAggregate = false
+
+    func aggregate(
+        files: [URL],
+        since startDate: Date) -> ClaudeAggregatedUsage?
+    {
+        let nextSignatures = LocalFiles.signatures(for: files)
+        if self.signatures == nextSignatures,
+           self.startDate == startDate,
+           self.hasCachedAggregate
+        {
+            return self.cachedAggregate
+        }
+
+        let aggregate = ClaudeLogParser.aggregate(
+            files: files,
+            since: startDate)
+        self.signatures = nextSignatures
+        self.startDate = startDate
+        self.cachedAggregate = aggregate
+        self.hasCachedAggregate = true
+        return aggregate
+    }
+
+    func invalidate() {
+        self.signatures = nil
+        self.startDate = nil
+        self.cachedAggregate = nil
+        self.hasCachedAggregate = false
+    }
+}
+
+struct ClaudeAggregatedUsage: Sendable {
     let tokenUsage: TokenUsage
     let costEstimate: TokenCostEstimate?
 }

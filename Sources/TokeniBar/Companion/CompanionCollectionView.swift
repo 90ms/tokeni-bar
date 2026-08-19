@@ -2,7 +2,6 @@ import SwiftUI
 import TokeniCore
 
 private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
-    case home
     case pets
     case eggs
     case rewards
@@ -11,34 +10,11 @@ private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .home: "house.fill"
         case .pets: "pawprint.fill"
         case .eggs: "shippingbox.fill"
         case .rewards: "star.fill"
         }
     }
-}
-
-private enum CompanionPetSection: String, CaseIterable, Identifiable {
-    case collection
-    case owned
-
-    var id: Self { self }
-
-    var systemImage: String {
-        switch self {
-        case .collection: "square.grid.3x3.fill"
-        case .owned: "pawprint.fill"
-        }
-    }
-}
-
-private enum CompanionAcquisitionFilter: String, CaseIterable, Identifiable {
-    case all
-    case discovered
-    case undiscovered
-
-    var id: Self { self }
 }
 
 private enum CompanionCosmeticSlotFilter:
@@ -88,12 +64,9 @@ private struct CompanionCollectionEntrySelection: Identifiable {
 
 struct CompanionCollectionView: View {
     @ObservedObject var store: UsageStore
-    @State private var selectedSection = CompanionCollectionSection.home
-    @State private var selectedPetSection = CompanionPetSection.collection
+    @State private var selectedSection = CompanionCollectionSection.pets
     @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
     @State private var selectedOwnedSpeciesID: CompanionSpeciesID?
-    @State private var selectedGeneration = 0
-    @State private var acquisitionFilter = CompanionAcquisitionFilter.all
     @State private var showsGrowthBreakdown = false
     @State private var showsAdvancedBenefits = false
     @State private var showsIdentityDetails = false
@@ -275,13 +248,6 @@ struct CompanionCollectionView: View {
                 self.selectedSpeciesID = discovered
             }
             self.nicknameDraft = self.store.companionState.nickname ?? ""
-            self.ensureSelectedSpeciesVisible()
-        }
-        .onChange(of: self.selectedGeneration) { _, _ in
-            self.ensureSelectedSpeciesVisible()
-        }
-        .onChange(of: self.acquisitionFilter) { _, _ in
-            self.ensureSelectedSpeciesVisible()
         }
     }
 
@@ -289,9 +255,6 @@ struct CompanionCollectionView: View {
     private var sectionContent: some View {
         VStack(alignment: .leading, spacing: 18) {
             switch self.selectedSection {
-            case .home:
-                self.currentCompanion
-                self.homeDetails
             case .pets:
                 self.petContent
             case .eggs:
@@ -305,29 +268,12 @@ struct CompanionCollectionView: View {
     @ViewBuilder
     private var petContent: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Picker(
-                AppLocalization.string("companion.petSection.title"),
-                selection: self.$selectedPetSection)
-            {
-                ForEach(CompanionPetSection.allCases) { section in
-                    Label(
-                        AppLocalization.string(
-                            "companion.petSection.\(section.rawValue)"),
-                        systemImage: section.systemImage)
-                        .tag(section)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-
-            switch self.selectedPetSection {
-            case .collection:
-                self.summary
-                self.pity
-                self.collectionGrid
-            case .owned:
-                self.companionArchive
-            }
+            self.currentCompanion
+            self.homeDetails
+            self.summary
+            self.pity
+            self.collectionGrid
+            self.companionArchive
         }
     }
 
@@ -1909,66 +1855,72 @@ struct CompanionCollectionView: View {
     private var collectionGrid: some View {
         GroupBox(AppLocalization.string("companion.collection.title")) {
             VStack(alignment: .leading, spacing: 12) {
-                self.collectionFilters
-                if self.selectedGeneration == 2 {
-                    self.generationTwoBanner
+                ForEach(self.registeredGenerations, id: \.self) { generation in
+                    self.generationCollectionSection(generation)
                 }
 
-                if self.filteredSpeciesIDs.isEmpty {
-                    ContentUnavailableView(
-                        AppLocalization.string(
-                            "companion.collection.filter.empty"),
-                        systemImage: "line.3.horizontal.decrease.circle",
-                        description: Text(AppLocalization.string(
-                            "companion.collection.filter.emptyDescription")))
-                        .frame(maxWidth: .infinity, minHeight: 120)
-                } else {
-                    LazyVGrid(
-                        columns: [
-                            GridItem(
-                                .adaptive(minimum: 74, maximum: 90),
-                                spacing: 8),
-                        ],
-                        spacing: 8)
-                    {
-                        ForEach(self.filteredSpeciesIDs, id: \.self) {
-                            speciesID in
-                            self.speciesButton(speciesID)
-                        }
+                HStack {
+                    Text(self.selectedSpeciesName)
+                        .font(.headline)
+                    if self.isSelectedSpeciesDiscovered {
+                        Text(AppLocalization.string(
+                            "companion.species.\(self.selectedSpeciesID.rawValue).personality"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(AppLocalization.format(
+                            "companion.collection.encounters",
+                            self.store.companionState.collection.encounterCount(
+                                for: self.selectedSpeciesID)))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
+                }
 
-                    HStack {
-                        Text(self.selectedSpeciesName)
-                            .font(.headline)
-                        if self.isSelectedSpeciesDiscovered {
-                            Text(AppLocalization.string(
-                                "companion.species.\(self.selectedSpeciesID.rawValue).personality"))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text(AppLocalization.format(
-                                "companion.collection.encounters",
-                                self.store.companionState.collection.encounterCount(
-                                    for: self.selectedSpeciesID)))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    HStack(alignment: .top, spacing: 12) {
-                        ForEach(
-                            CompanionVariantRegistry.collectibleIDs,
-                            id: \.self)
-                        { variantID in
-                            self.variantCell(
-                                speciesID: self.selectedSpeciesID,
-                                variantID: variantID)
-                        }
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(
+                        CompanionVariantRegistry.collectibleIDs,
+                        id: \.self)
+                    { variantID in
+                        self.variantCell(
+                            speciesID: self.selectedSpeciesID,
+                            variantID: variantID)
                     }
                 }
             }
             .padding(.vertical, 8)
         }
+    }
+
+    private func generationCollectionSection(_ generation: Int) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(AppLocalization.format(
+                "companion.collection.generation.section",
+                generation))
+                .font(.subheadline.weight(.semibold))
+
+            if generation == 2 {
+                self.generationTwoBanner
+            }
+
+            LazyVGrid(
+                columns: [
+                    GridItem(
+                        .adaptive(minimum: 74, maximum: 90),
+                        spacing: 8),
+                ],
+                spacing: 8)
+            {
+                ForEach(self.speciesIDs(inContentGeneration: generation), id: \.self) {
+                    speciesID in
+                    self.speciesButton(speciesID)
+                }
+            }
+        }
+        .padding(10)
+        .background(
+            Color.secondary.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: 9))
     }
 
     private var generationTwoBanner: some View {
@@ -2209,79 +2161,15 @@ struct CompanionCollectionView: View {
         }
     }
 
-    private var collectionFilters: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(
-                AppLocalization.string("companion.collection.filter.title"),
-                systemImage: "line.3.horizontal.decrease.circle")
-                .font(.caption.weight(.semibold))
-
-            HStack(spacing: 8) {
-                if self.registeredGenerations.count > 1 {
-                    Picker(
-                        AppLocalization.string(
-                            "companion.collection.filter.generation"),
-                        selection: self.$selectedGeneration)
-                    {
-                        Text(AppLocalization.string(
-                            "companion.collection.filter.all"))
-                            .tag(0)
-                        ForEach(self.registeredGenerations, id: \.self) {
-                            generation in
-                            Text(AppLocalization.format(
-                                "companion.collection.filter.generationValue",
-                                generation))
-                                .tag(generation)
-                        }
-                    }
-                }
-
-                Picker(
-                    AppLocalization.string(
-                        "companion.collection.filter.acquisition"),
-                    selection: self.$acquisitionFilter)
-                {
-                    ForEach(CompanionAcquisitionFilter.allCases) { filter in
-                        Text(AppLocalization.string(
-                            "companion.collection.filter.acquisition.\(filter.rawValue)"))
-                            .tag(filter)
-                    }
-                }
-            }
-            .labelsHidden()
-        }
-    }
-
     private var registeredGenerations: [Int] {
         Array(Set(CompanionSpeciesID.allCases.map(\.contentGeneration)))
             .sorted()
     }
 
-    private var filteredSpeciesIDs: [CompanionSpeciesID] {
-        CompanionSpeciesID.allCases.filter { speciesID in
-            let matchesGeneration = self.selectedGeneration == 0
-                || speciesID.contentGeneration == self.selectedGeneration
-            let isDiscovered = self.store.companionState.collection
-                .discoveredSpeciesIDs.contains(speciesID)
-            let matchesAcquisition = switch self.acquisitionFilter {
-            case .all: true
-            case .discovered: isDiscovered
-            case .undiscovered: !isDiscovered
-            }
-            return matchesGeneration
-                && matchesAcquisition
+    private func speciesIDs(inContentGeneration generation: Int) -> [CompanionSpeciesID] {
+        CompanionSpeciesID.allCases.filter {
+            $0.contentGeneration == generation
         }
-    }
-
-    private var filteredRarities: [CompanionRarity] {
-        CompanionRarity.allCases
-    }
-
-    private func ensureSelectedSpeciesVisible() {
-        guard !self.filteredSpeciesIDs.contains(self.selectedSpeciesID),
-              let first = self.filteredSpeciesIDs.first
-        else { return }
-        self.selectedSpeciesID = first
     }
 
     @ViewBuilder

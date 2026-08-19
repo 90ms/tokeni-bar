@@ -187,6 +187,7 @@ enum ClaudeCLIUsageParser {
 
 actor ClaudeCLIUsageCache {
     private var result: ClaudeCLIUsageResult?
+    private var cachedFailure: (error: ClaudeCLIUsageError, retryAt: Date)?
 
     func value(maxAge: TimeInterval, now: Date = .now) -> ClaudeCLIUsageResult? {
         guard let result,
@@ -198,10 +199,31 @@ actor ClaudeCLIUsageCache {
 
     func store(_ result: ClaudeCLIUsageResult) {
         self.result = result
+        self.cachedFailure = nil
+    }
+
+    func failure(now: Date = .now) -> ClaudeCLIUsageError? {
+        guard let failure = self.cachedFailure else { return nil }
+        guard now < failure.retryAt else {
+            self.cachedFailure = nil
+            return nil
+        }
+        return failure.error
+    }
+
+    func storeFailure(
+        _ error: ClaudeCLIUsageError,
+        retryAfter: TimeInterval,
+        now: Date = .now)
+    {
+        self.cachedFailure = (
+            error: error,
+            retryAt: now.addingTimeInterval(max(retryAfter, 0)))
     }
 
     func invalidate() {
         self.result = nil
+        self.cachedFailure = nil
     }
 }
 
@@ -309,6 +331,9 @@ struct ClaudeCLIUsageClient: Sendable {
     private let cache: ClaudeCLIUsageCache
     private let cacheMaxAge: TimeInterval
     private let timeout: TimeInterval
+    private let homeDirectory: URL
+
+    private static let failureRetryInterval: TimeInterval = 90
 
     init(
         executableURL: URL? = nil,
@@ -327,6 +352,7 @@ struct ClaudeCLIUsageClient: Sendable {
         self.cache = cache
         self.cacheMaxAge = cacheMaxAge
         self.timeout = timeout
+        self.homeDirectory = homeDirectory
     }
 
     func fetch(forceRefresh: Bool = false) async throws -> ClaudeCLIUsageResult {
@@ -335,34 +361,77 @@ struct ClaudeCLIUsageClient: Sendable {
         {
             return cached
         }
+        if !forceRefresh,
+           let failure = await self.cache.failure()
+        {
+            throw failure
+        }
         guard let executableURL = self.locator.resolve() else {
-            throw ClaudeCLIUsageError.executableUnavailable
+            let error = ClaudeCLIUsageError.executableUnavailable
+            await self.cache.storeFailure(
+                error,
+                retryAfter: Self.failureRetryInterval)
+            throw error
         }
 
         let command = ProcessCommand(
             executable: executableURL.path,
             arguments: Self.arguments,
-            timeout: self.timeout)
+            timeout: self.timeout,
+            environment: CLIProcessEnvironment.make(
+                executableURL: executableURL,
+                homeDirectory: self.homeDirectory))
         let result: CommandResult
         do {
             result = try await self.processRunner.run(command)
         } catch let error as ProcessRunnerError {
             switch error {
             case .launchFailed:
-                throw ClaudeCLIUsageError.launchFailed
+                let usageError = ClaudeCLIUsageError.launchFailed
+                await self.cache.storeFailure(
+                    usageError,
+                    retryAfter: Self.failureRetryInterval)
+                throw usageError
             case .timedOut:
-                throw ClaudeCLIUsageError.timedOut
+                let usageError = ClaudeCLIUsageError.timedOut
+                await self.cache.storeFailure(
+                    usageError,
+                    retryAfter: Self.failureRetryInterval)
+                throw usageError
             }
         } catch is CancellationError {
             throw CancellationError()
         } catch {
-            throw ClaudeCLIUsageError.commandFailed
+            let usageError = ClaudeCLIUsageError.commandFailed
+            await self.cache.storeFailure(
+                usageError,
+                retryAfter: Self.failureRetryInterval)
+            throw usageError
         }
 
         guard result.succeeded else {
-            throw Self.error(for: result)
+            let error = Self.error(for: result)
+            await self.cache.storeFailure(
+                error,
+                retryAfter: Self.failureRetryInterval)
+            throw error
         }
-        let response = try ClaudeCLIUsageParser.parse(Data(result.standardOutput.utf8))
+        let response: ClaudeCLIUsageResponse
+        do {
+            response = try ClaudeCLIUsageParser.parse(
+                Data(result.standardOutput.utf8))
+        } catch let error as ClaudeCLIUsageError {
+            await self.cache.storeFailure(
+                error,
+                retryAfter: Self.failureRetryInterval)
+            throw error
+        } catch {
+            let usageError = ClaudeCLIUsageError.invalidResponse
+            await self.cache.storeFailure(
+                usageError,
+                retryAfter: Self.failureRetryInterval)
+            throw usageError
+        }
         let fetched = ClaudeCLIUsageResult(response: response, fetchedAt: .now)
         await self.cache.store(fetched)
         return fetched

@@ -66,6 +66,12 @@ time from 64 KiB chunks instead of retaining the complete file and every event
 in memory. Files over the safety limit and symbolic links are rejected; a file
 that grows past the limit while being read is discarded as well.
 
+Unchanged local session files are not parsed again on every refresh; a bounded
+result cache keyed by file size and modification time is reused. When a CLI is
+missing or fails, Tokeni Bar also backs off repeated process launches briefly,
+so an authentication or launch problem does not keep increasing CPU and memory
+pressure.
+
 Sprite manifests are checked at launch, but image sheets load lazily only for
 the species, form, and variant being displayed. Cropped frames are detached
 from their source sheet, with an 8 MiB sheet-cache cost limit and a 12 MiB
@@ -155,12 +161,19 @@ token.
 
 - App startup and automatic refreshes reuse the CLI's existing sign-in without
   opening a password or login prompt.
+- Even when launched from Finder, the CLI receives the user's home directory and
+  common Homebrew, npm, nvm, fnm, and mise runtime paths used by terminal installs.
 - **Settings → General → Providers → Connect Claude Code** runs the same
   non-interactive command with a fresh result. It does not start a separate
   authentication flow.
 - If the CLI is missing or not signed in, the app keeps local session usage and
   leaves account quotas unavailable. Run `claude` once in Terminal to install,
   sign in, or update the CLI, then try Connect again.
+
+Connection failures now identify the observed cause—missing executable, sign-in
+required, expired session, launch failure, or timeout—when the CLI reports one.
+Pressing **Connect** after signing in bypasses the failure backoff and checks the
+CLI immediately.
 
 The connection row distinguishes **Connected to account usage**, **Using local
 usage only**, **CLI sign-in required**, **Session expired**, and **Connection

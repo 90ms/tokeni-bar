@@ -112,14 +112,16 @@ not increase resale value, and collection discoveries remain recorded.
 
 ### 3. Manage the collection and owned pets
 
-The pet manager keeps **Collection** and **Owned** in one screen. Collection records
-discovered species, appearances, lifecycle forms, and rare mutations; Owned lists each
-hatched pet with its level, name, personality, memories, switching, showcasing, and
-resale actions. In the Owned view, choose a species from **View by pet** to show
-only that species and see the displayed count or an empty-result explanation.
+One **Pets** screen now combines the current companion, growth status, Collection,
+and Owned sections. Collection records discovered species, appearances, lifecycle
+forms, and rare mutations; Owned lists each hatched pet with its level, name,
+personality, memories, switching, showcasing, and resale actions. In Owned, choose a
+species from **View by pet** to show only that species.
 
-Select a collection card to inspect details, discovered growth stages, common
-actions, and a mutation-only signature action with animated previews.
+Collection shows every species in separate Generation 1 and Generation 2 sections
+instead of a search or generation filter. Select a collection card to inspect details,
+discovered growth stages, common actions, and a mutation-only signature action with
+animated previews.
 
 ### 4. Discover ten species across two generations
 

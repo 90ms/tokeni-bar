@@ -18,6 +18,7 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
     private let calendar: Calendar
     private let accountClient: CodexAccountUsageClient
     private let accountTokenUsageClient: CodexAccountTokenUsageClient
+    private let localUsageCache: CodexLocalUsageCache
 
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
@@ -28,11 +29,12 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
         self.accountClient = CodexAccountUsageClient(homeDirectory: homeDirectory)
         self.accountTokenUsageClient = CodexAccountTokenUsageClient(
             homeDirectory: homeDirectory)
+        self.localUsageCache = CodexLocalUsageCache()
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
-        let latestLocalUsage = self.latestLocalUsage()
-        let todayUsage = self.todayLocalUsage()
+        let latestLocalUsage = await self.latestLocalUsage()
+        let todayUsage = await self.todayLocalUsage()
         async let accountTokenUsageTask = self.fetchAccountTokenUsage()
 
         do {
@@ -86,6 +88,7 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
     public func invalidateUsageCache() async {
         await self.accountClient.invalidateCache()
         await self.accountTokenUsageClient.invalidateCache()
+        await self.localUsageCache.invalidate()
     }
 
     public func latestActivityDate(since cutoff: Date) -> Date? {
@@ -95,28 +98,24 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
             matching: { $0.pathExtension == "jsonl" })
     }
 
-    private func latestLocalUsage() -> CodexParsedUsage? {
+    private func latestLocalUsage() async -> CodexParsedUsage? {
         let files = LocalFiles.newestFiles(
             below: self.sessionsDirectory,
             extension: "jsonl",
             limit: 16)
-
-        for file in files {
-            if let parsed = CodexLogParser.latestUsage(in: file) {
-                return parsed
-            }
-        }
-        return nil
+        return await self.localUsageCache.latestUsage(files: files)
     }
 
-    private func todayLocalUsage() -> CodexTodayUsage? {
+    private func todayLocalUsage() async -> CodexTodayUsage? {
         let startOfDay = self.calendar.startOfDay(for: .now)
         let files = LocalFiles.newestFiles(
             below: self.sessionsDirectory,
             extension: "jsonl",
             modifiedAfter: startOfDay,
             limit: 512)
-        return CodexTodayLogParser.aggregate(files: files, since: startOfDay)
+        return await self.localUsageCache.todayUsage(
+            files: files,
+            since: startOfDay)
     }
 
     private func localFallback(
@@ -247,7 +246,65 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
     }
 }
 
-struct CodexParsedUsage {
+actor CodexLocalUsageCache {
+    private var latestSignatures: [LocalFileSignature]?
+    private var latestResult: CodexParsedUsage?
+    private var hasLatestResult = false
+    private var todaySignatures: [LocalFileSignature]?
+    private var todayStartDate: Date?
+    private var todayResult: CodexTodayUsage?
+    private var hasTodayResult = false
+
+    func latestUsage(files: [URL]) -> CodexParsedUsage? {
+        let nextSignatures = LocalFiles.signatures(for: files)
+        if self.latestSignatures == nextSignatures, self.hasLatestResult {
+            return self.latestResult
+        }
+
+        var parsed: CodexParsedUsage?
+        for file in files {
+            if let latest = CodexLogParser.latestUsage(in: file) {
+                parsed = latest
+                break
+            }
+        }
+        self.latestSignatures = nextSignatures
+        self.latestResult = parsed
+        self.hasLatestResult = true
+        return parsed
+    }
+
+    func todayUsage(files: [URL], since startDate: Date) -> CodexTodayUsage? {
+        let nextSignatures = LocalFiles.signatures(for: files)
+        if self.todaySignatures == nextSignatures,
+           self.todayStartDate == startDate,
+           self.hasTodayResult
+        {
+            return self.todayResult
+        }
+
+        let result = CodexTodayLogParser.aggregate(
+            files: files,
+            since: startDate)
+        self.todaySignatures = nextSignatures
+        self.todayStartDate = startDate
+        self.todayResult = result
+        self.hasTodayResult = true
+        return result
+    }
+
+    func invalidate() {
+        self.latestSignatures = nil
+        self.latestResult = nil
+        self.hasLatestResult = false
+        self.todaySignatures = nil
+        self.todayStartDate = nil
+        self.todayResult = nil
+        self.hasTodayResult = false
+    }
+}
+
+struct CodexParsedUsage: Sendable {
     let sessionID: String
     let timestamp: Date?
     let quotaWindows: [QuotaWindow]

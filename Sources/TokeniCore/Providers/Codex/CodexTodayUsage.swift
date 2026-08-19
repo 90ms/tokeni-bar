@@ -1,6 +1,6 @@
 import Foundation
 
-struct CodexTodayUsage {
+struct CodexTodayUsage: Sendable {
     let tokenUsage: TokenUsage
     let costEstimate: TokenCostEstimate?
     let observedAt: Date
