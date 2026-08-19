@@ -86,6 +86,20 @@ enum CLIProcessEnvironment {
         return environment
     }
 
+    static func make(for command: ProcessCommand) -> [String: String] {
+        let base = command.environment ?? ProcessInfo.processInfo.environment
+        let homeDirectory = base["HOME"]
+            .flatMap { path in
+                guard !path.isEmpty else { return nil }
+                return URL(fileURLWithPath: path, isDirectory: true)
+            }
+            ?? FileManager.default.homeDirectoryForCurrentUser
+        return self.make(
+            executableURL: URL(fileURLWithPath: command.executable),
+            homeDirectory: homeDirectory,
+            base: base)
+    }
+
     private static func versionManagedRuntimePaths(
         homeDirectory: URL) -> [String]
     {
@@ -140,7 +154,7 @@ public final class SystemProcessRunner: ProcessRunning {
                     let process = Process()
                     process.executableURL = URL(fileURLWithPath: command.executable)
                     process.arguments = command.arguments
-                    process.environment = command.environment
+                    process.environment = CLIProcessEnvironment.make(for: command)
                     let outputPipe = Pipe()
                     let errorPipe = Pipe()
                     process.standardOutput = outputPipe
