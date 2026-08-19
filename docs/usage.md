@@ -166,6 +166,11 @@ non-interactive `/usage` command. Tokeni Bar never reads Claude Code's
 credential files or Keychain item, and never copies or separately persists a
 token.
 
+When the CLI reports a reset as a full date, a time-only value, or a weekday
+and time, Tokeni Bar converts it to the verified reset instant and shows the
+time remaining from now under the five-hour quota. If the CLI omits the reset
+time, Tokeni Bar leaves it unavailable instead of estimating.
+
 - App startup and automatic refreshes reuse the CLI's existing sign-in without
   opening a password or login prompt.
 - Even when launched from Finder, the CLI receives the user's home directory and
