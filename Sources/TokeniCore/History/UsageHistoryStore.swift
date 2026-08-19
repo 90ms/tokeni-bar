@@ -73,7 +73,9 @@ public actor UsageHistoryStore {
     public func record(_ snapshots: [ProviderSnapshot], at timestamp: Date = .now) throws {
         var records = try self.records()
         let cutoff = timestamp.addingTimeInterval(-self.retentionInterval)
+        let originalCount = records.count
         records.removeAll { $0.timestamp < cutoff }
+        var didChange = records.count != originalCount
 
         for snapshot in snapshots where snapshot.availability == .available {
             guard !snapshot.quotaWindows.isEmpty || snapshot.tokenUsage != nil else { continue }
@@ -93,7 +95,10 @@ public actor UsageHistoryStore {
                 },
                 tokenTotal: snapshot.tokenUsage?.totalTokens,
                 costUSD: snapshot.costEstimate?.amountUSD))
+            didChange = true
         }
+
+        guard didChange else { return }
 
         records.sort { $0.timestamp < $1.timestamp }
         try FileManager.default.createDirectory(

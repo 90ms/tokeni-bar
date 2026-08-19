@@ -9,6 +9,7 @@ struct LocalFileSignature: Hashable, Sendable {
 enum LocalFiles {
     static let maximumJSONBytes = 16 * 1_024 * 1_024
     static let maximumJSONLinesBytes = 64 * 1_024 * 1_024
+    static let maximumJSONLinesAggregateBytes = 128 * 1_024 * 1_024
 
     static func latestModificationDate(
         below root: URL,
@@ -84,6 +85,32 @@ enum LocalFiles {
         }
     }
 
+    static func totalSize(
+        of files: [URL],
+        maximumBytes: Int = LocalFiles.maximumJSONLinesAggregateBytes) -> Int?
+    {
+        guard maximumBytes >= 0 else { return nil }
+        var total = 0
+        for file in files {
+            guard let values = try? file.resourceValues(
+                forKeys: [
+                    .fileSizeKey,
+                    .isRegularFileKey,
+                    .isSymbolicLinkKey,
+                ]),
+                values.isRegularFile == true,
+                values.isSymbolicLink != true,
+                let fileSize = values.fileSize,
+                fileSize >= 0
+            else { return nil }
+
+            let (nextTotal, overflow) = total.addingReportingOverflow(fileSize)
+            guard !overflow, nextTotal <= maximumBytes else { return nil }
+            total = nextTotal
+        }
+        return total
+    }
+
     static func data(
         in file: URL,
         maximumBytes: Int = LocalFiles.maximumJSONBytes) -> Data?
@@ -141,7 +168,9 @@ enum LocalFiles {
             var lineStart = buffer.startIndex
             while let newline = buffer[lineStart...].firstIndex(of: 0x0A) {
                 if newline > lineStart {
-                    consume(Data(buffer[lineStart..<newline]))
+                    autoreleasepool {
+                        consume(Data(buffer[lineStart..<newline]))
+                    }
                 }
                 lineStart = buffer.index(after: newline)
             }
@@ -151,18 +180,33 @@ enum LocalFiles {
         }
 
         if !buffer.isEmpty {
-            consume(buffer)
+            autoreleasepool {
+                consume(buffer)
+            }
         }
         return true
     }
 }
 
 enum TimestampParser {
+    private static let fallbackFormatter = LockedISO8601DateFormatter()
+
     static func parse(_ value: String?) -> Date? {
         guard let value else { return nil }
         if let date = try? Date(value, strategy: .iso8601) {
             return date
         }
-        return ISO8601DateFormatter().date(from: value)
+        return self.fallbackFormatter.date(from: value)
+    }
+}
+
+private final class LockedISO8601DateFormatter: @unchecked Sendable {
+    private let lock = NSLock()
+    private let formatter = ISO8601DateFormatter()
+
+    func date(from value: String) -> Date? {
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        return self.formatter.date(from: value)
     }
 }
