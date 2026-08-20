@@ -53,7 +53,7 @@ TokeniWindows
 | PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | CI 통과 |
 | PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | CI 통과 |
 | PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | CI 통과 |
-| PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | 진행 중 |
+| PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | CI 통과 |
 | PR12 | `windows/12-windows-tray-ui` | 트레이, 사용량, 설정, 기록, 진단 화면 | 대기 |
 | PR13 | `windows/13-windows-services` | Toast 알림, 자동 시작, 업데이트, 기본 오버레이 | 대기 |
 | PR14 | `windows/14-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
@@ -176,3 +176,9 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR10의 SQLite provider 테스트와 macOS 앱 빌드·번들 검증 CI가 통과했습니다.
   PR11은 Windows 실행 파일에서 공통 application 상태를 소비하는 runtime 경계를
   다룹니다.
+- 2026-08-20: PR11에서 `UsageApplicationRuntime` actor와 `UsageApplicationState`를
+  추가해 provider 갱신·기록·growth ledger 전환을 UI와 분리했습니다. macOS
+  `UsageStore`도 이 경계를 사용하도록 연결했고, Windows UI는 다음 단계에서 같은
+  상태를 소비합니다.
+- 2026-08-20: PR11의 macOS 테스트·앱 빌드·번들 검증 CI가 통과했습니다. 다음은
+  이 상태 경계를 소비하는 Windows 트레이 UI 단계입니다.
