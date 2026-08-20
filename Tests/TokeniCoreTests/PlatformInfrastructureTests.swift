@@ -16,7 +16,9 @@ struct PlatformInfrastructureTests {
         let result = AppStoragePaths.applicationSupportDirectory(
             directories: directories)
 
-        #expect(result == root.appending(path: "roaming/TokeniBar"))
+        #expect(result == root.appending(
+            path: "roaming/TokeniBar",
+            directoryHint: .isDirectory))
     }
 
     @Test
