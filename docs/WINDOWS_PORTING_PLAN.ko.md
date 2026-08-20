@@ -47,8 +47,8 @@ TokeniWindows
 | PR2 | `windows/02-platform-contracts` | `TokeniCore` Windows 타깃, 플랫폼 프로토콜, 타깃 경계 | CI 통과 |
 | PR3 | `windows/03-platform-infrastructure` | 앱 경로, 파일 저장, 프로세스 실행, CLI 탐색, SQLite | CI 통과 |
 | PR4 | `windows/04-application-refresh` | 공통 provider 갱신 코디네이터와 macOS `UsageStore` 연결 | CI 통과 |
-| PR5 | `windows/05-application-history` | 공통 기록 로딩·저장·삭제와 macOS 브리지 | 진행 중 |
-| PR6 | `windows/06-application-growth` | 검증된 token observation과 growth ledger 처리 경계 | 대기 |
+| PR5 | `windows/05-application-history` | 공통 기록 로딩·저장·삭제와 macOS 브리지 | CI 통과 |
+| PR6 | `windows/06-application-growth` | 검증된 token observation과 growth ledger 처리 경계 | 진행 중 |
 | PR7 | `windows/07-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | 대기 |
 | PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | 대기 |
 | PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | 대기 |
@@ -149,3 +149,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   기록, 성장, 설정·알림의 작은 application PR로 나눴습니다.
 - 2026-08-20: PR4의 `TokeniApplication` provider 갱신 코디네이터와 macOS 브리지가
   macOS CI를 통과했습니다. PR5는 history 저장 경계만 다루도록 시작합니다.
+- 2026-08-20: PR5의 공통 history 코디네이터와 macOS 브리지가 macOS CI를
+  통과했습니다. PR6은 companion 표시·보상과 분리된 growth ledger 저장 경계를
+  다룹니다.

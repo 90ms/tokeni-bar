@@ -97,7 +97,7 @@ final class UsageStore: ObservableObject {
     private var activityLoop: Task<Void, Never>?
     private let notificationController: UsageNotificationController
     private let launchAtLoginController: LaunchAtLoginController
-    private let historyStore: UsageHistoryStore
+    private let historyCoordinator: UsageHistoryCoordinator
     private let exchangeRateClient: DailyExchangeRateClient
     private let pricingCatalogClient: PricingCatalogUpdateClient
     private let appUpdateClient: GitHubReleaseUpdateClient
@@ -181,7 +181,7 @@ final class UsageStore: ObservableObject {
         self.refreshCoordinator = UsageRefreshCoordinator(providers: providers)
         let notificationController = UsageNotificationController()
         let launchAtLoginController = LaunchAtLoginController()
-        let historyStore = UsageHistoryStore()
+        let historyCoordinator = UsageHistoryCoordinator()
         let exchangeRateClient = DailyExchangeRateClient()
         let pricingCatalogClient = PricingCatalogUpdateClient()
         let appUpdateClient = GitHubReleaseUpdateClient()
@@ -194,7 +194,7 @@ final class UsageStore: ObservableObject {
         let tokenGrowthLedgerStore = TokenGrowthLedgerStore()
         self.notificationController = notificationController
         self.launchAtLoginController = launchAtLoginController
-        self.historyStore = historyStore
+        self.historyCoordinator = historyCoordinator
         self.exchangeRateClient = exchangeRateClient
         self.pricingCatalogClient = pricingCatalogClient
         self.appUpdateClient = appUpdateClient
@@ -389,7 +389,7 @@ final class UsageStore: ObservableObject {
             if self.companionStateLoaded {
                 await self.applyPendingCompanionGrowthAwards()
             }
-            self.historyRecords = (try? await self.historyStore.records()) ?? []
+            self.historyRecords = (try? await self.historyCoordinator.load()) ?? []
             let cachedPricing = await self.pricingCatalogClient.activateCachedCatalog()
             self.applyPricingCatalogResult(cachedPricing)
             await self.refreshPricingCatalogIfNeeded()
@@ -436,8 +436,9 @@ final class UsageStore: ObservableObject {
             enabledProviderIDs: self.notificationProviderIDs)
         self.lastRefresh = refreshResult.refreshedAt
         do {
-            try await self.historyStore.record(self.snapshots, at: self.lastRefresh ?? .now)
-            self.historyRecords = try await self.historyStore.records()
+            self.historyRecords = try await self.historyCoordinator.record(
+                self.snapshots,
+                at: self.lastRefresh ?? .now)
         } catch {
             // History is an optional local enhancement and must not fail provider refreshes.
         }
@@ -598,7 +599,7 @@ final class UsageStore: ObservableObject {
 
     func clearHistory() {
         Task {
-            try? await self.historyStore.clear()
+            try? await self.historyCoordinator.clear()
             self.historyRecords = []
         }
     }
