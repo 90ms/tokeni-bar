@@ -1,5 +1,30 @@
 import Foundation
 
+public struct UsageAlertPreferences: Equatable, Sendable {
+    public let lowUsageEnabled: Bool
+    public let resetEnabled: Bool
+    public let connectionIssuesEnabled: Bool
+    public let quietHoursEnabled: Bool
+    public let quietHoursStart: Int
+    public let quietHoursEnd: Int
+
+    public init(
+        lowUsageEnabled: Bool,
+        resetEnabled: Bool,
+        connectionIssuesEnabled: Bool,
+        quietHoursEnabled: Bool,
+        quietHoursStart: Int,
+        quietHoursEnd: Int)
+    {
+        self.lowUsageEnabled = lowUsageEnabled
+        self.resetEnabled = resetEnabled
+        self.connectionIssuesEnabled = connectionIssuesEnabled
+        self.quietHoursEnabled = quietHoursEnabled
+        self.quietHoursStart = quietHoursStart
+        self.quietHoursEnd = quietHoursEnd
+    }
+}
+
 public struct UsageAlertCandidate: Hashable, Sendable {
     public let providerID: ProviderID
     public let providerName: String

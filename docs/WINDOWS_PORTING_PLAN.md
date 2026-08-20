@@ -50,8 +50,8 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR4 | `windows/04-application-refresh` | Shared provider refresh coordinator and macOS `UsageStore` bridge | CI passed |
 | PR5 | `windows/05-application-history` | Shared history load, save, clear, and macOS bridge | CI passed |
 | PR6 | `windows/06-application-growth` | Verified token observations and growth-ledger boundary | CI passed |
-| PR7 | `windows/07-application-preferences` | Settings storage, alert policy, and macOS bridge | In progress |
-| PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | Pending |
+| PR7 | `windows/07-application-preferences` | Settings storage, alert policy, and macOS bridge | CI passed |
+| PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | In progress |
 | PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | Pending |
 | PR10 | `windows/10-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | Pending |
 | PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | Pending |
@@ -153,3 +153,6 @@ Each PR must satisfy all applicable items:
   and rewards.
 - 2026-08-20: PR6's growth-ledger coordinator passed macOS CI. PR7 separates settings
   storage and alert policy from provider and companion UI code.
+- 2026-08-20: PR7's settings contract, macOS adapter, and shared alert-preference model
+  passed macOS CI. PR8 will review JSON providers in two parallel workstreams before
+  integrating them as one stacked layer.

@@ -42,6 +42,29 @@ public protocol ReadOnlySQLiteQuerying: Sendable {
     func queryJSON(databaseURL: URL, sql: String) async throws -> Data
 }
 
+/// Stores the small set of property-list values used by application settings.
+///
+/// The contract keeps shared application code independent from UserDefaults so
+/// the Windows client can provide a file-backed implementation later without
+/// changing preference keys or state models.
+public protocol SettingsStoring: Sendable {
+    func containsValue(forKey key: String) -> Bool
+    func bool(forKey key: String) -> Bool
+    func integer(forKey key: String) -> Int
+    func double(forKey key: String) -> Double
+    func string(forKey key: String) -> String?
+    func stringArray(forKey key: String) -> [String]?
+    func date(forKey key: String) -> Date?
+
+    func set(_ value: Bool, forKey key: String)
+    func set(_ value: Int, forKey key: String)
+    func set(_ value: Double, forKey key: String)
+    func set(_ value: String, forKey key: String)
+    func set(_ value: [String], forKey key: String)
+    func set(_ value: Date, forKey key: String)
+    func removeValue(forKey key: String)
+}
+
 public struct AppNotification: Equatable, Sendable, Identifiable {
     public let id: String
     public let title: String

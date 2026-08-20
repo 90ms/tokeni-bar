@@ -3,19 +3,10 @@ import AppKit
 import Foundation
 @preconcurrency import UserNotifications
 
-struct UsageNotificationPreferences {
-    let lowUsageEnabled: Bool
-    let resetEnabled: Bool
-    let connectionIssuesEnabled: Bool
-    let quietHoursEnabled: Bool
-    let quietHoursStart: Int
-    let quietHoursEnd: Int
-}
-
 @MainActor
 final class UsageNotificationController: NSObject, UNUserNotificationCenterDelegate {
     private let center: UNUserNotificationCenter
-    private let defaults: UserDefaults
+    private let settings: any SettingsStoring
     private var deliveredIdentifiers: [String]
 
     private static let enabledKey = "usageNotificationsEnabled"
@@ -23,31 +14,32 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
 
     init(
         center: UNUserNotificationCenter = .current(),
-        defaults: UserDefaults = .standard)
+        settings: any SettingsStoring = UserDefaultsSettingsStore())
     {
         self.center = center
-        self.defaults = defaults
-        self.deliveredIdentifiers = defaults.stringArray(forKey: Self.deliveredIdentifiersKey) ?? []
+        self.settings = settings
+        self.deliveredIdentifiers = settings.stringArray(
+            forKey: Self.deliveredIdentifiersKey) ?? []
         super.init()
         self.center.delegate = self
     }
 
     var isEnabled: Bool {
-        self.defaults.bool(forKey: Self.enabledKey)
+        self.settings.bool(forKey: Self.enabledKey)
     }
 
     func setEnabled(_ enabled: Bool) async -> Bool {
         guard enabled else {
-            self.defaults.set(false, forKey: Self.enabledKey)
+            self.settings.set(false, forKey: Self.enabledKey)
             return false
         }
 
         do {
             let granted = try await self.center.requestAuthorization(options: [.alert, .sound])
-            self.defaults.set(granted, forKey: Self.enabledKey)
+            self.settings.set(granted, forKey: Self.enabledKey)
             return granted
         } catch {
-            self.defaults.set(false, forKey: Self.enabledKey)
+            self.settings.set(false, forKey: Self.enabledKey)
             return false
         }
     }
@@ -57,7 +49,7 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
         history: [UsageHistoryRecord],
         warningThreshold: Int,
         criticalThreshold: Int,
-        preferences: UsageNotificationPreferences,
+        preferences: UsageAlertPreferences,
         enabledProviderIDs: Set<ProviderID>)
         -> [String]
     {
@@ -177,7 +169,7 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
         if self.deliveredIdentifiers.count > 200 {
             self.deliveredIdentifiers = Array(self.deliveredIdentifiers.suffix(200))
         }
-        self.defaults.set(self.deliveredIdentifiers, forKey: Self.deliveredIdentifiersKey)
+        self.settings.set(self.deliveredIdentifiers, forKey: Self.deliveredIdentifiersKey)
         return Array(diagnostics.prefix(8))
     }
 
@@ -207,7 +199,7 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
         spentText: String,
         budgetText: String,
         enabled: Bool,
-        preferences: UsageNotificationPreferences)
+        preferences: UsageAlertPreferences)
     {
         guard self.isEnabled, enabled, budgetUSD > 0 else { return }
         let ratio = spentUSD / budgetUSD
@@ -235,7 +227,7 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
                 trigger: nil))
             self.deliveredIdentifiers.append(identifier)
         }
-        self.defaults.set(self.deliveredIdentifiers, forKey: Self.deliveredIdentifiersKey)
+        self.settings.set(self.deliveredIdentifiers, forKey: Self.deliveredIdentifiersKey)
     }
 
     nonisolated func userNotificationCenter(
@@ -290,7 +282,7 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
     }
 
     private func isQuietHour(
-        preferences: UsageNotificationPreferences,
+        preferences: UsageAlertPreferences,
         date: Date = .now) -> Bool
     {
         guard preferences.quietHoursEnabled else { return false }

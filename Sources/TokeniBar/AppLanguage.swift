@@ -1,3 +1,4 @@
+import TokeniCore
 import Foundation
 
 enum AppLanguage: String, CaseIterable, Identifiable {
@@ -18,7 +19,11 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
 
     static var savedValue: Self {
-        UserDefaults.standard.string(forKey: Self.defaultsKey)
+        self.savedValue(using: UserDefaultsSettingsStore())
+    }
+
+    static func savedValue(using settings: any SettingsStoring) -> Self {
+        settings.string(forKey: Self.defaultsKey)
             .flatMap(Self.init(rawValue:)) ?? .system
     }
 }
