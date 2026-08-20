@@ -55,7 +55,7 @@ TokeniWindows
 | PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | CI 통과 |
 | PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | CI 통과 |
 | PR12 | `windows/12-windows-tray-ui` | Windows 실행 타깃·호스트 수명주기·상태 소비 경계 | CI 통과 |
-| PR13 | `windows/13-windows-tray-surface` | Win32 트레이, 사용량 패널, 설정·기록·진단 화면 | 구현 완료·CI 대기 |
+| PR13 | `windows/13-windows-tray-surface` | Win32 트레이, 사용량 패널, 설정·기록·진단 화면 | CI 통과 |
 | PR14 | `windows/14-windows-services` | Toast 알림, 자동 시작, 업데이트, 기본 오버레이 | 대기 |
 | PR15 | `windows/15-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
 | PR16 | `windows/16-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
@@ -191,3 +191,5 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR13에서 사용 가능한 snapshot만 표시하는 공통 presentation model과
   Win32 notification-area shell 경계를 추가했습니다. 트레이의 실제 설정·기록·진단
   화면은 이 shell 위에 이어서 연결합니다.
+- 2026-08-20: PR13의 macOS 공통 테스트·앱 빌드·번들 검증 CI가 통과했습니다.
+  Windows toolchain 빌드 검증은 Windows CI 단계에서 별도로 추가합니다.
