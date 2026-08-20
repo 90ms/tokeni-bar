@@ -38,7 +38,6 @@ let package = Package(
     name: "TokeniBar",
     platforms: [
         .macOS(.v14),
-        .windows,
     ],
     products: products,
     targets: targets)

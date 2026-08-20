@@ -137,3 +137,5 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   macOS UI 브리지로 나누기로 했습니다.
 - 2026-08-20: PR1을 `main` 위에 stacked draft PR #31로 제출하고 PR2를 그 브랜치
   위에 시작했습니다.
+- 2026-08-20: SwiftPM의 `platforms` 배열은 배포 버전이 있는 플랫폼만 선언하므로
+  Windows는 조건부 타깃으로 제공하고 `.windows`를 `platforms`에 넣지 않기로 했습니다.

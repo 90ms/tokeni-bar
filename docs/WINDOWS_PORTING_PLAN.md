@@ -135,3 +135,6 @@ Each PR must satisfy all applicable items:
   instead of reusing it directly from the Windows UI.
 - 2026-08-20: Submitted PR1 as stacked draft PR #31 on `main` and started PR2 on
   top of that branch.
+- 2026-08-20: Because SwiftPM's `platforms` array declares platforms with deployment
+  versions, Windows is provided through conditional targets rather than added as
+  `.windows` in that array.
