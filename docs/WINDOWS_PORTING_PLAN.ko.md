@@ -61,8 +61,8 @@ TokeniWindows
 | PR16 | `windows/16-claude-reset-time` | Claude 5시간 quota reset 시각의 검증된 전달·표시 | CI 통과 |
 | PR17 | `windows/17-windows-services` | Windows 알림·자동 시작 서비스 어댑터 | CI 통과 |
 | PR18 | `windows/18-windows-updates` | Windows 업데이트 설치 계약과 안전한 미지원 상태 | CI 통과 |
-| PR19 | `windows/19-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 진행 중 |
-| PR20 | `windows/20-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
+| PR19 | `windows/19-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | CI 통과 |
+| PR20 | `windows/20-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 진행 중 |
 | PR21 | `windows/21-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
@@ -223,3 +223,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR19는 실제 companion 자산이나 상태를 복제하지 않고, 투명 Win32
   오버레이의 lifecycle·멀티 모니터 위치 보정·click-through만 먼저 격리합니다.
   공통 companion 상태와 렌더링 자산은 Windows 패키징·최종 통합 단계에서 연결합니다.
+- 2026-08-20: PR19의 Win32 오버레이 경계와 C fallback 정적 검사가 macOS 테스트·앱
+  빌드·번들 검증 CI를 통과했습니다. PR20은 Windows SDK 빌드, 테스트, artifact와
+  설치 패키지 계약을 연결하는 배포 단계로 시작합니다.
