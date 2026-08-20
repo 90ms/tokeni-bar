@@ -32,6 +32,8 @@ struct TokeniWindowsApp {
 
         let companionState = try? await CompanionGameStateStore().load()
         let companionOverlay = WindowsCompanionOverlay()
+        companionOverlay.setAssetRoot(
+            WindowsCompanionAssetCatalog.assetRoot(for: executableURL))
         companionOverlay.setState(Self.overlayState(for: companionState))
         companionOverlay.setClickThrough(true)
         let companionOverlayStarted = companionOverlay.start(
@@ -139,6 +141,16 @@ struct TokeniWindowsApp {
         case .junior: stage = 2
         case .adult: stage = 3
         }
-        return WindowsCompanionOverlayState(stage: stage, level: state.level)
+        let speciesIndex = state.speciesID.flatMap { speciesID in
+            CompanionSpeciesID.allCases.firstIndex(of: speciesID)
+        } ?? 0
+        let rarityRank = state.resolvedVariantID.map {
+            CompanionVariantRegistry.definition(for: $0).assetRarity.rank
+        } ?? state.rarity?.rank ?? 0
+        return WindowsCompanionOverlayState(
+            stage: stage,
+            level: state.level,
+            speciesIndex: speciesIndex,
+            rarityRank: rarityRank)
     }
 }

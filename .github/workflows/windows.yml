@@ -39,7 +39,7 @@ jobs:
           run_windows=false
           while IFS= read -r path; do
             case "$path" in
-              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Scripts/package_windows.ps1|.github/workflows/windows.yml)
+              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Scripts/package_windows.ps1|Scripts/validate_windows_companion_assets.ps1|.github/workflows/windows.yml)
                 run_windows=true
                 break
                 ;;
@@ -227,6 +227,7 @@ jobs:
           swift test --parallel --filter WindowsAppUpdateInstallerTests
           swift test --parallel --filter WindowsUsageDetailFormatterTests
           swift test --parallel --filter WindowsCompanionOverlayTests
+          swift test --parallel --filter WindowsCompanionAssetCatalogTests
 
       - name: Build Windows executable
         shell: pwsh
@@ -260,6 +261,35 @@ jobs:
             -BuildDirectory "$env:SWIFT_BIN_PATH" `
             -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsPackage" `
             -RuntimeDirectory $runtimeDirectories
+
+      - name: Validate packaged companion assets
+        shell: pwsh
+        run: |
+          $archive = Get-ChildItem `
+            -LiteralPath "$env:RUNNER_TEMP\TokeniWindowsPackage" `
+            -Filter "*.zip" `
+            -File |
+            Select-Object -First 1
+          if ($null -eq $archive) {
+            throw "Windows package archive was not created."
+          }
+          $validationDirectory = Join-Path `
+            $env:RUNNER_TEMP `
+            "TokeniWindowsPackageValidation"
+          if (Test-Path -LiteralPath $validationDirectory) {
+            Remove-Item -LiteralPath $validationDirectory -Recurse -Force
+          }
+          Expand-Archive `
+            -LiteralPath $archive.FullName `
+            -DestinationPath $validationDirectory
+          $assetRoot = Join-Path `
+            $validationDirectory `
+            "Resources\CompanionAssets"
+          & "$env:GITHUB_WORKSPACE\Scripts\validate_windows_companion_assets.ps1" `
+            -AssetRoot $assetRoot
+          if (-not (Test-Path -LiteralPath (Join-Path $validationDirectory "TokeniWindows.exe") -PathType Leaf)) {
+            throw "Validated package does not contain TokeniWindows.exe."
+          }
 
       - name: Upload Windows package
         uses: actions/upload-artifact@v4
