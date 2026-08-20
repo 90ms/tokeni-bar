@@ -22,7 +22,6 @@ final class CompanionOverlayController: NSObject, ObservableObject {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-        self.mouseRoutingTimer?.invalidate()
     }
 
     func connect(to store: UsageStore) {
@@ -197,7 +196,9 @@ final class CompanionOverlayController: NSObject, ObservableObject {
             timeInterval: 1.0 / 30.0,
             repeats: true)
         { [weak self] _ in
-            self?.updateMouseEventRouting()
+            MainActor.assumeIsolated {
+                self?.updateMouseEventRouting()
+            }
         }
         RunLoop.main.add(timer, forMode: .common)
         self.mouseRoutingTimer = timer

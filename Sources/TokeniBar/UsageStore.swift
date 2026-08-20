@@ -475,9 +475,6 @@ final class UsageStore: ObservableObject {
         self.refreshLoop?.cancel()
         self.activityLoop?.cancel()
         self.appUpdateInstallationTask?.cancel()
-        self.companionStateSaveCoordinator.cancel()
-        self.companionRewardSaveCoordinator.cancel()
-        self.companionBenefitSaveCoordinator.cancel()
     }
 
     func start() {
