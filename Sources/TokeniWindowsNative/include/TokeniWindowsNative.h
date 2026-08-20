@@ -15,6 +15,12 @@ int tokeni_windows_tray_update_details(const char *details_utf8);
 
 int tokeni_windows_tray_take_refresh_request(void);
 
+void tokeni_windows_tray_set_launch_at_login_enabled(int enabled);
+
+int tokeni_windows_tray_take_launch_at_login_request(void);
+
+int tokeni_windows_tray_take_test_notification_request(void);
+
 int tokeni_windows_tray_is_started(void);
 
 int tokeni_windows_tray_notify(

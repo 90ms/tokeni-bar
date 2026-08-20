@@ -65,7 +65,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR19 | `windows/19-companion-overlay` | Pet overlay, monitors, click-through, accessibility | CI passed |
 | PR20 | `windows/20-packaging-ci` | Windows installer, CI, artifacts, release docs | CI passed |
 | PR21 | `windows/21-tray-details` | Windows tray detail surface, reset times, and refresh/quit actions | CI passed |
-| PR22 | `windows/22-windows-services-ui` | Settings, notifications, launch-at-login, and update actions | Pending |
+| PR22 | `windows/22-windows-services-ui` | Settings, notifications, and launch-at-login tray actions | CI passed |
 | PR23 | `windows/23-companion-integration` | Companion overlay connection, final macOS regression, and Windows hardware validation | Pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
@@ -248,10 +248,16 @@ Each PR must satisfy all applicable items:
   installer tests remain available through manual dispatch.
 - 2026-08-20: The remaining integration scope is split into three smaller layers. PR21
   makes the tray useful for daily inspection by showing provider details and verified
-  reset times and by handling refresh/quit actions. PR22 owns the Windows settings and
-  service controls. PR23 connects the companion overlay and performs final macOS and
-  Windows validation.
+  reset times and by handling refresh/quit actions. PR22 owns the Windows settings,
+  notification, and startup controls while keeping automatic installation explicitly
+  unsupported. PR23 connects the companion overlay and performs final macOS and Windows
+  validation.
 - 2026-08-20: PR21's Windows tray detail formatter, native tray actions, macOS tests,
   macOS app bundle validation, and Windows release package passed CI. The Windows
   detail surface shows verified quota windows and leaves reset information absent when
   the provider does not report it.
+- 2026-08-20: PR22 connected the Windows tray to the user-scoped startup registry,
+  Windows notification delivery, and the JSON settings store. Its Windows build and
+  package passed CI while the macOS build was correctly skipped because the change is
+  Windows-only. Automatic update installation remains explicitly unsupported until the
+  signed package contract is defined.
