@@ -62,7 +62,7 @@ TokeniWindows
 | PR17 | `windows/17-windows-services` | Windows 알림·자동 시작 서비스 어댑터 | CI 통과 |
 | PR18 | `windows/18-windows-updates` | Windows 업데이트 설치 계약과 안전한 미지원 상태 | CI 통과 |
 | PR19 | `windows/19-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | CI 통과 |
-| PR20 | `windows/20-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 진행 중 |
+| PR20 | `windows/20-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | CI 통과 |
 | PR21 | `windows/21-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
@@ -230,3 +230,9 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   사용해 `TokeniWindows` 테스트·release 빌드를 실행하고, 코드 서명 전 단계의
   portable ZIP artifact를 생성합니다. MSIX·서명·자동 업데이트는 별도 배포 계약으로
   남겨 임의의 설치 명령을 추가하지 않습니다.
+- 2026-08-20: PR20의 Windows runner에서 앱 빌드·portable 패키지 생성·artifact 업로드가
+  통과했습니다. 플랫폼 범위 감지 job을 추가해 pull request가 해당 플랫폼의 공통·전용
+  경로를 건드리지 않으면 비용이 큰 macOS 또는 Windows build를 생략하고, `TokeniCore`와
+  application 공통 변경은 두 검증을 계속 실행합니다. 일반 Windows pull request에서는
+  오래 걸리는 전체 테스트를 생략하며, Windows 업데이트 설치 집중 테스트는 수동 실행으로
+  남겼습니다.

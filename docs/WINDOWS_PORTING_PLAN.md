@@ -63,7 +63,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR17 | `windows/17-windows-services` | Windows notification and startup adapters | CI passed |
 | PR18 | `windows/18-windows-updates` | Windows update-install contract and safe unsupported state | CI passed |
 | PR19 | `windows/19-companion-overlay` | Pet overlay, monitors, click-through, accessibility | CI passed |
-| PR20 | `windows/20-packaging-ci` | Windows installer, CI, artifacts, release docs | In progress |
+| PR20 | `windows/20-packaging-ci` | Windows installer, CI, artifacts, release docs | CI passed |
 | PR21 | `windows/21-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
@@ -238,3 +238,9 @@ Each PR must satisfy all applicable items:
   Windows SDK to test and release-build `TokeniWindows`, then emits a portable ZIP
   artifact before code signing. MSIX, signing, and automatic updates remain separate
   distribution contracts rather than implicit install commands.
+- 2026-08-20: PR20's Windows build, portable-package creation, and artifact upload passed
+  on the Windows runner. Platform-scope detector jobs now skip the expensive macOS or
+  Windows build when a pull request does not touch that platform's shared or native
+  paths; shared `TokeniCore` and application changes still run both validations. The
+  normal Windows pull-request path skips the long full test suite, while focused Windows
+  installer tests remain available through manual dispatch.
