@@ -126,15 +126,20 @@ struct CodexExecutableLocator: Sendable {
     private let explicitURL: URL?
     private let pathEnvironment: String?
     private let homeDirectory: URL
+    private let localApplicationDataDirectory: URL?
 
     init(
         explicitURL: URL? = nil,
-        pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"],
-        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser)
+        pathEnvironment: String? = PlatformEnvironment.pathValue(
+            from: ProcessInfo.processInfo.environment),
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
+        localApplicationDataDirectory: URL? = nil)
     {
         self.explicitURL = explicitURL
         self.pathEnvironment = pathEnvironment
         self.homeDirectory = homeDirectory
+        self.localApplicationDataDirectory = localApplicationDataDirectory
+            ?? Self.defaultLocalApplicationDataDirectory(homeDirectory: homeDirectory)
     }
 
     func resolve() -> URL? {
@@ -142,26 +147,37 @@ struct CodexExecutableLocator: Sendable {
             return self.isExecutable(explicitURL) ? explicitURL : nil
         }
 
-        for relativePath in [
-            ".local/bin/codex",
-            ".npm-global/bin/codex",
-            ".volta/bin/codex",
-            ".asdf/shims/codex",
-            ".bun/bin/codex",
-            ".local/share/mise/shims/codex",
-            ".mise/shims/codex",
+        for relativeDirectory in [
+            ".local/bin",
+            ".npm-global/bin",
+            ".volta/bin",
+            ".asdf/shims",
+            ".bun/bin",
+            ".local/share/mise/shims",
+            ".mise/shims",
         ] {
-            let candidate = self.homeDirectory.appending(path: relativePath)
+            let candidate = self.homeDirectory.appending(
+                path: "\(relativeDirectory)/\(Self.executableName)",
+                directoryHint: .notDirectory)
             if self.isExecutable(candidate) { return candidate }
         }
 
-        let commonPaths = [
-            "/opt/homebrew/bin/codex",
-            "/usr/local/bin/codex",
-            "/usr/bin/codex",
+        let commonPaths: [URL]
+        #if os(Windows)
+        commonPaths = self.localApplicationDataDirectory
+            .map {
+                [$0.appending(
+                    path: "Programs/OpenAI/Codex/bin/codex.exe",
+                    directoryHint: .notDirectory)]
+            } ?? []
+        #else
+        commonPaths = [
+            URL(fileURLWithPath: "/opt/homebrew/bin/codex"),
+            URL(fileURLWithPath: "/usr/local/bin/codex"),
+            URL(fileURLWithPath: "/usr/bin/codex"),
         ]
-        for path in commonPaths {
-            let candidate = URL(fileURLWithPath: path)
+        #endif
+        for candidate in commonPaths {
             if self.isExecutable(candidate) { return candidate }
         }
 
@@ -169,12 +185,37 @@ struct CodexExecutableLocator: Sendable {
             if self.isExecutable(candidate) { return candidate }
         }
 
-        for directory in (self.pathEnvironment ?? "").split(separator: ":") {
+        for directory in PlatformEnvironment.pathEntries(self.pathEnvironment) {
             let candidate = URL(fileURLWithPath: String(directory), isDirectory: true)
-                .appending(path: "codex")
+                .appending(path: Self.executableName, directoryHint: .notDirectory)
             if self.isExecutable(candidate) { return candidate }
         }
         return nil
+    }
+
+    private static var executableName: String {
+        #if os(Windows)
+        "codex.exe"
+        #else
+        "codex"
+        #endif
+    }
+
+    private static func defaultLocalApplicationDataDirectory(
+        homeDirectory: URL) -> URL?
+    {
+        #if os(Windows)
+        if let path = ProcessInfo.processInfo.environment["LOCALAPPDATA"],
+           !path.isEmpty
+        {
+            return URL(fileURLWithPath: path, isDirectory: true)
+        }
+        return homeDirectory.appending(
+            path: "AppData/Local",
+            directoryHint: .isDirectory)
+        #else
+        nil
+        #endif
     }
 
     private func versionManagedCandidates() -> [URL] {
@@ -196,16 +237,21 @@ struct CodexExecutableLocator: Sendable {
                     options: .numeric) == .orderedDescending
             }.map { version in
                 if root.lastPathComponent == "node" {
-                    version.appending(path: "bin/codex")
+                    version.appending(path: "bin/\(Self.executableName)")
                 } else {
-                    version.appending(path: "installation/bin/codex")
+                    version.appending(
+                        path: "installation/bin/\(Self.executableName)")
                 }
             }
         }
     }
 
     private func isExecutable(_ url: URL) -> Bool {
+        #if os(Windows)
+        return FileManager.default.fileExists(atPath: url.path)
+        #else
         FileManager.default.isExecutableFile(atPath: url.path)
+        #endif
     }
 }
 
@@ -220,7 +266,8 @@ struct CodexAccountTokenUsageClient: Sendable {
 
     init(
         executableURL: URL? = nil,
-        pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"],
+        pathEnvironment: String? = PlatformEnvironment.pathValue(
+            from: ProcessInfo.processInfo.environment),
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         cache: CodexAccountTokenUsageCache = .shared,
         cacheMaxAge: TimeInterval = 5 * 60,

@@ -233,7 +233,8 @@ struct CodexAccountUsageClient: Sendable {
 
     init(
         executableURL: URL? = nil,
-        pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"],
+        pathEnvironment: String? = PlatformEnvironment.pathValue(
+            from: ProcessInfo.processInfo.environment),
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         cache: CodexAccountUsageCache = .shared,
         cacheMaxAge: TimeInterval = 60,

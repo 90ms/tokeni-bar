@@ -191,6 +191,122 @@ struct CodexAccountTokenUsageTests {
     }
 
     @Test
+    func locatesCodexFromAnInjectedPathEnvironment() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let pathDirectory = root.appending(path: "path-entry", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(
+            at: pathDirectory,
+            withIntermediateDirectories: true)
+        #if os(Windows)
+        let codex = pathDirectory.appending(path: "codex.exe")
+        #else
+        let codex = pathDirectory.appending(path: "codex")
+        #endif
+        try Data().write(to: codex)
+        #if !os(Windows)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o700],
+            ofItemAtPath: codex.path)
+        #endif
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let separator = String(PlatformEnvironment.pathSeparator)
+        let resolved = CodexExecutableLocator(
+            pathEnvironment: "missing" + separator + pathDirectory.path,
+            homeDirectory: root.appending(path: "home"),
+            localApplicationDataDirectory: root.appending(path: "local-app-data"))
+            .resolve()
+
+        #expect(resolved == codex)
+    }
+
+    #if os(Windows)
+    @Test
+    func locatesCodexFromTheVerifiedWindowsStandaloneInstallDirectory() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let localApplicationData = root.appending(
+            path: "LocalAppData",
+            directoryHint: .isDirectory)
+        let codex = localApplicationData.appending(
+            path: "Programs/OpenAI/Codex/bin/codex.exe")
+        try FileManager.default.createDirectory(
+            at: codex.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try Data().write(to: codex)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let resolved = CodexExecutableLocator(
+            pathEnvironment: "",
+            homeDirectory: root.appending(path: "home"),
+            localApplicationDataDirectory: localApplicationData)
+            .resolve()
+
+        #expect(resolved == codex)
+    }
+    #endif
+
+    @Test
+    func resolvesCodexHomeFromEnvironmentAndExplicitInjection() {
+        let home = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let environmentRoot = home.appending(
+            path: "environment-codex",
+            directoryHint: .isDirectory)
+        let explicitRoot = home.appending(
+            path: "explicit-codex",
+            directoryHint: .isDirectory)
+
+        #expect(
+            CodexUsageProvider.resolvedCodexHomeDirectory(
+                homeDirectory: home,
+                explicitDirectory: nil,
+                environment: ["CODEX_HOME": environmentRoot.path])
+                == environmentRoot)
+        #expect(
+            CodexUsageProvider.resolvedCodexHomeDirectory(
+                homeDirectory: home,
+                explicitDirectory: explicitRoot,
+                environment: ["CODEX_HOME": environmentRoot.path])
+                == explicitRoot)
+        #expect(
+            CodexUsageProvider.resolvedCodexHomeDirectory(
+                homeDirectory: home,
+                explicitDirectory: nil,
+                environment: [:])
+                == home.appending(path: ".codex", directoryHint: .isDirectory))
+    }
+
+    @Test
+    func readsLocalSessionsUnderAnInjectedCodexHome() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let codexHome = root.appending(
+            path: "custom-codex",
+            directoryHint: .isDirectory)
+        let session = codexHome.appending(
+            path: "sessions/2026/session.jsonl")
+        let modifiedAt = Date(timeIntervalSince1970: 2_000_000_000)
+        try FileManager.default.createDirectory(
+            at: session.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try Data().write(to: session)
+        try FileManager.default.setAttributes(
+            [.modificationDate: modifiedAt],
+            ofItemAtPath: session.path)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let provider = CodexUsageProvider(
+            homeDirectory: root.appending(path: "home"),
+            codexHomeDirectory: codexHome)
+        let detected = try #require(provider.latestActivityDate(
+            since: modifiedAt.addingTimeInterval(-1)))
+
+        #expect(abs(detected.timeIntervalSince(modifiedAt)) < 0.1)
+    }
+
+    @Test
     func cachesPerAccountAndSupportsInvalidation() async throws {
         let cache = CodexAccountTokenUsageCache()
         let response = CodexAccountTokenUsageResponse(
