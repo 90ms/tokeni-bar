@@ -52,7 +52,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR6 | `windows/06-application-growth` | Verified token observations and growth-ledger boundary | CI passed |
 | PR7 | `windows/07-application-preferences` | Settings storage, alert policy, and macOS bridge | CI passed |
 | PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | CI passed |
-| PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | Pending |
+| PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | In progress |
 | PR10 | `windows/10-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | Pending |
 | PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | Pending |
 | PR12 | `windows/12-windows-tray-ui` | Tray, usage, settings, history, diagnostics | Pending |
@@ -158,11 +158,13 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: PR6's growth-ledger coordinator passed macOS CI. PR7 separates settings
   storage and alert policy from provider and companion UI code.
 - 2026-08-20: PR7's settings contract, macOS adapter, and shared alert-preference model
-  passed macOS CI. PR8 will review JSON providers in two parallel workstreams before
-  integrating them as one stacked layer.
+  passed macOS CI.
 - 2026-08-20: PR8 moves Cline's macOS-only application-support root behind an injectable
   platform boundary and makes Gemini and Grok user-data roots injectable. Copilot keeps
   its existing home-relative and environment-variable-based contract because it is
   already platform-neutral.
 - 2026-08-20: PR8 provider tests, macOS app build, and bundle validation CI passed. PR9
   starts the Windows executable and process contracts for Codex and Claude CLI providers.
+- 2026-08-20: Started PR9 on top of PR8. Codex and Claude providers have disjoint write
+  sets for parallel review, while the shared CLI execution boundary remains with the
+  integration owner.
