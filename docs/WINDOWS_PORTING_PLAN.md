@@ -58,8 +58,8 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR12 | `windows/12-windows-tray-ui` | Windows executable target, host lifecycle, and state-consumption seam | CI passed |
 | PR13 | `windows/13-windows-tray-surface` | Win32 tray shell, usage presentation, and basic tooltip | CI passed |
 | PR14 | `windows/14-settings-storage` | Windows file-backed settings and shared preference seam | CI passed |
-| PR15 | `windows/15-memory-lifecycle` | Fix existing macOS usage-refresh memory growth | In progress |
-| PR16 | `windows/16-claude-reset-time` | Verified Claude five-hour quota reset propagation/display | Pending |
+| PR15 | `windows/15-memory-lifecycle` | Fix existing macOS usage-refresh memory growth | CI passed |
+| PR16 | `windows/16-claude-reset-time` | Verified Claude five-hour quota reset propagation/display | In progress |
 | PR17 | `windows/17-windows-services` | Windows notification, startup, and update adapters | Pending |
 | PR18 | `windows/18-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
 | PR19 | `windows/19-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
@@ -207,3 +207,7 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: PR14's macOS tests, app build, and bundle validation CI passed. The
   observed existing-app memory growth and missing Claude reset time are kept independent
   from the Windows services layer as dedicated regression-fix PRs.
+- 2026-08-20: PR15 removed the companion overlay retain cycle and bounded repeated
+  persistence work; its macOS tests, app build, and bundle validation CI passed. PR16
+  connects reset lines to their Claude five-hour usage window when the CLI response is
+  split across multiple lines.

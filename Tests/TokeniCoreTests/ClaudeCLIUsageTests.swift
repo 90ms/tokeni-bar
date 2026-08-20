@@ -33,8 +33,10 @@ struct ClaudeCLIUsageTests {
         #expect(first.response.quotaWindows.map(\.usedPercent) == [12, 34, 25])
         let session = try #require(first.response.quotaWindows.first)
         let weekly = try #require(first.response.quotaWindows.dropFirst().first)
+        let modelWeekly = try #require(first.response.quotaWindows.dropFirst(2).first)
         #expect(session.resetsAt != nil)
         #expect(weekly.resetsAt != nil)
+        #expect(modelWeekly.resetsAt == nil)
     }
 
     @Test
@@ -127,6 +129,8 @@ struct ClaudeCLIUsageTests {
             hour: 13,
             minute: 40)))
 
+        #expect(session.usedPercent == 12)
+        #expect(weekly.usedPercent == 34)
         #expect(session.resetsAt == sessionReset)
         #expect(weekly.resetsAt == weeklyReset)
         #expect(datedSession.resetsAt == datedSessionReset)

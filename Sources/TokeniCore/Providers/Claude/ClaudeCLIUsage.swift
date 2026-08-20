@@ -74,55 +74,108 @@ enum ClaudeCLIUsageParser {
             throw ClaudeCLIUsageError.commandFailed
         }
 
-        let windows = result.split(whereSeparator: \.isNewline).compactMap {
-            self.parseWindow(String($0), now: now, timeZone: timeZone)
+        var windows: [QuotaWindow] = []
+        var pendingWindow: ParsedWindow?
+
+        for rawLine in result.split(whereSeparator: \.isNewline) {
+            let line = String(rawLine)
+            if let descriptor = self.windowDescriptor(in: line) {
+                if let pendingWindow,
+                   let window = pendingWindow.quotaWindow
+                {
+                    windows.append(window)
+                }
+                var nextWindow = ParsedWindow(descriptor: descriptor)
+                nextWindow.usedPercent = self.percent(in: line)
+                nextWindow.resetsAt = self.resetDate(
+                    in: line,
+                    now: now,
+                    timeZone: timeZone)
+                pendingWindow = nextWindow
+                continue
+            }
+
+            guard var currentWindow = pendingWindow else { continue }
+            if currentWindow.usedPercent == nil {
+                currentWindow.usedPercent = self.percent(in: line)
+            }
+            if currentWindow.resetsAt == nil {
+                currentWindow.resetsAt = self.resetDate(
+                    in: line,
+                    now: now,
+                    timeZone: timeZone)
+            }
+            pendingWindow = currentWindow
+        }
+
+        if let pendingWindow,
+           let window = pendingWindow.quotaWindow
+        {
+            windows.append(window)
         }
         guard !windows.isEmpty else { throw ClaudeCLIUsageError.invalidResponse }
         return ClaudeCLIUsageResponse(quotaWindows: windows)
     }
 
-    private static func parseWindow(
-        _ line: String,
-        now: Date,
-        timeZone: TimeZone) -> QuotaWindow?
-    {
-        let normalized = line.trimmingCharacters(in: .whitespacesAndNewlines)
-        let lowercased = normalized.lowercased()
+    private struct WindowDescriptor {
         let kind: QuotaWindowKind
         let id: String
         let label: String
         let durationMinutes: Int
+    }
+
+    private struct ParsedWindow {
+        let descriptor: WindowDescriptor
+        var usedPercent: Double?
+        var resetsAt: Date?
+
+        init(descriptor: WindowDescriptor) {
+            self.descriptor = descriptor
+            self.usedPercent = nil
+            self.resetsAt = nil
+        }
+
+        var quotaWindow: QuotaWindow? {
+            guard let usedPercent else { return nil }
+            return QuotaWindow(
+                id: self.descriptor.id,
+                kind: self.descriptor.kind,
+                label: self.descriptor.label,
+                usedPercent: usedPercent,
+                resetsAt: self.resetsAt,
+                durationMinutes: self.descriptor.durationMinutes)
+        }
+    }
+
+    private static func windowDescriptor(in line: String) -> WindowDescriptor?
+    {
+        let normalized = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lowercased = normalized.lowercased()
 
         if lowercased.hasPrefix("current session") {
-            kind = .session
-            id = "five-hour"
-            label = "5-hour"
-            durationMinutes = 5 * 60
+            return WindowDescriptor(
+                kind: .session,
+                id: "five-hour",
+                label: "5-hour",
+                durationMinutes: 5 * 60)
         } else if lowercased.hasPrefix("current week") {
-            kind = .weekly
-            durationMinutes = 7 * 24 * 60
             if let model = self.parenthesizedValue(in: normalized),
                model.lowercased() != "all models"
             {
                 let slug = model.lowercased().replacingOccurrences(of: " ", with: "-")
-                id = "scoped-weekly-" + slug
-                label = model + " weekly"
-            } else {
-                id = "seven-day"
-                label = "Weekly"
+                return WindowDescriptor(
+                    kind: .weekly,
+                    id: "scoped-weekly-" + slug,
+                    label: model + " weekly",
+                    durationMinutes: 7 * 24 * 60)
             }
-        } else {
-            return nil
+            return WindowDescriptor(
+                kind: .weekly,
+                id: "seven-day",
+                label: "Weekly",
+                durationMinutes: 7 * 24 * 60)
         }
-
-        guard let usedPercent = self.percent(in: normalized) else { return nil }
-        return QuotaWindow(
-            id: id,
-            kind: kind,
-            label: label,
-            usedPercent: usedPercent,
-            resetsAt: self.resetDate(in: normalized, now: now, timeZone: timeZone),
-            durationMinutes: durationMinutes)
+        return nil
     }
 
     private static func percent(in line: String) -> Double? {
