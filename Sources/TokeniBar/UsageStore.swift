@@ -93,6 +93,7 @@ final class UsageStore: ObservableObject {
 
     private let providers: [any UsageProviding]
     private let refreshCoordinator: UsageRefreshCoordinator
+    private let settings: any SettingsStoring
     private var refreshLoop: Task<Void, Never>?
     private var activityLoop: Task<Void, Never>?
     private let notificationController: UsageNotificationController
@@ -177,7 +178,9 @@ final class UsageStore: ObservableObject {
         let knownIDs = Set(providers.map { $0.descriptor.id })
         self.providers = providers
         self.refreshCoordinator = UsageRefreshCoordinator(providers: providers)
-        let notificationController = UsageNotificationController()
+        let settings = UserDefaultsSettingsStore()
+        self.settings = settings
+        let notificationController = UsageNotificationController(settings: settings)
         let launchAtLoginController = LaunchAtLoginController()
         let historyCoordinator = UsageHistoryCoordinator()
         let exchangeRateClient = DailyExchangeRateClient()
@@ -208,48 +211,63 @@ final class UsageStore: ObservableObject {
         self.notificationSettingsMessage = nil
         self.authorizingProviderIDs = []
         self.providerAuthorizationMessages = [:]
-        self.warningThreshold = UserDefaults.standard.object(forKey: Self.warningThresholdKey) as? Int ?? 30
-        self.criticalThreshold = UserDefaults.standard.object(forKey: Self.criticalThresholdKey) as? Int ?? 10
-        self.lowUsageNotificationsEnabled = UserDefaults.standard.object(
-            forKey: Self.lowUsageNotificationsEnabledKey) as? Bool ?? true
-        self.resetNotificationsEnabled = UserDefaults.standard.object(
-            forKey: Self.resetNotificationsEnabledKey) as? Bool ?? true
-        self.connectionIssueNotificationsEnabled = UserDefaults.standard.object(
-            forKey: Self.connectionIssueNotificationsEnabledKey) as? Bool ?? false
-        self.budgetNotificationsEnabled = UserDefaults.standard.object(
-            forKey: Self.budgetNotificationsEnabledKey) as? Bool ?? true
-        self.notificationQuietHoursEnabled = UserDefaults.standard.bool(
+        self.warningThreshold = settings.containsValue(forKey: Self.warningThresholdKey)
+            ? settings.integer(forKey: Self.warningThresholdKey)
+            : 30
+        self.criticalThreshold = settings.containsValue(forKey: Self.criticalThresholdKey)
+            ? settings.integer(forKey: Self.criticalThresholdKey)
+            : 10
+        self.lowUsageNotificationsEnabled = settings.containsValue(
+            forKey: Self.lowUsageNotificationsEnabledKey)
+            ? settings.bool(forKey: Self.lowUsageNotificationsEnabledKey)
+            : true
+        self.resetNotificationsEnabled = settings.containsValue(
+            forKey: Self.resetNotificationsEnabledKey)
+            ? settings.bool(forKey: Self.resetNotificationsEnabledKey)
+            : true
+        self.connectionIssueNotificationsEnabled = settings.bool(
+            forKey: Self.connectionIssueNotificationsEnabledKey)
+        self.budgetNotificationsEnabled = settings.containsValue(
+            forKey: Self.budgetNotificationsEnabledKey)
+            ? settings.bool(forKey: Self.budgetNotificationsEnabledKey)
+            : true
+        self.notificationQuietHoursEnabled = settings.bool(
             forKey: Self.notificationQuietHoursEnabledKey)
-        self.notificationQuietHoursStart = UserDefaults.standard.object(
-            forKey: Self.notificationQuietHoursStartKey) as? Int ?? 22
-        self.notificationQuietHoursEnd = UserDefaults.standard.object(
-            forKey: Self.notificationQuietHoursEndKey) as? Int ?? 8
+        self.notificationQuietHoursStart = settings.containsValue(
+            forKey: Self.notificationQuietHoursStartKey)
+            ? settings.integer(forKey: Self.notificationQuietHoursStartKey)
+            : 22
+        self.notificationQuietHoursEnd = settings.containsValue(
+            forKey: Self.notificationQuietHoursEndKey)
+            ? settings.integer(forKey: Self.notificationQuietHoursEndKey)
+            : 8
         self.notificationDiagnostics = []
-        if let storedMode = UserDefaults.standard.string(forKey: Self.menuBarDisplayModeKey)
+        if let storedMode = settings.string(forKey: Self.menuBarDisplayModeKey)
             .flatMap(MenuBarDisplayMode.init(rawValue:))
         {
             self.menuBarDisplayMode = storedMode
-        } else if UserDefaults.standard.object(
-            forKey: Self.legacyShowsRemainingInMenuBarKey) as? Bool == false
+        } else if settings.containsValue(forKey: Self.legacyShowsRemainingInMenuBarKey),
+                  settings.bool(forKey: Self.legacyShowsRemainingInMenuBarKey) == false
         {
             self.menuBarDisplayMode = .iconOnly
         } else {
             self.menuBarDisplayMode = .lowestRemaining
         }
-        let storedMenuBarProviderID = UserDefaults.standard.string(
+        let storedMenuBarProviderID = settings.string(
             forKey: Self.selectedMenuBarProviderIDKey).map(ProviderID.init(rawValue:))
         self.selectedMenuBarProviderID = storedMenuBarProviderID
             .flatMap { knownIDs.contains($0) ? $0 : nil }
             ?? providers.first?.descriptor.id
             ?? .codex
-        self.claudeMenuBarQuota = UserDefaults.standard.string(
+        self.claudeMenuBarQuota = settings.string(
             forKey: Self.claudeMenuBarQuotaKey)
             .flatMap(ClaudeMenuBarQuota.init(rawValue:)) ?? .fable
-        self.compactModeEnabled = UserDefaults.standard.bool(forKey: Self.compactModeEnabledKey)
-        self.activityAnimationsEnabled = UserDefaults.standard.object(
-            forKey: Self.activityAnimationsEnabledKey) as? Bool ?? true
-        let storedActivityWindow = UserDefaults.standard.integer(
-            forKey: Self.activityWindowSecondsKey)
+        self.compactModeEnabled = settings.bool(forKey: Self.compactModeEnabledKey)
+        self.activityAnimationsEnabled = settings.containsValue(
+            forKey: Self.activityAnimationsEnabledKey)
+            ? settings.bool(forKey: Self.activityAnimationsEnabledKey)
+            : true
+        let storedActivityWindow = settings.integer(forKey: Self.activityWindowSecondsKey)
         self.activityWindowSeconds = Self.supportedActivityWindows.contains(storedActivityWindow)
             ? storedActivityWindow
             : 15
@@ -262,17 +280,17 @@ final class UsageStore: ObservableObject {
         self.launchAtLoginEnabled = launchAtLoginController.isEnabled
         self.launchAtLoginMessage = launchAtLoginController.statusMessage
         self.historyRecords = []
-        let costDisplayCurrency = UserDefaults.standard.string(
+        let costDisplayCurrency = settings.string(
             forKey: Self.costDisplayCurrencyKey)
             .flatMap(CostDisplayCurrency.init(rawValue:)) ?? .defaultValue
         self.costDisplayCurrency = costDisplayCurrency
         self.exchangeRateQuote = nil
-        self.appLanguage = .savedValue
-        self.monthlyBudgetEnabled = UserDefaults.standard.bool(
-            forKey: Self.monthlyBudgetEnabledKey)
-        self.monthlyBudgetAmount = UserDefaults.standard.object(
-            forKey: Self.monthlyBudgetAmountKey) as? Double ?? 25
-        self.monthlyBudgetCurrency = UserDefaults.standard.string(
+        self.appLanguage = .savedValue(using: settings)
+        self.monthlyBudgetEnabled = settings.bool(forKey: Self.monthlyBudgetEnabledKey)
+        self.monthlyBudgetAmount = settings.containsValue(forKey: Self.monthlyBudgetAmountKey)
+            ? settings.double(forKey: Self.monthlyBudgetAmountKey)
+            : 25
+        self.monthlyBudgetCurrency = settings.string(
             forKey: Self.monthlyBudgetCurrencyKey)
             .flatMap(CostDisplayCurrency.init(rawValue:)) ?? costDisplayCurrency
         self.pricingCatalogMetadata = TokenPricingCatalog.metadata
@@ -285,25 +303,28 @@ final class UsageStore: ObservableObject {
         self.appUpdateInstallationOperation = nil
         self.appUpdateInstallationMessage = nil
         self.appUpdateRequiresFormulaMigration = false
-        self.companionEnabled = UserDefaults.standard.object(
-            forKey: Self.companionEnabledKey) as? Bool ?? true
-        let legacyCompanionAnimationsEnabled = UserDefaults.standard.object(
-            forKey: Self.companionAnimationsEnabledKey) as? Bool ?? true
-        let companionAnimationIntensity = UserDefaults.standard.string(
+        self.companionEnabled = settings.containsValue(forKey: Self.companionEnabledKey)
+            ? settings.bool(forKey: Self.companionEnabledKey)
+            : true
+        let legacyCompanionAnimationsEnabled = settings.containsValue(
+            forKey: Self.companionAnimationsEnabledKey)
+            ? settings.bool(forKey: Self.companionAnimationsEnabledKey)
+            : true
+        let companionAnimationIntensity = settings.string(
             forKey: Self.companionAnimationIntensityKey)
             .flatMap(CompanionAnimationIntensity.init(rawValue:))
             ?? (legacyCompanionAnimationsEnabled ? .full : .off)
         self.companionAnimationIntensity = companionAnimationIntensity
         self.companionAnimationsEnabled =
             companionAnimationIntensity.isEnabled
-        self.companionOverlayEnabled = UserDefaults.standard.bool(
+        self.companionOverlayEnabled = settings.bool(
             forKey: Self.companionOverlayEnabledKey)
-        self.companionOverlaySize = UserDefaults.standard.string(
+        self.companionOverlaySize = settings.string(
             forKey: Self.companionOverlaySizeKey)
             .flatMap(CompanionOverlaySize.init(rawValue:)) ?? .medium
-        self.companionOverlayPositionLocked = UserDefaults.standard.bool(
+        self.companionOverlayPositionLocked = settings.bool(
             forKey: Self.companionOverlayPositionLockedKey)
-        self.companionOverlayClickThroughEnabled = UserDefaults.standard.bool(
+        self.companionOverlayClickThroughEnabled = settings.bool(
             forKey: Self.companionOverlayClickThroughEnabledKey)
         self.companionOverlayPositionResetPulse = 0
         self.companionInteractionPulse = 0
@@ -324,28 +345,28 @@ final class UsageStore: ObservableObject {
         self.companionEconomyTransactionInFlight = false
         self.companionEconomyErrorMessage = nil
         var enabledIDs: Set<ProviderID>
-        if let stored = UserDefaults.standard.stringArray(forKey: Self.enabledProvidersKey) {
+        if let stored = settings.stringArray(forKey: Self.enabledProvidersKey) {
             enabledIDs = Set(stored.map { ProviderID(rawValue: $0) }).intersection(knownIDs)
         } else {
             enabledIDs = knownIDs
         }
-        if UserDefaults.standard.integer(forKey: Self.providerCatalogVersionKey)
+        if settings.integer(forKey: Self.providerCatalogVersionKey)
             < Self.currentProviderCatalogVersion,
             Self.providerCatalogV2Additions.isSubset(of: knownIDs)
         {
             enabledIDs.formUnion(Self.providerCatalogV2Additions)
-            UserDefaults.standard.set(
+            settings.set(
                 enabledIDs.map(\.rawValue).sorted(),
                 forKey: Self.enabledProvidersKey)
-            UserDefaults.standard.set(
+            settings.set(
                 Self.currentProviderCatalogVersion,
                 forKey: Self.providerCatalogVersionKey)
-            UserDefaults.standard.set(
+            settings.set(
                 Date.now,
                 forKey: Self.dailyCostAccountingStartKey)
         }
         self.enabledProviderIDs = enabledIDs
-        if let stored = UserDefaults.standard.stringArray(forKey: Self.notificationProviderIDsKey) {
+        if let stored = settings.stringArray(forKey: Self.notificationProviderIDsKey) {
             self.notificationProviderIDs = Set(stored.map { ProviderID(rawValue: $0) }).intersection(knownIDs)
         } else {
             self.notificationProviderIDs = knownIDs
@@ -464,7 +485,7 @@ final class UsageStore: ObservableObject {
         } else {
             self.enabledProviderIDs.remove(id)
         }
-        UserDefaults.standard.set(
+        self.settings.set(
             self.enabledProviderIDs.map(\.rawValue).sorted(),
             forKey: Self.enabledProvidersKey)
         self.snapshots = self.providers
@@ -487,38 +508,38 @@ final class UsageStore: ObservableObject {
 
     func setWarningThreshold(_ threshold: Int) {
         self.warningThreshold = threshold
-        UserDefaults.standard.set(threshold, forKey: Self.warningThresholdKey)
+        self.settings.set(threshold, forKey: Self.warningThresholdKey)
     }
 
     func setCriticalThreshold(_ threshold: Int) {
         self.criticalThreshold = threshold
-        UserDefaults.standard.set(threshold, forKey: Self.criticalThresholdKey)
+        self.settings.set(threshold, forKey: Self.criticalThresholdKey)
     }
 
     func setResetNotificationsEnabled(_ enabled: Bool) {
         self.resetNotificationsEnabled = enabled
-        UserDefaults.standard.set(
+        self.settings.set(
             enabled,
             forKey: Self.resetNotificationsEnabledKey)
     }
 
     func setLowUsageNotificationsEnabled(_ enabled: Bool) {
         self.lowUsageNotificationsEnabled = enabled
-        UserDefaults.standard.set(
+        self.settings.set(
             enabled,
             forKey: Self.lowUsageNotificationsEnabledKey)
     }
 
     func setConnectionIssueNotificationsEnabled(_ enabled: Bool) {
         self.connectionIssueNotificationsEnabled = enabled
-        UserDefaults.standard.set(
+        self.settings.set(
             enabled,
             forKey: Self.connectionIssueNotificationsEnabledKey)
     }
 
     func setBudgetNotificationsEnabled(_ enabled: Bool) {
         self.budgetNotificationsEnabled = enabled
-        UserDefaults.standard.set(
+        self.settings.set(
             enabled,
             forKey: Self.budgetNotificationsEnabledKey)
         self.processBudgetAlert()
@@ -526,7 +547,7 @@ final class UsageStore: ObservableObject {
 
     func setNotificationQuietHoursEnabled(_ enabled: Bool) {
         self.notificationQuietHoursEnabled = enabled
-        UserDefaults.standard.set(
+        self.settings.set(
             enabled,
             forKey: Self.notificationQuietHoursEnabledKey)
     }
@@ -534,10 +555,10 @@ final class UsageStore: ObservableObject {
     func setNotificationQuietHours(start: Int, end: Int) {
         self.notificationQuietHoursStart = min(max(start, 0), 23)
         self.notificationQuietHoursEnd = min(max(end, 0), 23)
-        UserDefaults.standard.set(
+        self.settings.set(
             self.notificationQuietHoursStart,
             forKey: Self.notificationQuietHoursStartKey)
-        UserDefaults.standard.set(
+        self.settings.set(
             self.notificationQuietHoursEnd,
             forKey: Self.notificationQuietHoursEndKey)
     }
@@ -552,7 +573,7 @@ final class UsageStore: ObservableObject {
         } else {
             self.notificationProviderIDs.remove(id)
         }
-        UserDefaults.standard.set(
+        self.settings.set(
             self.notificationProviderIDs.map(\.rawValue).sorted(),
             forKey: Self.notificationProviderIDsKey)
     }
@@ -604,7 +625,7 @@ final class UsageStore: ObservableObject {
 
     func setCostDisplayCurrency(_ currency: CostDisplayCurrency) {
         self.costDisplayCurrency = currency
-        UserDefaults.standard.set(currency.rawValue, forKey: Self.costDisplayCurrencyKey)
+        self.settings.set(currency.rawValue, forKey: Self.costDisplayCurrencyKey)
         if currency == .krw, self.exchangeRateQuote == nil {
             Task { await self.refreshExchangeRate() }
         }
@@ -612,7 +633,7 @@ final class UsageStore: ObservableObject {
 
     func setAppLanguage(_ language: AppLanguage) {
         self.appLanguage = language
-        UserDefaults.standard.set(language.rawValue, forKey: AppLanguage.defaultsKey)
+        self.settings.set(language.rawValue, forKey: AppLanguage.defaultsKey)
         if self.notificationSettingsMessage != nil {
             self.notificationSettingsMessage = AppLocalization.string("settings.notifications.denied")
         }
@@ -620,19 +641,19 @@ final class UsageStore: ObservableObject {
 
     func setMonthlyBudgetEnabled(_ enabled: Bool) {
         self.monthlyBudgetEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: Self.monthlyBudgetEnabledKey)
+        self.settings.set(enabled, forKey: Self.monthlyBudgetEnabledKey)
         self.processBudgetAlert()
     }
 
     func setMonthlyBudgetAmount(_ amount: Double) {
         self.monthlyBudgetAmount = max(amount, 0)
-        UserDefaults.standard.set(self.monthlyBudgetAmount, forKey: Self.monthlyBudgetAmountKey)
+        self.settings.set(self.monthlyBudgetAmount, forKey: Self.monthlyBudgetAmountKey)
         self.processBudgetAlert()
     }
 
     func setMonthlyBudgetCurrency(_ currency: CostDisplayCurrency) {
         self.monthlyBudgetCurrency = currency
-        UserDefaults.standard.set(currency.rawValue, forKey: Self.monthlyBudgetCurrencyKey)
+        self.settings.set(currency.rawValue, forKey: Self.monthlyBudgetCurrencyKey)
         self.processBudgetAlert()
     }
 
@@ -668,28 +689,28 @@ final class UsageStore: ObservableObject {
 
     func setMenuBarDisplayMode(_ mode: MenuBarDisplayMode) {
         self.menuBarDisplayMode = mode
-        UserDefaults.standard.set(mode.rawValue, forKey: Self.menuBarDisplayModeKey)
+        self.settings.set(mode.rawValue, forKey: Self.menuBarDisplayModeKey)
     }
 
     func setSelectedMenuBarProviderID(_ id: ProviderID) {
         guard self.descriptors.contains(where: { $0.id == id }) else { return }
         self.selectedMenuBarProviderID = id
-        UserDefaults.standard.set(id.rawValue, forKey: Self.selectedMenuBarProviderIDKey)
+        self.settings.set(id.rawValue, forKey: Self.selectedMenuBarProviderIDKey)
     }
 
     func setClaudeMenuBarQuota(_ quota: ClaudeMenuBarQuota) {
         self.claudeMenuBarQuota = quota
-        UserDefaults.standard.set(quota.rawValue, forKey: Self.claudeMenuBarQuotaKey)
+        self.settings.set(quota.rawValue, forKey: Self.claudeMenuBarQuotaKey)
     }
 
     func setCompactModeEnabled(_ enabled: Bool) {
         self.compactModeEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: Self.compactModeEnabledKey)
+        self.settings.set(enabled, forKey: Self.compactModeEnabledKey)
     }
 
     func setActivityAnimationsEnabled(_ enabled: Bool) {
         self.activityAnimationsEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: Self.activityAnimationsEnabledKey)
+        self.settings.set(enabled, forKey: Self.activityAnimationsEnabledKey)
         if enabled {
             self.startActivityLoopIfNeeded()
         } else if !self.companionEnabled {
@@ -705,7 +726,7 @@ final class UsageStore: ObservableObject {
 
     func setCompanionEnabled(_ enabled: Bool) {
         self.companionEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: Self.companionEnabledKey)
+        self.settings.set(enabled, forKey: Self.companionEnabledKey)
         if enabled {
             self.startActivityLoopIfNeeded()
         } else if !self.activityAnimationsEnabled {
@@ -719,34 +740,34 @@ final class UsageStore: ObservableObject {
     {
         self.companionAnimationIntensity = intensity
         self.companionAnimationsEnabled = intensity.isEnabled
-        UserDefaults.standard.set(
+        self.settings.set(
             intensity.rawValue,
             forKey: Self.companionAnimationIntensityKey)
-        UserDefaults.standard.set(
+        self.settings.set(
             intensity.isEnabled,
             forKey: Self.companionAnimationsEnabledKey)
     }
 
     func setCompanionOverlayEnabled(_ enabled: Bool) {
         self.companionOverlayEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: Self.companionOverlayEnabledKey)
+        self.settings.set(enabled, forKey: Self.companionOverlayEnabledKey)
     }
 
     func setCompanionOverlaySize(_ size: CompanionOverlaySize) {
         self.companionOverlaySize = size
-        UserDefaults.standard.set(size.rawValue, forKey: Self.companionOverlaySizeKey)
+        self.settings.set(size.rawValue, forKey: Self.companionOverlaySizeKey)
     }
 
     func setCompanionOverlayPositionLocked(_ locked: Bool) {
         self.companionOverlayPositionLocked = locked
-        UserDefaults.standard.set(
+        self.settings.set(
             locked,
             forKey: Self.companionOverlayPositionLockedKey)
     }
 
     func setCompanionOverlayClickThroughEnabled(_ enabled: Bool) {
         self.companionOverlayClickThroughEnabled = enabled
-        UserDefaults.standard.set(
+        self.settings.set(
             enabled,
             forKey: Self.companionOverlayClickThroughEnabledKey)
     }
@@ -1424,7 +1445,7 @@ final class UsageStore: ObservableObject {
     func setActivityWindowSeconds(_ seconds: Int) {
         guard Self.supportedActivityWindows.contains(seconds) else { return }
         self.activityWindowSeconds = seconds
-        UserDefaults.standard.set(seconds, forKey: Self.activityWindowSecondsKey)
+        self.settings.set(seconds, forKey: Self.activityWindowSecondsKey)
         Task { await self.refreshActivity() }
     }
 
@@ -1976,8 +1997,8 @@ final class UsageStore: ObservableObject {
     var monthlyEstimatedSpendUSD: Double {
         let startOfMonth = Calendar.current.dateInterval(of: .month, for: .now)?.start
             ?? .distantPast
-        let dailyAccountingStart = UserDefaults.standard.object(
-            forKey: Self.dailyCostAccountingStartKey) as? Date ?? startOfMonth
+        let dailyAccountingStart = self.settings.date(
+            forKey: Self.dailyCostAccountingStartKey) ?? startOfMonth
         let accountingStart = max(startOfMonth, dailyAccountingStart)
         let currentProviderIDs = Set(self.providers.map { $0.descriptor.id })
         let currentHistory = self.historyRecords.filter {
@@ -2026,8 +2047,8 @@ final class UsageStore: ObservableObject {
             preferences: self.notificationPreferences)
     }
 
-    private var notificationPreferences: UsageNotificationPreferences {
-        UsageNotificationPreferences(
+    private var notificationPreferences: UsageAlertPreferences {
+        UsageAlertPreferences(
             lowUsageEnabled: self.lowUsageNotificationsEnabled,
             resetEnabled: self.resetNotificationsEnabled,
             connectionIssuesEnabled: self.connectionIssueNotificationsEnabled,
@@ -2400,13 +2421,13 @@ final class UsageStore: ObservableObject {
 
     private func refreshPricingCatalogIfNeeded(force: Bool = false) async {
         if !force,
-           let lastCheck = UserDefaults.standard.object(
-               forKey: Self.pricingCatalogLastCheckKey) as? Date,
+           let lastCheck = self.settings.date(
+               forKey: Self.pricingCatalogLastCheckKey),
            Calendar.current.isDate(lastCheck, inSameDayAs: .now)
         {
             return
         }
-        UserDefaults.standard.set(Date.now, forKey: Self.pricingCatalogLastCheckKey)
+        self.settings.set(Date.now, forKey: Self.pricingCatalogLastCheckKey)
         do {
             let result = try await self.pricingCatalogClient.refresh()
             self.applyPricingCatalogResult(result)
