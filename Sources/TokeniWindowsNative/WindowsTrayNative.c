@@ -157,7 +157,7 @@ int tokeni_windows_tray_start(
     tokeni_icon.uID = tokeni_tray_identifier;
     tokeni_icon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     tokeni_icon.uCallbackMessage = tokeni_tray_callback_message;
-    tokeni_icon.hIcon = LoadIconW(NULL, IDI_APPLICATION);
+    tokeni_icon.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512));
     if (!tokeni_copy_utf8(
             tooltip_utf8,
             tokeni_icon.szTip,
@@ -180,6 +180,7 @@ int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8)
             tooltip_utf8,
             tokeni_icon.szTip,
             (int)(sizeof(tokeni_icon.szTip) / sizeof(tokeni_icon.szTip[0])))
+        )
     {
         return 0;
     }
