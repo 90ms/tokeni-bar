@@ -12,11 +12,14 @@ public struct OpenCodeUsageProvider: UsageProviding, UsageActivityProviding {
     private let dataDirectory: URL
     private let databaseReader: OpenCodeDatabaseReader
 
-    public init(homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) {
+    public init(
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
+        queryRunner: any ReadOnlySQLiteQuerying = SystemSQLiteQueryRunner())
+    {
         self.dataDirectory = homeDirectory.appending(
             path: ".local/share/opencode",
             directoryHint: .isDirectory)
-        self.databaseReader = OpenCodeDatabaseReader()
+        self.databaseReader = OpenCodeDatabaseReader(queryRunner: queryRunner)
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
@@ -28,7 +31,7 @@ public struct OpenCodeUsageProvider: UsageProviding, UsageActivityProviding {
                 detail: "No OpenCode usage database was found")
         }
 
-        guard let aggregate = try? self.databaseReader.readAggregate(from: databaseURL) else {
+        guard let aggregate = try? await self.databaseReader.readAggregate(from: databaseURL) else {
             return .init(
                 descriptor: self.descriptor,
                 availability: .failed,
@@ -155,6 +158,8 @@ enum OpenCodeUsageParser {
 }
 
 private struct OpenCodeDatabaseReader: Sendable {
+    private let queryRunner: any ReadOnlySQLiteQuerying
+
     private static let aggregateQuery = """
         SELECT
           COUNT(*) AS session_count,
@@ -167,33 +172,19 @@ private struct OpenCodeDatabaseReader: Sendable {
         FROM session;
         """
 
-    func readAggregate(from databaseURL: URL) throws -> OpenCodeUsageAggregate {
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
-        process.arguments = [
-            "-batch",
-            "-init",
-            "/dev/null",
-            "-readonly",
-            "-json",
-            databaseURL.path,
-            Self.aggregateQuery,
-        ]
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
+    init(queryRunner: any ReadOnlySQLiteQuerying) {
+        self.queryRunner = queryRunner
+    }
 
+    func readAggregate(from databaseURL: URL) async throws -> OpenCodeUsageAggregate {
         do {
-            try process.run()
+            let data = try await self.queryRunner.queryJSON(
+                databaseURL: databaseURL,
+                sql: Self.aggregateQuery)
+            return try OpenCodeUsageParser.decode(data)
         } catch {
             throw OpenCodeDatabaseError.queryFailed
         }
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            throw OpenCodeDatabaseError.queryFailed
-        }
-
-        return try OpenCodeUsageParser.decode(output.fileHandleForReading.readDataToEndOfFile())
     }
 }
 
