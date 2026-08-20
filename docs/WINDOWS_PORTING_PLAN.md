@@ -53,8 +53,8 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR7 | `windows/07-application-preferences` | Settings storage, alert policy, and macOS bridge | CI passed |
 | PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | CI passed |
 | PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | CI passed |
-| PR10 | `windows/10-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | Provider changes integrated, CI pending |
-| PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | Pending |
+| PR10 | `windows/10-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | CI passed |
+| PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | In progress |
 | PR12 | `windows/12-windows-tray-ui` | Tray, usage, settings, history, diagnostics | Pending |
 | PR13 | `windows/13-windows-services` | Toasts, launch-at-login, updates, basic overlay | Pending |
 | PR14 | `windows/14-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
@@ -177,3 +177,6 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: PR10 adds shared SQLite executable discovery and a read-only query runner,
   then moves Antigravity and OpenCode readers behind injectable boundaries. If SQLite is
   unavailable on Windows, usage remains unavailable/failed rather than being fabricated.
+- 2026-08-20: PR10 SQLite provider tests, macOS app build, and bundle validation CI passed.
+  PR11 starts the runtime boundary for consuming shared application state from a Windows
+  executable.
