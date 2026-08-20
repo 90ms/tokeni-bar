@@ -129,7 +129,7 @@ struct ApplicationRuntimeTests {
             growthLedgerCoordinator: TokenGrowthLedgerCoordinator(
                 store: growthStore,
                 engine: TokenGrowthLedgerEngine(
-                    formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000)))
+                    formula: TokenGrowthEnergyFormula(tokensPerEnergy: 25_000))))
     }
 
     private static func snapshot(
