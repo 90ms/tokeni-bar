@@ -49,8 +49,8 @@ TokeniWindows
 | PR4 | `windows/04-application-refresh` | 공통 provider 갱신 코디네이터와 macOS `UsageStore` 연결 | CI 통과 |
 | PR5 | `windows/05-application-history` | 공통 기록 로딩·저장·삭제와 macOS 브리지 | CI 통과 |
 | PR6 | `windows/06-application-growth` | 검증된 token observation과 growth ledger 처리 경계 | CI 통과 |
-| PR7 | `windows/07-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | 진행 중 |
-| PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | 대기 |
+| PR7 | `windows/07-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | CI 통과 |
+| PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | 진행 중 |
 | PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | 대기 |
 | PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 대기 |
 | PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | 대기 |
@@ -154,3 +154,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   다룹니다.
 - 2026-08-20: PR6의 growth ledger 코디네이터가 macOS CI를 통과했습니다. PR7은
   설정 저장과 알림 정책을 provider·companion UI와 분리합니다.
+- 2026-08-20: PR7의 설정 저장 계약, macOS adapter, 공통 alert preference 모델이
+  macOS CI를 통과했습니다. PR8은 JSON 계열 provider를 두 개의 병렬 작업으로
+  검토한 뒤 하나의 stacked PR 층으로 통합합니다.
