@@ -55,7 +55,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | CI passed |
 | PR10 | `windows/10-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | CI passed |
 | PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | CI passed |
-| PR12 | `windows/12-windows-tray-ui` | Windows executable target, host lifecycle, and state-consumption seam | In progress |
+| PR12 | `windows/12-windows-tray-ui` | Windows executable target, host lifecycle, and state-consumption seam | CI passed |
 | PR13 | `windows/13-windows-tray-surface` | Win32 tray, usage panel, settings, history, diagnostics | Pending |
 | PR14 | `windows/14-windows-services` | Toasts, launch-at-login, updates, basic overlay | Pending |
 | PR15 | `windows/15-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
@@ -190,3 +190,6 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: The original PR12 scope combined the executable/host lifecycle with the
   actual tray surface, so PR12 is split into a host boundary first and the downstream
   layers are shifted by one. PR13 now owns the Win32 tray surface.
+- 2026-08-20: PR12's shared application-session tests, macOS app build, and bundle
+  validation CI passed. PR13 now implements the actual Win32 tray surface consuming
+  this session.
