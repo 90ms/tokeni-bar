@@ -48,9 +48,22 @@ targets.insert(
 #if os(Windows)
 products.append(.executable(name: "TokeniWindows", targets: ["TokeniWindows"]))
 targets.append(
+    .target(
+        name: "TokeniWindowsNative",
+        path: "Sources/TokeniWindowsNative",
+        publicHeadersPath: "include",
+        linkerSettings: [
+            .linkedLibrary("shell32"),
+            .linkedLibrary("user32"),
+        ]))
+targets.append(
     .executableTarget(
         name: "TokeniWindows",
-        dependencies: ["TokeniCore", "TokeniApplication"],
+        dependencies: [
+            "TokeniCore",
+            "TokeniApplication",
+            "TokeniWindowsNative",
+        ],
         swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]))
 #endif
 
