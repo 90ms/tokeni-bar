@@ -30,8 +30,8 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
         self.init(
             homeDirectory: homeDirectory,
             calendar: calendar,
-            configDirectory: configDirectory,
-            cliClient: ClaudeCLIUsageClient(homeDirectory: homeDirectory))
+            cliClient: ClaudeCLIUsageClient(homeDirectory: homeDirectory),
+            configDirectory: configDirectory)
     }
 
     init(
