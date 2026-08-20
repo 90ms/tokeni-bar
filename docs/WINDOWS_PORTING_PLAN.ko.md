@@ -50,7 +50,7 @@ TokeniWindows
 | PR5 | `windows/05-application-history` | 공통 기록 로딩·저장·삭제와 macOS 브리지 | CI 통과 |
 | PR6 | `windows/06-application-growth` | 검증된 token observation과 growth ledger 처리 경계 | CI 통과 |
 | PR7 | `windows/07-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | CI 통과 |
-| PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | 진행 중 |
+| PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | CI 통과 |
 | PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | 대기 |
 | PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 대기 |
 | PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | 대기 |
@@ -60,9 +60,9 @@ TokeniWindows
 | PR15 | `windows/15-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
 | PR16 | `windows/16-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
 
-PR5~PR7은 서로 다른 provider 디렉터리를 담당하지만, 이 저장소의 stacked 흐름에서는
-순차적인 층으로 제출합니다. 코드 충돌이 없는 provider 작업은 에이전트가 병렬로
-검토·준비할 수 있으나, 통합 브랜치에 적용할 때는 위 순서를 지킵니다.
+PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
+에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
+stacked PR은 리뷰·검증 순서를 보장하기 위해 하나의 PR 층으로 제출합니다.
 
 ## 공통화 경계
 
@@ -99,8 +99,8 @@ PR5~PR7은 서로 다른 provider 디렉터리를 담당하지만, 이 저장소
 | Antigravity·OpenCode | Windows SQLite 실행 또는 내장 reader, WAL 검증 | 매우 높음 |
 
 Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegistry`에는 포함되지
-않습니다. Windows 정식 지원 범위에서 이 둘을 포함할지는 PR2에서 결정하고 문서에
-기록합니다.
+않습니다. 이번 경로 이식 단계에서는 기존 macOS provider 노출 동작을 바꾸지 않고,
+기본 registry 포함 여부는 통합 단계에서 별도 결정합니다.
 
 ## 에이전트 write set
 
@@ -133,7 +133,8 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 
 ## 현재 결정 로그
 
-- 2026-08-20: Windows 포팅을 13개의 작은 stacked PR로 분리했습니다.
+- 2026-08-20: Windows 포팅을 16개의 작은 stacked PR로 분리했습니다. 큰
+  `UsageStore` 작업은 refresh·history·growth·preferences 네 층으로 나눴습니다.
 - 2026-08-20: `TokeniCore`의 계산·파서·도메인 로직은 공유하고, OS I/O와 UI는
   플랫폼 어댑터로 분리하기로 했습니다.
 - 2026-08-20: `UsageStore` 전체를 Windows UI에서 재사용하지 않고 공통 상태 계층과
@@ -157,3 +158,8 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR7의 설정 저장 계약, macOS adapter, 공통 alert preference 모델이
   macOS CI를 통과했습니다. PR8은 JSON 계열 provider를 두 개의 병렬 작업으로
   검토한 뒤 하나의 stacked PR 층으로 통합합니다.
+- 2026-08-20: PR8에서 Cline의 macOS 전용 앱 지원 경로를 주입 가능한 플랫폼 경계로
+  옮기고, Gemini·Grok의 사용자 데이터 루트도 주입할 수 있게 했습니다. Copilot은
+  기존 홈 상대 경로와 환경 변수 계약이 플랫폼 중립적이어서 변경하지 않았습니다.
+- 2026-08-20: PR8의 provider 테스트·macOS 앱 빌드·번들 검증 CI가 통과했습니다. PR9는
+  Codex·Claude CLI의 Windows 실행 파일과 프로세스 계약을 다룹니다.

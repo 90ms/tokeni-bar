@@ -51,7 +51,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR5 | `windows/05-application-history` | Shared history load, save, clear, and macOS bridge | CI passed |
 | PR6 | `windows/06-application-growth` | Verified token observations and growth-ledger boundary | CI passed |
 | PR7 | `windows/07-application-preferences` | Settings storage, alert policy, and macOS bridge | CI passed |
-| PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | In progress |
+| PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | CI passed |
 | PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | Pending |
 | PR10 | `windows/10-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | Pending |
 | PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | Pending |
@@ -61,8 +61,10 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR15 | `windows/15-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
 | PR16 | `windows/16-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
 
-PR5–PR7 touch disjoint provider directories and may be investigated in parallel, but
-they are submitted as sequential stack layers in this repository.
+PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
+they were reviewed and prepared in parallel. Shared documentation and the release-note
+fragment remain owned by the integration pass, and the work is submitted as one stack
+layer to preserve review and verification order.
 
 ## Shared boundaries
 
@@ -99,7 +101,8 @@ The existing `ProcessRunning` abstraction remains, but providers must stop const
 | Antigravity, OpenCode | Windows SQLite executable or bundled reader, WAL validation | Very high |
 
 Gemini and OpenCode have implementations and tests but are not currently in the default
-`ProviderRegistry`. Their inclusion in the Windows support scope will be decided in PR2.
+`ProviderRegistry`. This path-porting stage preserves the existing provider exposure on
+macOS; whether either provider enters the default registry is deferred to integration.
 
 ## Agent write sets
 
@@ -131,7 +134,8 @@ Each PR must satisfy all applicable items:
 
 ## Decision log
 
-- 2026-08-20: Split Windows work into 13 small stacked PRs.
+- 2026-08-20: Split Windows work into 16 small stacked PRs. The broad `UsageStore` work
+  was divided into provider refresh, history, growth, and preferences layers.
 - 2026-08-20: Share TokeniCore calculations, parsers, and domain rules; isolate OS I/O
   and UI behind platform adapters.
 - 2026-08-20: Split `UsageStore` into shared application state plus a macOS UI bridge
@@ -156,3 +160,9 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: PR7's settings contract, macOS adapter, and shared alert-preference model
   passed macOS CI. PR8 will review JSON providers in two parallel workstreams before
   integrating them as one stacked layer.
+- 2026-08-20: PR8 moves Cline's macOS-only application-support root behind an injectable
+  platform boundary and makes Gemini and Grok user-data roots injectable. Copilot keeps
+  its existing home-relative and environment-variable-based contract because it is
+  already platform-neutral.
+- 2026-08-20: PR8 provider tests, macOS app build, and bundle validation CI passed. PR9
+  starts the Windows executable and process contracts for Codex and Claude CLI providers.

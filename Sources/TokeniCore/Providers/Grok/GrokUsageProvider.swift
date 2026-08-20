@@ -18,7 +18,15 @@ public struct GrokUsageProvider: UsageProviding, UsageActivityProviding {
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         calendar: Calendar = .current)
     {
-        self.sessionsDirectory = homeDirectory.appending(path: ".grok/sessions", directoryHint: .isDirectory)
+        self.init(
+            sessionsDirectory: homeDirectory.appending(
+                path: ".grok/sessions",
+                directoryHint: .isDirectory),
+            calendar: calendar)
+    }
+
+    public init(sessionsDirectory: URL, calendar: Calendar = .current) {
+        self.sessionsDirectory = sessionsDirectory
         self.calendar = calendar
     }
 

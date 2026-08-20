@@ -14,10 +14,13 @@ public struct ClineUsageProvider: UsageProviding, UsageActivityProviding {
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         calendar: Calendar = .current,
-        roots: [URL]? = nil)
+        roots: [URL]? = nil,
+        applicationSupportDirectory: URL? = nil)
     {
         self.calendar = calendar
-        self.roots = roots ?? Self.defaultRoots(homeDirectory: homeDirectory)
+        self.roots = roots ?? Self.defaultRoots(
+            homeDirectory: homeDirectory,
+            applicationSupportDirectory: applicationSupportDirectory)
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
@@ -67,10 +70,12 @@ public struct ClineUsageProvider: UsageProviding, UsageActivityProviding {
         }.filter { seen.insert($0.standardizedFileURL).inserted }
     }
 
-    private static func defaultRoots(homeDirectory: URL) -> [URL] {
-        let applicationSupport = homeDirectory.appending(
-            path: "Library/Application Support",
-            directoryHint: .isDirectory)
+    private static func defaultRoots(
+        homeDirectory: URL,
+        applicationSupportDirectory: URL?) -> [URL]
+    {
+        let applicationSupport = applicationSupportDirectory
+            ?? Self.defaultApplicationSupportDirectory(homeDirectory: homeDirectory)
         let extensionPath = "User/globalStorage/saoudrizwan.claude-dev"
         return [
             applicationSupport.appending(path: "Code/\(extensionPath)", directoryHint: .isDirectory),
@@ -79,6 +84,19 @@ public struct ClineUsageProvider: UsageProviding, UsageActivityProviding {
             applicationSupport.appending(path: "Cursor/\(extensionPath)", directoryHint: .isDirectory),
             homeDirectory.appending(path: ".cline/data", directoryHint: .isDirectory),
         ]
+    }
+
+    private static func defaultApplicationSupportDirectory(homeDirectory: URL) -> URL {
+        #if os(Windows)
+        // APPDATA is supplied by the platform directory adapter. Keep the
+        // provider-specific relative paths below unchanged until they are
+        // verified against each Windows editor distribution.
+        return DefaultApplicationDirectoriesProvider().directories.applicationSupportDirectory
+        #else
+        return homeDirectory.appending(
+            path: "Library/Application Support",
+            directoryHint: .isDirectory)
+        #endif
     }
 }
 

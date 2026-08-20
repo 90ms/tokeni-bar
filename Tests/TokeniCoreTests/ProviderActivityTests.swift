@@ -36,11 +36,14 @@ struct ProviderActivityTests {
         defer { try? FileManager.default.removeItem(at: home) }
         let now = Date.now
         let modifiedAt = now.addingTimeInterval(-2)
+        let clineApplicationSupport = home.appending(
+            path: "cline-application-data",
+            directoryHint: .isDirectory)
         let files = [
             ".codex/sessions/2026/session.jsonl",
             ".claude/projects/project/session.jsonl",
             ".copilot/otel/usage.jsonl",
-            "Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/task/ui_messages.json",
+            "cline-application-data/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/task/ui_messages.json",
             ".gemini/antigravity-cli/conversations/conversation.db",
             ".grok/sessions/current/updates.jsonl",
         ]
@@ -59,7 +62,9 @@ struct ProviderActivityTests {
             CodexUsageProvider(homeDirectory: home),
             ClaudeUsageProvider(homeDirectory: home),
             CopilotUsageProvider(homeDirectory: home),
-            ClineUsageProvider(homeDirectory: home),
+            ClineUsageProvider(
+                homeDirectory: home,
+                applicationSupportDirectory: clineApplicationSupport),
             AntigravityUsageProvider(homeDirectory: home),
             GrokUsageProvider(homeDirectory: home),
         ]
