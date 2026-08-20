@@ -3,6 +3,7 @@ import PackageDescription
 
 var products: [Product] = [
     .library(name: "TokeniCore", targets: ["TokeniCore"]),
+    .library(name: "TokeniApplication", targets: ["TokeniApplication"]),
 ]
 
 var targets: [Target] = [
@@ -10,10 +11,20 @@ var targets: [Target] = [
         name: "TokeniCore",
         resources: [.copy("Resources")],
         swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]),
+    .target(
+        name: "TokeniApplication",
+        dependencies: ["TokeniCore"],
+        swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]),
     .testTarget(
         name: "TokeniCoreTests",
         dependencies: ["TokeniCore"],
         resources: [.copy("Fixtures")],
+        swiftSettings: [
+            .enableUpcomingFeature("StrictConcurrency"),
+        ]),
+    .testTarget(
+        name: "TokeniApplicationTests",
+        dependencies: ["TokeniApplication", "TokeniCore"],
         swiftSettings: [
             .enableUpcomingFeature("StrictConcurrency"),
         ]),
@@ -24,7 +35,7 @@ products.append(.executable(name: "TokeniBar", targets: ["TokeniBar"]))
 targets.insert(
     .executableTarget(
         name: "TokeniBar",
-        dependencies: ["TokeniCore"],
+        dependencies: ["TokeniCore", "TokeniApplication"],
         exclude: ["Resources"],
         resources: [
             .copy("BrandIcons"),

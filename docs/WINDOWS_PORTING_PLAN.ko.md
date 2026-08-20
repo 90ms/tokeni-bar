@@ -46,18 +46,19 @@ TokeniWindows
 | PR1 | `windows/01-porting-plan` | 이 계획과 공통화 결정 문서 | PR 생성 |
 | PR2 | `windows/02-platform-contracts` | `TokeniCore` Windows 타깃, 플랫폼 프로토콜, 타깃 경계 | CI 통과 |
 | PR3 | `windows/03-platform-infrastructure` | 앱 경로, 파일 저장, 프로세스 실행, CLI 탐색, SQLite | CI 통과 |
-| PR4 | `windows/04-application-refresh` | 공통 provider 갱신 코디네이터와 macOS `UsageStore` 연결 | 진행 중 |
-| PR5 | `windows/05-application-history` | 공통 기록·비용·성장 처리와 상태 전달 경계 | 대기 |
-| PR6 | `windows/06-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | 대기 |
-| PR7 | `windows/07-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | 대기 |
-| PR8 | `windows/08-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | 대기 |
-| PR9 | `windows/09-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 대기 |
-| PR10 | `windows/10-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | 대기 |
-| PR11 | `windows/11-windows-tray-ui` | 트레이, 사용량, 설정, 기록, 진단 화면 | 대기 |
-| PR12 | `windows/12-windows-services` | Toast 알림, 자동 시작, 업데이트, 기본 오버레이 | 대기 |
-| PR13 | `windows/13-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
-| PR14 | `windows/14-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
-| PR15 | `windows/15-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
+| PR4 | `windows/04-application-refresh` | 공통 provider 갱신 코디네이터와 macOS `UsageStore` 연결 | CI 통과 |
+| PR5 | `windows/05-application-history` | 공통 기록 로딩·저장·삭제와 macOS 브리지 | 진행 중 |
+| PR6 | `windows/06-application-growth` | 검증된 token observation과 growth ledger 처리 경계 | 대기 |
+| PR7 | `windows/07-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | 대기 |
+| PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | 대기 |
+| PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | 대기 |
+| PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 대기 |
+| PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | 대기 |
+| PR12 | `windows/12-windows-tray-ui` | 트레이, 사용량, 설정, 기록, 진단 화면 | 대기 |
+| PR13 | `windows/13-windows-services` | Toast 알림, 자동 시작, 업데이트, 기본 오버레이 | 대기 |
+| PR14 | `windows/14-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
+| PR15 | `windows/15-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
+| PR16 | `windows/16-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
 
 PR5~PR7은 서로 다른 provider 디렉터리를 담당하지만, 이 저장소의 stacked 흐름에서는
 순차적인 층으로 제출합니다. 코드 충돌이 없는 provider 작업은 에이전트가 병렬로
@@ -145,4 +146,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   통과했습니다. PR3를 그 브랜치 위에 시작했습니다.
 - 2026-08-20: PR3에서 앱 경로·실행 파일·SQLite 기반을 추가하고 macOS CI를
   통과했습니다. `UsageStore` 전체 이동은 너무 큰 단위이므로 provider 갱신,
-  기록·성장, 설정·알림의 세 개 application PR로 나누고 PR4를 시작합니다.
+  기록, 성장, 설정·알림의 작은 application PR로 나눴습니다.
+- 2026-08-20: PR4의 `TokeniApplication` provider 갱신 코디네이터와 macOS 브리지가
+  macOS CI를 통과했습니다. PR5는 history 저장 경계만 다루도록 시작합니다.
