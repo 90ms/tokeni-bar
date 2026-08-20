@@ -59,12 +59,11 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               Package.swift)
-                if ! package_manifest_has_macos_impact; then
-                  echo "Package.swift changes are limited to the Windows conditional block."
-                  continue
+                if package_manifest_has_macos_impact; then
+                  run_macos=true
+                  break
                 fi
-                run_macos=true
-                break
+                echo "Package.swift changes are limited to the Windows conditional block."
                 ;;
               Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniBar/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/Scripts/*|Scripts/test.sh|Scripts/package_app.sh|Scripts/validate_companion_assets.sh|packaging/Info.plist|packaging/AppIcon.png)
                 run_macos=true
