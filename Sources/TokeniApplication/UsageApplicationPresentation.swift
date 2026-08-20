@@ -10,6 +10,7 @@ public struct UsageApplicationProviderPresentation: Identifiable, Equatable, Sen
     public let descriptor: ProviderDescriptor
     public let availability: ProviderAvailability
     public let connectionState: ProviderConnectionState
+    public let quotaWindows: [QuotaWindow]
     public let remainingPercent: Double?
     public let tokenTotal: Int64?
     public let costUSD: Double?
@@ -23,6 +24,7 @@ public struct UsageApplicationProviderPresentation: Identifiable, Equatable, Sen
         self.availability = snapshot.availability
         self.connectionState = snapshot.connectionState
             ?? (snapshot.availability == .available ? .localOnly : .stale)
+        self.quotaWindows = snapshot.quotaWindows
         self.remainingPercent = snapshot.availability == .available
             ? snapshot.quotaWindows.map(\.remainingPercent).min()
             : nil

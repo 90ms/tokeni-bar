@@ -15,6 +15,8 @@ static HWND tokeni_window;
 static HINSTANCE tokeni_instance;
 static NOTIFYICONDATAW tokeni_icon;
 static int tokeni_class_registered;
+static LONG tokeni_refresh_requested;
+static WCHAR tokeni_details[8192];
 
 static int tokeni_copy_utf8(
     const char *source,
@@ -59,6 +61,22 @@ static void tokeni_destroy_window(void)
     }
 }
 
+static void tokeni_show_details(void)
+{
+    if (tokeni_window == NULL) {
+        return;
+    }
+
+    SetForegroundWindow(tokeni_window);
+    MessageBoxW(
+        NULL,
+        tokeni_details[0] == L'\0'
+            ? L"Usage is not available yet."
+            : tokeni_details,
+        L"Tokeni Bar",
+        MB_OK | MB_ICONINFORMATION);
+}
+
 static LRESULT CALLBACK tokeni_window_proc(
     HWND window,
     UINT message,
@@ -66,6 +84,11 @@ static LRESULT CALLBACK tokeni_window_proc(
     LPARAM l_param)
 {
     (void)w_param;
+
+    if (message == tokeni_tray_callback_message && l_param == WM_LBUTTONUP) {
+        tokeni_show_details();
+        return 0;
+    }
 
     if (message == tokeni_tray_callback_message
         && (l_param == WM_RBUTTONUP || l_param == WM_CONTEXTMENU))
@@ -76,7 +99,10 @@ static LRESULT CALLBACK tokeni_window_proc(
 
         HMENU menu = CreatePopupMenu();
         if (menu != NULL) {
-            AppendMenuW(menu, MF_STRING, 1, L"Quit Tokeni Bar");
+            AppendMenuW(menu, MF_STRING, 1, L"Show details");
+            AppendMenuW(menu, MF_STRING, 2, L"Refresh now");
+            AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(menu, MF_STRING, 3, L"Quit Tokeni Bar");
             UINT command = TrackPopupMenu(
                 menu,
                 TPM_RETURNCMD | TPM_NONOTIFY,
@@ -86,6 +112,10 @@ static LRESULT CALLBACK tokeni_window_proc(
                 window,
                 NULL);
             if (command == 1) {
+                tokeni_show_details();
+            } else if (command == 2) {
+                InterlockedExchange(&tokeni_refresh_requested, 1);
+            } else if (command == 3) {
                 PostMessageW(window, WM_CLOSE, 0, 0);
             }
             DestroyMenu(menu);
@@ -152,6 +182,8 @@ int tokeni_windows_tray_start(
     }
 
     ZeroMemory(&tokeni_icon, sizeof(tokeni_icon));
+    tokeni_details[0] = L'\0';
+    InterlockedExchange(&tokeni_refresh_requested, 0);
     tokeni_icon.cbSize = sizeof(tokeni_icon);
     tokeni_icon.hWnd = tokeni_window;
     tokeni_icon.uID = tokeni_tray_identifier;
@@ -187,6 +219,23 @@ int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8)
 
     tokeni_icon.uFlags = NIF_TIP;
     return Shell_NotifyIconW(NIM_MODIFY, &tokeni_icon) ? 1 : 0;
+}
+
+int tokeni_windows_tray_update_details(const char *details_utf8)
+{
+    if (tokeni_window == NULL) {
+        return 0;
+    }
+
+    return tokeni_copy_utf8(
+        details_utf8,
+        tokeni_details,
+        (int)(sizeof(tokeni_details) / sizeof(tokeni_details[0])));
+}
+
+int tokeni_windows_tray_take_refresh_request(void)
+{
+    return InterlockedExchange(&tokeni_refresh_requested, 0);
 }
 
 int tokeni_windows_tray_is_started(void)
@@ -255,6 +304,17 @@ int tokeni_windows_tray_start(
 int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8)
 {
     (void)tooltip_utf8;
+    return 0;
+}
+
+int tokeni_windows_tray_update_details(const char *details_utf8)
+{
+    (void)details_utf8;
+    return 0;
+}
+
+int tokeni_windows_tray_take_refresh_request(void)
+{
     return 0;
 }
 

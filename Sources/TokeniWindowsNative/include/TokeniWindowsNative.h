@@ -11,6 +11,10 @@ int tokeni_windows_tray_start(
 
 int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8);
 
+int tokeni_windows_tray_update_details(const char *details_utf8);
+
+int tokeni_windows_tray_take_refresh_request(void);
+
 int tokeni_windows_tray_is_started(void);
 
 int tokeni_windows_tray_notify(

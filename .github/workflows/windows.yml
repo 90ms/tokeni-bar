@@ -223,7 +223,9 @@ jobs:
       - name: Test Windows package surface
         if: github.event_name == 'workflow_dispatch'
         shell: pwsh
-        run: swift test --parallel --filter WindowsAppUpdateInstallerTests
+        run: |
+          swift test --parallel --filter WindowsAppUpdateInstallerTests
+          swift test --parallel --filter WindowsUsageDetailFormatterTests
 
       - name: Build Windows executable
         shell: pwsh

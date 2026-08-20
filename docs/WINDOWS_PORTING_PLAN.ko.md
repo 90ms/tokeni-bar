@@ -63,7 +63,9 @@ TokeniWindows
 | PR18 | `windows/18-windows-updates` | Windows 업데이트 설치 계약과 안전한 미지원 상태 | CI 통과 |
 | PR19 | `windows/19-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | CI 통과 |
 | PR20 | `windows/20-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | CI 통과 |
-| PR21 | `windows/21-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
+| PR21 | `windows/21-tray-details` | Windows tray 상세 화면·reset 시각·새로 고침/종료 액션 | CI 통과 |
+| PR22 | `windows/22-windows-services-ui` | 설정·알림·자동 시작·업데이트 액션 | 대기 |
+| PR23 | `windows/23-companion-integration` | companion overlay 연결, 최종 macOS 회귀와 Windows 실기기 검증 | 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -236,3 +238,10 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   application 공통 변경은 두 검증을 계속 실행합니다. 일반 Windows pull request에서는
   오래 걸리는 전체 테스트를 생략하며, Windows 업데이트 설치 집중 테스트는 수동 실행으로
   남겼습니다.
+- 2026-08-20: 남은 통합 작업을 세 개의 작은 층으로 나눴습니다. PR21은 provider 상세와
+  검증된 reset 시각, 새로 고침·종료 액션을 보여 주어 tray를 일상적으로 사용할 수 있게
+  합니다. PR22는 Windows 설정과 서비스 제어를 담당하고, PR23은 companion overlay를
+  연결한 뒤 최종 macOS·Windows 검증을 수행합니다.
+- 2026-08-20: PR21의 Windows tray 상세 formatter·native tray 액션·macOS 테스트·앱 번들
+  검증·Windows release package가 CI를 통과했습니다. Windows 상세 화면은 검증된 quota
+  window만 표시하고 provider가 reset 시각을 주지 않으면 해당 정보를 표시하지 않습니다.
