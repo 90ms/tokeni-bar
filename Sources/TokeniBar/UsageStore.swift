@@ -1,4 +1,5 @@
 import TokeniCore
+import TokeniApplication
 import AppKit
 import Foundation
 
@@ -91,6 +92,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionEconomyErrorMessage: String?
 
     private let providers: [any UsageProviding]
+    private let refreshCoordinator: UsageRefreshCoordinator
     private var refreshLoop: Task<Void, Never>?
     private var activityLoop: Task<Void, Never>?
     private let notificationController: UsageNotificationController
@@ -176,6 +178,7 @@ final class UsageStore: ObservableObject {
     init(providers: [any UsageProviding] = ProviderRegistry.defaultProviders()) {
         let knownIDs = Set(providers.map { $0.descriptor.id })
         self.providers = providers
+        self.refreshCoordinator = UsageRefreshCoordinator(providers: providers)
         let notificationController = UsageNotificationController()
         let launchAtLoginController = LaunchAtLoginController()
         let historyStore = UsageHistoryStore()
@@ -420,29 +423,10 @@ final class UsageStore: ObservableObject {
     func refresh(forceProviderReload: Bool = false) async {
         guard !self.isRefreshing else { return }
         self.isRefreshing = true
-        let activeProviders = self.providers.filter { self.enabledProviderIDs.contains($0.descriptor.id) }
-
-        if forceProviderReload {
-            for provider in activeProviders {
-                if let cachedProvider = provider as? any UsageCacheInvalidating {
-                    await cachedProvider.invalidateUsageCache()
-                }
-            }
-        }
-
-        let results = await withTaskGroup(of: ProviderSnapshot.self, returning: [ProviderSnapshot].self) { group in
-            for provider in activeProviders {
-                group.addTask { await provider.fetchUsage() }
-            }
-            var collected: [ProviderSnapshot] = []
-            for await result in group {
-                collected.append(result)
-            }
-            return collected
-        }
-
-        let order = Dictionary(uniqueKeysWithValues: activeProviders.enumerated().map { ($1.descriptor.id, $0) })
-        self.snapshots = results.sorted { order[$0.id, default: .max] < order[$1.id, default: .max] }
+        let refreshResult = await self.refreshCoordinator.refresh(
+            enabledProviderIDs: self.enabledProviderIDs,
+            forceProviderReload: forceProviderReload)
+        self.snapshots = refreshResult.snapshots
         self.notificationDiagnostics = self.notificationController.process(
             self.snapshots,
             history: self.historyRecords,
@@ -450,7 +434,7 @@ final class UsageStore: ObservableObject {
             criticalThreshold: self.criticalThreshold,
             preferences: self.notificationPreferences,
             enabledProviderIDs: self.notificationProviderIDs)
-        self.lastRefresh = .now
+        self.lastRefresh = refreshResult.refreshedAt
         do {
             try await self.historyStore.record(self.snapshots, at: self.lastRefresh ?? .now)
             self.historyRecords = try await self.historyStore.records()
