@@ -107,17 +107,15 @@ final class UsageStore: ObservableObject {
     private let companionBenefitStateStore: CompanionBenefitStateStore
     private let companionEconomyTransactionStore:
         CompanionEconomyTransactionStore
-    private let tokenGrowthLedgerStore: TokenGrowthLedgerStore
+    private let tokenGrowthLedgerCoordinator: TokenGrowthLedgerCoordinator
     private let companionGameEngine = CompanionGameEngine()
     private let companionRewardEngine = CompanionRewardEngine()
     private let companionBenefitEngine = CompanionBenefitEngine()
-    private let tokenGrowthLedgerEngine = TokenGrowthLedgerEngine()
     private var tokenGrowthLedgerState: TokenGrowthLedgerState
     private var companionStateLoaded = false
     private var companionStateSaveRevision: UInt64 = 0
     private var companionRewardSaveRevision: UInt64 = 0
     private var companionBenefitSaveRevision: UInt64 = 0
-    private var tokenGrowthLedgerSaveRevision: UInt64 = 0
     private var companionStateSaveTask: Task<Void, Never>?
     private var companionRewardSaveTask: Task<Void, Never>?
     private var companionBenefitSaveTask: Task<Void, Never>?
@@ -191,7 +189,7 @@ final class UsageStore: ObservableObject {
         let companionBenefitStateStore = CompanionBenefitStateStore()
         let companionEconomyTransactionStore =
             CompanionEconomyTransactionStore()
-        let tokenGrowthLedgerStore = TokenGrowthLedgerStore()
+        let tokenGrowthLedgerCoordinator = TokenGrowthLedgerCoordinator()
         self.notificationController = notificationController
         self.launchAtLoginController = launchAtLoginController
         self.historyCoordinator = historyCoordinator
@@ -204,7 +202,7 @@ final class UsageStore: ObservableObject {
         self.companionBenefitStateStore = companionBenefitStateStore
         self.companionEconomyTransactionStore =
             companionEconomyTransactionStore
-        self.tokenGrowthLedgerStore = tokenGrowthLedgerStore
+        self.tokenGrowthLedgerCoordinator = tokenGrowthLedgerCoordinator
         self.tokenGrowthLedgerState = TokenGrowthLedgerState()
         self.notificationsEnabled = notificationController.isEnabled
         self.notificationSettingsMessage = nil
@@ -382,7 +380,7 @@ final class UsageStore: ObservableObject {
             }
             do {
                 self.tokenGrowthLedgerState = try await self
-                    .tokenGrowthLedgerStore.load()
+                    .tokenGrowthLedgerCoordinator.load()
             } catch {
                 self.companionGrowthDataUnavailable = true
             }
@@ -2124,17 +2122,11 @@ final class UsageStore: ObservableObject {
               self.companionStateLoaded,
               !self.companionGrowthDataUnavailable
         else { return }
-        var ledger = self.tokenGrowthLedgerState
-        _ = self.tokenGrowthLedgerEngine.process(
-            observations: self.snapshots.compactMap(\.growthUsageObservation),
-            at: now,
-            in: &ledger)
         do {
-            self.tokenGrowthLedgerSaveRevision &+= 1
-            try await self.tokenGrowthLedgerStore.save(
-                ledger,
-                revision: self.tokenGrowthLedgerSaveRevision)
-            self.tokenGrowthLedgerState = ledger
+            let update = try await self.tokenGrowthLedgerCoordinator.process(
+                observations: self.snapshots.compactMap(\.growthUsageObservation),
+                at: now)
+            self.tokenGrowthLedgerState = update.state
         } catch {
             return
         }
@@ -2215,14 +2207,9 @@ final class UsageStore: ObservableObject {
                 self.reconcileCompanionRewards()
             }
 
-            var ledger = self.tokenGrowthLedgerState
-            self.tokenGrowthLedgerEngine.markApplied(award.id, in: &ledger)
             do {
-                self.tokenGrowthLedgerSaveRevision &+= 1
-                try await self.tokenGrowthLedgerStore.save(
-                    ledger,
-                    revision: self.tokenGrowthLedgerSaveRevision)
-                self.tokenGrowthLedgerState = ledger
+                self.tokenGrowthLedgerState = try await self
+                    .tokenGrowthLedgerCoordinator.markApplied(award.id)
             } catch {
                 return
             }
