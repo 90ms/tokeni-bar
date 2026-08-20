@@ -38,7 +38,7 @@ struct OpenCodeProviderTests {
     }
 
     @Test
-    func readsOnlyAggregateColumnsFromSanitizedDatabase() async throws {
+    func readsOnlyAggregateColumnsUsingInjectedSQLiteReader() async throws {
         let temporaryHome = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         let dataDirectory = temporaryHome.appending(
@@ -47,9 +47,13 @@ struct OpenCodeProviderTests {
         defer { try? FileManager.default.removeItem(at: temporaryHome) }
         try FileManager.default.createDirectory(at: dataDirectory, withIntermediateDirectories: true)
         let database = dataDirectory.appending(path: "opencode.db")
-        try self.createSanitizedDatabase(at: database)
+        try Data("portable test database placeholder".utf8).write(to: database)
+        let queryRunner = RecordingSQLiteQueryRunner(response: try self.fixtureData())
 
-        let snapshot = await OpenCodeUsageProvider(homeDirectory: temporaryHome).fetchUsage()
+        let snapshot = await OpenCodeUsageProvider(
+            homeDirectory: temporaryHome,
+            queryRunner: queryRunner).fetchUsage()
+        let recordedSQL = await queryRunner.recordedSQL()
 
         #expect(snapshot.availability == .available)
         #expect(snapshot.tokenUsage?.totalTokens == 2450)
@@ -58,35 +62,61 @@ struct OpenCodeProviderTests {
         #expect(snapshot.growthUsageObservation?.totalTokens == 2450)
         #expect(abs((snapshot.costEstimate?.amountUSD ?? 0) - 0.0425) < 0.000_000_1)
         #expect(snapshot.detail == "All-time local sessions · 3 sessions")
+        #expect(recordedSQL?.contains("COUNT(*) AS session_count") == true)
+        #expect(recordedSQL?.contains("SUM(tokens_cache_write)") == true)
+        #expect(recordedSQL?.contains("FROM session") == true)
     }
 
-    private func createSanitizedDatabase(at url: URL) throws {
-        let schema = """
-            CREATE TABLE session (
-              cost REAL NOT NULL,
-              tokens_input INTEGER NOT NULL,
-              tokens_output INTEGER NOT NULL,
-              tokens_reasoning INTEGER NOT NULL,
-              tokens_cache_read INTEGER NOT NULL,
-              tokens_cache_write INTEGER NOT NULL
-            );
-            INSERT INTO session VALUES (0.0200, 500, 100, 20, 300, 40);
-            INSERT INTO session VALUES (0.0125, 400, 100, 20, 250, 30);
-            INSERT INTO session VALUES (0.0100, 300, 100, 10, 250, 30);
-            """
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
-        process.arguments = ["-batch", "-init", "/dev/null", url.path, schema]
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            throw OpenCodeTestError.databaseCreationFailed
-        }
+    @Test
+    func reportsFailedWhenInjectedSQLiteReaderFails() async throws {
+        let temporaryHome = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let dataDirectory = temporaryHome.appending(
+            path: ".local/share/opencode",
+            directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: temporaryHome) }
+        try FileManager.default.createDirectory(at: dataDirectory, withIntermediateDirectories: true)
+        try Data("portable test database placeholder".utf8).write(
+            to: dataDirectory.appending(path: "opencode.db"))
+
+        let snapshot = await OpenCodeUsageProvider(
+            homeDirectory: temporaryHome,
+            queryRunner: FailingSQLiteQueryRunner()).fetchUsage()
+
+        #expect(snapshot.availability == .failed)
+        #expect(snapshot.tokenUsage == nil)
+        #expect(snapshot.costEstimate == nil)
+    }
+
+    private func fixtureData() throws -> Data {
+        let file = try #require(Bundle.module.url(
+            forResource: "opencode-usage",
+            withExtension: "json",
+            subdirectory: "Fixtures"))
+        return try Data(contentsOf: file)
     }
 }
 
-private enum OpenCodeTestError: Error {
-    case databaseCreationFailed
+private actor RecordingSQLiteQueryRunner: ReadOnlySQLiteQuerying {
+    private let response: Data
+    private var sql: String?
+
+    init(response: Data) {
+        self.response = response
+    }
+
+    func queryJSON(databaseURL: URL, sql: String) async throws -> Data {
+        self.sql = sql
+        return self.response
+    }
+
+    func recordedSQL() -> String? {
+        self.sql
+    }
+}
+
+private struct FailingSQLiteQueryRunner: ReadOnlySQLiteQuerying {
+    func queryJSON(databaseURL: URL, sql: String) async throws -> Data {
+        throw SQLiteQueryError.commandFailed(1)
+    }
 }
