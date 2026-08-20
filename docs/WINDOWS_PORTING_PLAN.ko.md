@@ -58,11 +58,12 @@ TokeniWindows
 | PR13 | `windows/13-windows-tray-surface` | Win32 트레이 셸·사용량 표시 모델과 기본 tooltip | CI 통과 |
 | PR14 | `windows/14-settings-storage` | Windows 파일 기반 설정 저장소와 공통 preference 연결 경계 | CI 통과 |
 | PR15 | `windows/15-memory-lifecycle` | 기존 macOS 사용량 갱신의 메모리 증가 원인 수정 | CI 통과 |
-| PR16 | `windows/16-claude-reset-time` | Claude 5시간 quota reset 시각의 검증된 전달·표시 | 진행 중 |
-| PR17 | `windows/17-windows-services` | Windows 알림·자동 시작·업데이트 서비스 어댑터 | 대기 |
-| PR18 | `windows/18-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
-| PR19 | `windows/19-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
-| PR20 | `windows/20-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
+| PR16 | `windows/16-claude-reset-time` | Claude 5시간 quota reset 시각의 검증된 전달·표시 | CI 통과 |
+| PR17 | `windows/17-windows-services` | Windows 알림·자동 시작 서비스 어댑터 | CI 통과 |
+| PR18 | `windows/18-windows-updates` | Windows 업데이트 설치 계약과 안전한 미지원 상태 | 진행 중 |
+| PR19 | `windows/19-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
+| PR20 | `windows/20-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
+| PR21 | `windows/21-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -137,7 +138,7 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 
 ## 현재 결정 로그
 
-- 2026-08-20: Windows 포팅과 회귀 수정을 20개의 작은 stacked PR로 분리했습니다. 큰
+- 2026-08-20: Windows 포팅과 회귀 수정을 21개의 작은 stacked PR로 분리했습니다. 큰
   `UsageStore` 작업은 refresh·history·growth·preferences 네 층으로 나눴습니다.
 - 2026-08-20: `TokeniCore`의 계산·파서·도메인 로직은 공유하고, OS I/O와 UI는
   플랫폼 어댑터로 분리하기로 했습니다.
@@ -204,3 +205,10 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR15에서 companion overlay의 retain cycle과 반복 저장 task 누적
   경계를 정리했고 macOS 테스트·앱 빌드·번들 검증 CI가 통과했습니다. PR16은
   Claude CLI의 여러 줄 사용량 응답에서 5시간 reset 시각을 연결합니다.
+- 2026-08-20: PR16의 Claude parser 테스트·macOS 앱 빌드·번들 검증 CI가 통과했습니다.
+  Windows 알림·자동 시작과 업데이트 설치는 API·권한·배포 위험이 달라 PR17과
+  PR18로 다시 분리합니다.
+- 2026-08-20: PR17에서 Win32 알림 풍선과 HKCU 사용자별 자동 시작 등록을
+  공통 계약 뒤의 Windows 어댑터로 분리했고, macOS 테스트·앱 빌드·번들 검증 CI가
+  통과했습니다. PR18은 실제 설치 패키지 계약이 준비되기 전 업데이트 자동 설치를
+  가장하지 않는 안전한 경계로 시작합니다.
