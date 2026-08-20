@@ -53,6 +53,7 @@ targets.append(
         path: "Sources/TokeniWindowsNative",
         publicHeadersPath: "include",
         linkerSettings: [
+            .linkedLibrary("advapi32"),
             .linkedLibrary("shell32"),
             .linkedLibrary("user32"),
         ]))

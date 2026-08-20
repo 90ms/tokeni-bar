@@ -188,6 +188,39 @@ int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8)
     return Shell_NotifyIconW(NIM_MODIFY, &tokeni_icon) ? 1 : 0;
 }
 
+int tokeni_windows_tray_is_started(void)
+{
+    return tokeni_window != NULL ? 1 : 0;
+}
+
+int tokeni_windows_tray_notify(
+    const char *title_utf8,
+    const char *body_utf8)
+{
+    if (tokeni_window == NULL || title_utf8 == NULL || body_utf8 == NULL) {
+        return 0;
+    }
+
+    NOTIFYICONDATAW notification = tokeni_icon;
+    if (!tokeni_copy_utf8(
+            title_utf8,
+            notification.szInfoTitle,
+            (int)(sizeof(notification.szInfoTitle)
+                / sizeof(notification.szInfoTitle[0])))
+        || !tokeni_copy_utf8(
+            body_utf8,
+            notification.szInfo,
+            (int)(sizeof(notification.szInfo)
+                / sizeof(notification.szInfo[0]))))
+    {
+        return 0;
+    }
+
+    notification.uFlags = NIF_INFO;
+    notification.dwInfoFlags = NIIF_INFO;
+    return Shell_NotifyIconW(NIM_MODIFY, &notification) ? 1 : 0;
+}
+
 int tokeni_windows_tray_run(void)
 {
     MSG message;
@@ -221,6 +254,20 @@ int tokeni_windows_tray_start(
 int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8)
 {
     (void)tooltip_utf8;
+    return 0;
+}
+
+int tokeni_windows_tray_is_started(void)
+{
+    return 0;
+}
+
+int tokeni_windows_tray_notify(
+    const char *title_utf8,
+    const char *body_utf8)
+{
+    (void)title_utf8;
+    (void)body_utf8;
     return 0;
 }
 
