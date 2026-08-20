@@ -168,9 +168,9 @@ enum LocalFiles {
             var lineStart = buffer.startIndex
             while let newline = buffer[lineStart...].firstIndex(of: 0x0A) {
                 if newline > lineStart {
-                    autoreleasepool {
-                        consume(Data(buffer[lineStart..<newline]))
-                    }
+                    self.consumeLine(
+                        Data(buffer[lineStart..<newline]),
+                        using: consume)
                 }
                 lineStart = buffer.index(after: newline)
             }
@@ -180,11 +180,22 @@ enum LocalFiles {
         }
 
         if !buffer.isEmpty {
-            autoreleasepool {
-                consume(buffer)
-            }
+            self.consumeLine(buffer, using: consume)
         }
         return true
+    }
+
+    private static func consumeLine(
+        _ line: Data,
+        using consume: (Data) -> Void)
+    {
+#if canImport(ObjectiveC)
+        autoreleasepool {
+            consume(line)
+        }
+#else
+        consume(line)
+#endif
     }
 }
 
