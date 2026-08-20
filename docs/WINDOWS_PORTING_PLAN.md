@@ -60,8 +60,8 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR14 | `windows/14-settings-storage` | Windows file-backed settings and shared preference seam | CI passed |
 | PR15 | `windows/15-memory-lifecycle` | Fix existing macOS usage-refresh memory growth | CI passed |
 | PR16 | `windows/16-claude-reset-time` | Verified Claude five-hour quota reset propagation/display | CI passed |
-| PR17 | `windows/17-windows-services` | Windows notification and startup adapters | In progress |
-| PR18 | `windows/18-windows-updates` | Windows update-install contract and safe unsupported state | Pending |
+| PR17 | `windows/17-windows-services` | Windows notification and startup adapters | CI passed |
+| PR18 | `windows/18-windows-updates` | Windows update-install contract and safe unsupported state | In progress |
 | PR19 | `windows/19-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
 | PR20 | `windows/20-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
 | PR21 | `windows/21-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
@@ -215,3 +215,7 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: PR16's Claude parser tests, macOS app build, and bundle validation CI passed.
   Windows notifications/startup and update installation are split into PR17 and PR18
   because they have different API, permission, and distribution risks.
+- 2026-08-20: PR17 moved Win32 notification balloons and per-user HKCU startup
+  registration behind the shared contracts, and its macOS tests, app build, and bundle
+  validation CI passed. PR18 starts with a safe update boundary that does not pretend to
+  install updates before the Windows package contract exists.
