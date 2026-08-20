@@ -54,11 +54,12 @@ TokeniWindows
 | PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | CI 통과 |
 | PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | CI 통과 |
 | PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | CI 통과 |
-| PR12 | `windows/12-windows-tray-ui` | 트레이, 사용량, 설정, 기록, 진단 화면 | 대기 |
-| PR13 | `windows/13-windows-services` | Toast 알림, 자동 시작, 업데이트, 기본 오버레이 | 대기 |
-| PR14 | `windows/14-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
-| PR15 | `windows/15-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
-| PR16 | `windows/16-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
+| PR12 | `windows/12-windows-tray-ui` | Windows 실행 타깃·호스트 수명주기·상태 소비 경계 | 진행 중 |
+| PR13 | `windows/13-windows-tray-surface` | Win32 트레이, 사용량 패널, 설정·기록·진단 화면 | 대기 |
+| PR14 | `windows/14-windows-services` | Toast 알림, 자동 시작, 업데이트, 기본 오버레이 | 대기 |
+| PR15 | `windows/15-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
+| PR16 | `windows/16-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
+| PR17 | `windows/17-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -182,3 +183,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   상태를 소비합니다.
 - 2026-08-20: PR11의 macOS 테스트·앱 빌드·번들 검증 CI가 통과했습니다. 다음은
   이 상태 경계를 소비하는 Windows 트레이 UI 단계입니다.
+- 2026-08-20: 원래 PR12의 범위가 실행 타깃·호스트 수명주기와 실제 트레이 화면을
+  함께 포함해 커질 수 있으므로, PR12를 호스트 경계로 먼저 분리하고 이후 단계를
+  한 층씩 뒤로 이동했습니다. PR13부터 실제 Win32 트레이 표면을 구현합니다.

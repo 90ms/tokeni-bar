@@ -45,6 +45,15 @@ targets.insert(
     at: 1)
 #endif
 
+#if os(Windows)
+products.append(.executable(name: "TokeniWindows", targets: ["TokeniWindows"]))
+targets.append(
+    .executableTarget(
+        name: "TokeniWindows",
+        dependencies: ["TokeniCore", "TokeniApplication"],
+        swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]))
+#endif
+
 let package = Package(
     name: "TokeniBar",
     platforms: [

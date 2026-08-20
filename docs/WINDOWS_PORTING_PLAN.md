@@ -55,11 +55,12 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | CI passed |
 | PR10 | `windows/10-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | CI passed |
 | PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | CI passed |
-| PR12 | `windows/12-windows-tray-ui` | Tray, usage, settings, history, diagnostics | Pending |
-| PR13 | `windows/13-windows-services` | Toasts, launch-at-login, updates, basic overlay | Pending |
-| PR14 | `windows/14-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
-| PR15 | `windows/15-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
-| PR16 | `windows/16-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
+| PR12 | `windows/12-windows-tray-ui` | Windows executable target, host lifecycle, and state-consumption seam | In progress |
+| PR13 | `windows/13-windows-tray-surface` | Win32 tray, usage panel, settings, history, diagnostics | Pending |
+| PR14 | `windows/14-windows-services` | Toasts, launch-at-login, updates, basic overlay | Pending |
+| PR15 | `windows/15-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
+| PR16 | `windows/16-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
+| PR17 | `windows/17-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -186,3 +187,6 @@ Each PR must satisfy all applicable items:
   the next layer.
 - 2026-08-20: PR11's macOS tests, app build, and bundle validation CI passed. The next
   layer is the Windows tray UI that consumes this shared state boundary.
+- 2026-08-20: The original PR12 scope combined the executable/host lifecycle with the
+  actual tray surface, so PR12 is split into a host boundary first and the downstream
+  layers are shifted by one. PR13 now owns the Win32 tray surface.
