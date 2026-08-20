@@ -8,6 +8,7 @@ import TokeniCore
 public struct WindowsTrayServiceCoordinator: Sendable {
     public static let launchAtLoginKey = "windows.launchAtLogin"
     public static let notificationsEnabledKey = "windows.notificationsEnabled"
+    public static let companionEnabledKey = "windows.companionEnabled"
 
     private let settings: any SettingsStoring
     private let launchAtLogin: WindowsLaunchAtLoginManager

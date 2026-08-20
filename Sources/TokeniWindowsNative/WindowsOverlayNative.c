@@ -14,6 +14,76 @@ static HINSTANCE tokeni_overlay_instance;
 static int tokeni_overlay_class_registered;
 static int tokeni_overlay_click_through;
 static int tokeni_overlay_visible;
+static int tokeni_overlay_stage;
+static int tokeni_overlay_level;
+
+static void tokeni_overlay_paint(HDC device_context, const RECT *bounds)
+{
+    int width = bounds->right - bounds->left;
+    int height = bounds->bottom - bounds->top;
+    int dimension = width < height ? width : height;
+    int center_x = width / 2;
+    int center_y = height / 2;
+    int radius = dimension / 3;
+    COLORREF body_color;
+
+    switch (tokeni_overlay_stage) {
+    case 0:
+        body_color = RGB(255, 240, 179);
+        radius = dimension / 4;
+        break;
+    case 1:
+        body_color = RGB(66, 214, 206);
+        break;
+    case 2:
+        body_color = RGB(8, 169, 174);
+        break;
+    default:
+        body_color = tokeni_overlay_level >= 10
+            ? RGB(255, 113, 99)
+            : RGB(11, 58, 99);
+        break;
+    }
+
+    HBRUSH body_brush = CreateSolidBrush(body_color);
+    if (body_brush != NULL) {
+        HGDIOBJ previous_brush = SelectObject(device_context, body_brush);
+        Ellipse(
+            device_context,
+            center_x - radius,
+            center_y - radius,
+            center_x + radius,
+            center_y + radius);
+        SelectObject(device_context, previous_brush);
+        DeleteObject(body_brush);
+    }
+
+    if (tokeni_overlay_stage != 0) {
+        HBRUSH eye_brush = CreateSolidBrush(RGB(7, 27, 53));
+        if (eye_brush != NULL) {
+            HGDIOBJ previous_brush = SelectObject(device_context, eye_brush);
+            int eye_radius = radius / 10;
+            if (eye_radius < 2) {
+                eye_radius = 2;
+            }
+            int eye_y = center_y - radius / 4;
+            Ellipse(
+                device_context,
+                center_x - radius / 3 - eye_radius,
+                eye_y - eye_radius,
+                center_x - radius / 3 + eye_radius,
+                eye_y + eye_radius);
+            Ellipse(
+                device_context,
+                center_x + radius / 3 - eye_radius,
+                eye_y - eye_radius,
+                center_x + radius / 3 + eye_radius,
+                eye_y + eye_radius);
+            SelectObject(device_context, previous_brush);
+            DeleteObject(eye_brush);
+        }
+    }
+}
 
 static int tokeni_overlay_clamp_frame(
     int x,
@@ -136,6 +206,20 @@ static LRESULT CALLBACK tokeni_overlay_window_proc(
         return 1;
     }
 
+    if (message == WM_PAINT) {
+        PAINTSTRUCT paint;
+        HDC device_context = BeginPaint(window, &paint);
+        if (device_context != NULL) {
+            RECT bounds;
+            GetClientRect(window, &bounds);
+            HBRUSH transparent_brush = (HBRUSH)GetStockObject(BLACK_BRUSH);
+            FillRect(device_context, &bounds, transparent_brush);
+            tokeni_overlay_paint(device_context, &bounds);
+            EndPaint(window, &paint);
+        }
+        return 0;
+    }
+
     if (message == WM_CLOSE) {
         DestroyWindow(window);
         return 0;
@@ -230,9 +314,9 @@ int tokeni_windows_overlay_start(
 
     if (!SetLayeredWindowAttributes(
             tokeni_overlay_window,
+            RGB(0, 0, 0),
             0,
-            255,
-            LWA_ALPHA)
+            LWA_COLORKEY)
         || !tokeni_overlay_update_click_through(tokeni_overlay_window))
     {
         tokeni_windows_overlay_stop();
@@ -315,6 +399,17 @@ int tokeni_windows_overlay_set_click_through(int enabled)
     return tokeni_overlay_update_click_through(tokeni_overlay_window);
 }
 
+int tokeni_windows_overlay_set_state(int stage, int level)
+{
+    tokeni_overlay_stage = stage < 0 ? 0 : (stage > 3 ? 3 : stage);
+    tokeni_overlay_level = level < 0 ? 0 : level;
+    if (tokeni_overlay_window != NULL) {
+        InvalidateRect(tokeni_overlay_window, NULL, TRUE);
+        UpdateWindow(tokeni_overlay_window);
+    }
+    return 1;
+}
+
 void tokeni_windows_overlay_stop(void)
 {
     HWND window = tokeni_overlay_window;
@@ -378,6 +473,13 @@ int tokeni_windows_overlay_set_frame(
 int tokeni_windows_overlay_set_click_through(int enabled)
 {
     (void)enabled;
+    return 0;
+}
+
+int tokeni_windows_overlay_set_state(int stage, int level)
+{
+    (void)stage;
+    (void)level;
     return 0;
 }
 

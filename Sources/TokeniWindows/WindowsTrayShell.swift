@@ -75,6 +75,19 @@ public final class WindowsTrayShell: @unchecked Sendable {
     }
 
     @discardableResult
+    public func setCompanionEnabled(_ enabled: Bool) -> Bool {
+        self.stateLock.lock()
+        defer { self.stateLock.unlock() }
+        guard self.started else { return false }
+        tokeni_windows_tray_set_companion_enabled(enabled ? 1 : 0)
+        return true
+    }
+
+    public func takeCompanionToggleRequest() -> Bool {
+        tokeni_windows_tray_take_companion_toggle_request() != 0
+    }
+
+    @discardableResult
     public func run() -> Int32 {
         self.stateLock.lock()
         let started = self.started

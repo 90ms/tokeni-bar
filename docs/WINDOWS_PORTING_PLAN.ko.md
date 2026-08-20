@@ -65,7 +65,8 @@ TokeniWindows
 | PR20 | `windows/20-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | CI 통과 |
 | PR21 | `windows/21-tray-details` | Windows tray 상세 화면·reset 시각·새로 고침/종료 액션 | CI 통과 |
 | PR22 | `windows/22-windows-services-ui` | 설정·알림·자동 시작 tray 액션 | CI 통과 |
-| PR23 | `windows/23-companion-integration` | companion overlay 연결, 최종 macOS 회귀와 Windows 실기기 검증 | 대기 |
+| PR23 | `windows/23-companion-integration` | companion 상태·overlay lifecycle·native fallback renderer | CI 통과 |
+| PR24 | `windows/24-companion-assets-validation` | packaged sprite parity, 최종 macOS 회귀와 Windows 실기기 검증 | 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -130,7 +131,7 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 
 1. PR 범위가 하나의 독립적인 설계·기능 단위입니다.
 2. 관련 sanitized fixture와 테스트가 포함됩니다.
-3. macOS에서 `swift test`와 `swift build`가 통과합니다.
+3. macOS 영향 범위로 감지된 경우 macOS에서 `swift test`와 `swift build`가 통과해야 하며, 최종 통합 단계에서는 macOS 회귀 검증도 수행합니다.
 4. Windows 대상 변경은 Windows runner에서 core build/test를 통과합니다.
 5. provider가 없거나 데이터가 오래되었을 때 값을 추정하지 않습니다.
 6. 사용자에게 보이는 source/packaging 변경에는 고유한 bilingual `.changes` 조각이
@@ -238,11 +239,12 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   application 공통 변경은 두 검증을 계속 실행합니다. 일반 Windows pull request에서는
   오래 걸리는 전체 테스트를 생략하며, Windows 업데이트 설치 집중 테스트는 수동 실행으로
   남겼습니다.
-- 2026-08-20: 남은 통합 작업을 세 개의 작은 층으로 나눴습니다. PR21은 provider 상세와
+- 2026-08-20: 남은 통합 작업을 작은 층으로 나눴습니다. PR21은 provider 상세와
   검증된 reset 시각, 새로 고침·종료 액션을 보여 주어 tray를 일상적으로 사용할 수 있게
   합니다. PR22는 Windows 설정·알림·자동 시작 제어를 담당하며 자동 설치는 명시적인
-  미지원 상태로 유지합니다. PR23은 companion overlay를 연결한 뒤 최종 macOS·Windows
-  검증을 수행합니다.
+  미지원 상태로 유지합니다. PR23은 공통 companion 상태를 overlay lifecycle에 연결하고
+  native fallback renderer를 추가하며, PR24는 packaged sprite parity와 최종 macOS·Windows
+  검증을 담당합니다.
 - 2026-08-20: PR21의 Windows tray 상세 formatter·native tray 액션·macOS 테스트·앱 번들
   검증·Windows release package가 CI를 통과했습니다. Windows 상세 화면은 검증된 quota
   window만 표시하고 provider가 reset 시각을 주지 않으면 해당 정보를 표시하지 않습니다.
@@ -250,3 +252,12 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   설정 저장소에 연결했습니다. Windows build·package가 CI를 통과했고 변경이 Windows 전용
   이므로 macOS build는 정상적으로 생략되었습니다. 서명된 패키지 계약이 정해지기 전까지
   자동 업데이트 설치는 명시적인 미지원 상태로 유지합니다.
+- 2026-08-20: 기존 Win32 overlay 경계에는 실제 renderer가 없었으므로 최종 검증과
+  분리했습니다. PR23은 provider·token 데이터를 복제하지 않고 공통 companion 상태만
+  사용해 overlay lifecycle과 작은 native fallback surface를 연결하고, PR24에서
+  packaged sprite parity를 추가합니다.
+- 2026-08-20: PR23의 Windows companion lifecycle·native fallback renderer·portable
+  package가 Windows CI를 통과했습니다. 범위 감지 결과 Windows 전용 변경으로 판정되어
+  macOS build는 취소했으며, 이제 `Package.swift`의 Windows 조건부 블록만 바뀐 경우도
+  macOS build를 생략하고 판정값을 로그에 남깁니다. 공통 코드나 macOS 전용 변경에서는
+  macOS CI를 계속 실행하고 수동 실행도 가능합니다.

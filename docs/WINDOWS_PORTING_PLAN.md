@@ -66,7 +66,8 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR20 | `windows/20-packaging-ci` | Windows installer, CI, artifacts, release docs | CI passed |
 | PR21 | `windows/21-tray-details` | Windows tray detail surface, reset times, and refresh/quit actions | CI passed |
 | PR22 | `windows/22-windows-services-ui` | Settings, notifications, and launch-at-login tray actions | CI passed |
-| PR23 | `windows/23-companion-integration` | Companion overlay connection, final macOS regression, and Windows hardware validation | Pending |
+| PR23 | `windows/23-companion-integration` | Companion state, overlay lifecycle, and native fallback renderer | CI passed |
+| PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | Pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -132,7 +133,7 @@ Each PR must satisfy all applicable items:
 
 1. It is one independently reviewable design or feature unit.
 2. Relevant sanitized fixtures and tests are included.
-3. `swift test` and `swift build` pass on macOS.
+3. `swift test` and `swift build` pass on macOS when the scope detector marks macOS as affected; the final integration layer also performs a macOS regression run.
 4. Windows changes pass core build/tests on a Windows runner.
 5. Missing or stale provider data is never fabricated.
 6. User-visible source or packaging changes include a unique bilingual `.changes` fragment.
@@ -246,11 +247,12 @@ Each PR must satisfy all applicable items:
   paths; shared `TokeniCore` and application changes still run both validations. The
   normal Windows pull-request path skips the long full test suite, while focused Windows
   installer tests remain available through manual dispatch.
-- 2026-08-20: The remaining integration scope is split into three smaller layers. PR21
+- 2026-08-20: The remaining integration scope is split into smaller layers. PR21
   makes the tray useful for daily inspection by showing provider details and verified
   reset times and by handling refresh/quit actions. PR22 owns the Windows settings,
   notification, and startup controls while keeping automatic installation explicitly
-  unsupported. PR23 connects the companion overlay and performs final macOS and Windows
+  unsupported. PR23 connects companion state to the overlay lifecycle and adds a native
+  fallback renderer. PR24 owns packaged sprite parity and final macOS and Windows
   validation.
 - 2026-08-20: PR21's Windows tray detail formatter, native tray actions, macOS tests,
   macOS app bundle validation, and Windows release package passed CI. The Windows
@@ -261,3 +263,12 @@ Each PR must satisfy all applicable items:
   package passed CI while the macOS build was correctly skipped because the change is
   Windows-only. Automatic update installation remains explicitly unsupported until the
   signed package contract is defined.
+- 2026-08-20: PR23 is split from final validation because the existing Win32 overlay
+  boundary had no renderer. It will consume shared companion state without copying
+  provider or token data, keep the overlay lifecycle platform-specific, and provide a
+  small native fallback surface before PR24 adds packaged sprite parity.
+- 2026-08-20: PR23's Windows companion lifecycle, native fallback renderer, and portable
+  package passed the Windows CI run. The macOS build was canceled after scope detection
+  identified Windows-only changes; the detector now ignores `Package.swift` edits that
+  are confined to the Windows conditional block and logs the decision. macOS CI remains
+  required for shared or macOS-specific changes and can still be started manually.

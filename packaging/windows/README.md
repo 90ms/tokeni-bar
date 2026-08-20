@@ -53,3 +53,11 @@ contract is available.
 tray icon을 마우스 오른쪽 버튼으로 클릭하면 사용량을 새로 고치고, 현재 사용자 기준
 자동 시작을 켜거나 끄고, 테스트 알림을 보낼 수 있습니다. 서명된 패키지 계약이
 준비되기 전까지 자동 업데이트 설치는 비활성화되어 있습니다.
+
+The same menu can show or hide the companion overlay. This layer uses the shared
+companion growth state and a native fallback renderer; packaged sprite assets are part
+of the next validation layer.
+
+같은 메뉴에서 companion overlay를 표시하거나 숨길 수 있습니다. 현재 단계에서는
+공통 companion 성장 상태와 native fallback renderer를 사용하며, packaged sprite
+자산은 다음 검증 단계의 범위입니다.

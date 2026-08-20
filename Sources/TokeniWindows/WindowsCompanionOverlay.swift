@@ -16,6 +16,19 @@ public struct WindowsCompanionOverlayFrame: Equatable, Sendable {
     }
 }
 
+/// The provider-neutral companion values needed by the native fallback
+/// renderer. It intentionally excludes provider names, token totals, and any
+/// prompt or response data.
+public struct WindowsCompanionOverlayState: Equatable, Sendable {
+    public let stage: Int
+    public let level: Int
+
+    public init(stage: Int, level: Int) {
+        self.stage = max(stage, 0)
+        self.level = max(level, 0)
+    }
+}
+
 /// Owns the lifecycle of the native companion overlay without exposing
 /// Windows handles or other WinSDK types to Swift callers.
 public final class WindowsCompanionOverlay: @unchecked Sendable {
@@ -88,6 +101,15 @@ public final class WindowsCompanionOverlay: @unchecked Sendable {
         self.stateLock.lock()
         defer { self.stateLock.unlock() }
         return tokeni_windows_overlay_set_click_through(enabled ? 1 : 0) != 0
+    }
+
+    @discardableResult
+    public func setState(_ state: WindowsCompanionOverlayState) -> Bool {
+        self.stateLock.lock()
+        defer { self.stateLock.unlock() }
+        return tokeni_windows_overlay_set_state(
+            Int32(clamping: state.stage),
+            Int32(clamping: state.level)) != 0
     }
 
     public func stop() {
