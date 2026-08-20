@@ -234,3 +234,7 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: PR19's Win32 overlay boundary and native fallback checks passed the
   macOS test, app-build, and bundle-validation CI. PR20 starts the distribution layer
   for Windows SDK builds, tests, artifacts, and the installer contract.
+- 2026-08-20: PR20 uses the official Windows Swift installation path and the runner's
+  Windows SDK to test and release-build `TokeniWindows`, then emits a portable ZIP
+  artifact before code signing. MSIX, signing, and automatic updates remain separate
+  distribution contracts rather than implicit install commands.

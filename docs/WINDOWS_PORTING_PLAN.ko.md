@@ -226,3 +226,7 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR19의 Win32 오버레이 경계와 C fallback 정적 검사가 macOS 테스트·앱
   빌드·번들 검증 CI를 통과했습니다. PR20은 Windows SDK 빌드, 테스트, artifact와
   설치 패키지 계약을 연결하는 배포 단계로 시작합니다.
+- 2026-08-20: PR20은 공식 Windows Swift 설치 경로와 Windows runner의 SDK를
+  사용해 `TokeniWindows` 테스트·release 빌드를 실행하고, 코드 서명 전 단계의
+  portable ZIP artifact를 생성합니다. MSIX·서명·자동 업데이트는 별도 배포 계약으로
+  남겨 임의의 설치 명령을 추가하지 않습니다.

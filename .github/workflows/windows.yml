@@ -1,0 +1,108 @@
+name: Windows
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-package:
+    name: Build, test, and package Windows app
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Install Swift toolchain
+        shell: pwsh
+        run: |
+          $swiftCommand = Get-Command swift -ErrorAction SilentlyContinue
+          if ($null -eq $swiftCommand) {
+            $winget = Get-Command winget -ErrorAction SilentlyContinue
+            if ($null -eq $winget) {
+              throw "WinGet is required to install the Swift toolchain."
+            }
+
+            & $winget.Source install `
+              --id Swift.Toolchain `
+              --exact `
+              --source winget `
+              --accept-source-agreements `
+              --accept-package-agreements
+            if ($LASTEXITCODE -ne 0) {
+              throw "WinGet failed to install Swift.Toolchain (exit $LASTEXITCODE)."
+            }
+
+            $swiftCommand = Get-ChildItem `
+              -Path "$env:LOCALAPPDATA\Programs\Swift", "$env:ProgramFiles\Swift" `
+              -Filter swift.exe `
+              -File `
+              -Recurse `
+              -ErrorAction SilentlyContinue |
+              Select-Object -First 1
+            if ($null -eq $swiftCommand) {
+              throw "Swift was installed but swift.exe could not be located."
+            }
+
+            $swiftDirectory = $swiftCommand.Directory.FullName
+            $env:PATH = "$swiftDirectory;$env:PATH"
+            $swiftDirectory | Out-File `
+              -FilePath $env:GITHUB_PATH `
+              -Encoding utf8 `
+              -Append
+          }
+
+          swift --version
+
+      - name: Test Swift package
+        shell: pwsh
+        run: swift test --parallel
+
+      - name: Build Windows executable
+        shell: pwsh
+        run: |
+          swift build --configuration release --product TokeniWindows
+          $buildPath = (swift build `
+            --configuration release `
+            --product TokeniWindows `
+            --show-bin-path).Trim()
+          if (-not (Test-Path (Join-Path $buildPath "TokeniWindows.exe"))) {
+            throw "TokeniWindows.exe was not produced in $buildPath."
+          }
+          "SWIFT_BIN_PATH=$buildPath" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+      - name: Create portable Windows package
+        shell: pwsh
+        run: |
+          $targetInfo = (swiftc -print-target-info | ConvertFrom-Json)
+          $runtimeDirectories = @(
+            $targetInfo.paths.runtimeLibraryPaths |
+              Where-Object { Test-Path -LiteralPath $_ -PathType Container }
+          )
+          if ($runtimeDirectories.Count -eq 0) {
+            throw "Swift runtime library directories could not be located."
+          }
+          & "$env:GITHUB_WORKSPACE\Scripts\package_windows.ps1" `
+            -Version "0.0.0" `
+            -BuildDirectory "$env:SWIFT_BIN_PATH" `
+            -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsPackage" `
+            -RuntimeDirectory $runtimeDirectories
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: tokeni-bar-windows-${{ github.sha }}
+          path: ${{ runner.temp }}\TokeniWindowsPackage\*.zip
+          if-no-files-found: error
