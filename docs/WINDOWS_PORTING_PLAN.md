@@ -66,7 +66,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR20 | `windows/20-packaging-ci` | Windows installer, CI, artifacts, release docs | CI passed |
 | PR21 | `windows/21-tray-details` | Windows tray detail surface, reset times, and refresh/quit actions | CI passed |
 | PR22 | `windows/22-windows-services-ui` | Settings, notifications, and launch-at-login tray actions | CI passed |
-| PR23 | `windows/23-companion-integration` | Companion state, overlay lifecycle, and native fallback renderer | In progress |
+| PR23 | `windows/23-companion-integration` | Companion state, overlay lifecycle, and native fallback renderer | CI passed |
 | PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | Pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
@@ -133,7 +133,7 @@ Each PR must satisfy all applicable items:
 
 1. It is one independently reviewable design or feature unit.
 2. Relevant sanitized fixtures and tests are included.
-3. `swift test` and `swift build` pass on macOS.
+3. `swift test` and `swift build` pass on macOS when the scope detector marks macOS as affected; the final integration layer also performs a macOS regression run.
 4. Windows changes pass core build/tests on a Windows runner.
 5. Missing or stale provider data is never fabricated.
 6. User-visible source or packaging changes include a unique bilingual `.changes` fragment.
@@ -267,3 +267,8 @@ Each PR must satisfy all applicable items:
   boundary had no renderer. It will consume shared companion state without copying
   provider or token data, keep the overlay lifecycle platform-specific, and provide a
   small native fallback surface before PR24 adds packaged sprite parity.
+- 2026-08-20: PR23's Windows companion lifecycle, native fallback renderer, and portable
+  package passed the Windows CI run. The macOS build was canceled after scope detection
+  identified Windows-only changes; the detector now ignores `Package.swift` edits that
+  are confined to the Windows conditional block and logs the decision. macOS CI remains
+  required for shared or macOS-specific changes and can still be started manually.
