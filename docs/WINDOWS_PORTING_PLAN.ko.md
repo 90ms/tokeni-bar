@@ -51,7 +51,7 @@ TokeniWindows
 | PR6 | `windows/06-application-growth` | 검증된 token observation과 growth ledger 처리 경계 | CI 통과 |
 | PR7 | `windows/07-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | CI 통과 |
 | PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | CI 통과 |
-| PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | 진행 중 |
+| PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | provider 변경 통합, CI 대기 |
 | PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 대기 |
 | PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | 대기 |
 | PR12 | `windows/12-windows-tray-ui` | 트레이, 사용량, 설정, 기록, 진단 화면 | 대기 |
@@ -164,3 +164,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   Codex·Claude CLI의 Windows 실행 파일과 프로세스 계약을 다룹니다.
 - 2026-08-20: PR9를 PR8 위에 시작했습니다. Codex와 Claude provider는 서로 다른
   디렉터리 write set으로 병렬 검토하고, 공통 CLI 실행 경계는 통합 담당자가 조정합니다.
+- 2026-08-20: PR9 provider 변경을 통합했습니다. Codex·Claude의 Windows 실행 파일,
+  PATH 구분자, 공식 설정 루트 override와 sanitized locator 테스트를 포함하며,
+  기존 macOS CLI·local fallback 동작은 유지합니다.

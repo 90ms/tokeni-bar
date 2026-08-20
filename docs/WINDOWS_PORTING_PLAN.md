@@ -52,7 +52,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR6 | `windows/06-application-growth` | Verified token observations and growth-ledger boundary | CI passed |
 | PR7 | `windows/07-application-preferences` | Settings storage, alert policy, and macOS bridge | CI passed |
 | PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | CI passed |
-| PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | In progress |
+| PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | Provider changes integrated, CI pending |
 | PR10 | `windows/10-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | Pending |
 | PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | Pending |
 | PR12 | `windows/12-windows-tray-ui` | Tray, usage, settings, history, diagnostics | Pending |
@@ -168,3 +168,6 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: Started PR9 on top of PR8. Codex and Claude providers have disjoint write
   sets for parallel review, while the shared CLI execution boundary remains with the
   integration owner.
+- 2026-08-20: Integrated the PR9 provider changes. Codex and Claude now cover Windows
+  executable discovery, PATH delimiters, official configuration-root overrides, and
+  sanitized locator tests while preserving existing macOS CLI and local-fallback behavior.
