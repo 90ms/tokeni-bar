@@ -66,7 +66,7 @@ TokeniWindows
 | PR21 | `windows/21-tray-details` | Windows tray 상세 화면·reset 시각·새로 고침/종료 액션 | CI 통과 |
 | PR22 | `windows/22-windows-services-ui` | 설정·알림·자동 시작 tray 액션 | CI 통과 |
 | PR23 | `windows/23-companion-integration` | companion 상태·overlay lifecycle·native fallback renderer | CI 통과 |
-| PR24 | `windows/24-companion-assets-validation` | packaged sprite parity, 최종 macOS 회귀와 Windows 실기기 검증 | 진행 중 |
+| PR24 | `windows/24-companion-assets-validation` | packaged sprite parity, 최종 macOS 회귀와 Windows 실기기 검증 | CI 통과·실기기 검증 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -265,3 +265,7 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   artifact에 포함하고, Windows runner에서 manifest·PNG 크기·패키지 내용을 검증하며,
   provider·token 데이터를 companion 경계로 옮기지 않은 상태에서 남은 실기기 점검
   항목을 문서화합니다.
+- 2026-08-20: PR24의 Windows 실행 파일 빌드·portable ZIP 생성·압축 해제 후 companion
+  manifest/PNG 검증이 통과했습니다. 변경이 Windows 전용이므로 macOS build는 생략되었고,
+  실제 Windows 장치 또는 전용 hardware runner에서 화면·tray·overlay 상호작용을 확인하는
+  작업이 남아 있습니다.
