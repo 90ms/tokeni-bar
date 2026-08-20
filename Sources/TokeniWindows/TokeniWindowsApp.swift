@@ -30,7 +30,27 @@ struct TokeniWindowsApp {
         tray.setLaunchAtLoginEnabled(
             await services.isLaunchAtLoginEnabled())
 
-        let tooltipTask = Task { [session, tray] in
+        let companionState = try? await CompanionGameStateStore().load()
+        let companionOverlay = WindowsCompanionOverlay()
+        companionOverlay.setState(Self.overlayState(for: companionState))
+        companionOverlay.setClickThrough(true)
+        let companionOverlayStarted = companionOverlay.start(
+            frame: WindowsCompanionOverlayFrame(
+                x: 0,
+                y: 0,
+                width: 240,
+                height: 220))
+        let initialCompanionVisible = companionOverlayStarted
+            && settings.bool(forKey: WindowsTrayServiceCoordinator.companionEnabledKey)
+        if initialCompanionVisible {
+            companionOverlay.show()
+        }
+        tray.setCompanionEnabled(initialCompanionVisible)
+
+        let tooltipTask = Task {
+            [session, tray, services, companionOverlay, settings,
+             initialCompanionVisible] in
+            var companionVisible = initialCompanionVisible
             var serviceMessage: String?
             while !Task.isCancelled {
                 if tray.takeRefreshRequest() {
@@ -56,6 +76,25 @@ struct TokeniWindowsApp {
                         serviceMessage = "Test notification could not be sent."
                     }
                 }
+                if tray.takeCompanionToggleRequest() {
+                    companionVisible.toggle()
+                    let didUpdate = companionVisible
+                        ? companionOverlay.show()
+                        : companionOverlay.hide()
+                    if didUpdate {
+                        settings.set(
+                            companionVisible,
+                            forKey: WindowsTrayServiceCoordinator.companionEnabledKey)
+                        tray.setCompanionEnabled(companionVisible)
+                        serviceMessage = companionVisible
+                            ? "Companion overlay enabled."
+                            : "Companion overlay disabled."
+                    } else {
+                        companionVisible.toggle()
+                        serviceMessage =
+                            "Companion overlay could not be changed."
+                    }
+                }
                 let presentation = UsageApplicationPresentation(
                     sessionState: await session.state())
                 tray.updateTooltip(Self.tooltip(for: presentation))
@@ -72,6 +111,7 @@ struct TokeniWindowsApp {
         _ = tray.run()
         tooltipTask.cancel()
         tray.stop()
+        companionOverlay.stop()
         await session.stop()
     }
 
@@ -84,5 +124,21 @@ struct TokeniWindowsApp {
                 : "Tokeni Bar"
         }
         return "Tokeni Bar · \(Int(remaining.rounded()))% remaining"
+    }
+
+    private static func overlayState(
+        for state: CompanionGameState?) -> WindowsCompanionOverlayState
+    {
+        guard let state else {
+            return WindowsCompanionOverlayState(stage: 0, level: 0)
+        }
+        let stage: Int
+        switch state.stage {
+        case .egg: stage = 0
+        case .hatchling: stage = 1
+        case .junior: stage = 2
+        case .adult: stage = 3
+        }
+        return WindowsCompanionOverlayState(stage: stage, level: state.level)
     }
 }

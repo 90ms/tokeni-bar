@@ -226,6 +226,7 @@ jobs:
         run: |
           swift test --parallel --filter WindowsAppUpdateInstallerTests
           swift test --parallel --filter WindowsUsageDetailFormatterTests
+          swift test --parallel --filter WindowsCompanionOverlayTests
 
       - name: Build Windows executable
         shell: pwsh

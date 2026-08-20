@@ -21,6 +21,10 @@ int tokeni_windows_tray_take_launch_at_login_request(void);
 
 int tokeni_windows_tray_take_test_notification_request(void);
 
+void tokeni_windows_tray_set_companion_enabled(int enabled);
+
+int tokeni_windows_tray_take_companion_toggle_request(void);
+
 int tokeni_windows_tray_is_started(void);
 
 int tokeni_windows_tray_notify(
@@ -59,6 +63,8 @@ int tokeni_windows_overlay_set_frame(
     int height);
 
 int tokeni_windows_overlay_set_click_through(int enabled);
+
+int tokeni_windows_overlay_set_state(int stage, int level);
 
 void tokeni_windows_overlay_stop(void);
 
