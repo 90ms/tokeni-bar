@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 public struct ExchangeRateQuote: Codable, Hashable, Sendable {
     public let baseCurrency: String

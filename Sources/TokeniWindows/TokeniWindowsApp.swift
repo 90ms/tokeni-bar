@@ -1,4 +1,6 @@
 import Foundation
+// The executable entry point lives in a non-main.swift file so the @main
+// declaration is accepted by SwiftPM on Windows as well as macOS.
 import TokeniApplication
 import TokeniCore
 

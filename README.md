@@ -1,5 +1,8 @@
 # Tokeni Bar
 
+> Windows packaging is being validated in the stacked Windows PRs. The current
+> Windows artifact is a portable ZIP; signed installer distribution is not enabled yet.
+
 **한국어** | [English](README.en.md)
 
 [![CI](https://github.com/90ms/tokeni-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/90ms/tokeni-bar/actions/workflows/ci.yml)

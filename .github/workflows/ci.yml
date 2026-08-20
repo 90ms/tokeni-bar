@@ -13,8 +13,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-scope:
+    name: Detect macOS CI scope
+    runs-on: ubuntu-latest
+    outputs:
+      run-macos: ${{ steps.scope.outputs.run-macos }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Classify changed paths
+        id: scope
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "run-macos=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          run_macos=false
+          while IFS= read -r path; do
+            case "$path" in
+              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniBar/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/Scripts/*|Scripts/test.sh|Scripts/package_app.sh|Scripts/validate_companion_assets.sh|packaging/Info.plist|packaging/AppIcon.png)
+                run_macos=true
+                break
+                ;;
+            esac
+          done < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          echo "run-macos=$run_macos" >> "$GITHUB_OUTPUT"
+
   build-and-test:
     name: Build, test, and validate app bundle
+    needs: detect-scope
+    if: needs.detect-scope.outputs.run-macos == 'true'
     runs-on: macos-26
     timeout-minutes: 20
     steps:
