@@ -12,9 +12,14 @@ public struct GeminiUsageProvider: UsageProviding, UsageActivityProviding {
     private let temporaryDirectory: URL
 
     public init(homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) {
-        self.temporaryDirectory = homeDirectory.appending(
-            path: ".gemini/tmp",
-            directoryHint: .isDirectory)
+        self.init(
+            temporaryDirectory: homeDirectory.appending(
+                path: ".gemini/tmp",
+                directoryHint: .isDirectory))
+    }
+
+    public init(temporaryDirectory: URL) {
+        self.temporaryDirectory = temporaryDirectory
     }
 
     public func fetchUsage() async -> ProviderSnapshot {

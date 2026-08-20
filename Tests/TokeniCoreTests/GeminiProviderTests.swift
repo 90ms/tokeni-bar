@@ -23,11 +23,14 @@ struct GeminiProviderTests {
     }
 
     @Test
-    func providerReadsOnlySessionFilesBelowGeminiTemporaryDirectory() async throws {
+    func providerReadsOnlySessionFilesBelowInjectedTemporaryDirectory() async throws {
         let temporaryHome = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
-        let chats = temporaryHome.appending(
-            path: ".gemini/tmp/project/chats",
+        let providerRoot = temporaryHome.appending(
+            path: "gemini-data",
+            directoryHint: .isDirectory)
+        let chats = providerRoot.appending(
+            path: "project/chats",
             directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: chats, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temporaryHome) }
@@ -40,7 +43,7 @@ struct GeminiProviderTests {
             at: fixture,
             to: chats.appending(path: "session-sanitized.json"))
 
-        let snapshot = await GeminiUsageProvider(homeDirectory: temporaryHome).fetchUsage()
+        let snapshot = await GeminiUsageProvider(temporaryDirectory: providerRoot).fetchUsage()
 
         #expect(snapshot.availability == .available)
         #expect(snapshot.source == .localSessionLog)
