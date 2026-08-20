@@ -29,6 +29,31 @@ int tokeni_windows_launch_at_login_set_enabled(
     const char *executable_path_utf8,
     int enabled);
 
+// Creates or updates a transparent, topmost companion overlay window. The
+// frame is expressed in virtual-screen coordinates and is clamped to the
+// current monitor bounds by the implementation.
+int tokeni_windows_overlay_start(
+    int x,
+    int y,
+    int width,
+    int height);
+
+int tokeni_windows_overlay_show(void);
+
+int tokeni_windows_overlay_hide(void);
+
+int tokeni_windows_overlay_set_frame(
+    int x,
+    int y,
+    int width,
+    int height);
+
+int tokeni_windows_overlay_set_click_through(int enabled);
+
+void tokeni_windows_overlay_stop(void);
+
+int tokeni_windows_overlay_is_visible(void);
+
 #ifdef __cplusplus
 }
 #endif

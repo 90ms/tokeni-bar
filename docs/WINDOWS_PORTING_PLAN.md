@@ -62,8 +62,8 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR16 | `windows/16-claude-reset-time` | Verified Claude five-hour quota reset propagation/display | CI passed |
 | PR17 | `windows/17-windows-services` | Windows notification and startup adapters | CI passed |
 | PR18 | `windows/18-windows-updates` | Windows update-install contract and safe unsupported state | CI passed |
-| PR19 | `windows/19-companion-overlay` | Pet overlay, monitors, click-through, accessibility | In progress |
-| PR20 | `windows/20-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
+| PR19 | `windows/19-companion-overlay` | Pet overlay, monitors, click-through, accessibility | CI passed |
+| PR20 | `windows/20-packaging-ci` | Windows installer, CI, artifacts, release docs | In progress |
 | PR21 | `windows/21-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
@@ -227,3 +227,10 @@ Each PR must satisfy all applicable items:
   test, app-build, and bundle-validation CI. PR19 keeps companion state and rendering
   shared while isolating the Win32 overlay window, multi-monitor placement, and
   click-through behavior behind a separate boundary.
+- 2026-08-20: PR19 does not duplicate companion assets or state; it first isolates
+  the transparent Win32 overlay lifecycle, multi-monitor frame clamping, and
+  click-through behavior. Shared companion state and rendering assets will be connected
+  in the Windows packaging and final integration layers.
+- 2026-08-20: PR19's Win32 overlay boundary and native fallback checks passed the
+  macOS test, app-build, and bundle-validation CI. PR20 starts the distribution layer
+  for Windows SDK builds, tests, artifacts, and the installer contract.
