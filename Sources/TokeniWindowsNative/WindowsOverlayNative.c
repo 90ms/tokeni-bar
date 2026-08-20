@@ -2,6 +2,7 @@
 
 #ifdef _WIN32
 
+#define COBJMACROS
 #include <windows.h>
 #include <objbase.h>
 #include <wincodec.h>
