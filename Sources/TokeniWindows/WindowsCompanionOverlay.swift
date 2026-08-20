@@ -107,7 +107,9 @@ public final class WindowsCompanionOverlay: @unchecked Sendable {
     public func setState(_ state: WindowsCompanionOverlayState) -> Bool {
         self.stateLock.lock()
         defer { self.stateLock.unlock() }
-        return tokeni_windows_overlay_set_state(state.stage, state.level) != 0
+        return tokeni_windows_overlay_set_state(
+            Int32(clamping: state.stage),
+            Int32(clamping: state.level)) != 0
     }
 
     public func stop() {
