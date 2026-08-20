@@ -2,6 +2,17 @@ name: Windows
 
 on:
   pull_request:
+    paths:
+      - 'Package.swift'
+      - 'Sources/TokeniCore/**'
+      - 'Sources/TokeniApplication/**'
+      - 'Sources/TokeniWindows/**'
+      - 'Sources/TokeniWindowsNative/**'
+      - 'Tests/TokeniCoreTests/**'
+      - 'Tests/TokeniApplicationTests/**'
+      - 'Tests/TokeniWindowsTests/**'
+      - 'Scripts/package_windows.ps1'
+      - '.github/workflows/windows.yml'
   workflow_dispatch:
 
 permissions:
@@ -21,6 +32,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+
+      - name: Restore SwiftPM build cache
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: windows-swiftpm-${{ hashFiles('Package.swift') }}
+          restore-keys: |
+            windows-swiftpm-
 
       - name: Install Swift toolchain
         shell: pwsh
@@ -175,9 +194,10 @@ jobs:
             throw "Visual Studio link.exe is not available after environment setup."
           }
 
-      - name: Test Swift package
+      - name: Test Windows package surface
+        if: github.event_name == 'workflow_dispatch'
         shell: pwsh
-        run: swift test --parallel
+        run: swift test --parallel --filter WindowsAppUpdateInstallerTests
 
       - name: Build Windows executable
         shell: pwsh

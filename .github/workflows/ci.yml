@@ -4,6 +4,20 @@ on:
   push:
     branches: [main]
   pull_request:
+    paths:
+      - 'Package.swift'
+      - 'Sources/TokeniCore/**'
+      - 'Sources/TokeniApplication/**'
+      - 'Sources/TokeniBar/**'
+      - 'Tests/TokeniCoreTests/**'
+      - 'Tests/TokeniApplicationTests/**'
+      - 'Tests/Scripts/**'
+      - 'Scripts/test.sh'
+      - 'Scripts/package_app.sh'
+      - 'Scripts/validate_companion_assets.sh'
+      - 'packaging/Info.plist'
+      - 'packaging/AppIcon.png'
+      - '.github/workflows/ci.yml'
 
 permissions:
   contents: read
