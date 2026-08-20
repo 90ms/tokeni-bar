@@ -38,8 +38,8 @@ function Assert-SafeOutputDirectory {
     $driveRoot = [System.IO.Path]::GetPathRoot($Path).TrimEnd(
         [System.IO.Path]::DirectorySeparatorChar)
     if ([string]::Equals($normalizedPath, $normalizedRoot,
-            [System.StringComparison]::OrdinalIgnoreCase)
-        -or [string]::Equals($normalizedPath, $driveRoot,
+            [System.StringComparison]::OrdinalIgnoreCase) -or
+        [string]::Equals($normalizedPath, $driveRoot,
             [System.StringComparison]::OrdinalIgnoreCase))
     {
         throw "Refusing unsafe output directory: $Path"
