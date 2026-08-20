@@ -10,12 +10,13 @@ public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding {
 
     private let roots: [URL]
     private let calendar: Calendar
-    private let databaseReader = AntigravityDatabaseReader()
+    private let databaseReader: AntigravityDatabaseReader
 
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         calendar: Calendar = .current,
-        roots: [URL]? = nil)
+        roots: [URL]? = nil,
+        sqliteQueryRunner: any ReadOnlySQLiteQuerying = SystemSQLiteQueryRunner())
     {
         self.calendar = calendar
         self.roots = roots ?? [
@@ -29,18 +30,23 @@ public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding {
                 path: ".gemini/antigravity-ide/conversations",
                 directoryHint: .isDirectory),
         ]
+        self.databaseReader = AntigravityDatabaseReader(queryRunner: sqliteQueryRunner)
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
         let startOfDay = self.calendar.startOfDay(for: .now)
         let databases = self.databaseFiles(modifiedAfter: startOfDay)
+        var databaseRows: [AntigravityDatabaseRows] = []
+        for database in databases {
+            guard let rows = try? await self.databaseReader.readRows(from: database) else {
+                continue
+            }
+            databaseRows.append(AntigravityDatabaseRows(
+                sessionID: database.standardizedFileURL.path,
+                rows: rows))
+        }
         let usage = AntigravityMetadataParser.aggregate(
-            databases.compactMap { database -> AntigravityDatabaseRows? in
-                guard let rows = try? self.databaseReader.readRows(from: database) else { return nil }
-                return AntigravityDatabaseRows(
-                    sessionID: database.standardizedFileURL.path,
-                    rows: rows)
-            },
+            databaseRows,
             since: startOfDay)
 
         guard let usage else {
@@ -245,44 +251,33 @@ enum AntigravityMetadataParser {
     }
 }
 
-private struct AntigravityDatabaseReader: Sendable {
-    func readRows(from databaseURL: URL) throws -> [AntigravityMetadataRow] {
+struct AntigravityDatabaseReader: Sendable {
+    private static let metadataQuery = """
+        SELECT idx, hex(data) AS data_hex FROM gen_metadata ORDER BY idx;
+        """
+
+    private let queryRunner: any ReadOnlySQLiteQuerying
+
+    init(queryRunner: any ReadOnlySQLiteQuerying) {
+        self.queryRunner = queryRunner
+    }
+
+    func readRows(from databaseURL: URL) async throws -> [AntigravityMetadataRow] {
         guard let values = try? databaseURL.resourceValues(
             forKeys: [.isRegularFileKey, .isSymbolicLinkKey]),
             values.isRegularFile == true,
             values.isSymbolicLink != true
         else { throw AntigravityDatabaseError.invalidFile }
 
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
-        process.arguments = [
-            "-batch",
-            "-init", "/dev/null",
-            "-readonly",
-            "-json",
-            databaseURL.path,
-            "SELECT idx, hex(data) AS data_hex FROM gen_metadata ORDER BY idx;",
-        ]
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-        do {
-            try process.run()
-        } catch {
-            throw AntigravityDatabaseError.queryFailed
-        }
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            throw AntigravityDatabaseError.queryFailed
-        }
+        let data = try await self.queryRunner.queryJSON(
+            databaseURL: databaseURL,
+            sql: Self.metadataQuery)
         return try JSONDecoder().decode([AntigravityMetadataRow].self, from: data)
     }
 }
 
 private enum AntigravityDatabaseError: Error {
     case invalidFile
-    case queryFailed
 }
 
 private struct ProtoField {
