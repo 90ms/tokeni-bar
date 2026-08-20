@@ -57,8 +57,8 @@ TokeniWindows
 | PR12 | `windows/12-windows-tray-ui` | Windows 실행 타깃·호스트 수명주기·상태 소비 경계 | CI 통과 |
 | PR13 | `windows/13-windows-tray-surface` | Win32 트레이 셸·사용량 표시 모델과 기본 tooltip | CI 통과 |
 | PR14 | `windows/14-settings-storage` | Windows 파일 기반 설정 저장소와 공통 preference 연결 경계 | CI 통과 |
-| PR15 | `windows/15-memory-lifecycle` | 기존 macOS 사용량 갱신의 메모리 증가 원인 수정 | 진행 중 |
-| PR16 | `windows/16-claude-reset-time` | Claude 5시간 quota reset 시각의 검증된 전달·표시 | 대기 |
+| PR15 | `windows/15-memory-lifecycle` | 기존 macOS 사용량 갱신의 메모리 증가 원인 수정 | CI 통과 |
+| PR16 | `windows/16-claude-reset-time` | Claude 5시간 quota reset 시각의 검증된 전달·표시 | 진행 중 |
 | PR17 | `windows/17-windows-services` | Windows 알림·자동 시작·업데이트 서비스 어댑터 | 대기 |
 | PR18 | `windows/18-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
 | PR19 | `windows/19-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
@@ -201,3 +201,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR14의 macOS 테스트·앱 빌드·번들 검증 CI가 통과했습니다. 기존
   macOS에서 관찰된 메모리 증가와 Claude reset 시각 누락은 Windows 서비스와
   독립적인 회귀 수정 PR로 분리합니다.
+- 2026-08-20: PR15에서 companion overlay의 retain cycle과 반복 저장 task 누적
+  경계를 정리했고 macOS 테스트·앱 빌드·번들 검증 CI가 통과했습니다. PR16은
+  Claude CLI의 여러 줄 사용량 응답에서 5시간 reset 시각을 연결합니다.
