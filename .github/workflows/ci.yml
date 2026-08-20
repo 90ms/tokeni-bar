@@ -17,7 +17,6 @@ on:
       - 'Scripts/validate_companion_assets.sh'
       - 'packaging/Info.plist'
       - 'packaging/AppIcon.png'
-      - '.github/workflows/ci.yml'
 
 permissions:
   contents: read
