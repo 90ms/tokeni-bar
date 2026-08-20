@@ -20,6 +20,10 @@ final class CompanionOverlayController: NSObject, ObservableObject {
             object: nil)
     }
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
     func connect(to store: UsageStore) {
         self.store = store
         self.setVisible(store.showsCompanionOverlay)
@@ -190,17 +194,14 @@ final class CompanionOverlayController: NSObject, ObservableObject {
         guard self.mouseRoutingTimer == nil else { return }
         let timer = Timer(
             timeInterval: 1.0 / 30.0,
-            target: self,
-            selector: #selector(self.routeMouseEvents(_:)),
-            userInfo: nil,
             repeats: true)
+        { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.updateMouseEventRouting()
+            }
+        }
         RunLoop.main.add(timer, forMode: .common)
         self.mouseRoutingTimer = timer
-    }
-
-    @objc
-    private func routeMouseEvents(_ timer: Timer) {
-        self.updateMouseEventRouting()
     }
 
     private func updateMouseEventRouting() {
