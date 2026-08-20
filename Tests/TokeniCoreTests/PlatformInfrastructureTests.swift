@@ -65,6 +65,33 @@ struct PlatformInfrastructureTests {
     }
 
     @Test
+    func sqliteExecutableLocatorHandlesTheCurrentPlatformPath() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true)
+        #if os(Windows)
+        let executable = root.appending(path: "sqlite3.exe")
+        #else
+        let executable = root.appending(path: "sqlite3")
+        #endif
+        try Data().write(to: executable)
+        #if !os(Windows)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executable.path)
+        #endif
+
+        let located = SystemSQLiteExecutableLocator().locate(
+            pathEnvironment: root.path,
+            homeDirectory: root)
+
+        #expect(located == executable)
+    }
+
+    @Test
     func sqliteQueryRunnerKeepsTheReaderIndependentFromProcessExecution() async throws {
         let processRunner = RecordingProcessRunner(result: CommandResult(
             exitCode: 0,
