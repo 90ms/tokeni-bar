@@ -51,8 +51,8 @@ TokeniWindows
 | PR6 | `windows/06-application-growth` | 검증된 token observation과 growth ledger 처리 경계 | CI 통과 |
 | PR7 | `windows/07-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | CI 통과 |
 | PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | CI 통과 |
-| PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | provider 변경 통합, CI 대기 |
-| PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 대기 |
+| PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | CI 통과 |
+| PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 진행 중 |
 | PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | 대기 |
 | PR12 | `windows/12-windows-tray-ui` | 트레이, 사용량, 설정, 기록, 진단 화면 | 대기 |
 | PR13 | `windows/13-windows-services` | Toast 알림, 자동 시작, 업데이트, 기본 오버레이 | 대기 |
@@ -167,3 +167,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR9 provider 변경을 통합했습니다. Codex·Claude의 Windows 실행 파일,
   PATH 구분자, 공식 설정 루트 override와 sanitized locator 테스트를 포함하며,
   기존 macOS CLI·local fallback 동작은 유지합니다.
+- 2026-08-20: PR9의 CLI provider 테스트와 macOS 앱 빌드·번들 검증 CI가 통과했습니다.
+  PR10은 Antigravity·OpenCode의 SQLite reader와 Windows 데이터베이스 접근 경계를
+  다룹니다.
