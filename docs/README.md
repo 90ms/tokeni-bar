@@ -13,6 +13,10 @@
 
 - [Tokeni 펫 시스템 정책](companion-policy.ko.md) · [English](companion-policy.md)
 
+## 개발 계획
+
+- [Windows 포팅 계획](WINDOWS_PORTING_PLAN.ko.md) · [English](WINDOWS_PORTING_PLAN.md)
+
 ## 아카이브
 
 - [펫 시스템 초기 기획안 v0.1](archive/planning-v0.1/README.md)
