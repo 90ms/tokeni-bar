@@ -51,7 +51,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR5 | `windows/05-application-history` | Shared history load, save, clear, and macOS bridge | CI passed |
 | PR6 | `windows/06-application-growth` | Verified token observations and growth-ledger boundary | CI passed |
 | PR7 | `windows/07-application-preferences` | Settings storage, alert policy, and macOS bridge | CI passed |
-| PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | Provider changes integrated, CI pending |
+| PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | CI passed |
 | PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | Pending |
 | PR10 | `windows/10-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | Pending |
 | PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | Pending |
@@ -164,3 +164,5 @@ Each PR must satisfy all applicable items:
   platform boundary and makes Gemini and Grok user-data roots injectable. Copilot keeps
   its existing home-relative and environment-variable-based contract because it is
   already platform-neutral.
+- 2026-08-20: PR8 provider tests, macOS app build, and bundle validation CI passed. PR9
+  starts the Windows executable and process contracts for Codex and Claude CLI providers.

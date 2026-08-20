@@ -50,7 +50,7 @@ TokeniWindows
 | PR5 | `windows/05-application-history` | 공통 기록 로딩·저장·삭제와 macOS 브리지 | CI 통과 |
 | PR6 | `windows/06-application-growth` | 검증된 token observation과 growth ledger 처리 경계 | CI 통과 |
 | PR7 | `windows/07-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | CI 통과 |
-| PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | provider 변경 통합, CI 대기 |
+| PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | CI 통과 |
 | PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | 대기 |
 | PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 대기 |
 | PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | 대기 |
@@ -161,3 +161,5 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR8에서 Cline의 macOS 전용 앱 지원 경로를 주입 가능한 플랫폼 경계로
   옮기고, Gemini·Grok의 사용자 데이터 루트도 주입할 수 있게 했습니다. Copilot은
   기존 홈 상대 경로와 환경 변수 계약이 플랫폼 중립적이어서 변경하지 않았습니다.
+- 2026-08-20: PR8의 provider 테스트·macOS 앱 빌드·번들 검증 CI가 통과했습니다. PR9는
+  Codex·Claude CLI의 Windows 실행 파일과 프로세스 계약을 다룹니다.
