@@ -32,28 +32,36 @@ jobs:
               throw "WinGet is required to install the Swift toolchain."
             }
 
+            # WinGet can return a non-zero code after successfully installing a
+            # dependency, and PowerShell 7 may treat that native exit as an
+            # action error before the script can inspect it. The executable
+            # discovered below is the authoritative result for this step.
+            $PSNativeCommandUseErrorActionPreference = $false
             & $winget.Source install `
               --id Swift.Toolchain `
               --exact `
               --source winget `
               --accept-source-agreements `
-              --accept-package-agreements
-            if ($LASTEXITCODE -ne 0) {
-              throw "WinGet failed to install Swift.Toolchain (exit $LASTEXITCODE)."
-            }
+              --accept-package-agreements `
+              --disable-interactivity
+            $wingetExitCode = $LASTEXITCODE
 
-            $swiftCommand = Get-ChildItem `
+            $swiftExecutable = Get-ChildItem `
               -Path "$env:LOCALAPPDATA\Programs\Swift", "$env:ProgramFiles\Swift" `
               -Filter swift.exe `
               -File `
               -Recurse `
               -ErrorAction SilentlyContinue |
               Select-Object -First 1
-            if ($null -eq $swiftCommand) {
-              throw "Swift was installed but swift.exe could not be located."
+            if ($null -eq $swiftExecutable) {
+              throw "Swift was installed but swift.exe could not be located (WinGet exit $wingetExitCode)."
             }
 
-            $swiftDirectory = $swiftCommand.Directory.FullName
+            if ($wingetExitCode -ne 0) {
+              Write-Warning "WinGet returned exit $wingetExitCode after installing Swift.Toolchain; continuing because swift.exe was found."
+            }
+
+            $swiftDirectory = $swiftExecutable.Directory.FullName
             $env:PATH = "$swiftDirectory;$env:PATH"
             $swiftDirectory | Out-File `
               -FilePath $env:GITHUB_PATH `
@@ -62,6 +70,9 @@ jobs:
           }
 
           swift --version
+          if ($LASTEXITCODE -ne 0) {
+            throw "Swift toolchain was found but could not execute (exit $LASTEXITCODE)."
+          }
 
       - name: Test Swift package
         shell: pwsh
