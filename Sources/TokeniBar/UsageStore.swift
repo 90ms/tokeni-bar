@@ -92,13 +92,12 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionEconomyErrorMessage: String?
 
     private let providers: [any UsageProviding]
-    private let refreshCoordinator: UsageRefreshCoordinator
+    private let applicationRuntime: UsageApplicationRuntime
     private let settings: any SettingsStoring
     private var refreshLoop: Task<Void, Never>?
     private var activityLoop: Task<Void, Never>?
     private let notificationController: UsageNotificationController
     private let launchAtLoginController: LaunchAtLoginController
-    private let historyCoordinator: UsageHistoryCoordinator
     private let exchangeRateClient: DailyExchangeRateClient
     private let pricingCatalogClient: PricingCatalogUpdateClient
     private let appUpdateClient: GitHubReleaseUpdateClient
@@ -108,7 +107,6 @@ final class UsageStore: ObservableObject {
     private let companionBenefitStateStore: CompanionBenefitStateStore
     private let companionEconomyTransactionStore:
         CompanionEconomyTransactionStore
-    private let tokenGrowthLedgerCoordinator: TokenGrowthLedgerCoordinator
     private let companionGameEngine = CompanionGameEngine()
     private let companionRewardEngine = CompanionRewardEngine()
     private let companionBenefitEngine = CompanionBenefitEngine()
@@ -177,12 +175,12 @@ final class UsageStore: ObservableObject {
     init(providers: [any UsageProviding] = ProviderRegistry.defaultProviders()) {
         let knownIDs = Set(providers.map { $0.descriptor.id })
         self.providers = providers
-        self.refreshCoordinator = UsageRefreshCoordinator(providers: providers)
+        let applicationRuntime = UsageApplicationRuntime(providers: providers)
+        self.applicationRuntime = applicationRuntime
         let settings = UserDefaultsSettingsStore()
         self.settings = settings
         let notificationController = UsageNotificationController(settings: settings)
         let launchAtLoginController = LaunchAtLoginController()
-        let historyCoordinator = UsageHistoryCoordinator()
         let exchangeRateClient = DailyExchangeRateClient()
         let pricingCatalogClient = PricingCatalogUpdateClient()
         let appUpdateClient = GitHubReleaseUpdateClient()
@@ -192,10 +190,8 @@ final class UsageStore: ObservableObject {
         let companionBenefitStateStore = CompanionBenefitStateStore()
         let companionEconomyTransactionStore =
             CompanionEconomyTransactionStore()
-        let tokenGrowthLedgerCoordinator = TokenGrowthLedgerCoordinator()
         self.notificationController = notificationController
         self.launchAtLoginController = launchAtLoginController
-        self.historyCoordinator = historyCoordinator
         self.exchangeRateClient = exchangeRateClient
         self.pricingCatalogClient = pricingCatalogClient
         self.appUpdateClient = appUpdateClient
@@ -205,7 +201,6 @@ final class UsageStore: ObservableObject {
         self.companionBenefitStateStore = companionBenefitStateStore
         self.companionEconomyTransactionStore =
             companionEconomyTransactionStore
-        self.tokenGrowthLedgerCoordinator = tokenGrowthLedgerCoordinator
         self.tokenGrowthLedgerState = TokenGrowthLedgerState()
         self.notificationsEnabled = notificationController.isEnabled
         self.notificationSettingsMessage = nil
@@ -400,15 +395,17 @@ final class UsageStore: ObservableObject {
                 self.companionStateLoaded = false
             }
             do {
-                self.tokenGrowthLedgerState = try await self
-                    .tokenGrowthLedgerCoordinator.load()
+                let applicationState = try await self.applicationRuntime
+                    .loadGrowthLedger()
+                self.tokenGrowthLedgerState = applicationState.growthLedgerState
             } catch {
                 self.companionGrowthDataUnavailable = true
             }
             if self.companionStateLoaded {
                 await self.applyPendingCompanionGrowthAwards()
             }
-            self.historyRecords = (try? await self.historyCoordinator.load()) ?? []
+            self.historyRecords = (try? await self.applicationRuntime.loadHistory())?
+                .historyRecords ?? []
             let cachedPricing = await self.pricingCatalogClient.activateCachedCatalog()
             self.applyPricingCatalogResult(cachedPricing)
             await self.refreshPricingCatalogIfNeeded()
@@ -442,10 +439,10 @@ final class UsageStore: ObservableObject {
     func refresh(forceProviderReload: Bool = false) async {
         guard !self.isRefreshing else { return }
         self.isRefreshing = true
-        let refreshResult = await self.refreshCoordinator.refresh(
+        let applicationState = await self.applicationRuntime.refresh(
             enabledProviderIDs: self.enabledProviderIDs,
             forceProviderReload: forceProviderReload)
-        self.snapshots = refreshResult.snapshots
+        self.snapshots = applicationState.snapshots
         self.notificationDiagnostics = self.notificationController.process(
             self.snapshots,
             history: self.historyRecords,
@@ -453,11 +450,11 @@ final class UsageStore: ObservableObject {
             criticalThreshold: self.criticalThreshold,
             preferences: self.notificationPreferences,
             enabledProviderIDs: self.notificationProviderIDs)
-        self.lastRefresh = refreshResult.refreshedAt
+        self.lastRefresh = applicationState.lastRefresh
         do {
-            self.historyRecords = try await self.historyCoordinator.record(
-                self.snapshots,
+            let applicationState = try await self.applicationRuntime.recordHistory(
                 at: self.lastRefresh ?? .now)
+            self.historyRecords = applicationState.historyRecords
         } catch {
             // History is an optional local enhancement and must not fail provider refreshes.
         }
@@ -618,8 +615,9 @@ final class UsageStore: ObservableObject {
 
     func clearHistory() {
         Task {
-            try? await self.historyCoordinator.clear()
-            self.historyRecords = []
+            if let applicationState = try? await self.applicationRuntime.clearHistory() {
+                self.historyRecords = applicationState.historyRecords
+            }
         }
     }
 
@@ -2144,9 +2142,7 @@ final class UsageStore: ObservableObject {
               !self.companionGrowthDataUnavailable
         else { return }
         do {
-            let update = try await self.tokenGrowthLedgerCoordinator.process(
-                observations: self.snapshots.compactMap(\.growthUsageObservation),
-                at: now)
+            let update = try await self.applicationRuntime.processGrowth(at: now)
             self.tokenGrowthLedgerState = update.state
         } catch {
             return
@@ -2229,8 +2225,9 @@ final class UsageStore: ObservableObject {
             }
 
             do {
-                self.tokenGrowthLedgerState = try await self
-                    .tokenGrowthLedgerCoordinator.markApplied(award.id)
+                let applicationState = try await self.applicationRuntime
+                    .markGrowthAwardApplied(award.id)
+                self.tokenGrowthLedgerState = applicationState.growthLedgerState
             } catch {
                 return
             }
