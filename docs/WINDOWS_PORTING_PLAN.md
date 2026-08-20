@@ -61,8 +61,8 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR15 | `windows/15-memory-lifecycle` | Fix existing macOS usage-refresh memory growth | CI passed |
 | PR16 | `windows/16-claude-reset-time` | Verified Claude five-hour quota reset propagation/display | CI passed |
 | PR17 | `windows/17-windows-services` | Windows notification and startup adapters | CI passed |
-| PR18 | `windows/18-windows-updates` | Windows update-install contract and safe unsupported state | In progress |
-| PR19 | `windows/19-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
+| PR18 | `windows/18-windows-updates` | Windows update-install contract and safe unsupported state | CI passed |
+| PR19 | `windows/19-companion-overlay` | Pet overlay, monitors, click-through, accessibility | In progress |
 | PR20 | `windows/20-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
 | PR21 | `windows/21-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
 
@@ -219,3 +219,11 @@ Each PR must satisfy all applicable items:
   registration behind the shared contracts, and its macOS tests, app build, and bundle
   validation CI passed. PR18 starts with a safe update boundary that does not pretend to
   install updates before the Windows package contract exists.
+- 2026-08-20: PR18 keeps `AppUpdateInstalling` explicitly unsupported until the
+  Windows package format, signing, and install command are defined. It avoids arbitrary
+  downloads and `winget` execution while leaving an injection point for the real package
+  strategy in PR20.
+- 2026-08-20: PR18's safe update boundary and Windows-only tests passed the macOS
+  test, app-build, and bundle-validation CI. PR19 keeps companion state and rendering
+  shared while isolating the Win32 overlay window, multi-monitor placement, and
+  click-through behavior behind a separate boundary.

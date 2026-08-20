@@ -60,8 +60,8 @@ TokeniWindows
 | PR15 | `windows/15-memory-lifecycle` | 기존 macOS 사용량 갱신의 메모리 증가 원인 수정 | CI 통과 |
 | PR16 | `windows/16-claude-reset-time` | Claude 5시간 quota reset 시각의 검증된 전달·표시 | CI 통과 |
 | PR17 | `windows/17-windows-services` | Windows 알림·자동 시작 서비스 어댑터 | CI 통과 |
-| PR18 | `windows/18-windows-updates` | Windows 업데이트 설치 계약과 안전한 미지원 상태 | 진행 중 |
-| PR19 | `windows/19-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
+| PR18 | `windows/18-windows-updates` | Windows 업데이트 설치 계약과 안전한 미지원 상태 | CI 통과 |
+| PR19 | `windows/19-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 진행 중 |
 | PR20 | `windows/20-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
 | PR21 | `windows/21-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
 
@@ -212,3 +212,11 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   공통 계약 뒤의 Windows 어댑터로 분리했고, macOS 테스트·앱 빌드·번들 검증 CI가
   통과했습니다. PR18은 실제 설치 패키지 계약이 준비되기 전 업데이트 자동 설치를
   가장하지 않는 안전한 경계로 시작합니다.
+- 2026-08-20: PR18은 Windows 설치 패키지의 형식·서명·업데이트 명령이 확정되기
+  전까지 `AppUpdateInstalling`이 임의 다운로드나 `winget` 실행을 하지 않도록
+  명시적인 미지원 상태를 반환하고, PR20에서 실제 패키징 전략을 주입할 수 있게
+  분리합니다.
+- 2026-08-20: PR18의 안전한 업데이트 경계와 Windows 전용 테스트가 macOS
+  테스트·앱 빌드·번들 검증 CI를 통과했습니다. PR19는 companion 상태·표현은
+  공통으로 유지하고, Win32 오버레이 창·멀티 모니터·click-through만 별도 경계로
+  연결합니다.
