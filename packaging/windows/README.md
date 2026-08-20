@@ -45,3 +45,11 @@ Windows-only pull requests run the Windows build and packaging validation and re
 SwiftPM build cache. The full macOS CI runs only when shared or macOS code changes.
 Dispatching the Windows workflow manually also runs focused Windows update-installer and
 tray-detail tests.
+
+Right-click the tray icon to refresh usage, toggle per-user startup, or send a test
+notification. Automatic update installation remains disabled until a signed package
+contract is available.
+
+tray icon을 마우스 오른쪽 버튼으로 클릭하면 사용량을 새로 고치고, 현재 사용자 기준
+자동 시작을 켜거나 끄고, 테스트 알림을 보낼 수 있습니다. 서명된 패키지 계약이
+준비되기 전까지 자동 업데이트 설치는 비활성화되어 있습니다.

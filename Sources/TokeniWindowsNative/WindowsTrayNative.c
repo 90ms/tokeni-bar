@@ -16,6 +16,9 @@ static HINSTANCE tokeni_instance;
 static NOTIFYICONDATAW tokeni_icon;
 static int tokeni_class_registered;
 static LONG tokeni_refresh_requested;
+static LONG tokeni_launch_at_login_enabled;
+static LONG tokeni_launch_at_login_requested;
+static LONG tokeni_test_notification_requested;
 static WCHAR tokeni_details[8192];
 
 static int tokeni_copy_utf8(
@@ -101,8 +104,16 @@ static LRESULT CALLBACK tokeni_window_proc(
         if (menu != NULL) {
             AppendMenuW(menu, MF_STRING, 1, L"Show details");
             AppendMenuW(menu, MF_STRING, 2, L"Refresh now");
+            AppendMenuW(
+                menu,
+                MF_STRING | (tokeni_launch_at_login_enabled
+                    ? MF_CHECKED
+                    : MF_UNCHECKED),
+                3,
+                L"Start with Windows");
+            AppendMenuW(menu, MF_STRING, 4, L"Send test notification");
             AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(menu, MF_STRING, 3, L"Quit Tokeni Bar");
+            AppendMenuW(menu, MF_STRING, 5, L"Quit Tokeni Bar");
             UINT command = TrackPopupMenu(
                 menu,
                 TPM_RETURNCMD | TPM_NONOTIFY,
@@ -116,6 +127,10 @@ static LRESULT CALLBACK tokeni_window_proc(
             } else if (command == 2) {
                 InterlockedExchange(&tokeni_refresh_requested, 1);
             } else if (command == 3) {
+                InterlockedExchange(&tokeni_launch_at_login_requested, 1);
+            } else if (command == 4) {
+                InterlockedExchange(&tokeni_test_notification_requested, 1);
+            } else if (command == 5) {
                 PostMessageW(window, WM_CLOSE, 0, 0);
             }
             DestroyMenu(menu);
@@ -184,6 +199,8 @@ int tokeni_windows_tray_start(
     ZeroMemory(&tokeni_icon, sizeof(tokeni_icon));
     tokeni_details[0] = L'\0';
     InterlockedExchange(&tokeni_refresh_requested, 0);
+    InterlockedExchange(&tokeni_launch_at_login_requested, 0);
+    InterlockedExchange(&tokeni_test_notification_requested, 0);
     tokeni_icon.cbSize = sizeof(tokeni_icon);
     tokeni_icon.hWnd = tokeni_window;
     tokeni_icon.uID = tokeni_tray_identifier;
@@ -236,6 +253,21 @@ int tokeni_windows_tray_update_details(const char *details_utf8)
 int tokeni_windows_tray_take_refresh_request(void)
 {
     return InterlockedExchange(&tokeni_refresh_requested, 0);
+}
+
+void tokeni_windows_tray_set_launch_at_login_enabled(int enabled)
+{
+    InterlockedExchange(&tokeni_launch_at_login_enabled, enabled != 0);
+}
+
+int tokeni_windows_tray_take_launch_at_login_request(void)
+{
+    return InterlockedExchange(&tokeni_launch_at_login_requested, 0);
+}
+
+int tokeni_windows_tray_take_test_notification_request(void)
+{
+    return InterlockedExchange(&tokeni_test_notification_requested, 0);
 }
 
 int tokeni_windows_tray_is_started(void)
@@ -314,6 +346,21 @@ int tokeni_windows_tray_update_details(const char *details_utf8)
 }
 
 int tokeni_windows_tray_take_refresh_request(void)
+{
+    return 0;
+}
+
+void tokeni_windows_tray_set_launch_at_login_enabled(int enabled)
+{
+    (void)enabled;
+}
+
+int tokeni_windows_tray_take_launch_at_login_request(void)
+{
+    return 0;
+}
+
+int tokeni_windows_tray_take_test_notification_request(void)
 {
     return 0;
 }
