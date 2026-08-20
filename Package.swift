@@ -55,8 +55,11 @@ targets.append(
         linkerSettings: [
             .linkedLibrary("advapi32"),
             .linkedLibrary("gdi32"),
+            .linkedLibrary("ole32"),
             .linkedLibrary("shell32"),
+            .linkedLibrary("uuid"),
             .linkedLibrary("user32"),
+            .linkedLibrary("windowscodecs"),
         ]))
 targets.append(
     .executableTarget(

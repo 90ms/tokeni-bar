@@ -64,7 +64,13 @@ int tokeni_windows_overlay_set_frame(
 
 int tokeni_windows_overlay_set_click_through(int enabled);
 
-int tokeni_windows_overlay_set_state(int stage, int level);
+int tokeni_windows_overlay_set_asset_root(const char *path_utf8);
+
+int tokeni_windows_overlay_set_state(
+    int stage,
+    int level,
+    int species_index,
+    int rarity_rank);
 
 void tokeni_windows_overlay_stop(void);
 

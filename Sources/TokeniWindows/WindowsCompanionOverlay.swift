@@ -1,4 +1,5 @@
 import Foundation
+import TokeniCore
 import TokeniWindowsNative
 
 /// A virtual-screen frame for the Windows companion overlay.
@@ -22,10 +23,19 @@ public struct WindowsCompanionOverlayFrame: Equatable, Sendable {
 public struct WindowsCompanionOverlayState: Equatable, Sendable {
     public let stage: Int
     public let level: Int
+    public let speciesIndex: Int
+    public let rarityRank: Int
 
-    public init(stage: Int, level: Int) {
+    public init(
+        stage: Int,
+        level: Int,
+        speciesIndex: Int = 0,
+        rarityRank: Int = 0)
+    {
         self.stage = max(stage, 0)
         self.level = max(level, 0)
+        self.speciesIndex = max(speciesIndex, 0)
+        self.rarityRank = min(max(rarityRank, 0), 3)
     }
 }
 
@@ -103,13 +113,27 @@ public final class WindowsCompanionOverlay: @unchecked Sendable {
         return tokeni_windows_overlay_set_click_through(enabled ? 1 : 0) != 0
     }
 
+    /// Points the native renderer at packaged companion assets. The renderer
+    /// keeps its fallback surface when this root is absent or invalid.
+    @discardableResult
+    public func setAssetRoot(_ root: URL?) -> Bool {
+        self.stateLock.lock()
+        defer { self.stateLock.unlock() }
+        let path = root?.path ?? ""
+        return path.withCString {
+            tokeni_windows_overlay_set_asset_root($0) != 0
+        }
+    }
+
     @discardableResult
     public func setState(_ state: WindowsCompanionOverlayState) -> Bool {
         self.stateLock.lock()
         defer { self.stateLock.unlock() }
         return tokeni_windows_overlay_set_state(
             Int32(clamping: state.stage),
-            Int32(clamping: state.level)) != 0
+            Int32(clamping: state.level),
+            Int32(clamping: state.speciesIndex),
+            Int32(clamping: state.rarityRank)) != 0
     }
 
     public func stop() {

@@ -59,6 +59,13 @@ if (-not (Test-Path -LiteralPath $binaryPath -PathType Leaf)) {
     throw "TokeniWindows.exe was not found in: $buildPath"
 }
 
+$companionAssetSourcePath = Join-Path `
+    $projectDirectory `
+    "Sources\TokeniBar\CompanionAssets"
+if (-not (Test-Path -LiteralPath $companionAssetSourcePath -PathType Container)) {
+    throw "Companion asset source directory was not found: $companionAssetSourcePath"
+}
+
 New-Item -ItemType Directory -Path $outputPath -Force | Out-Null
 
 $packageName = "Tokeni-Bar-Windows-$Version"
@@ -99,11 +106,27 @@ foreach ($resource in $resourcesToCopy) {
     Copy-Item -LiteralPath $resource.FullName -Destination $stagingPath -Recurse -Force
 }
 
+$companionAssetDestinationPath = Join-Path `
+    $stagingPath `
+    "Resources\CompanionAssets"
+New-Item -ItemType Directory -Path $companionAssetDestinationPath -Force | Out-Null
+Get-ChildItem -LiteralPath $companionAssetSourcePath -Force |
+    ForEach-Object {
+        Copy-Item `
+            -LiteralPath $_.FullName `
+            -Destination $companionAssetDestinationPath `
+            -Recurse `
+            -Force
+    }
+& (Join-Path $projectDirectory "Scripts\validate_windows_companion_assets.ps1") `
+    -AssetRoot $companionAssetDestinationPath
+
 @"
 Tokeni Bar for Windows
 Version: $Version
 
 Run TokeniWindows.exe to start the portable application.
+Companion sprites are included under Resources\CompanionAssets.
 This artifact is unsigned and does not register an installer or automatic update.
 "@ | Set-Content -LiteralPath (Join-Path $stagingPath 'README.txt') -Encoding utf8
 

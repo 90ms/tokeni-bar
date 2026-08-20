@@ -67,7 +67,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR21 | `windows/21-tray-details` | Windows tray detail surface, reset times, and refresh/quit actions | CI passed |
 | PR22 | `windows/22-windows-services-ui` | Settings, notifications, and launch-at-login tray actions | CI passed |
 | PR23 | `windows/23-companion-integration` | Companion state, overlay lifecycle, and native fallback renderer | CI passed |
-| PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | Pending |
+| PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | CI passed; hardware validation pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -272,3 +272,11 @@ Each PR must satisfy all applicable items:
   identified Windows-only changes; the detector now ignores `Package.swift` edits that
   are confined to the Windows conditional block and logs the decision. macOS CI remains
   required for shared or macOS-specific changes and can still be started manually.
+- 2026-08-20: Started PR24 on top of PR23. It will package the existing companion asset
+  catalog into the Windows artifact, validate manifests and PNG dimensions on the
+  Windows runner, and document the remaining real-device checks without moving provider
+  or token data into the companion boundary.
+- 2026-08-20: PR24's Windows executable build, portable ZIP creation, and post-extraction
+  companion manifest/PNG validation passed. The macOS build was skipped because the
+  changes are Windows-only; real Windows display, tray, and overlay interaction checks
+  remain for a Windows device or dedicated hardware runner.
