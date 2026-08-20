@@ -219,3 +219,7 @@ Each PR must satisfy all applicable items:
   registration behind the shared contracts, and its macOS tests, app build, and bundle
   validation CI passed. PR18 starts with a safe update boundary that does not pretend to
   install updates before the Windows package contract exists.
+- 2026-08-20: PR18 keeps `AppUpdateInstalling` explicitly unsupported until the
+  Windows package format, signing, and install command are defined. It avoids arbitrary
+  downloads and `winget` execution while leaving an injection point for the real package
+  strategy in PR20.

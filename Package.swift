@@ -66,6 +66,12 @@ targets.append(
             "TokeniWindowsNative",
         ],
         swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]))
+targets.append(
+    .testTarget(
+        name: "TokeniWindowsTests",
+        dependencies: ["TokeniWindows", "TokeniCore"],
+        path: "Tests/TokeniWindowsTests",
+        swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]))
 #endif
 
 let package = Package(
