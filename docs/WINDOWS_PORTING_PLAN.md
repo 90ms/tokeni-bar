@@ -44,8 +44,8 @@ verified, and merged in this order; the plan is updated before each submission.
 
 | Step | Example branch | Scope | Status |
 |---|---|---|---|
-| PR1 | `windows/01-porting-plan` | This plan and common-boundary decisions | In progress |
-| PR2 | `windows/02-platform-contracts` | Windows core target, platform protocols, target boundaries | Pending |
+| PR1 | `windows/01-porting-plan` | This plan and common-boundary decisions | PR created |
+| PR2 | `windows/02-platform-contracts` | Windows core target, platform protocols, target boundaries | In progress |
 | PR3 | `windows/03-platform-infrastructure` | App paths, file storage, processes, CLI lookup, SQLite | Pending |
 | PR4 | `windows/04-application-state` | Shared state extraction and macOS bridge | Pending |
 | PR5 | `windows/05-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | Pending |
@@ -133,3 +133,5 @@ Each PR must satisfy all applicable items:
   and UI behind platform adapters.
 - 2026-08-20: Split `UsageStore` into shared application state plus a macOS UI bridge
   instead of reusing it directly from the Windows UI.
+- 2026-08-20: Submitted PR1 as stacked draft PR #31 on `main` and started PR2 on
+  top of that branch.

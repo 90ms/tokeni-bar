@@ -43,8 +43,8 @@ TokeniWindows
 
 | 단계 | 브랜치 예시 | 범위 | 상태 |
 |---|---|---|---|
-| PR1 | `windows/01-porting-plan` | 이 계획과 공통화 결정 문서 | 진행 중 |
-| PR2 | `windows/02-platform-contracts` | `TokeniCore` Windows 타깃, 플랫폼 프로토콜, 타깃 경계 | 대기 |
+| PR1 | `windows/01-porting-plan` | 이 계획과 공통화 결정 문서 | PR 생성 |
+| PR2 | `windows/02-platform-contracts` | `TokeniCore` Windows 타깃, 플랫폼 프로토콜, 타깃 경계 | 진행 중 |
 | PR3 | `windows/03-platform-infrastructure` | 앱 경로, 파일 저장, 프로세스 실행, CLI 탐색, SQLite | 대기 |
 | PR4 | `windows/04-application-state` | `UsageStore` 공통 상태 추출과 macOS 브리지 | 대기 |
 | PR5 | `windows/05-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | 대기 |
@@ -135,3 +135,5 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   플랫폼 어댑터로 분리하기로 했습니다.
 - 2026-08-20: `UsageStore` 전체를 Windows UI에서 재사용하지 않고 공통 상태 계층과
   macOS UI 브리지로 나누기로 했습니다.
+- 2026-08-20: PR1을 `main` 위에 stacked draft PR #31로 제출하고 PR2를 그 브랜치
+  위에 시작했습니다.
