@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 public struct StableAppRelease: Hashable, Sendable {
     public let version: SemanticVersion
