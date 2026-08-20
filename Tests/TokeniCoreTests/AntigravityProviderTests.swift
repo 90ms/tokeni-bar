@@ -12,7 +12,7 @@ struct AntigravityProviderTests {
             withExtension: "json",
             subdirectory: "Fixtures"))
         let runner = RecordingSQLiteQueryRunner(
-            response: Data(contentsOf: fixtureURL))
+            response: try Data(contentsOf: fixtureURL))
         let reader = AntigravityDatabaseReader(queryRunner: runner)
 
         let rows = try await reader.readRows(from: databaseURL)
