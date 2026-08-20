@@ -51,8 +51,8 @@ TokeniWindows
 | PR6 | `windows/06-application-growth` | 검증된 token observation과 growth ledger 처리 경계 | CI 통과 |
 | PR7 | `windows/07-application-preferences` | 설정 저장소·알림 판정·macOS 브리지 | CI 통과 |
 | PR8 | `windows/08-json-providers` | Copilot·Cline·Grok·Gemini 경로와 fixture | CI 통과 |
-| PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | 대기 |
-| PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 대기 |
+| PR9 | `windows/09-cli-providers` | Codex·Claude 실행 파일과 Windows CLI 계약 | CI 통과 |
+| PR10 | `windows/10-sqlite-providers` | Antigravity·OpenCode SQLite reader와 fixture | 진행 중 |
 | PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | 대기 |
 | PR12 | `windows/12-windows-tray-ui` | 트레이, 사용량, 설정, 기록, 진단 화면 | 대기 |
 | PR13 | `windows/13-windows-services` | Toast 알림, 자동 시작, 업데이트, 기본 오버레이 | 대기 |
@@ -156,10 +156,17 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR6의 growth ledger 코디네이터가 macOS CI를 통과했습니다. PR7은
   설정 저장과 알림 정책을 provider·companion UI와 분리합니다.
 - 2026-08-20: PR7의 설정 저장 계약, macOS adapter, 공통 alert preference 모델이
-  macOS CI를 통과했습니다. PR8은 JSON 계열 provider를 두 개의 병렬 작업으로
-  검토한 뒤 하나의 stacked PR 층으로 통합합니다.
+  macOS CI를 통과했습니다.
 - 2026-08-20: PR8에서 Cline의 macOS 전용 앱 지원 경로를 주입 가능한 플랫폼 경계로
   옮기고, Gemini·Grok의 사용자 데이터 루트도 주입할 수 있게 했습니다. Copilot은
   기존 홈 상대 경로와 환경 변수 계약이 플랫폼 중립적이어서 변경하지 않았습니다.
 - 2026-08-20: PR8의 provider 테스트·macOS 앱 빌드·번들 검증 CI가 통과했습니다. PR9는
   Codex·Claude CLI의 Windows 실행 파일과 프로세스 계약을 다룹니다.
+- 2026-08-20: PR9를 PR8 위에 시작했습니다. Codex와 Claude provider는 서로 다른
+  디렉터리 write set으로 병렬 검토하고, 공통 CLI 실행 경계는 통합 담당자가 조정합니다.
+- 2026-08-20: PR9 provider 변경을 통합했습니다. Codex·Claude의 Windows 실행 파일,
+  PATH 구분자, 공식 설정 루트 override와 sanitized locator 테스트를 포함하며,
+  기존 macOS CLI·local fallback 동작은 유지합니다.
+- 2026-08-20: PR9의 CLI provider 테스트와 macOS 앱 빌드·번들 검증 CI가 통과했습니다.
+  PR10은 Antigravity·OpenCode의 SQLite reader와 Windows 데이터베이스 접근 경계를
+  다룹니다.

@@ -20,24 +20,49 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
 
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
-        calendar: Calendar = .current)
+        calendar: Calendar = .current,
+        configDirectory: URL? = nil)
     {
+        let configDirectory = Self.resolvedConfigDirectory(
+            homeDirectory: homeDirectory,
+            explicitDirectory: configDirectory,
+            environment: ProcessInfo.processInfo.environment)
         self.init(
             homeDirectory: homeDirectory,
             calendar: calendar,
-            cliClient: ClaudeCLIUsageClient(homeDirectory: homeDirectory))
+            cliClient: ClaudeCLIUsageClient(homeDirectory: homeDirectory),
+            configDirectory: configDirectory)
     }
 
     init(
         homeDirectory: URL,
         calendar: Calendar,
         cliClient: ClaudeCLIUsageClient,
+        configDirectory: URL? = nil,
         localUsageCache: ClaudeLocalUsageCache = ClaudeLocalUsageCache())
     {
-        self.projectsDirectory = homeDirectory.appending(path: ".claude/projects", directoryHint: .isDirectory)
+        let configDirectory = configDirectory
+            ?? homeDirectory.appending(path: ".claude", directoryHint: .isDirectory)
+        self.projectsDirectory = configDirectory.appending(
+            path: "projects",
+            directoryHint: .isDirectory)
         self.calendar = calendar
         self.cliClient = cliClient
         self.localUsageCache = localUsageCache
+    }
+
+    static func resolvedConfigDirectory(
+        homeDirectory: URL,
+        explicitDirectory: URL?,
+        environment: [String: String]) -> URL
+    {
+        if let explicitDirectory {
+            return explicitDirectory
+        }
+        if let path = environment["CLAUDE_CONFIG_DIR"], !path.isEmpty {
+            return URL(fileURLWithPath: path, isDirectory: true)
+        }
+        return homeDirectory.appending(path: ".claude", directoryHint: .isDirectory)
     }
 
     public func fetchUsage() async -> ProviderSnapshot {

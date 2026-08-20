@@ -22,14 +22,37 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
 
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
-        calendar: Calendar = .current)
+        calendar: Calendar = .current,
+        codexHomeDirectory: URL? = nil)
     {
-        self.sessionsDirectory = homeDirectory.appending(path: ".codex/sessions", directoryHint: .isDirectory)
+        let codexHomeDirectory = Self.resolvedCodexHomeDirectory(
+            homeDirectory: homeDirectory,
+            explicitDirectory: codexHomeDirectory,
+            environment: ProcessInfo.processInfo.environment)
+        self.sessionsDirectory = codexHomeDirectory.appending(
+            path: "sessions",
+            directoryHint: .isDirectory)
         self.calendar = calendar
         self.accountClient = CodexAccountUsageClient(homeDirectory: homeDirectory)
         self.accountTokenUsageClient = CodexAccountTokenUsageClient(
             homeDirectory: homeDirectory)
         self.localUsageCache = CodexLocalUsageCache()
+    }
+
+    static func resolvedCodexHomeDirectory(
+        homeDirectory: URL,
+        explicitDirectory: URL?,
+        environment: [String: String]) -> URL
+    {
+        if let explicitDirectory {
+            return explicitDirectory
+        }
+        if let path = environment["CODEX_HOME"], !path.isEmpty {
+            return URL(fileURLWithPath: path, isDirectory: true)
+        }
+        return homeDirectory.appending(
+            path: ".codex",
+            directoryHint: .isDirectory)
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
@@ -157,7 +180,8 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
             source: .localSessionLog,
             accountTokenUsageIssue: accountTokenUsageIssue,
             connectionState: self.connectionState(for: accountError),
-            detail: errorMessage ?? "No Codex usage event was found in ~/.codex/sessions")
+            detail: errorMessage
+                ?? "No Codex usage event was found in \(self.sessionsDirectory.path)")
     }
 
     public func requestUsageAuthorization() async throws {
