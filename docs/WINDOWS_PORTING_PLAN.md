@@ -45,18 +45,20 @@ verified, and merged in this order; the plan is updated before each submission.
 | Step | Example branch | Scope | Status |
 |---|---|---|---|
 | PR1 | `windows/01-porting-plan` | This plan and common-boundary decisions | PR created |
-| PR2 | `windows/02-platform-contracts` | Windows core target, platform protocols, target boundaries | In progress |
-| PR3 | `windows/03-platform-infrastructure` | App paths, file storage, processes, CLI lookup, SQLite | Pending |
-| PR4 | `windows/04-application-state` | Shared state extraction and macOS bridge | Pending |
-| PR5 | `windows/05-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | Pending |
-| PR6 | `windows/06-cli-providers` | Codex and Claude executable/Windows CLI contracts | Pending |
-| PR7 | `windows/07-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | Pending |
-| PR8 | `windows/08-windows-runtime` | Windows core runtime/state transport boundary | Pending |
-| PR9 | `windows/09-windows-tray-ui` | Tray, usage, settings, history, diagnostics | Pending |
-| PR10 | `windows/10-windows-services` | Toasts, launch-at-login, updates, basic overlay | Pending |
-| PR11 | `windows/11-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
-| PR12 | `windows/12-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
-| PR13 | `windows/13-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
+| PR2 | `windows/02-platform-contracts` | Windows core target, platform protocols, target boundaries | CI passed |
+| PR3 | `windows/03-platform-infrastructure` | App paths, file storage, processes, CLI lookup, SQLite | CI passed |
+| PR4 | `windows/04-application-refresh` | Shared provider refresh coordinator and macOS `UsageStore` bridge | In progress |
+| PR5 | `windows/05-application-history` | Shared history, cost, growth processing, and state boundary | Pending |
+| PR6 | `windows/06-application-preferences` | Settings storage, alert policy, and macOS bridge | Pending |
+| PR7 | `windows/07-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | Pending |
+| PR8 | `windows/08-cli-providers` | Codex and Claude executable/Windows CLI contracts | Pending |
+| PR9 | `windows/09-sqlite-providers` | Antigravity and OpenCode SQLite readers and fixtures | Pending |
+| PR10 | `windows/10-windows-runtime` | Windows core runtime/state transport boundary | Pending |
+| PR11 | `windows/11-windows-tray-ui` | Tray, usage, settings, history, diagnostics | Pending |
+| PR12 | `windows/12-windows-services` | Toasts, launch-at-login, updates, basic overlay | Pending |
+| PR13 | `windows/13-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
+| PR14 | `windows/14-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
+| PR15 | `windows/15-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
 
 PR5–PR7 touch disjoint provider directories and may be investigated in parallel, but
 they are submitted as sequential stack layers in this repository.
@@ -138,3 +140,8 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: Because SwiftPM's `platforms` array declares platforms with deployment
   versions, Windows is provided through conditional targets rather than added as
   `.windows` in that array.
+- 2026-08-20: Fixed PR2's release-note check and SwiftPM manifest issue, then passed
+  macOS CI. Started PR3 on top of that branch.
+- 2026-08-20: Added app paths, executable lookup, and SQLite infrastructure in PR3 and
+  passed macOS CI. The original broad application-state PR was split into three smaller
+  layers—provider refresh, history/growth, and preferences/alerts—and PR4 is starting.
