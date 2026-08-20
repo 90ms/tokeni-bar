@@ -56,11 +56,13 @@ TokeniWindows
 | PR11 | `windows/11-windows-runtime` | Windows용 코어 실행/상태 전달 경계 | CI 통과 |
 | PR12 | `windows/12-windows-tray-ui` | Windows 실행 타깃·호스트 수명주기·상태 소비 경계 | CI 통과 |
 | PR13 | `windows/13-windows-tray-surface` | Win32 트레이 셸·사용량 표시 모델과 기본 tooltip | CI 통과 |
-| PR14 | `windows/14-settings-storage` | Windows 파일 기반 설정 저장소와 공통 preference 연결 경계 | 진행 중 |
-| PR15 | `windows/15-windows-services` | Windows 알림·자동 시작·업데이트 서비스 어댑터 | 대기 |
-| PR16 | `windows/16-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
-| PR17 | `windows/17-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
-| PR18 | `windows/18-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
+| PR14 | `windows/14-settings-storage` | Windows 파일 기반 설정 저장소와 공통 preference 연결 경계 | CI 통과 |
+| PR15 | `windows/15-memory-lifecycle` | 기존 macOS 사용량 갱신의 메모리 증가 원인 수정 | 진행 중 |
+| PR16 | `windows/16-claude-reset-time` | Claude 5시간 quota reset 시각의 검증된 전달·표시 | 대기 |
+| PR17 | `windows/17-windows-services` | Windows 알림·자동 시작·업데이트 서비스 어댑터 | 대기 |
+| PR18 | `windows/18-companion-overlay` | 펫 오버레이, 멀티 모니터, 클릭 통과, 접근성 | 대기 |
+| PR19 | `windows/19-packaging-ci` | Windows 설치 패키지, CI, artifact, 배포 문서 | 대기 |
+| PR20 | `windows/20-integration` | 최종 통합, macOS 회귀, Windows 실기기 검증 | 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -135,7 +137,7 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 
 ## 현재 결정 로그
 
-- 2026-08-20: Windows 포팅을 18개의 작은 stacked PR로 분리했습니다. 큰
+- 2026-08-20: Windows 포팅과 회귀 수정을 20개의 작은 stacked PR로 분리했습니다. 큰
   `UsageStore` 작업은 refresh·history·growth·preferences 네 층으로 나눴습니다.
 - 2026-08-20: `TokeniCore`의 계산·파서·도메인 로직은 공유하고, OS I/O와 UI는
   플랫폼 어댑터로 분리하기로 했습니다.
@@ -196,3 +198,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   Windows toolchain 빌드 검증은 Windows CI 단계에서 별도로 추가합니다.
 - 2026-08-20: PR14의 설정 저장 범위가 알림·자동 시작·업데이트와 함께 묶이면
   검토 단위가 커지므로, Windows 파일 기반 설정 저장소를 먼저 별도 PR로 분리합니다.
+- 2026-08-20: PR14의 macOS 테스트·앱 빌드·번들 검증 CI가 통과했습니다. 기존
+  macOS에서 관찰된 메모리 증가와 Claude reset 시각 누락은 Windows 서비스와
+  독립적인 회귀 수정 PR로 분리합니다.

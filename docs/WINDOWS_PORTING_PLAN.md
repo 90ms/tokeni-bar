@@ -57,11 +57,13 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR11 | `windows/11-windows-runtime` | Windows core runtime/state transport boundary | CI passed |
 | PR12 | `windows/12-windows-tray-ui` | Windows executable target, host lifecycle, and state-consumption seam | CI passed |
 | PR13 | `windows/13-windows-tray-surface` | Win32 tray shell, usage presentation, and basic tooltip | CI passed |
-| PR14 | `windows/14-settings-storage` | Windows file-backed settings and shared preference seam | In progress |
-| PR15 | `windows/15-windows-services` | Windows notification, startup, and update adapters | Pending |
-| PR16 | `windows/16-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
-| PR17 | `windows/17-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
-| PR18 | `windows/18-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
+| PR14 | `windows/14-settings-storage` | Windows file-backed settings and shared preference seam | CI passed |
+| PR15 | `windows/15-memory-lifecycle` | Fix existing macOS usage-refresh memory growth | In progress |
+| PR16 | `windows/16-claude-reset-time` | Verified Claude five-hour quota reset propagation/display | Pending |
+| PR17 | `windows/17-windows-services` | Windows notification, startup, and update adapters | Pending |
+| PR18 | `windows/18-companion-overlay` | Pet overlay, monitors, click-through, accessibility | Pending |
+| PR19 | `windows/19-packaging-ci` | Windows installer, CI, artifacts, release docs | Pending |
+| PR20 | `windows/20-integration` | Final integration, macOS regression, Windows hardware validation | Pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -136,7 +138,7 @@ Each PR must satisfy all applicable items:
 
 ## Decision log
 
-- 2026-08-20: Split Windows work into 18 small stacked PRs. The broad `UsageStore` work
+- 2026-08-20: Split Windows work and regression fixes into 20 small stacked PRs. The broad `UsageStore` work
   was divided into provider refresh, history, growth, and preferences layers.
 - 2026-08-20: Share TokeniCore calculations, parsers, and domain rules; isolate OS I/O
   and UI behind platform adapters.
@@ -202,3 +204,6 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: PR14's settings scope is separated from notifications, startup, and
   updates because those platform services require different Windows APIs and review
   risks. The file-backed settings boundary comes first.
+- 2026-08-20: PR14's macOS tests, app build, and bundle validation CI passed. The
+  observed existing-app memory growth and missing Claude reset time are kept independent
+  from the Windows services layer as dedicated regression-fix PRs.
