@@ -110,6 +110,28 @@ struct PlatformInfrastructureTests {
         #expect(command.arguments.contains("-readonly"))
         #expect(command.arguments.last == "SELECT value FROM usage;")
     }
+
+    @Test
+    func systemSQLiteQueryRunnerUsesInjectedExecutableAndProcessRunner() async throws {
+        let executable = URL(fileURLWithPath: "/test/sqlite3")
+        let processRunner = RecordingProcessRunner(result: CommandResult(
+            exitCode: 0,
+            standardOutput: "[{\"value\":1}]",
+            standardError: ""))
+        let sqlite = SystemSQLiteQueryRunner(
+            executableURL: executable,
+            runner: processRunner)
+
+        let data = try await sqlite.queryJSON(
+            databaseURL: URL(fileURLWithPath: "/tmp/usage.db"),
+            sql: "SELECT value FROM usage;")
+        let command = try #require(await processRunner.recordedCommand())
+
+        #expect(data == Data("[{\"value\":1}]".utf8))
+        #expect(command.executable == executable.path)
+        #expect(command.arguments.contains("-readonly"))
+        #expect(command.arguments.last == "SELECT value FROM usage;")
+    }
 }
 
 private actor RecordingProcessRunner: ProcessRunning {
