@@ -142,6 +142,97 @@ struct ClaudeCLIUsageTests {
         #expect(await cache.failure(now: now.addingTimeInterval(90)) == nil)
     }
 
+    @Test
+    func usesInjectedConfigDirectoryForClaudeProjectHistory() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let configDirectory = root.appending(path: "claude-config", directoryHint: .isDirectory)
+        let projectsDirectory = configDirectory.appending(
+            path: "projects/example",
+            directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(
+            at: projectsDirectory,
+            withIntermediateDirectories: true)
+        let session = projectsDirectory.appending(path: "session.jsonl")
+        try Data().write(to: session)
+
+        let provider = ClaudeUsageProvider(
+            homeDirectory: root.appending(path: "home", directoryHint: .isDirectory),
+            configDirectory: configDirectory)
+
+        #expect(provider.latestActivityDate(since: .distantPast) != nil)
+    }
+
+    @Test
+    func configDirectoryEnvironmentAndExplicitInjectionAreDeterministic() throws {
+        let home = URL(fileURLWithPath: "/tmp/claude-test-home", isDirectory: true)
+        let environmentDirectory = URL(
+            fileURLWithPath: "/tmp/claude-config-from-environment",
+            isDirectory: true)
+        let explicitDirectory = URL(
+            fileURLWithPath: "/tmp/claude-config-injected",
+            isDirectory: true)
+
+        #expect(ClaudeUsageProvider.resolvedConfigDirectory(
+            homeDirectory: home,
+            explicitDirectory: nil,
+            environment: ["CLAUDE_CONFIG_DIR": environmentDirectory.path])
+            == environmentDirectory)
+        #expect(ClaudeUsageProvider.resolvedConfigDirectory(
+            homeDirectory: home,
+            explicitDirectory: explicitDirectory,
+            environment: ["CLAUDE_CONFIG_DIR": environmentDirectory.path])
+            == explicitDirectory)
+        #expect(ClaudeUsageProvider.resolvedConfigDirectory(
+            homeDirectory: home,
+            explicitDirectory: nil,
+            environment: [:])
+            == home.appending(path: ".claude", directoryHint: .isDirectory))
+    }
+
+    #if os(Windows)
+    @Test
+    func locatesNativeClaudeBinaryInUserProfileLocalBin() throws {
+        let home = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: home) }
+        let executable = home.appending(
+            path: ".local/bin/claude.exe",
+            directoryHint: .notDirectory)
+        try FileManager.default.createDirectory(
+            at: executable.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try Data().write(to: executable)
+
+        let locator = ClaudeExecutableLocator(
+            pathEnvironment: nil,
+            homeDirectory: home)
+
+        #expect(locator.resolve() == executable)
+    }
+
+    @Test
+    func locatesNativeClaudeBinaryFromWindowsPathEntries() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pathDirectory = root.appending(path: "path-entry", directoryHint: .isDirectory)
+        let executable = pathDirectory.appending(path: "claude.exe")
+        try FileManager.default.createDirectory(
+            at: pathDirectory,
+            withIntermediateDirectories: true)
+        try Data().write(to: executable)
+        let missingDirectory = root.appending(path: "missing", directoryHint: .isDirectory)
+
+        let locator = ClaudeExecutableLocator(
+            pathEnvironment: "\(missingDirectory.path);\(pathDirectory.path)",
+            homeDirectory: root.appending(path: "home", directoryHint: .isDirectory))
+
+        #expect(locator.resolve() == executable)
+    }
+    #endif
+
     private func makeExecutableScript(
         _ contents: String,
         named: String = "claude",

@@ -377,7 +377,8 @@ struct ClaudeExecutableLocator: Sendable {
 
     init(
         explicitURL: URL? = nil,
-        pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"],
+        pathEnvironment: String? = PlatformEnvironment.pathValue(
+            from: ProcessInfo.processInfo.environment),
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser)
     {
         self.explicitURL = explicitURL
@@ -390,6 +391,14 @@ struct ClaudeExecutableLocator: Sendable {
             return self.isExecutable(explicitURL) ? explicitURL : nil
         }
 
+        #if os(Windows)
+        // Reuse the shared contract for Windows PATH separators, executable
+        // suffixes, and the verified user-local .local/bin location.
+        return SystemExecutableLocator().locate(
+            executableNames: ["claude"],
+            pathEnvironment: self.pathEnvironment,
+            homeDirectory: self.homeDirectory)
+        #else
         for relativePath in [
             ".local/bin/claude",
             ".npm-global/bin/claude",
@@ -422,6 +431,7 @@ struct ClaudeExecutableLocator: Sendable {
             if self.isExecutable(candidate) { return candidate }
         }
         return nil
+        #endif
     }
 
     private func versionManagedCandidates() -> [URL] {
@@ -452,7 +462,11 @@ struct ClaudeExecutableLocator: Sendable {
     }
 
     private func isExecutable(_ url: URL) -> Bool {
+        #if os(Windows)
+        return FileManager.default.fileExists(atPath: url.path)
+        #else
         FileManager.default.isExecutableFile(atPath: url.path)
+        #endif
     }
 }
 
@@ -480,7 +494,8 @@ struct ClaudeCLIUsageClient: Sendable {
 
     init(
         executableURL: URL? = nil,
-        pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"],
+        pathEnvironment: String? = PlatformEnvironment.pathValue(
+            from: ProcessInfo.processInfo.environment),
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         processRunner: any ProcessRunning = SystemProcessRunner(),
         cache: ClaudeCLIUsageCache = ClaudeCLIUsageCache(),
