@@ -48,8 +48,8 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR2 | `windows/02-platform-contracts` | Windows core target, platform protocols, target boundaries | CI passed |
 | PR3 | `windows/03-platform-infrastructure` | App paths, file storage, processes, CLI lookup, SQLite | CI passed |
 | PR4 | `windows/04-application-refresh` | Shared provider refresh coordinator and macOS `UsageStore` bridge | CI passed |
-| PR5 | `windows/05-application-history` | Shared history load, save, clear, and macOS bridge | In progress |
-| PR6 | `windows/06-application-growth` | Verified token observations and growth-ledger boundary | Pending |
+| PR5 | `windows/05-application-history` | Shared history load, save, clear, and macOS bridge | CI passed |
+| PR6 | `windows/06-application-growth` | Verified token observations and growth-ledger boundary | In progress |
 | PR7 | `windows/07-application-preferences` | Settings storage, alert policy, and macOS bridge | Pending |
 | PR8 | `windows/08-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | Pending |
 | PR9 | `windows/09-cli-providers` | Codex and Claude executable/Windows CLI contracts | Pending |
@@ -148,3 +148,6 @@ Each PR must satisfy all applicable items:
   provider-refresh, history, growth, and preferences/alerts layers.
 - 2026-08-20: PR4's `TokeniApplication` provider refresh coordinator and macOS bridge
   passed macOS CI. PR5 starts with the history storage boundary only.
+- 2026-08-20: PR5's shared history coordinator and macOS bridge passed macOS CI. PR6
+  covers the growth-ledger persistence boundary separately from companion presentation
+  and rewards.
