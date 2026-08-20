@@ -39,7 +39,7 @@ public protocol ExecutableLocating: Sendable {
 /// Queries a local SQLite database without exposing its process or library
 /// implementation to a provider parser.
 public protocol ReadOnlySQLiteQuerying: Sendable {
-    func queryJSON(databaseURL: URL, sql: String) throws -> Data
+    func queryJSON(databaseURL: URL, sql: String) async throws -> Data
 }
 
 public struct AppNotification: Equatable, Sendable, Identifiable {
@@ -66,4 +66,26 @@ public protocol LaunchAtLoginManaging: Sendable {
 
 public protocol AppUpdateInstalling: Sendable {
     func install(update: AppUpdateCheckResult) async throws
+}
+
+enum PlatformEnvironment {
+    #if os(Windows)
+    static let pathSeparator: Character = ";"
+    #else
+    static let pathSeparator: Character = ":"
+    #endif
+
+    static func pathEntries(_ value: String?) -> [String] {
+        (value ?? "")
+            .split(separator: self.pathSeparator)
+            .map(String.init)
+    }
+
+    static func pathValue(from environment: [String: String]) -> String? {
+        environment["PATH"] ?? environment["Path"]
+    }
+
+    static func joinedPath(_ entries: [String]) -> String {
+        entries.joined(separator: String(self.pathSeparator))
+    }
 }

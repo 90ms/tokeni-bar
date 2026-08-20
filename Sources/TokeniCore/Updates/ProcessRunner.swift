@@ -55,6 +55,9 @@ enum CLIProcessEnvironment {
     {
         var environment = base
         environment["HOME"] = homeDirectory.path
+        #if os(Windows)
+        environment["USERPROFILE"] = homeDirectory.path
+        #endif
 
         var searchPaths = [
             executableURL.deletingLastPathComponent().path,
@@ -68,29 +71,46 @@ enum CLIProcessEnvironment {
             homeDirectory.appending(path: ".nvm/current/bin").path,
             homeDirectory.appending(path: ".fnm/current/bin").path,
             homeDirectory.appending(path: ".local/share/fnm/current/bin").path,
+        ]
+
+        #if os(Windows)
+        searchPaths.append(contentsOf: [
+            homeDirectory.appending(path: "AppData/Roaming/npm").path,
+            homeDirectory.appending(path: "AppData/Local/bin").path,
+        ])
+        if let appData = base["APPDATA"], !appData.isEmpty {
+            searchPaths.append(URL(fileURLWithPath: appData, isDirectory: true)
+                .appending(path: "npm").path)
+        }
+        if let localAppData = base["LOCALAPPDATA"], !localAppData.isEmpty {
+            searchPaths.append(URL(fileURLWithPath: localAppData, isDirectory: true)
+                .appending(path: "Programs/nodejs").path)
+        }
+        #else
+        searchPaths.append(contentsOf: [
             "/opt/homebrew/bin",
             "/usr/local/bin",
             "/usr/bin",
             "/bin",
-        ]
+        ])
+        #endif
 
         searchPaths.append(contentsOf: self.versionManagedRuntimePaths(
             homeDirectory: homeDirectory))
-        searchPaths.append(contentsOf: (base["PATH"] ?? "")
-            .split(separator: ":")
-            .map(String.init))
+        searchPaths.append(contentsOf: PlatformEnvironment.pathEntries(
+            PlatformEnvironment.pathValue(from: base)))
 
         var seen = Set<String>()
         searchPaths = searchPaths.filter { path in
             !path.isEmpty && seen.insert(path).inserted
         }
-        environment["PATH"] = searchPaths.joined(separator: ":")
+        environment["PATH"] = PlatformEnvironment.joinedPath(searchPaths)
         return environment
     }
 
     static func make(for command: ProcessCommand) -> [String: String] {
         let base = command.environment ?? ProcessInfo.processInfo.environment
-        let homeDirectory = base["HOME"]
+        let homeDirectory = (base["HOME"] ?? base["USERPROFILE"])
             .flatMap { path in
                 guard !path.isEmpty else { return nil }
                 return URL(fileURLWithPath: path, isDirectory: true)
@@ -105,6 +125,9 @@ enum CLIProcessEnvironment {
     private static func versionManagedRuntimePaths(
         homeDirectory: URL) -> [String]
     {
+        #if os(Windows)
+        return []
+        #else
         let roots: [(URL, String)] = [
             (
                 homeDirectory.appending(
@@ -136,6 +159,7 @@ enum CLIProcessEnvironment {
                 $0.appending(path: runtimePath).path
             }
         }
+        #endif
     }
 }
 

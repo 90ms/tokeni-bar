@@ -45,8 +45,8 @@ verified, and merged in this order; the plan is updated before each submission.
 | Step | Example branch | Scope | Status |
 |---|---|---|---|
 | PR1 | `windows/01-porting-plan` | This plan and common-boundary decisions | PR created |
-| PR2 | `windows/02-platform-contracts` | Windows core target, platform protocols, target boundaries | In progress |
-| PR3 | `windows/03-platform-infrastructure` | App paths, file storage, processes, CLI lookup, SQLite | Pending |
+| PR2 | `windows/02-platform-contracts` | Windows core target, platform protocols, target boundaries | CI passed |
+| PR3 | `windows/03-platform-infrastructure` | App paths, file storage, processes, CLI lookup, SQLite | In progress |
 | PR4 | `windows/04-application-state` | Shared state extraction and macOS bridge | Pending |
 | PR5 | `windows/05-json-providers` | Copilot, Cline, Grok, Gemini paths and fixtures | Pending |
 | PR6 | `windows/06-cli-providers` | Codex and Claude executable/Windows CLI contracts | Pending |
@@ -138,3 +138,5 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: Because SwiftPM's `platforms` array declares platforms with deployment
   versions, Windows is provided through conditional targets rather than added as
   `.windows` in that array.
+- 2026-08-20: Fixed PR2's release-note check and SwiftPM manifest issue, then passed
+  macOS CI. Started PR3 on top of that branch.

@@ -6,11 +6,13 @@ public enum AppStoragePaths {
 
     public static func applicationSupportDirectory(
         baseURL: URL? = nil,
-        fileManager: FileManager = .default) -> URL
+        fileManager: FileManager = .default,
+        directories: ApplicationDirectories? = nil) -> URL
     {
-        let baseURL = baseURL ?? fileManager.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask)[0]
+        let baseURL = baseURL
+            ?? directories?.applicationSupportDirectory
+            ?? DefaultApplicationDirectoriesProvider(fileManager: fileManager)
+                .directories.applicationSupportDirectory
         let currentURL = baseURL.appending(
             path: self.directoryName,
             directoryHint: .isDirectory)
