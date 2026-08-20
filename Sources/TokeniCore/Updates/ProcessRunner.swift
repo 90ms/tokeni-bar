@@ -1,4 +1,6 @@
+#if canImport(Darwin)
 import Darwin
+#endif
 import Foundation
 
 public struct CommandResult: Sendable, Equatable {
@@ -311,13 +313,17 @@ private final class ProcessController: @unchecked Sendable {
 
     private func stop(_ process: Process) {
         guard process.isRunning else { return }
-        let identifier = process.processIdentifier
         process.terminate()
         DispatchQueue.global(qos: .utility).asyncAfter(
             deadline: .now() + self.terminationGracePeriod)
         {
             if process.isRunning {
+                #if canImport(Darwin)
+                let identifier = process.processIdentifier
                 Darwin.kill(identifier, SIGKILL)
+                #else
+                process.terminate()
+                #endif
             }
         }
     }
