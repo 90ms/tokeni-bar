@@ -21,9 +21,14 @@ struct TokeniWindowsApp {
 
         let tooltipTask = Task { [session, tray] in
             while !Task.isCancelled {
+                if tray.takeRefreshRequest() {
+                    await session.refresh(forceProviderReload: true)
+                }
                 let presentation = UsageApplicationPresentation(
                     sessionState: await session.state())
                 tray.updateTooltip(Self.tooltip(for: presentation))
+                tray.updateDetails(WindowsUsageDetailFormatter.text(
+                    for: presentation))
                 try? await Task.sleep(for: .seconds(5))
             }
         }

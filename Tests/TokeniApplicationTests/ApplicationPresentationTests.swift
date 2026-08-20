@@ -48,6 +48,8 @@ struct ApplicationPresentationTests {
 
         #expect(presentation.providers.count == 2)
         #expect(presentation.providers[0].remainingPercent == 48)
+        #expect(presentation.providers[0].quotaWindows.count == 2)
+        #expect(presentation.providers[0].quotaWindows[1].label == "Weekly")
         #expect(presentation.providers[0].tokenTotal == 120)
         #expect(presentation.providers[0].connectionState == .localOnly)
         #expect(presentation.providers[1].remainingPercent == nil)

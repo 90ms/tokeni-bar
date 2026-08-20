@@ -39,9 +39,9 @@ release 디렉터리와 Swift runtime library 디렉터리를 입력으로 받�
 Windows 전용 pull request는 Windows build·package 검증만 실행하고, SwiftPM build
 cache를 재사용합니다. 전체 macOS CI는 공통 코드나 macOS 코드가 변경될 때만
 실행됩니다. Windows workflow를 `workflow_dispatch`로 직접 실행하면 Windows 전용
-업데이트 설치 테스트도 함께 실행됩니다.
+업데이트 설치·tray 상세 화면 테스트도 함께 실행됩니다.
 
 Windows-only pull requests run the Windows build and packaging validation and reuse the
 SwiftPM build cache. The full macOS CI runs only when shared or macOS code changes.
-Dispatching the Windows workflow manually also runs the focused Windows update-installer
-tests.
+Dispatching the Windows workflow manually also runs focused Windows update-installer and
+tray-detail tests.

@@ -44,6 +44,20 @@ public final class WindowsTrayShell: @unchecked Sendable {
     }
 
     @discardableResult
+    public func updateDetails(_ details: String) -> Bool {
+        self.stateLock.lock()
+        defer { self.stateLock.unlock() }
+        guard self.started else { return false }
+        return details.withCString { value in
+            tokeni_windows_tray_update_details(value) != 0
+        }
+    }
+
+    public func takeRefreshRequest() -> Bool {
+        tokeni_windows_tray_take_refresh_request() != 0
+    }
+
+    @discardableResult
     public func run() -> Int32 {
         self.stateLock.lock()
         let started = self.started
