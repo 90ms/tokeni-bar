@@ -57,13 +57,27 @@ jobs:
               throw "Swift was installed but swift.exe could not be located (WinGet exit $wingetExitCode)."
             }
 
+            $swiftRuntimeDll = Get-ChildItem `
+              -Path "$env:LOCALAPPDATA\Programs\Swift", "$env:ProgramFiles\Swift" `
+              -Filter swiftCore.dll `
+              -File `
+              -Recurse `
+              -ErrorAction SilentlyContinue |
+              Select-Object -First 1
+            if ($null -eq $swiftRuntimeDll) {
+              throw "Swift was installed but its runtime DLLs could not be located (WinGet exit $wingetExitCode)."
+            }
+
             if ($wingetExitCode -ne 0) {
               Write-Warning "WinGet returned exit $wingetExitCode after installing Swift.Toolchain; continuing because swift.exe was found."
             }
 
             $swiftDirectory = $swiftExecutable.Directory.FullName
-            $env:PATH = "$swiftDirectory;$env:PATH"
-            $swiftDirectory | Out-File `
+            $swiftRuntimeDirectory = $swiftRuntimeDll.Directory.FullName
+            $pathEntries = @($swiftDirectory, $swiftRuntimeDirectory)
+            $env:PATH = (($pathEntries + $env:PATH.Split(';')) |
+              Select-Object -Unique) -join ';'
+            $pathEntries | Out-File `
               -FilePath $env:GITHUB_PATH `
               -Encoding utf8 `
               -Append
