@@ -227,3 +227,7 @@ Each PR must satisfy all applicable items:
   test, app-build, and bundle-validation CI. PR19 keeps companion state and rendering
   shared while isolating the Win32 overlay window, multi-monitor placement, and
   click-through behavior behind a separate boundary.
+- 2026-08-20: PR19 does not duplicate companion assets or state; it first isolates
+  the transparent Win32 overlay lifecycle, multi-monitor frame clamping, and
+  click-through behavior. Shared companion state and rendering assets will be connected
+  in the Windows packaging and final integration layers.

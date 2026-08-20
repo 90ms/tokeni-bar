@@ -220,3 +220,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   테스트·앱 빌드·번들 검증 CI를 통과했습니다. PR19는 companion 상태·표현은
   공통으로 유지하고, Win32 오버레이 창·멀티 모니터·click-through만 별도 경계로
   연결합니다.
+- 2026-08-20: PR19는 실제 companion 자산이나 상태를 복제하지 않고, 투명 Win32
+  오버레이의 lifecycle·멀티 모니터 위치 보정·click-through만 먼저 격리합니다.
+  공통 companion 상태와 렌더링 자산은 Windows 패키징·최종 통합 단계에서 연결합니다.
