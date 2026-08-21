@@ -22,6 +22,9 @@ English: [Windows physical-device validation runbook](WINDOWS_DEVICE_VALIDATION.
   허용합니다. 가능하면 text를 사용합니다.
 - raw log, database, settings file, crash dump, registry export와 process environment
   dump를 첨부하지 않습니다. 아래 allowlist의 증거만 기록합니다.
+- provider 선택 case의 증거에는 안정적인 제품 provider 이름과 `enabled` 또는
+  `disabled` 상태만 포함할 수 있습니다. raw settings, 저장되었거나 알 수 없는 provider
+  ID, total, quota, cost, account 정보, prompt, response와 dashboard capture는 금지합니다.
 - Explorer 종료를 자동화하지 않습니다. 이 문서의 Explorer 복구 case는 interactive test
   device에서 의도적으로 수행하는 수동 작업입니다.
 - 실제 사용자 데이터를 노출하거나 변경하지 않고 필요한 상태를 만들 수 없으면 중단하고
@@ -88,6 +91,9 @@ candidate의 파일을 재사용하지 말고 새 test directory에 압축을 �
 | EXP-01 | Dashboard를 한 번도 열지 않은 상태의 Explorer restart | Windows 10·11 대상 |
 | EXP-02 | Dashboard가 숨겨진 상태의 Explorer restart | Windows 10·11 대상 |
 | EXP-03 | Dashboard가 열린 상태의 Explorer restart | Windows 10·11 대상 |
+| SEL-01 | Mouse 다중 toggle과 재시작 후 복원 | 각 대상 OS |
+| SEL-02 | 전체 disabled 중립 상태와 재활성화 | 각 대상 OS |
+| SEL-03 | Keyboard·보조 기술을 사용한 provider 선택 | Windows 11과 지원 접근성 baseline |
 | DPI-01 | 단일 monitor 100%, 150%, 200% scale | 지원하는 각 scale |
 | DPI-02 | Mixed-DPI 다중 monitor 이동 | 실제 또는 virtual multi-monitor device 하나 이상 |
 | A11Y-01 | Keyboard만 사용한 tray·dashboard 조작 | 각 대상 OS |
@@ -170,9 +176,59 @@ artifact hash가 일치하고 필수 파일이 있으며 이후 결과를 기록
 6. `EXP-02`에서는 요청 전까지 dashboard가 숨겨져 있는지 확인합니다. `EXP-03`에서는
    표시 중이던 dashboard가 복구 중에도 표시·사용 가능한지 기록합니다.
 7. 정상 종료하고 process가 깨끗이 종료되는지 확인합니다.
+8. provider 선택 candidate에서는 기본값이 아닌 선택으로 `EXP-02`와 `EXP-03`을 반복하고
+   복구 중 enabled/disabled 상태가 바뀌지 않는지 확인합니다.
 
 icon 누락·중복, menu 접근 불가, dashboard 중복, crash 또는 visibility 상태 변경은
 모두 fail이며 issue link가 필요합니다.
+
+### SEL-01 — mouse 다중 toggle과 재시작 후 복원
+
+1. pointer로 provider 선택 control을 엽니다. 가능한 경우 provider row를 세 개 이상
+   사용하고, 그렇지 않으면 모든 row를 사용한 뒤 catalog가 작다는 사실만 기록합니다.
+2. 각 안정적인 제품 provider 이름과 `enabled` 또는 `disabled`만으로 baseline을
+   기록합니다. 화면의 provider 값은 기록하지 않습니다.
+3. 여러 provider를 독립적으로 toggle합니다. 각 checkbox가 즉시 바뀌고 다른 row는
+   그대로이며 dashboard가 멈추거나 control이 중복되지 않는지 확인합니다.
+4. `Refresh now`를 실행하고 선택 상태가 바뀌지 않는지 확인합니다.
+5. 정상 종료하고 같은 portable ZIP을 재실행한 뒤 refresh 전후에 정확한
+   enabled/disabled 선택이 복원되는지 확인합니다.
+6. 이 선택으로 `EXP-02`와 `EXP-03` 복구를 반복합니다. Explorer 복구가 선택을
+   초기화하지 않고 control을 계속 사용할 수 있는지 확인합니다.
+
+독립 toggle과 재시작 복원이 정확히 일치해야 pass입니다. 증거는 안정적인 제품 이름을
+사용한 `Codex: disabled; Claude: enabled` 같은 항목으로 제한합니다.
+
+### SEL-02 — 전체 disabled 중립 상태와 재활성화
+
+1. 모든 provider를 disable하고 모든 provider checkbox가 unchecked인지 확인합니다.
+2. dashboard가 stale provider를 active로 표시하거나 값을 만들어내지 않고 중립적인
+   provider 미활성 상태를 나타내는지 확인합니다. dashboard를 capture하지 않습니다.
+3. refresh하고 정상 종료한 뒤 재실행합니다. 전체 disabled 선택이 유지되고 provider
+   authorization UI를 열지 않으며 app이 반응하는지 확인합니다.
+4. provider 하나만 다시 enable합니다. 해당 row만 checked이고 refresh가 동작하며 다른
+   provider가 암묵적으로 활성화되지 않는지 확인합니다.
+5. 지원하는 100%, 150%, 200% scale에서 한 번씩 반복하고, mixed-DPI 경계를 넘어
+   dashboard를 이동한 뒤에도 한 번 반복합니다.
+
+전체 disabled가 안정적으로 지원되는 상태이고 provider 하나의 재활성화가 독립적이며
+되돌릴 수 있어야 pass입니다. provider의 dashboard 값은 기록하지 않습니다.
+
+### SEL-03 — keyboard·보조 기술을 사용한 provider 선택
+
+1. pointer 없이 `Tab`과 `Shift+Tab`으로 모든 provider checkbox를 순회합니다. 보이는
+   focus indicator, 안정적인 catalog 순서와 keyboard trap 없음을 확인합니다.
+2. `Space`로 provider를 두 개 이상 toggle합니다. 각 checked state가 한 번씩 바뀌고
+   keyboard에서 이해 가능하며 정상 재시작 후에도 유지되는지 확인합니다.
+3. Narrator 또는 승인된 accessibility inspector로 group과 각 row가 의미 있는 안정적
+   provider 이름, checkbox role과 checked state를 노출하는지 확인합니다.
+4. 접근 가능한 name·description에 usage total, quota, cost, account 정보, prompt,
+   response, raw setting 또는 저장된 알 수 없는 provider ID가 없는지 확인합니다.
+5. 200% scale과 승인된 high-contrast theme에서 순회를 반복합니다. 해당 matrix가 있으면
+   mixed-DPI monitor 경계를 넘어 focus를 계속 사용할 수 있는지 확인합니다.
+
+안정적인 provider 이름, enabled/disabled 전환, 누락된 role/name과 navigation 동작만
+기록합니다. Narrator transcript, screenshot 또는 dashboard capture를 첨부하지 않습니다.
 
 ### DPI-01 — 단일 monitor scale
 
@@ -186,6 +242,9 @@ Tokeni Bar를 새로 실행합니다.
 5. tray context menu의 anchor와 선택 target이 올바른지 확인합니다.
 6. candidate에서 companion overlay를 사용한다면 geometry, click-through, rendering만
    확인하고 provider·usage 내용은 캡처하지 않습니다.
+7. provider 선택 candidate에서는 각 scale에서 모든 provider checkbox를 순회하고
+   toggle합니다. label, checkbox, checked state와 focus indicator가 잘리거나 겹치지
+   않는지 확인하고 `SEL-01`부터 `SEL-03`에서 허용한 증거만 남깁니다.
 
 scale·resolution과 fail 시 정제한 defect 측정값만 기록합니다.
 
@@ -203,6 +262,9 @@ negative coordinate가 생기는 배치도 포함합니다.
 5. device에서 안전하게 지원한다면 secondary display를 분리·재연결하거나 primary를
    바꾸고 dashboard가 유효 work area에서 접근 가능한지 확인합니다.
 6. 이동 후 context menu와 정상 종료를 다시 확인합니다.
+7. provider 선택 candidate에서는 focus된 provider list를 각 DPI 경계 너머로 이동합니다.
+   선택이 바뀌지 않고 focus가 보이며 전체 list와 control이 겹치거나 화면 밖으로 나가지
+   않고 접근 가능한지 확인합니다.
 
 일반화한 monitor label, resolution, scale, 상대 배치만 기록합니다.
 
@@ -218,6 +280,8 @@ negative coordinate가 생기는 배치도 포함합니다.
    노출하는지 확인합니다.
 5. 200% text/display scale과 승인된 high-contrast theme에서 중요한 control이 보이고
    구분되는지 확인합니다.
+6. 이 case의 provider 선택 부분으로 `SEL-03`을 실행합니다. dashboard 값이나 접근성
+   음성이 포함된 중복 증거를 만들지 않습니다.
 
 누락된 label·role과 navigation 동작만 기록하며 읽히거나 보이는 provider 값은 기록하지
 않습니다.
@@ -265,7 +329,7 @@ Artifact SHA-256:
 Device alias and OS build:
 Display/input configuration:
 Start state:
-Observed state transitions (값·식별자 금지):
+Observed state transitions (선택 case는 안정적 provider 이름 + enabled/disabled만):
 Evidence: sanitized text / 허용된 OS-setting crop / none
 Issue: owner/repository#number, Pass이면 `none`
 Blocker and owner (Blocked only):
@@ -285,6 +349,8 @@ fail issue에는 case ID, expected와 observed state, 재현 빈도, 대상 OS/b
 - 모든 `Blocked`에 담당자가 있고 coverage처럼 표현하지 않았습니다.
 - artifact hash, source commit, 대상 OS/build, architecture, display matrix와 input
   matrix를 기록했습니다.
+- provider 선택 candidate에서 `SEL-01`, `SEL-02`, `SEL-03`과 해당 Explorer·DPI 교차
+  검증이 pass했습니다.
 - 증거에 금지된 내용이 없는지 검토했습니다.
 - 완료 기록을 coordinating PR 또는 release issue에 연결했습니다.
 

@@ -21,6 +21,10 @@ Korean: [Windows 실기기 검증 runbook](WINDOWS_DEVICE_VALIDATION.ko.md)
   and is cropped to the tested display setting. Prefer a text record.
 - Do not attach raw logs, databases, settings files, crash dumps, registry exports, or
   process environment dumps. Record only the allowlisted evidence fields below.
+- For provider-selection cases, evidence may contain only a stable product provider name
+  and its `enabled` or `disabled` state. Never record raw settings, stored or unknown
+  provider IDs, totals, quota, cost, account data, prompts, responses, or a dashboard
+  capture.
 - Do not automate Explorer termination. The Explorer recovery cases in this document are
   deliberate manual actions on an interactive test device.
 - Stop and mark the case `Blocked` if the required state cannot be created without
@@ -87,6 +91,9 @@ Extract into a new test directory. Do not reuse files from an older candidate.
 | EXP-01 | Explorer restart before dashboard was ever opened | Windows 10 and 11 targets |
 | EXP-02 | Explorer restart while dashboard is hidden | Windows 10 and 11 targets |
 | EXP-03 | Explorer restart while dashboard is open | Windows 10 and 11 targets |
+| SEL-01 | Mouse multi-toggle and restart persistence | Every target OS |
+| SEL-02 | All-disabled neutral state and re-enable | Every target OS |
+| SEL-03 | Keyboard and assistive-technology provider selection | Windows 11 plus each supported accessibility baseline |
 | DPI-01 | Single-monitor 100%, 150%, and 200% scale | Each supported scale |
 | DPI-02 | Mixed-DPI multi-monitor movement | At least one physical or virtual multi-monitor device |
 | A11Y-01 | Keyboard-only tray and dashboard operation | Every target OS |
@@ -170,9 +177,59 @@ For each state:
 6. For `EXP-02`, confirm the dashboard remains hidden until requested. For `EXP-03`, record
    whether the visible dashboard remains visible and usable through recovery.
 7. Quit normally and confirm clean process termination.
+8. For a provider-selection candidate, repeat `EXP-02` and `EXP-03` with a non-default
+   selection and confirm the enabled/disabled states do not change during recovery.
 
 Any missing/duplicate icon, inaccessible menu, duplicate dashboard, crash, or changed
 visibility state is a failure and requires an issue link.
+
+### SEL-01 — mouse multi-toggle and restart persistence
+
+1. Open the provider-selection controls with a pointer. Use at least three provider rows
+   when available; otherwise use every row and note the reduced catalog size.
+2. Record the baseline using only each stable product provider name and `enabled` or
+   `disabled`. Do not record any displayed provider values.
+3. Toggle multiple providers independently. Confirm each checkbox changes immediately,
+   other rows remain unchanged, and the dashboard does not freeze or duplicate controls.
+4. Run `Refresh now` and confirm the selected states remain unchanged.
+5. Quit normally, relaunch the same portable ZIP, and confirm the exact enabled/disabled
+   selection is restored before and after a refresh.
+6. Repeat the `EXP-02` and `EXP-03` recovery checks with this selection. Confirm Explorer
+   recovery does not reset it and the controls remain usable.
+
+Pass only when independent toggles and restart persistence match exactly. Evidence is
+limited to entries such as `Codex: disabled; Claude: enabled` using stable product names.
+
+### SEL-02 — all-disabled neutral state and re-enable
+
+1. Disable every provider and confirm every provider checkbox is unchecked.
+2. Confirm the dashboard presents a neutral no-providers-enabled state, without showing a
+   stale provider as active or fabricating values. Do not capture the dashboard.
+3. Refresh, quit normally, and relaunch. Confirm the all-disabled selection persists and
+   the app stays responsive without opening provider authorization UI.
+4. Re-enable exactly one provider. Confirm only that row is checked, refresh works, and
+   no other provider is enabled implicitly.
+5. Repeat once at 100%, 150%, and 200% scale where supported, and once after moving the
+   dashboard across a mixed-DPI boundary.
+
+Pass only when all-disabled is a stable supported state and re-enabling one provider is
+independent and reversible. Do not record the provider's dashboard values.
+
+### SEL-03 — keyboard and assistive-technology provider selection
+
+1. Without a pointer, use `Tab` and `Shift+Tab` to traverse every provider checkbox.
+   Confirm a visible focus indicator, stable catalog order, and no keyboard trap.
+2. Use `Space` to toggle at least two providers. Confirm each checked state changes once,
+   remains understandable from the keyboard, and persists after a normal restart.
+3. With Narrator or an approved accessibility inspector, confirm the group and each row
+   expose a meaningful stable provider name, checkbox role, and checked state.
+4. Confirm accessible names and descriptions contain no usage total, quota, cost, account
+   data, prompt, response, raw setting, or unknown stored provider ID.
+5. Repeat the traversal at 200% scale and in an approved high-contrast theme. Cross a
+   mixed-DPI monitor boundary when that matrix is available and confirm focus stays usable.
+
+Record only the stable provider name, enabled/disabled transition, missing role/name, and
+navigation behavior. Do not attach Narrator transcripts, screenshots, or dashboard captures.
 
 ### DPI-01 — single-monitor scale
 
@@ -186,6 +243,9 @@ flow, then start a fresh Tokeni Bar process.
 5. Open the tray context menu and confirm its anchor and selection targets are correct.
 6. If the companion overlay is enabled for this candidate, verify only geometry,
    click-through, and rendering; do not capture provider or usage content.
+7. For a provider-selection candidate, traverse and toggle every provider checkbox at
+   each scale. Confirm labels, checkboxes, checked states, and focus indicators are not
+   clipped or overlapped; retain only the evidence allowed by `SEL-01` through `SEL-03`.
 
 Record the scale and resolution, plus sanitized defect measurements if failed.
 
@@ -203,6 +263,9 @@ the virtual desktop has negative coordinates.
 5. Disconnect/reconnect a secondary display or change the primary display if the device
    safely supports it. Confirm the dashboard remains reachable in a valid work area.
 6. Repeat context-menu and normal-exit checks after movement.
+7. For a provider-selection candidate, move the focused provider list across each DPI
+   boundary. Confirm selection does not change, focus remains visible, and the full list
+   remains reachable without overlap or off-screen controls.
 
 Record generic monitor labels, resolution, scale, and relative arrangement only.
 
@@ -218,6 +281,8 @@ Record generic monitor labels, resolution, scale, and relative arrangement only.
    states, and enabled/disabled status.
 5. At 200% text/display scale and an approved high-contrast theme, confirm important
    controls remain visible and distinguishable.
+6. Run `SEL-03` as the provider-selection portion of these cases; do not create duplicate
+   evidence containing dashboard values or accessibility speech.
 
 Record only missing labels/roles and navigation behavior. Do not record spoken or visible
 provider values.
@@ -265,7 +330,7 @@ Artifact SHA-256:
 Device alias and OS build:
 Display/input configuration:
 Start state:
-Observed state transitions (no values or identifiers):
+Observed state transitions (for selection cases: stable provider name + enabled/disabled only):
 Evidence: sanitized text / allowed OS-setting crop / none
 Issue: owner/repository#number, or `none` for Pass
 Blocker and owner (Blocked only):
@@ -286,6 +351,8 @@ Physical-device validation is complete only when:
 - every `Blocked` has an owner and is not represented as coverage;
 - artifact hash, source commit, target OS/build, architecture, display matrix, and input
   matrix are recorded;
+- `SEL-01`, `SEL-02`, and `SEL-03` pass for a provider-selection candidate, including
+  their Explorer and DPI cross-checks;
 - the evidence has been reviewed for prohibited content; and
 - the completed record is linked from the coordinating PR or release issue.
 
