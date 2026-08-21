@@ -192,7 +192,7 @@ this table and the decision log when opening or merging a PR.
 | 1 | Interactive validation runbook | `codex/windows-device-validation-runbook` / #74 | Merged | Run the matrix on target devices |
 | 1 | Provider-selection session regressions | `codex/windows-provider-selection-session-tests` / #75 | Merged | Provider-selection UI |
 | 1 | Atomic refresh and history | `codex/application-refresh-revision` / #76 | Merged | Provider-selection UI |
-| 1 | Provider-selection UI | `codex/windows-provider-selection-ui` / #77 | CI | Merge, then run SEL-01/02/03 |
+| 1 | Provider-selection UI | `codex/windows-provider-selection-ui` / #77 | Merged | Run SEL-01/02/03 |
 
 ## Decision log
 
@@ -216,5 +216,6 @@ this table and the decision log when opening or merging a PR.
 - 2026-08-21: Merged bundled SQLite PR #70 and defined one privacy-safe physical-device
   runbook for tray, Explorer recovery, DPI, accessibility, and provider validation.
 - 2026-08-21: Merged provider-selection regression coverage in #75 and the shared
-  atomic refresh-and-history FIFO in #76. Opened provider-selection UI PR #77 with
-  native state-machine CI; SEL-01, SEL-02, and SEL-03 remain physical-device gates.
+  atomic refresh-and-history FIFO in #76. Merged provider-selection UI PR #77 after
+  native state-machine and packaged Windows CI passed; SEL-01, SEL-02, and SEL-03
+  remain physical-device gates.
