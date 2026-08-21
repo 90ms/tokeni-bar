@@ -68,6 +68,7 @@ TokeniWindows
 | PR23 | `windows/23-companion-integration` | companion 상태·overlay lifecycle·native fallback renderer | CI 통과 |
 | PR24 | `windows/24-companion-assets-validation` | packaged sprite parity, 최종 macOS 회귀와 Windows 실기기 검증 | CI 통과·실기기 검증 대기 |
 | PR25 | `windows/25-release-artifact` | 버전 Windows ZIP, 체크섬, 증명과 통합 GitHub Release | CI 통과·태그 검증 대기 |
+| PR26 | `release/0.26.1-readiness` | Claude 인증 호환성, Windows CLI·companion·CI 배포 준비 수정 | 진행 중 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -237,9 +238,9 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-20: PR20의 Windows runner에서 앱 빌드·portable 패키지 생성·artifact 업로드가
   통과했습니다. 플랫폼 범위 감지 job을 추가해 pull request가 해당 플랫폼의 공통·전용
   경로를 건드리지 않으면 비용이 큰 macOS 또는 Windows build를 생략하고, `TokeniCore`와
-  application 공통 변경은 두 검증을 계속 실행합니다. 일반 Windows pull request에서는
-  오래 걸리는 전체 테스트를 생략하며, Windows 업데이트 설치 집중 테스트는 수동 실행으로
-  남겼습니다.
+  application 공통 변경은 두 검증을 계속 실행합니다. 이후 배포 준비 감사에서 일반
+  Windows pull request의 테스트 단계가 생략되는 것을 확인했으며, PR26부터 Windows 영향
+  범위에서는 전체 테스트를 필수로 실행합니다.
 - 2026-08-20: 남은 통합 작업을 작은 층으로 나눴습니다. PR21은 provider 상세와
   검증된 reset 시각, 새로 고침·종료 액션을 보여 주어 tray를 일상적으로 사용할 수 있게
   합니다. PR22는 Windows 설정·알림·자동 시작 제어를 담당하며 자동 설치는 명시적인
@@ -276,3 +277,7 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-21: PR25의 macOS 회귀, Windows release 빌드, portable ZIP 검증과 생성된
   SHA-256 확인이 CI를 통과했습니다. 통합 파일 게시 검증은 다음 semantic version 태그에서
   진행하며, 실기기 검증과 서명은 계속 남아 있습니다.
+- 2026-08-21: v0.26.1 준비 작업에서 Claude 인증 확인을 사용량 텍스트 파싱과 분리하고,
+  Windows batch CLI 실행·companion 성장 반영·tray 동시성·PR 테스트 게이트를 함께
+  보강합니다. 통합 release workflow의 첫 실제 태그 검증과 Windows 실기기·서명 검증은
+  각각 배포 실행과 후속 배포 계약에서 확인합니다.
