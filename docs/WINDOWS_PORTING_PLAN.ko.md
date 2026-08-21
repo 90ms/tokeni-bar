@@ -68,7 +68,7 @@ TokeniWindows
 | PR23 | `windows/23-companion-integration` | companion 상태·overlay lifecycle·native fallback renderer | CI 통과 |
 | PR24 | `windows/24-companion-assets-validation` | packaged sprite parity, 최종 macOS 회귀와 Windows 실기기 검증 | CI 통과·실기기 검증 대기 |
 | PR25 | `windows/25-release-artifact` | 버전 Windows ZIP, 체크섬, 증명과 통합 GitHub Release | CI 통과·태그 검증 대기 |
-| PR26 | `release/0.26.1-readiness` | Claude 인증 호환성, Windows CLI·companion·CI 배포 준비 수정 | 진행 중 |
+| PR26 | `release/0.26.1-readiness` | Claude 인증 호환성, Windows CLI·companion·CI 배포 준비 수정 | CI 통과·v0.26.1 배포 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -281,3 +281,7 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   Windows batch CLI 실행·companion 성장 반영·tray 동시성·PR 테스트 게이트를 함께
   보강합니다. 통합 release workflow의 첫 실제 태그 검증과 Windows 실기기·서명 검증은
   각각 배포 실행과 후속 배포 계약에서 확인합니다.
+- 2026-08-21: PR26의 전체 Windows 테스트 suite, release 실행 파일 빌드, portable ZIP,
+  companion asset 검증, macOS 회귀 suite와 앱 번들 검증이 통과했습니다. 첫 전체 suite에서
+  확인된 Windows batch 인자 처리, 업데이트 cache 저장 fallback과 refresh loop 종료를
+  보정했으며, v0.26.1 게시는 main branch CI 통과 후 진행합니다.

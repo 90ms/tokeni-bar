@@ -69,7 +69,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR23 | `windows/23-companion-integration` | Companion state, overlay lifecycle, and native fallback renderer | CI passed |
 | PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | CI passed; hardware validation pending |
 | PR25 | `windows/25-release-artifact` | Versioned Windows ZIP, checksum, attestation, and unified GitHub Release | CI passed; tag validation pending |
-| PR26 | `release/0.26.1-readiness` | Claude auth compatibility plus Windows CLI, companion, and CI release-readiness fixes | In progress |
+| PR26 | `release/0.26.1-readiness` | Claude auth compatibility plus Windows CLI, companion, and CI release-readiness fixes | CI passed; v0.26.1 release pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -293,3 +293,8 @@ Each PR must satisfy all applicable items:
   tray concurrency, and pull-request test gates. The first real unified-release tag and
   Windows device/signing validation remain assigned to the release run and follow-up
   distribution contract respectively.
+- 2026-08-21: PR26's complete Windows test suite, release executable build, portable ZIP,
+  companion asset validation, macOS regression suite, and app-bundle validation passed.
+  Windows batch argument handling, update-cache persistence fallback, and refresh-loop
+  shutdown were corrected from the first full-suite run; v0.26.1 publishing remains gated
+  on the main-branch CI run.
