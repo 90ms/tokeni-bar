@@ -70,7 +70,8 @@ after removing its worktree.
   automatic installation before then.
 - GitHub-hosted Windows runners gate only non-interactive executable and package smoke.
   Keep tray, notification, overlay, DPI, and virtual-desktop behavior in an interactive
-  self-hosted or physical-device test matrix.
+  self-hosted or physical-device test matrix. Execute and record that matrix with the
+  [Windows physical-device validation runbook](WINDOWS_DEVICE_VALIDATION.md).
 - SQLite providers must not silently depend on the user's PATH. Choose a bundled
   executable or linked library in a separate distribution PR, and preserve a verified
   `unavailable` state until that work is complete.
@@ -185,9 +186,9 @@ this table and the decision log when opening or merging a PR.
 | 1 | Windows dashboard | `codex/windows-dashboard` / #67 | Merged | Physical-device DPI validation |
 | 1 | Provider preference session | `codex/windows-provider-preference-session` / #68 | Merged | Windows host wiring |
 | 1 | Explorer tray recovery | `codex/windows-explorer-tray-recovery` / #69 | Merged | Interactive Explorer restart validation |
-| 1 | Bundled SQLite | `codex/windows-bundled-sqlite` / #70 | CI | Pass CI and merge |
-| 1 | Windows host preference wiring | TBD | Pending | Start from updated `main` after #70 merges |
-| 1 | Interactive validation | TBD | Pending | Validate Explorer, DPI, and target Windows devices |
+| 1 | Bundled SQLite | `codex/windows-bundled-sqlite` / #70 | Merged | Physical-device provider validation |
+| 1 | Windows host preference wiring | TBD | Pending | Start from current `main` |
+| 1 | Interactive validation runbook | `codex/windows-device-validation-runbook` / TBD | In progress | Run the matrix on target devices |
 
 ## Decision log
 
@@ -208,3 +209,5 @@ this table and the decision log when opening or merging a PR.
   `main` only after #70 merges.
 - 2026-08-21: Successful hosted CI does not complete interactive validation of Explorer
   restart recovery, per-monitor DPI, or target Windows devices.
+- 2026-08-21: Merged bundled SQLite PR #70 and defined one privacy-safe physical-device
+  runbook for tray, Explorer recovery, DPI, accessibility, and provider validation.

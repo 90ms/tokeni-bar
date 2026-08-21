@@ -71,7 +71,8 @@ worktree 제거 후 삭제합니다.
   활성화하지 않습니다.
 - GitHub-hosted Windows runner는 비대화면 EXE·package smoke까지만 release gate로
   사용합니다. tray, notification, overlay, DPI와 virtual desktop은 interactive
-  self-hosted runner 또는 실기기 검증 항목으로 유지합니다.
+  self-hosted runner 또는 실기기 검증 항목으로 유지합니다. 해당 matrix는
+  [Windows 실기기 검증 runbook](WINDOWS_DEVICE_VALIDATION.ko.md)으로 실행하고 기록합니다.
 - SQLite provider는 사용자 PATH에 조용히 의존하지 않습니다. bundled executable과
   linked library 중 배포 전략을 별도 PR에서 결정하고, 준비 전에는 확인 가능한
   `unavailable` 상태를 유지합니다.
@@ -190,9 +191,9 @@ CI 실패는 원인을 확인하지 않은 채 반복 실행하지 않으며, �
 | 1 | Windows dashboard | `codex/windows-dashboard` / #67 | 병합 | 실기기 DPI 검증 |
 | 1 | Provider preference session | `codex/windows-provider-preference-session` / #68 | 병합 | Windows host 연결 |
 | 1 | Explorer tray 복구 | `codex/windows-explorer-tray-recovery` / #69 | 병합 | 실기기 Explorer 재시작 검증 |
-| 1 | Bundled SQLite | `codex/windows-bundled-sqlite` / #70 | CI | CI 성공·병합 |
-| 1 | Windows host preference 연결 | 미정 | 대기 | #70 병합 후 최신 `main`에서 시작 |
-| 1 | Interactive 검증 | 미정 | 대기 | Explorer·DPI·대상 Windows 기기 검증 |
+| 1 | Bundled SQLite | `codex/windows-bundled-sqlite` / #70 | 병합 | 실기기 provider 검증 |
+| 1 | Windows host preference 연결 | 미정 | 대기 | 현재 `main`에서 시작 |
+| 1 | Interactive 검증 runbook | `codex/windows-device-validation-runbook` / 미정 | 진행 | 대상 기기에서 matrix 실행 |
 
 ## 결정 로그
 
@@ -213,3 +214,5 @@ CI 실패는 원인을 확인하지 않은 채 반복 실행하지 않으며, �
   Windows host preference 연결을 시작하기로 했습니다.
 - 2026-08-21: hosted CI가 성공해도 Explorer 재시작 복구, per-monitor DPI와 대상
   Windows 기기의 interactive 검증은 완료된 것으로 간주하지 않습니다.
+- 2026-08-21: bundled SQLite PR #70을 병합하고 tray, Explorer 복구, DPI, 접근성과
+  provider 검증에 사용할 privacy-safe 실기기 runbook 하나를 확정했습니다.
