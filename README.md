@@ -270,7 +270,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 | 화면 위 펫을 움직일 수 없음 | **설정 → Tokeni**에서 위치 잠금과 클릭 통과 끄기 |
 | 화면 위 펫을 찾을 수 없음 | **설정 → Tokeni → 펫 위치 초기화** 선택 |
 | 제공자가 사용 불가 | 해당 CLI의 설치·로그인 확인 후 한 번 실행 |
-| Claude 또는 Codex 연결 실패 | 해당 CLI를 터미널에서 한 번 실행해 로그인한 뒤 **설정 → 일반 → 제공자**에서 연결 상태를 확인. Tokeni Bar는 비대화형 CLI 명령만 실행하며 로그인창을 열지 않음 |
+| Claude 또는 Codex 연결 실패 | 해당 CLI를 터미널에서 한 번 실행해 로그인한 뒤 **설정 → 일반 → 제공자**에서 연결 상태를 확인. Claude는 `claude auth status`, Codex는 기존 CLI 세션으로 인증 상태를 확인하며 Tokeni Bar가 로그인창을 열거나 인증정보를 읽지 않음 |
 | Homebrew 신뢰 오류 | `brew trust --formula 90ms/tap/tokeni-bar` 실행 |
 | Formula와 Cask 중 선택하라는 업데이트 오류 | `brew upgrade --formula 90ms/tap/tokeni-bar` 실행 후 `tokeni-bar --install-app`. 앱 내 업데이트는 0.25.2부터 Formula를 자동 지정 |
 | 앱 내 Homebrew 업데이트에서 `$HOME` 오류 | 최신 버전으로 업데이트한 뒤 다시 시도. 이전 버전은 터미널에서 `brew upgrade --formula 90ms/tap/tokeni-bar && tokeni-bar --install-app` 실행 |

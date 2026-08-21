@@ -4,6 +4,138 @@ import Testing
 
 struct ClaudeCLIUsageTests {
     @Test
+    func verifiesAuthenticationWithTheOfficialStatusCommand() async throws {
+        let executable = try self.makeExecutableScript("#!/bin/sh\nexit 0")
+        defer { try? FileManager.default.removeItem(at: executable.deletingLastPathComponent()) }
+        let runner = ClaudeCLIProcessRunner(
+            authenticationResult: CommandResult(
+                exitCode: 0,
+                standardOutput: #"{"loggedIn":true,"authMethod":"sanitized"}"#,
+                standardError: ""))
+        let client = ClaudeCLIUsageClient(
+            executableURL: executable,
+            pathEnvironment: "",
+            processRunner: runner,
+            timeout: 2)
+        let provider = ClaudeUsageProvider(
+            homeDirectory: executable.deletingLastPathComponent(),
+            calendar: .current,
+            cliClient: client)
+
+        try await provider.requestUsageAuthorization()
+
+        let command = try #require(await runner.recordedCommands().first)
+        #expect(command.arguments == ["auth", "status"])
+    }
+
+    @Test
+    func rejectsAClaudeStatusThatIsNotLoggedIn() async throws {
+        let executable = try self.makeExecutableScript("#!/bin/sh\nexit 0")
+        defer { try? FileManager.default.removeItem(at: executable.deletingLastPathComponent()) }
+        let runner = ClaudeCLIProcessRunner(
+            authenticationResult: CommandResult(
+                exitCode: 1,
+                standardOutput: #"{"loggedIn":false}"#,
+                standardError: ""))
+        let client = ClaudeCLIUsageClient(
+            executableURL: executable,
+            pathEnvironment: "",
+            processRunner: runner,
+            timeout: 2)
+
+        await #expect(throws: ClaudeCLIUsageError.signInRequired) {
+            try await client.verifyAuthentication()
+        }
+    }
+
+    @Test
+    func mapsClaudeAuthenticationCommandFailureWithoutInspectingAccountData() async throws {
+        let executable = try self.makeExecutableScript("#!/bin/sh\nexit 0")
+        defer { try? FileManager.default.removeItem(at: executable.deletingLastPathComponent()) }
+        let runner = ClaudeCLIProcessRunner(
+            authenticationResult: CommandResult(
+                exitCode: 2,
+                standardOutput: "",
+                standardError: "status command failed"))
+        let client = ClaudeCLIUsageClient(
+            executableURL: executable,
+            pathEnvironment: "",
+            processRunner: runner,
+            timeout: 2)
+
+        await #expect(throws: ClaudeCLIUsageError.authenticationFailed) {
+            try await client.verifyAuthentication()
+        }
+    }
+
+    @Test
+    func treatsEmptyAndUnsupportedQuotaResultsAsUnavailable() throws {
+        let empty = Data(#"{"is_error":false,"result":""}"#.utf8)
+        let unsupportedFixture = try #require(Bundle.module.url(
+            forResource: "claude-cli-usage-unavailable",
+            withExtension: "json",
+            subdirectory: "Fixtures"))
+
+        #expect(throws: ClaudeCLIUsageError.usageUnavailable) {
+            try ClaudeCLIUsageParser.parse(empty)
+        }
+        #expect(throws: ClaudeCLIUsageError.usageUnavailable) {
+            try ClaudeCLIUsageParser.parse(Data(contentsOf: unsupportedFixture))
+        }
+    }
+
+    @Test
+    func keepsAuthenticatedClaudeConnectedWhenQuotaOutputIsUnsupported() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let executable = try self.makeExecutableScript(
+            "#!/bin/sh\nexit 0",
+            in: root.appending(path: "bin", directoryHint: .isDirectory))
+        let fixture = try #require(Bundle.module.url(
+            forResource: "claude-cli-usage-unavailable",
+            withExtension: "json",
+            subdirectory: "Fixtures"))
+        let fixtureJSON = try String(contentsOf: fixture, encoding: .utf8)
+        let runner = ClaudeCLIProcessRunner(
+            usageResult: CommandResult(
+                exitCode: 0,
+                standardOutput: fixtureJSON,
+                standardError: ""),
+            authenticationResult: CommandResult(
+                exitCode: 0,
+                standardOutput: #"{"loggedIn":true}"#,
+                standardError: ""))
+        let client = ClaudeCLIUsageClient(
+            executableURL: executable,
+            pathEnvironment: "",
+            homeDirectory: root,
+            processRunner: runner,
+            cache: ClaudeCLIUsageCache(),
+            timeout: 2)
+        let provider = ClaudeUsageProvider(
+            homeDirectory: root,
+            calendar: .current,
+            cliClient: client)
+
+        let snapshot = await provider.fetchUsage()
+
+        #expect(snapshot.availability == .stale)
+        #expect(snapshot.source == .localSessionLog)
+        #expect(snapshot.quotaWindows.isEmpty)
+        #expect(snapshot.connectionState == .connected)
+        #expect(await runner.recordedCommands().map(\.arguments) == [
+            [
+                "--print", "--no-session-persistence", "--setting-sources", "user",
+                "--tools", "", "--output-format", "json", "/usage",
+            ],
+            ["auth", "status"],
+        ])
+    }
+
+    #if !os(Windows)
+    @Test
     func invokesClaudeCLIUsageCommandAndCachesTheResult() async throws {
         let fixture = try #require(Bundle.module.url(
             forResource: "claude-cli-usage",
@@ -73,6 +205,7 @@ struct ClaudeCLIUsageTests {
 
         #expect(result.response.quotaWindows.map(\.usedPercent) == [12, 34, 25])
     }
+    #endif
 
     @Test
     func parsesTimeOnlyAndWeekdayResetTimes() throws {
@@ -249,9 +382,40 @@ struct ClaudeCLIUsageTests {
             withIntermediateDirectories: true)
         let executable = directory.appending(path: named)
         try contents.write(to: executable, atomically: true, encoding: .utf8)
+        #if !os(Windows)
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o700],
             ofItemAtPath: executable.path)
+        #endif
         return executable
+    }
+}
+
+private actor ClaudeCLIProcessRunner: ProcessRunning {
+    private let usageResult: CommandResult
+    private let authenticationResult: CommandResult
+    private var commands: [ProcessCommand] = []
+
+    init(
+        usageResult: CommandResult = CommandResult(
+            exitCode: 0,
+            standardOutput: "",
+            standardError: ""),
+        authenticationResult: CommandResult)
+    {
+        self.usageResult = usageResult
+        self.authenticationResult = authenticationResult
+    }
+
+    func run(_ command: ProcessCommand) async throws -> CommandResult {
+        self.commands.append(command)
+        if command.arguments == ["auth", "status"] {
+            return self.authenticationResult
+        }
+        return self.usageResult
+    }
+
+    func recordedCommands() -> [ProcessCommand] {
+        self.commands
     }
 }

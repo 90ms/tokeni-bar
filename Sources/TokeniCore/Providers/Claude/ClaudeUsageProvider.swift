@@ -104,16 +104,18 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
                 detail: "Claude Code CLI",
                 updatedAt: result.fetchedAt)
         } catch {
+            let fallback = await self.fallbackContext(for: error)
             return self.localFallback(
                 files: files,
                 aggregate: aggregate,
                 growthObservation: growthObservation,
-                cliError: error)
+                cliError: fallback.error,
+                connectionState: fallback.connectionState)
         }
     }
 
     public func requestUsageAuthorization() async throws {
-        _ = try await self.cliClient.fetch(forceRefresh: true)
+        try await self.cliClient.verifyAuthentication()
     }
 
     public func invalidateUsageCache() async {
@@ -132,10 +134,12 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
         files: [URL],
         aggregate: ClaudeAggregatedUsage?,
         growthObservation: GrowthUsageObservation?,
-        cliError: Error) -> ProviderSnapshot
+        cliError: Error,
+        connectionState overrideConnectionState: ProviderConnectionState? = nil) -> ProviderSnapshot
     {
         let errorMessage = (cliError as? LocalizedError)?.errorDescription
-        let connectionState = self.connectionState(for: cliError)
+        let connectionState = overrideConnectionState
+            ?? self.connectionState(for: cliError)
         let staleConnectionState: ProviderConnectionState =
             connectionState == .localOnly ? .stale : connectionState
         guard !files.isEmpty else {
@@ -179,6 +183,17 @@ public struct ClaudeUsageProvider: UsageProviding, UsageActivityProviding,
             connectionState: connectionState,
             detail: errorMessage.map { "Local usage fallback · \($0)" }
                 ?? "Today across local Claude Code sessions")
+    }
+
+    private func fallbackContext(for usageError: Error) async
+        -> (error: Error, connectionState: ProviderConnectionState?)
+    {
+        do {
+            try await self.cliClient.verifyAuthentication()
+            return (usageError, .connected)
+        } catch {
+            return (error, nil)
+        }
     }
 
     private func connectionState(
