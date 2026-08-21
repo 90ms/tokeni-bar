@@ -4,6 +4,11 @@
 각 단계는 이전 단계의 브랜치 위에 쌓는 stacked PR로 진행하고, PR이 완료될 때마다
 이 문서의 상태·결정·검증 결과를 갱신합니다.
 
+PR1~PR27의 기존 포팅 이력 이후 Windows 기능 동등성 작업은
+[Windows 멀티에이전트 개발 운영](WINDOWS_DEVELOPMENT_WORKFLOW.ko.md)의 wave,
+worktree, PR gate와 상태 보드를 기준으로 진행합니다. 이 문서의 기존 stacked PR
+기록은 완료된 구현 이력으로 유지합니다.
+
 ## 목표
 
 - 기존 macOS 기능을 유지하면서 Windows 트레이 앱을 추가합니다.
