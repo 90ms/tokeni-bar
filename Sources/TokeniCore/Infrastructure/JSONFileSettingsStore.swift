@@ -119,7 +119,10 @@ public final class JSONFileSettingsStore: SettingsStoring, @unchecked Sendable {
             try self.fileManager.createDirectory(
                 at: self.fileURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true)
-            try data.write(to: self.fileURL, options: .atomic)
+            try DurableFileWriter.write(
+                data,
+                to: self.fileURL,
+                fileManager: self.fileManager)
             return true
         } catch {
             return false

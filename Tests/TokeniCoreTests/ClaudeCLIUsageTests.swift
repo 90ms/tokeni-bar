@@ -381,7 +381,7 @@ struct ClaudeCLIUsageTests {
             at: directory,
             withIntermediateDirectories: true)
         let executable = directory.appending(path: named)
-        try contents.write(to: executable, atomically: true, encoding: .utf8)
+        try Data(contents.utf8).write(to: executable)
         #if !os(Windows)
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o700],

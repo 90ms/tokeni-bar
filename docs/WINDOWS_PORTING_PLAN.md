@@ -68,8 +68,9 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR22 | `windows/22-windows-services-ui` | Settings, notifications, and launch-at-login tray actions | CI passed |
 | PR23 | `windows/23-companion-integration` | Companion state, overlay lifecycle, and native fallback renderer | CI passed |
 | PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | CI passed; hardware validation pending |
-| PR25 | `windows/25-release-artifact` | Versioned Windows ZIP, checksum, attestation, and unified GitHub Release | CI passed; tag validation pending |
-| PR26 | `release/0.26.1-readiness` | Claude auth compatibility plus Windows CLI, companion, and CI release-readiness fixes | CI passed; v0.26.1 release pending |
+| PR25 | `windows/25-release-artifact` | Versioned Windows ZIP, checksum, attestation, and unified GitHub Release | Tag validation attempted; publication recovery in PR27 |
+| PR26 | `release/0.26.1-readiness` | Claude auth compatibility plus Windows CLI, companion, and CI release-readiness fixes | CI passed; tagged release stopped before publishing |
+| PR27 | `release/0.26.2-windows-storage` | Durable Windows persistence and failed-tag release recovery | CI passed; v0.26.2 release pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -296,5 +297,13 @@ Each PR must satisfy all applicable items:
 - 2026-08-21: PR26's complete Windows test suite, release executable build, portable ZIP,
   companion asset validation, macOS regression suite, and app-bundle validation passed.
   Windows batch argument handling, update-cache persistence fallback, and refresh-loop
-  shutdown were corrected from the first full-suite run; v0.26.1 publishing remains gated
-  on the main-branch CI run.
+  shutdown were corrected from the first full-suite run. The validated main-branch CI run
+  completed before the v0.26.1 tag was created.
+- 2026-08-21: The v0.26.1 tag release stopped before artifact publication when the release
+  runner exposed another Windows swift-foundation atomic-file sharing violation in the
+  companion economy journal. The tag remains immutable. PR27 replaces all remaining
+  atomic data writes with a cross-platform durable writer and carries the unpublished
+  v0.26.1 notes forward to v0.26.2.
+- 2026-08-21: PR27's macOS regression and app-bundle validation passed alongside the full
+  Windows suite, durable persistence recovery tests, release executable build, portable
+  ZIP, and companion asset validation. Publishing remains gated on the v0.26.2 main CI.

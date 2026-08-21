@@ -4,6 +4,26 @@ import Testing
 
 @Suite("Persistence recovery")
 struct PersistenceRecoveryTests {
+    @Test("Durable writes replace closed files without leaving temporary data")
+    func durableReplacement() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appending(path: "durable.json")
+
+        for revision in 0..<20 {
+            let data = Data("revision-\(revision)".utf8)
+            try DurableFileWriter.write(data, to: file)
+            #expect(try Data(contentsOf: file) == data)
+        }
+
+        let remainingFiles = try FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil)
+        #expect(remainingFiles.count == 1)
+        #expect(remainingFiles.first?.lastPathComponent == "durable.json")
+    }
+
     @Test("The latest valid backup replaces a damaged companion state")
     func companionBackupRecovery() async throws {
         let directory = FileManager.default.temporaryDirectory
@@ -15,7 +35,7 @@ struct PersistenceRecoveryTests {
         for generation in 1...4 {
             try await store.save(CompanionGameState(generationNumber: generation))
         }
-        try Data("damaged".utf8).write(to: file, options: .atomic)
+        try DurableFileWriter.write(Data("damaged".utf8), to: file)
 
         let recovered = try await store.load()
 
@@ -26,6 +46,59 @@ struct PersistenceRecoveryTests {
         #expect(files.contains {
             $0.lastPathComponent.hasPrefix("companion-state.corrupt-")
         })
+    }
+
+    @Test("A locked damaged primary can still read a valid backup")
+    func backupFallbackWithoutPrimaryReplacement() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appending(path: "state.json")
+        let backup = try #require(
+            RecoverableFileStorage.backupURLs(for: file).first)
+        try DurableFileWriter.write(Data("damaged".utf8), to: file)
+        try DurableFileWriter.write(Data("valid".utf8), to: backup)
+
+        let recovered = try RecoverableFileStorage.load(
+            from: file,
+            quarantinePrimary: { _, _ in throw TestStorageError.locked },
+            decode: { data in
+                guard data == Data("valid".utf8) else {
+                    throw TestStorageError.invalid
+                }
+                return data
+            })
+
+        #expect(recovered == Data("valid".utf8))
+        #expect(try Data(contentsOf: file) == Data("damaged".utf8))
+    }
+
+    @Test("A failed clear never removes the primary before its backups")
+    func clearFailureKeepsPrimary() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appending(path: "state.json")
+        let backups = RecoverableFileStorage.backupURLs(for: file)
+        try DurableFileWriter.write(Data("current".utf8), to: file)
+        for backup in backups {
+            try DurableFileWriter.write(Data("backup".utf8), to: backup)
+        }
+
+        do {
+            try RecoverableFileStorage.removePrimaryAndBackups(
+                for: file,
+                removeItem: { url in
+                    if url == backups[1] { throw TestStorageError.locked }
+                    try FileManager.default.removeItem(at: url)
+                })
+            Issue.record("Expected backup removal to fail")
+        } catch TestStorageError.locked {
+            #expect(FileManager.default.fileExists(atPath: file.path))
+            #expect(try Data(contentsOf: file) == Data("current".utf8))
+        } catch {
+            Issue.record("Unexpected clear error: \(error)")
+        }
     }
 
     @Test("Only the three most recent backups are retained")
@@ -81,4 +154,9 @@ struct PersistenceRecoveryTests {
         try await store.clear()
         #expect(try await store.load() == TokenGrowthLedgerState())
     }
+}
+
+private enum TestStorageError: Error {
+    case invalid
+    case locked
 }

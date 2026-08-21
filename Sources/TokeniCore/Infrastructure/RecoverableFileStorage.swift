@@ -8,11 +8,34 @@ enum RecoverableFileStorage {
         fileManager: FileManager = .default,
         decode: (Data) throws -> Value) throws -> Value?
     {
-        if fileManager.fileExists(atPath: fileURL.path) {
+        try self.load(
+            from: fileURL,
+            fileManager: fileManager,
+            quarantinePrimary: { fileURL, fileManager in
+                _ = try self.quarantine(fileURL, fileManager: fileManager)
+            },
+            decode: decode)
+    }
+
+    static func load<Value>(
+        from fileURL: URL,
+        fileManager: FileManager = .default,
+        quarantinePrimary: (URL, FileManager) throws -> Void,
+        decode: (Data) throws -> Value) throws -> Value?
+    {
+        let primaryExisted = fileManager.fileExists(atPath: fileURL.path)
+        var primaryWasQuarantined = false
+        var quarantineError: Error?
+        if primaryExisted {
             do {
                 return try decode(Data(contentsOf: fileURL))
             } catch {
-                try self.quarantine(fileURL, fileManager: fileManager)
+                do {
+                    try quarantinePrimary(fileURL, fileManager)
+                    primaryWasQuarantined = true
+                } catch {
+                    quarantineError = error
+                }
             }
         }
 
@@ -20,9 +43,15 @@ enum RecoverableFileStorage {
             guard let data = try? Data(contentsOf: backupURL),
                   let value = try? decode(data)
             else { continue }
-            try data.write(to: fileURL, options: .atomic)
+            if !primaryExisted || primaryWasQuarantined {
+                try DurableFileWriter.write(
+                    data,
+                    to: fileURL,
+                    fileManager: fileManager)
+            }
             return value
         }
+        if let quarantineError { throw quarantineError }
         return nil
     }
 
@@ -35,7 +64,10 @@ enum RecoverableFileStorage {
             at: fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true)
         try self.rotateBackups(for: fileURL, fileManager: fileManager)
-        try data.write(to: fileURL, options: .atomic)
+        try DurableFileWriter.write(
+            data,
+            to: fileURL,
+            fileManager: fileManager)
     }
 
     static func backupURLs(for fileURL: URL) -> [URL] {
@@ -48,12 +80,25 @@ enum RecoverableFileStorage {
         for fileURL: URL,
         fileManager: FileManager = .default) throws
     {
-        for url in [fileURL]
-            + self.backupURLs(for: fileURL)
+        try self.removePrimaryAndBackups(
+            for: fileURL,
+            fileManager: fileManager,
+            removeItem: { try fileManager.removeItem(at: $0) })
+    }
+
+    static func removePrimaryAndBackups(
+        for fileURL: URL,
+        fileManager: FileManager = .default,
+        removeItem: (URL) throws -> Void) throws
+    {
+        // Remove recovery sources first so an interrupted clear always leaves
+        // the current primary in place instead of reviving an older backup.
+        for url in self.backupURLs(for: fileURL)
             + self.quarantineURLs(for: fileURL, fileManager: fileManager)
+            + [fileURL]
             where fileManager.fileExists(atPath: url.path)
         {
-            try fileManager.removeItem(at: url)
+            try removeItem(url)
         }
     }
 

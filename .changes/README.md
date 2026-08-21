@@ -35,3 +35,8 @@ action_en: Sign in again after updating.
 Keep each Korean and English summary concise and user-facing. Do not include
 credentials, paths, raw token totals, prompts, responses, internal stack traces,
 or commit-only implementation details.
+
+If a release workflow fails before publishing after its tag has been pushed, do
+not move the tag or modify its fragments. For the next patch version, copy each
+unpublished fragment into a uniquely named carry-forward fragment, add the new
+fix fragments, then render and review the complete bilingual notes before tagging.

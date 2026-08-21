@@ -51,8 +51,10 @@ git tag -a v<version> -m "Tokeni Bar <version>" <main-merge-sha>
 git push origin v<version>
 ```
 
-게시한 태그를 다른 커밋으로 옮기지 않습니다. 릴리스 작업이 실패하면 기존 태그를
-대상으로 `Release` 워크플로의 `workflow_dispatch`를 다시 실행합니다.
+게시한 태그를 다른 커밋으로 옮기지 않습니다. 일시적이거나 외부 요인인 실패에만 기존
+태그를 대상으로 `Release` 워크플로를 다시 실행합니다. source 또는 workflow code 수정이
+필요하면 `.changes/README.md` 절차에 따라 게시되지 않은 각 변경 조각을 새 고유 파일명으로
+승계하고 다음 patch 버전의 릴리스 노트를 렌더링합니다.
 
 ## 4. GitHub Release 검증
 

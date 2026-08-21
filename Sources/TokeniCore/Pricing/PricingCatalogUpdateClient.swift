@@ -98,7 +98,7 @@ public actor PricingCatalogUpdateClient {
         try FileManager.default.createDirectory(
             at: self.cacheURL.deletingLastPathComponent(),
             withIntermediateDirectories: true)
-        try data.write(to: self.cacheURL, options: [.atomic])
+        try DurableFileWriter.write(data, to: self.cacheURL)
         let didActivate = try TokenPricingCatalog.activate(manifest, at: date)
         return PricingCatalogUpdateResult(
             source: .remote,

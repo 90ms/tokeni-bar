@@ -99,7 +99,9 @@ public actor DailyExchangeRateClient {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys]
-        try encoder.encode(quote).write(to: self.cacheURL, options: .atomic)
+        try DurableFileWriter.write(
+            encoder.encode(quote),
+            to: self.cacheURL)
     }
 }
 
