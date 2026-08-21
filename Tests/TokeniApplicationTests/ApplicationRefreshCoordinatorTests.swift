@@ -47,6 +47,22 @@ struct ApplicationRefreshCoordinatorTests {
         #expect(await provider.fetchCount() == 1)
     }
 
+    @Test
+    func forcedRefreshSkipsFetchAndInvalidationWithNoActiveProviders() async {
+        let provider = RecordingProvider(snapshot: Self.snapshot(id: .codex))
+        let coordinator = UsageRefreshCoordinator(providers: [provider])
+
+        let result = await coordinator.refresh(
+            enabledProviderIDs: [],
+            forceProviderReload: true,
+            now: Self.fixedDate)
+
+        #expect(result.snapshots.isEmpty)
+        #expect(result.refreshedAt == Self.fixedDate)
+        #expect(await provider.invalidationCount() == 0)
+        #expect(await provider.fetchCount() == 0)
+    }
+
     private static let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
 
     private static func snapshot(

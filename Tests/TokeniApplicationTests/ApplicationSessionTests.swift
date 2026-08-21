@@ -99,6 +99,93 @@ struct ApplicationSessionTests {
     }
 
     @Test
+    func persistsAndRestoresAllProvidersDisabledWithoutFetching() async {
+        let directory = Self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let settingsURL = directory.appending(path: "settings.json")
+        let settings = JSONFileSettingsStore(fileURL: settingsURL)
+        let codex = CountingProvider(snapshot: Self.snapshot(
+            id: .codex,
+            updatedAt: Self.fixedDate))
+        let claude = CountingProvider(snapshot: Self.snapshot(
+            id: .claude,
+            updatedAt: Self.fixedDate))
+        let providers: [any UsageProviding] = [codex, claude]
+        let session = UsageApplicationSession(
+            providers: providers,
+            runtime: Self.runtime(
+                providers: providers,
+                historyStore: UsageHistoryStore(
+                    fileURL: directory.appending(path: "history.json"),
+                    minimumRecordInterval: 0),
+                growthStore: TokenGrowthLedgerStore(
+                    fileURL: directory.appending(path: "growth.json"))),
+            providerPreferences: ProviderPreferenceCoordinator(
+                settings: settings))
+
+        await session.setEnabledProviderIDs([])
+        await session.refresh(
+            forceProviderReload: true,
+            now: Self.fixedDate)
+
+        var state = await session.state()
+        #expect(state.enabledProviderIDs.isEmpty)
+        #expect(state.applicationState.snapshots.isEmpty)
+        #expect(settings.stringArray(forKey: "enabledProviderIDs")?.isEmpty == true)
+        #expect(await codex.fetchCount() == 0)
+        #expect(await claude.fetchCount() == 0)
+
+        let restored = UsageApplicationSession(
+            providers: providers,
+            runtime: Self.runtime(
+                providers: providers,
+                historyStore: UsageHistoryStore(
+                    fileURL: directory.appending(path: "restored-history.json"),
+                    minimumRecordInterval: 0),
+                growthStore: TokenGrowthLedgerStore(
+                    fileURL: directory.appending(path: "restored-growth.json"))),
+            providerPreferences: ProviderPreferenceCoordinator(
+                settings: JSONFileSettingsStore(fileURL: settingsURL)))
+
+        state = await restored.state()
+        #expect(state.enabledProviderIDs.isEmpty)
+
+        await restored.refresh(
+            forceProviderReload: true,
+            now: Self.fixedDate.addingTimeInterval(1))
+
+        state = await restored.state()
+        #expect(state.applicationState.snapshots.isEmpty)
+        #expect(await codex.fetchCount() == 0)
+        #expect(await claude.fetchCount() == 0)
+    }
+
+    @Test
+    func ignoresUnknownProviderToggleWithoutChangingStateOrPreferences() async {
+        let directory = Self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let settings = JSONFileSettingsStore(
+            fileURL: directory.appending(path: "settings.json"))
+        settings.set(
+            [ProviderID.codex.rawValue],
+            forKey: "enabledProviderIDs")
+        let session = UsageApplicationSession(
+            providers: Self.preferenceProviders(),
+            providerPreferences: ProviderPreferenceCoordinator(
+                settings: settings))
+        let unknownProvider = ProviderID(rawValue: "removed-provider")
+        let stateBefore = await session.state()
+        let storedBefore = settings.stringArray(forKey: "enabledProviderIDs")
+
+        await session.setEnabled(true, for: unknownProvider)
+        await session.setEnabled(false, for: unknownProvider)
+
+        let stateAfter = await session.state()
+        #expect(stateAfter == stateBefore)
+        #expect(settings.stringArray(forKey: "enabledProviderIDs") == storedBefore)
+    }
+
+    @Test
     func bootstrapsPersistedHistoryAndGrowthState() async throws {
         let directory = Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
