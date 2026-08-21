@@ -9,13 +9,15 @@ public enum WindowsUsageDetailFormatter {
         for presentation: UsageApplicationPresentation,
         now: Date = .now) -> String
     {
-        var lines = ["Tokeni Bar"]
+        var lines: [String] = []
 
         if presentation.providers.isEmpty {
             lines.append("No provider usage is available yet.")
         } else {
             for provider in presentation.providers {
-                lines.append("")
+                if !lines.isEmpty {
+                    lines.append("")
+                }
                 lines.append(provider.descriptor.displayName)
 
                 switch provider.availability {
@@ -48,7 +50,9 @@ public enum WindowsUsageDetailFormatter {
         }
 
         if let lastRefresh = presentation.lastRefresh {
-            lines.append("")
+            if !lines.isEmpty {
+                lines.append("")
+            }
             lines.append("Updated \(Self.relativeAge(lastRefresh, now: now))")
         }
         if presentation.isRefreshing {
