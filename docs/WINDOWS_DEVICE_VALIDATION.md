@@ -214,8 +214,8 @@ Record generic monitor labels, resolution, scale, and relative arrangement only.
    a visible focus indicator, logical order, no trap, and keyboard activation.
 3. Confirm standard close/hide and reopen flows work without a pointer.
 4. With Narrator or the approved accessibility inspector, check that the dashboard,
-   provider rows, refresh control, and tray menu expose meaningful names, roles, states,
-   and enabled/disabled status.
+   usage-details area, refresh control, and tray menu expose meaningful names, roles,
+   states, and enabled/disabled status.
 5. At 200% text/display scale and an approved high-contrast theme, confirm important
    controls remain visible and distinguishable.
 

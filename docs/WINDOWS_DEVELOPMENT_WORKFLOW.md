@@ -187,8 +187,9 @@ this table and the decision log when opening or merging a PR.
 | 1 | Provider preference session | `codex/windows-provider-preference-session` / #68 | Merged | Windows host wiring |
 | 1 | Explorer tray recovery | `codex/windows-explorer-tray-recovery` / #69 | Merged | Interactive Explorer restart validation |
 | 1 | Bundled SQLite | `codex/windows-bundled-sqlite` / #70 | Merged | Physical-device provider validation |
-| 1 | Windows host preference wiring | TBD | Pending | Start from current `main` |
-| 1 | Interactive validation runbook | `codex/windows-device-validation-runbook` / TBD | In progress | Run the matrix on target devices |
+| 1 | Windows host preference wiring | `codex/windows-provider-preference-host` / #72 | CI | Pass CI and merge |
+| 1 | Dashboard initial DPI and focus | `codex/windows-dashboard-initial-dpi` / #73 | CI | Pass Windows CI, then validate on target devices |
+| 1 | Interactive validation runbook | `codex/windows-device-validation-runbook` / #74 | CI | Pass CI, merge, and run the matrix on target devices |
 
 ## Decision log
 

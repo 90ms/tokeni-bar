@@ -213,9 +213,9 @@ negative coordinate가 생기는 배치도 포함합니다.
 2. dashboard에서 `Tab`·`Shift+Tab`으로 모든 interactive control을 순회합니다. 보이는
    focus indicator, 논리적 순서, focus trap 없음과 keyboard activation을 확인합니다.
 3. pointer 없이 표준 close/hide와 reopen 흐름이 동작하는지 확인합니다.
-4. Narrator 또는 승인된 accessibility inspector로 dashboard, provider row, refresh
-   control과 tray menu가 의미 있는 name·role·state·enabled status를 노출하는지
-   확인합니다.
+4. Narrator 또는 승인된 accessibility inspector로 dashboard, usage detail 영역,
+   refresh control과 tray menu가 의미 있는 name·role·state·enabled status를
+   노출하는지 확인합니다.
 5. 200% text/display scale과 승인된 high-contrast theme에서 중요한 control이 보이고
    구분되는지 확인합니다.
 
