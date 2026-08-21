@@ -325,6 +325,10 @@ struct ApplicationSessionTests {
                 now: oldDate)
         }
         let oldStarted = await Self.waitForFetchStart(oldProvider)
+        if !oldStarted {
+            await oldProvider.complete()
+            await newProvider.complete()
+        }
 
         let sessionRefresh = Task {
             await session.refresh(
@@ -392,6 +396,9 @@ struct ApplicationSessionTests {
                 now: Self.fixedDate)
         }
         let activeStarted = await Self.waitForFetchStart(activeProvider)
+        if !activeStarted {
+            await activeProvider.complete()
+        }
         let queuedRefresh = Task {
             await runtime.refresh(
                 enabledProviderIDs: [.claude],
@@ -415,7 +422,7 @@ struct ApplicationSessionTests {
     }
 
     @Test
-    func sessionRefreshesRecordHistoryInFIFOOrder() async {
+    func newerSessionRefreshQueuesWhileHistoryWriteIsInFlight() async {
         let directory = Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let oldDate = Self.fixedDate
@@ -428,20 +435,18 @@ struct ApplicationSessionTests {
             id: .claude,
             tokenTotal: 34,
             updatedAt: newDate)
-        let oldProvider = DelayedProvider(snapshot: oldSnapshot)
-        let newProvider = DelayedProvider(snapshot: newSnapshot)
+        let history = ControlledHistoryCoordinator()
         let providers: [any UsageProviding] = [
-            oldProvider,
-            newProvider,
+            TestProvider(snapshot: oldSnapshot),
+            TestProvider(snapshot: newSnapshot),
         ]
-        let historyStore = UsageHistoryStore(
-            fileURL: directory.appending(path: "history.json"),
-            minimumRecordInterval: 0)
-        let runtime = Self.runtime(
+        let runtime = UsageApplicationRuntime(
             providers: providers,
-            historyStore: historyStore,
-            growthStore: TokenGrowthLedgerStore(
-                fileURL: directory.appending(path: "growth.json")))
+            historyCoordinator: history,
+            growthLedgerCoordinator: TokenGrowthLedgerCoordinator(
+                store: TokenGrowthLedgerStore(
+                    fileURL: directory.appending(path: "growth.json")),
+                engine: Self.growthEngine))
         let oldSession = UsageApplicationSession(
             providers: providers,
             runtime: runtime,
@@ -454,7 +459,9 @@ struct ApplicationSessionTests {
         let oldRefresh = Task {
             await oldSession.refresh(now: oldDate)
         }
-        let oldStarted = await Self.waitForFetchStart(oldProvider)
+        let historyStarted = await Self.waitForSignal {
+            await history.waitUntilFirstRecordStarts()
+        }
 
         let newRefresh = Task {
             await newSession.refresh(now: newDate)
@@ -463,29 +470,23 @@ struct ApplicationSessionTests {
             1,
             in: runtime)
 
-        await oldProvider.complete()
+        await history.releaseFirstRecord()
         await oldRefresh.value
-        let newStarted = await Self.waitForFetchStart(newProvider)
-        let historyAfterOldRefresh = try? await historyStore.records()
-        #expect(historyAfterOldRefresh?.map(\.providerID) == [.codex])
-
-        await newProvider.complete()
         await newRefresh.value
 
         let state = await runtime.state()
-        let persistedHistory = try? await historyStore.records()
+        let persistedHistory = await history.persistedRecords()
         let oldSessionState = await oldSession.state()
         let newSessionState = await newSession.state()
-        #expect(oldStarted)
+        #expect(historyStarted)
         #expect(newerQueued)
-        #expect(newStarted)
         #expect(state.snapshots == [newSnapshot])
         #expect(state.lastRefresh == newDate)
         #expect(state.historyRecords.map(\.providerID) == [
             .codex,
             .claude,
         ])
-        #expect(persistedHistory?.map(\.providerID) == [.codex, .claude])
+        #expect(persistedHistory.map(\.providerID) == [.codex, .claude])
         #expect(!oldSessionState.isRefreshing)
         #expect(!newSessionState.isRefreshing)
     }
@@ -604,24 +605,46 @@ struct ApplicationSessionTests {
     private static func waitForFetchStart(
         _ provider: DelayedProvider) async -> Bool
     {
-        for _ in 0..<1_000 {
-            if await provider.hasFetchStarted() { return true }
-            await Task.yield()
+        await Self.waitForSignal {
+            await provider.waitUntilFetchStarts()
         }
-        return false
     }
 
     private static func waitForQueuedOperationCount(
         _ count: Int,
         in runtime: UsageApplicationRuntime) async -> Bool
     {
-        for _ in 0..<1_000 {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while clock.now < deadline {
             if await runtime.queuedOperationCount() == count {
                 return true
             }
-            await Task.yield()
+            try? await Task.sleep(for: .milliseconds(1))
         }
         return false
+    }
+
+    private static func waitForSignal(
+        _ operation: @escaping @Sendable () async -> Void) async -> Bool
+    {
+        await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                await operation()
+                return true
+            }
+            group.addTask {
+                do {
+                    try await Task.sleep(for: .seconds(2))
+                    return false
+                } catch {
+                    return false
+                }
+            }
+            let signalled = await group.next() ?? false
+            group.cancelAll()
+            return signalled
+        }
     }
 
     private static func snapshot(
@@ -685,9 +708,7 @@ private actor CountingProvider: UsageProviding {
 private actor DelayedProvider: UsageProviding {
     nonisolated let descriptor: ProviderDescriptor
     private let snapshot: ProviderSnapshot
-    private var didStart = false
-    private var isCompleted = false
-    private var fetchContinuation: CheckedContinuation<ProviderSnapshot, Never>?
+    private let gate = AsyncTestGate()
 
     init(snapshot: ProviderSnapshot) {
         self.descriptor = snapshot.descriptor
@@ -695,22 +716,140 @@ private actor DelayedProvider: UsageProviding {
     }
 
     func fetchUsage() async -> ProviderSnapshot {
-        self.didStart = true
-        guard !self.isCompleted else { return self.snapshot }
-        return await withCheckedContinuation { continuation in
-            self.fetchContinuation = continuation
+        await self.gate.enterAndWait()
+        return self.snapshot
+    }
+
+    func waitUntilFetchStarts() async {
+        await self.gate.waitUntilEntered()
+    }
+
+    func complete() async {
+        await self.gate.release()
+    }
+}
+
+private actor ControlledHistoryCoordinator: UsageHistoryCoordinating {
+    private var records: [UsageHistoryRecord] = []
+    private var recordCount = 0
+    private let firstRecordGate = AsyncTestGate()
+
+    func load() async throws -> [UsageHistoryRecord] {
+        self.records
+    }
+
+    func record(
+        _ snapshots: [ProviderSnapshot],
+        at timestamp: Date) async throws -> [UsageHistoryRecord]
+    {
+        self.recordCount += 1
+        if self.recordCount == 1 {
+            await self.firstRecordGate.enterAndWait()
+        }
+        for snapshot in snapshots where snapshot.availability == .available {
+            self.records.append(UsageHistoryRecord(
+                timestamp: timestamp,
+                providerID: snapshot.id,
+                providerName: snapshot.descriptor.displayName,
+                windows: snapshot.quotaWindows.map {
+                    UsageHistoryRecord.WindowSample(
+                        id: $0.id,
+                        label: $0.label,
+                        remainingPercent: $0.remainingPercent)
+                },
+                tokenTotal: snapshot.tokenUsage?.totalTokens,
+                costUSD: snapshot.costEstimate?.amountUSD))
+        }
+        return self.records
+    }
+
+    func clear() async throws -> [UsageHistoryRecord] {
+        self.records = []
+        return self.records
+    }
+
+    func waitUntilFirstRecordStarts() async {
+        await self.firstRecordGate.waitUntilEntered()
+    }
+
+    func releaseFirstRecord() async {
+        await self.firstRecordGate.release()
+    }
+
+    func persistedRecords() -> [UsageHistoryRecord] {
+        self.records
+    }
+}
+
+private actor AsyncTestGate {
+    private var entered = false
+    private var released = false
+    private var entryWaiters: [UUID: CheckedContinuation<Void, Never>] = [:]
+    private var releaseWaiters: [UUID: CheckedContinuation<Void, Never>] = [:]
+
+    func enterAndWait() async {
+        if !self.entered {
+            self.entered = true
+            let waiters = Array(self.entryWaiters.values)
+            self.entryWaiters.removeAll()
+            for waiter in waiters {
+                waiter.resume()
+            }
+        }
+        guard !self.released, !Task.isCancelled else { return }
+
+        let waiterID = UUID()
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                if self.released || Task.isCancelled {
+                    continuation.resume()
+                } else {
+                    self.releaseWaiters[waiterID] = continuation
+                }
+            }
+        } onCancel: {
+            Task { await self.cancelReleaseWaiter(waiterID) }
         }
     }
 
-    func hasFetchStarted() -> Bool {
-        self.didStart
+    func waitUntilEntered() async {
+        guard !self.entered, !Task.isCancelled else { return }
+
+        let waiterID = UUID()
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                if self.entered || Task.isCancelled {
+                    continuation.resume()
+                } else {
+                    self.entryWaiters[waiterID] = continuation
+                }
+            }
+        } onCancel: {
+            Task { await self.cancelEntryWaiter(waiterID) }
+        }
     }
 
-    func complete() {
-        guard !self.isCompleted else { return }
-        self.isCompleted = true
-        guard let continuation = self.fetchContinuation else { return }
-        self.fetchContinuation = nil
-        continuation.resume(returning: self.snapshot)
+    func release() {
+        guard !self.released else { return }
+        self.released = true
+        let waiters = Array(self.releaseWaiters.values)
+        self.releaseWaiters.removeAll()
+        for waiter in waiters {
+            waiter.resume()
+        }
+    }
+
+    private func cancelEntryWaiter(_ waiterID: UUID) {
+        guard let waiter = self.entryWaiters.removeValue(forKey: waiterID) else {
+            return
+        }
+        waiter.resume()
+    }
+
+    private func cancelReleaseWaiter(_ waiterID: UUID) {
+        guard let waiter = self.releaseWaiters.removeValue(forKey: waiterID) else {
+            return
+        }
+        waiter.resume()
     }
 }

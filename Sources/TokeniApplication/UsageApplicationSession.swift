@@ -91,11 +91,10 @@ public actor UsageApplicationSession {
             self.isRefreshing = self.refreshOperationCount > 0
         }
 
-        _ = await self.runtime.refreshAndRecordHistory(
+        self.applicationState = await self.runtime.refreshAndRecordHistory(
             enabledProviderIDs: self.enabledProviderIDs,
             forceProviderReload: forceProviderReload,
             now: now)
-        self.applicationState = await self.runtime.state()
     }
 
     public func setEnabledProviderIDs(_ providerIDs: Set<ProviderID>) {

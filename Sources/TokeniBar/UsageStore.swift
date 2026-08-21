@@ -492,9 +492,10 @@ final class UsageStore: ObservableObject {
     func refresh(forceProviderReload: Bool = false) async {
         guard !self.isRefreshing else { return }
         self.isRefreshing = true
-        let applicationState = await self.applicationRuntime.refresh(
-            enabledProviderIDs: self.enabledProviderIDs,
-            forceProviderReload: forceProviderReload)
+        let applicationState = await self.applicationRuntime
+            .refreshAndRecordHistory(
+                enabledProviderIDs: self.enabledProviderIDs,
+                forceProviderReload: forceProviderReload)
         self.snapshots = applicationState.snapshots
         self.notificationDiagnostics = self.notificationController.process(
             self.snapshots,
@@ -504,13 +505,7 @@ final class UsageStore: ObservableObject {
             preferences: self.notificationPreferences,
             enabledProviderIDs: self.notificationProviderIDs)
         self.lastRefresh = applicationState.lastRefresh
-        do {
-            let applicationState = try await self.applicationRuntime.recordHistory(
-                at: self.lastRefresh ?? .now)
-            self.historyRecords = applicationState.historyRecords
-        } catch {
-            // History is an optional local enhancement and must not fail provider refreshes.
-        }
+        self.historyRecords = applicationState.historyRecords
         await self.processCompanionGrowth(at: self.lastRefresh ?? .now)
         await self.refreshExchangeRate()
         await self.refreshPricingCatalogIfNeeded()

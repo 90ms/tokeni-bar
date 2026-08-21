@@ -34,14 +34,14 @@ public struct UsageApplicationState: Equatable, Sendable {
 /// operation and never invalidates work that is already running.
 public actor UsageApplicationRuntime {
     private let refreshCoordinator: UsageRefreshCoordinator
-    private let historyCoordinator: UsageHistoryCoordinator
+    private let historyCoordinator: any UsageHistoryCoordinating
     private let growthLedgerCoordinator: TokenGrowthLedgerCoordinator
     private var currentState: UsageApplicationState
     private let operationGate = UsageApplicationOperationGate()
 
     public init(
         providers: [any UsageProviding],
-        historyCoordinator: UsageHistoryCoordinator = UsageHistoryCoordinator(),
+        historyCoordinator: any UsageHistoryCoordinating = UsageHistoryCoordinator(),
         growthLedgerCoordinator: TokenGrowthLedgerCoordinator =
             TokenGrowthLedgerCoordinator(),
         initialState: UsageApplicationState = UsageApplicationState())
