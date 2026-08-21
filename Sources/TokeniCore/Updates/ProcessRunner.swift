@@ -171,13 +171,16 @@ public final class SystemProcessRunner: ProcessRunning {
     }
 
     public func run(_ command: ProcessCommand) async throws -> CommandResult {
-        let processEnvironment = CLIProcessEnvironment.make(for: command)
+        let baseEnvironment = CLIProcessEnvironment.make(for: command)
         #if os(Windows)
-        let launchCommand = try WindowsProcessCommand.prepare(
+        let launch = try WindowsProcessCommand.prepare(
             command,
-            environment: processEnvironment)
+            environment: baseEnvironment)
+        let launchCommand = launch.command
+        let processEnvironment = launch.environment
         #else
         let launchCommand = command
+        let processEnvironment = baseEnvironment
         #endif
         let controller = ProcessController(
             terminationGracePeriod: self.terminationGracePeriod)
@@ -246,19 +249,25 @@ public final class SystemProcessRunner: ProcessRunning {
 
 #if os(Windows)
 private enum WindowsProcessCommand {
+    struct Launch {
+        let command: ProcessCommand
+        let environment: [String: String]
+    }
+
+    private static let emptyArgumentVariable = "TOKENI_BATCH_EMPTY_ARGUMENT"
     private static let unsafeArgumentCharacters = CharacterSet(
         charactersIn: "\"%!^&|<>()\r\n\0")
     private static let unsafePathCharacters = CharacterSet(
-        charactersIn: "\"%!\r\n\0")
+        charactersIn: "\"%!^&|<>()\r\n\0")
 
     static func prepare(
         _ command: ProcessCommand,
-        environment: [String: String]) throws -> ProcessCommand
+        environment: [String: String]) throws -> Launch
     {
         let executableURL = URL(fileURLWithPath: command.executable)
         let fileExtension = executableURL.pathExtension.lowercased()
         guard fileExtension == "cmd" || fileExtension == "bat" else {
-            return command
+            return Launch(command: command, environment: environment)
         }
 
         guard self.isSafePath(command.executable),
@@ -273,16 +282,21 @@ private enum WindowsProcessCommand {
                 "Windows command interpreter could not be located.")
         }
 
-        let tokens = [command.executable] + command.arguments
-        let quotedCommand = tokens
-            .map { "\"\($0)\"" }
-            .joined(separator: " ")
+        var processEnvironment = environment
+        processEnvironment[self.emptyArgumentVariable] = "\"\""
+        let arguments = command.arguments.map {
+            $0.isEmpty ? "%\(self.emptyArgumentVariable)%" : $0
+        }
 
-        return ProcessCommand(
-            executable: interpreter,
-            arguments: ["/d", "/e:on", "/v:off", "/s", "/c", "\"\(quotedCommand)\""],
-            timeout: command.timeout,
-            environment: command.environment)
+        return Launch(
+            command: ProcessCommand(
+                executable: interpreter,
+                arguments: [
+                    "/d", "/e:on", "/v:off", "/c", "call", command.executable,
+                ] + arguments,
+                timeout: command.timeout,
+                environment: command.environment),
+            environment: processEnvironment)
     }
 
     private static func commandInterpreter(

@@ -81,6 +81,32 @@ struct AppUpdateCheckTests {
     }
 
     @Test
+    func keepsValidatedMemoryCacheWhenDiskPersistenceFails() async throws {
+        let root = self.temporaryDirectory()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let blockedDirectory = root.appending(path: "not-a-directory")
+        try Data("occupied".utf8).write(to: blockedDirectory)
+        let counter = RequestCounter()
+        let data = self.releaseData([self.release(tag: "v0.4.0")])
+        let client = self.client(directory: blockedDirectory) { request in
+            await counter.increment()
+            return (data, self.response(url: request.url!, status: 200))
+        }
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+
+        let remote = try await client.check(currentVersion: "0.3.1", at: now)
+        let cached = try await client.check(
+            currentVersion: "0.3.1",
+            at: now.addingTimeInterval(60))
+
+        #expect(await counter.value == 1)
+        #expect(remote.source == .remote)
+        #expect(cached.source == .cache)
+        #expect(cached.latestRelease == remote.latestRelease)
+    }
+
+    @Test
     func fallsBackToLatestReleasePageWhenAPIRateLimitIsExhausted() async throws {
         let directory = self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

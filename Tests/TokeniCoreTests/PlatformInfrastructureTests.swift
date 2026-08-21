@@ -164,8 +164,12 @@ struct PlatformInfrastructureTests {
             timeout: 10))
 
         #expect(located == batchFile)
-        #expect(result.exitCode == 0)
-        #expect(result.standardOutput.contains("arguments-ok"))
+        #expect(
+            result.exitCode == 0,
+            "Batch stderr: \(result.standardError)")
+        #expect(
+            result.standardOutput.contains("arguments-ok"),
+            "Batch stderr: \(result.standardError)")
     }
 
     @Test

@@ -143,8 +143,12 @@ public actor UsageApplicationSession {
         }
     }
 
-    public func stop() {
-        self.periodicRefreshTask?.cancel()
+    /// Cancels the periodic loop and waits for any refresh it already started
+    /// to leave its `isRefreshing` critical section before returning.
+    public func stop() async {
+        guard let periodicRefreshTask = self.periodicRefreshTask else { return }
+        periodicRefreshTask.cancel()
         self.periodicRefreshTask = nil
+        await periodicRefreshTask.value
     }
 }
