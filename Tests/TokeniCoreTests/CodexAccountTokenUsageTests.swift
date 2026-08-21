@@ -379,7 +379,7 @@ struct CodexAccountTokenUsageTests {
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let executable = directory.appending(path: name)
-        try contents.write(to: executable, atomically: true, encoding: .utf8)
+        try Data(contents.utf8).write(to: executable)
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o700],
             ofItemAtPath: executable.path)

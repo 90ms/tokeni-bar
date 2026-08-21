@@ -324,15 +324,7 @@ public actor GitHubReleaseUpdateClient {
         try FileManager.default.createDirectory(
             at: self.cacheURL.deletingLastPathComponent(),
             withIntermediateDirectories: true)
-        #if os(Windows)
-        // swift-foundation's atomic Data writer can fail with a Win32 sharing
-        // violation even for a new cache target. This file is an optional,
-        // fully validated cache, so a partial write safely degrades to a
-        // remote refresh on the next launch.
-        try data.write(to: self.cacheURL)
-        #else
-        try data.write(to: self.cacheURL, options: .atomic)
-        #endif
+        try DurableFileWriter.write(data, to: self.cacheURL)
     }
 
     private func validateURL(_ url: URL, allowedHosts: Set<String>) throws {
