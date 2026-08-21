@@ -69,6 +69,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR23 | `windows/23-companion-integration` | Companion state, overlay lifecycle, and native fallback renderer | CI passed |
 | PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | CI passed; hardware validation pending |
 | PR25 | `windows/25-release-artifact` | Versioned Windows ZIP, checksum, attestation, and unified GitHub Release | CI passed; tag validation pending |
+| PR26 | `release/0.26.1-readiness` | Claude auth compatibility plus Windows CLI, companion, and CI release-readiness fixes | CI passed; v0.26.1 release pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -245,9 +246,9 @@ Each PR must satisfy all applicable items:
 - 2026-08-20: PR20's Windows build, portable-package creation, and artifact upload passed
   on the Windows runner. Platform-scope detector jobs now skip the expensive macOS or
   Windows build when a pull request does not touch that platform's shared or native
-  paths; shared `TokeniCore` and application changes still run both validations. The
-  normal Windows pull-request path skips the long full test suite, while focused Windows
-  installer tests remain available through manual dispatch.
+  paths; shared `TokeniCore` and application changes still run both validations. A later
+  release-readiness audit found that normal Windows pull requests skipped their test
+  step; PR26 makes the full Windows suite mandatory whenever Windows scope is detected.
 - 2026-08-20: The remaining integration scope is split into smaller layers. PR21
   makes the tray useful for daily inspection by showing provider details and verified
   reset times and by handling refresh/quit actions. PR22 owns the Windows settings,
@@ -287,3 +288,13 @@ Each PR must satisfy all applicable items:
 - 2026-08-21: PR25's macOS regression, Windows release build, portable ZIP validation,
   and generated SHA-256 verification passed CI. Publishing the unified asset set remains
   gated on the next semantic-version tag; real-device validation and signing remain open.
+- 2026-08-21: The v0.26.1 readiness work separates Claude authentication checks from
+  usage-text parsing and strengthens Windows batch CLI execution, companion growth,
+  tray concurrency, and pull-request test gates. The first real unified-release tag and
+  Windows device/signing validation remain assigned to the release run and follow-up
+  distribution contract respectively.
+- 2026-08-21: PR26's complete Windows test suite, release executable build, portable ZIP,
+  companion asset validation, macOS regression suite, and app-bundle validation passed.
+  Windows batch argument handling, update-cache persistence fallback, and refresh-loop
+  shutdown were corrected from the first full-suite run; v0.26.1 publishing remains gated
+  on the main-branch CI run.

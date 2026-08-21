@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 while IFS= read -r workflow; do
     if grep -E '^[[:space:]]*uses:' "$workflow" \
+        | grep -Ev 'uses:[[:space:]]+\./' \
         | grep -Ev '@[0-9a-f]{40}([[:space:]]+#.*)?$' >/dev/null
     then
         echo "Workflow actions must be pinned to full commit SHAs: $workflow" >&2

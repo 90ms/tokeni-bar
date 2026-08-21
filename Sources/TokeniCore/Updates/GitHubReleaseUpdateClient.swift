@@ -81,6 +81,7 @@ public actor GitHubReleaseUpdateClient {
     private let allowedAPIHosts: Set<String>
     private let allowedReleaseHosts: Set<String>
     private let load: @Sendable (URLRequest) async throws -> (Data, URLResponse)
+    private var memoryCache: CachedRelease?
 
     public init(
         endpoint: URL = GitHubReleaseUpdateClient.defaultEndpoint,
@@ -101,6 +102,7 @@ public actor GitHubReleaseUpdateClient {
         self.load = { request in
             try await session.data(for: request)
         }
+        self.memoryCache = nil
     }
 
     init(
@@ -120,6 +122,7 @@ public actor GitHubReleaseUpdateClient {
         self.allowedAPIHosts = Set(allowedAPIHosts.map { $0.lowercased() })
         self.allowedReleaseHosts = Set(allowedReleaseHosts.map { $0.lowercased() })
         self.load = load
+        self.memoryCache = nil
     }
 
     public func check(
@@ -134,7 +137,8 @@ public actor GitHubReleaseUpdateClient {
         try self.validateURL(
             self.latestReleasePageURL,
             allowedHosts: self.allowedReleaseHosts)
-        let cached = try? self.loadCache()
+        let cached = self.memoryCache ?? (try? self.loadCache())
+        self.memoryCache = cached
 
         if !force,
            let cached,
@@ -157,7 +161,11 @@ public actor GitHubReleaseUpdateClient {
                 release = try await self.fetchLatestStableReleasePage()
             }
             let cache = CachedRelease(checkedAt: now, release: release)
-            try self.save(cache)
+            self.memoryCache = cache
+            // A validated remote result must not fail only because the
+            // optional on-disk cache cannot be replaced. Keep the actor-local
+            // value for throttling; a later remote refresh can retry persistence.
+            try? self.save(cache)
             return AppUpdateCheckResult(
                 currentVersion: currentVersion,
                 latestRelease: release,
@@ -237,6 +245,7 @@ public actor GitHubReleaseUpdateClient {
     }
 
     public func clearCache() throws {
+        self.memoryCache = nil
         guard FileManager.default.fileExists(atPath: self.cacheURL.path) else { return }
         try FileManager.default.removeItem(at: self.cacheURL)
     }
@@ -315,7 +324,15 @@ public actor GitHubReleaseUpdateClient {
         try FileManager.default.createDirectory(
             at: self.cacheURL.deletingLastPathComponent(),
             withIntermediateDirectories: true)
+        #if os(Windows)
+        // swift-foundation's atomic Data writer can fail with a Win32 sharing
+        // violation even for a new cache target. This file is an optional,
+        // fully validated cache, so a partial write safely degrades to a
+        // remote refresh on the next launch.
+        try data.write(to: self.cacheURL)
+        #else
         try data.write(to: self.cacheURL, options: .atomic)
+        #endif
     }
 
     private func validateURL(_ url: URL, allowedHosts: Set<String>) throws {

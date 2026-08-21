@@ -145,6 +145,7 @@ struct HomebrewUpdateServiceTests {
 
 @Suite("Process environment")
 struct ProcessEnvironmentTests {
+    #if !os(Windows)
     @Test
     func suppliesHomeAndCommonPathsToCommandsWithoutAnExplicitEnvironment() {
         let environment = CLIProcessEnvironment.make(for: ProcessCommand(
@@ -157,6 +158,7 @@ struct ProcessEnvironmentTests {
         #expect(paths.contains("/opt/homebrew/bin"))
         #expect(paths.contains("/usr/local/bin"))
     }
+    #endif
 
     @Test
     func preservesAnExplicitHomeDirectory() {
@@ -168,10 +170,11 @@ struct ProcessEnvironmentTests {
             environment: ["HOME": home.path, "PATH": "/custom/bin"]))
 
         #expect(environment["HOME"] == home.path)
-        let paths = environment["PATH"]?.split(separator: ":").map(String.init) ?? []
+        let paths = PlatformEnvironment.pathEntries(environment["PATH"])
         #expect(paths.contains("/custom/bin"))
     }
 
+    #if !os(Windows)
     @Test
     func systemRunnerPassesHomeToAChildWithAnEmptyEnvironment() async throws {
         let result = try await SystemProcessRunner().run(ProcessCommand(
@@ -182,6 +185,7 @@ struct ProcessEnvironmentTests {
         #expect(result.succeeded)
         #expect(result.standardOutput == FileManager.default.homeDirectoryForCurrentUser.path)
     }
+    #endif
 }
 
 private actor RecordingProcessRunner: ProcessRunning {

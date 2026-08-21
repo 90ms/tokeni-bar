@@ -6,6 +6,7 @@ project_dir=${script_dir:h}
 "$project_dir/Tests/Scripts/HomebrewCaskTests.sh"
 "$project_dir/Tests/Scripts/HomebrewFormulaTests.sh"
 "$project_dir/Tests/Scripts/ReleaseNotesTests.sh"
+"$project_dir/Tests/Scripts/GitHubWorkflowTests.sh"
 "$project_dir/Scripts/validate_companion_assets.sh"
 
 args=(--enable-swift-testing --disable-xctest)

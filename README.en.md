@@ -283,7 +283,7 @@ analytics or remote game server.
 | Cannot move the on-screen pet | Turn off position lock and click-through under **Settings → Tokeni** |
 | Cannot find the on-screen pet | Choose **Settings → Tokeni → Reset pet position** |
 | Provider unavailable | Confirm the CLI is installed and signed in, then run it once |
-| Claude or Codex connection fails | Run the affected CLI once in Terminal to sign in, then check **Settings → General → Providers**. Tokeni Bar uses non-interactive CLI commands and never opens a login dialog |
+| Claude or Codex connection fails | Run the affected CLI once in Terminal to sign in, then check **Settings → General → Providers**. Claude uses `claude auth status`, Codex checks its existing CLI session, and Tokeni Bar never opens a login dialog or reads credentials |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Update asks to choose Formula or Cask | Run `brew upgrade --formula 90ms/tap/tokeni-bar`, then `tokeni-bar --install-app`. In-app updates select the Formula automatically starting with 0.25.2 |
 | In-app Homebrew update reports a `$HOME` error | Update to the latest version, then retry. For an older version, run `brew upgrade --formula 90ms/tap/tokeni-bar && tokeni-bar --install-app` in Terminal |

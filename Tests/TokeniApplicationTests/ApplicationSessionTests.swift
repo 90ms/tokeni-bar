@@ -177,7 +177,6 @@ struct ApplicationSessionTests {
         #expect(runningCount == 1)
 
         await session.stop()
-        try await Task.sleep(for: .milliseconds(30))
 
         #expect(await provider.fetchCount() == runningCount)
         let stoppedState = await session.state()

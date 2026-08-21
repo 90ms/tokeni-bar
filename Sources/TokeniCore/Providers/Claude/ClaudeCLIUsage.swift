@@ -16,7 +16,10 @@ enum ClaudeCLIUsageError: LocalizedError, Sendable, Equatable {
     case signInRequired
     case sessionExpired
     case commandFailed
+    case authenticationFailed
+    case usageUnavailable
     case invalidResponse
+    case invalidAuthenticationResponse
 
     var errorDescription: String? {
         switch self {
@@ -32,8 +35,14 @@ enum ClaudeCLIUsageError: LocalizedError, Sendable, Equatable {
             "Claude Code sign-in expired. Run Claude Code once to sign in again."
         case .commandFailed:
             "Claude Code CLI usage is unavailable."
+        case .authenticationFailed:
+            "Claude Code authentication status is unavailable."
+        case .usageUnavailable:
+            "Claude Code usage quotas are unavailable for this account or CLI version."
         case .invalidResponse:
             "Claude Code CLI returned an invalid usage response."
+        case .invalidAuthenticationResponse:
+            "Claude Code CLI returned an invalid authentication response."
         }
     }
 }
@@ -45,6 +54,30 @@ struct ClaudeCLIUsageEnvelope: Decodable, Sendable {
     enum CodingKeys: String, CodingKey {
         case isError = "is_error"
         case result
+    }
+}
+
+private struct ClaudeCLIAuthenticationEnvelope: Decodable, Sendable {
+    let loggedIn: Bool?
+}
+
+enum ClaudeCLIAuthenticationParser {
+    static func verify(_ data: Data) throws {
+        let envelope: ClaudeCLIAuthenticationEnvelope
+        do {
+            envelope = try JSONDecoder().decode(
+                ClaudeCLIAuthenticationEnvelope.self,
+                from: data)
+        } catch {
+            throw ClaudeCLIUsageError.invalidAuthenticationResponse
+        }
+
+        guard let loggedIn = envelope.loggedIn else {
+            throw ClaudeCLIUsageError.invalidAuthenticationResponse
+        }
+        guard loggedIn else {
+            throw ClaudeCLIUsageError.signInRequired
+        }
     }
 }
 
@@ -61,7 +94,7 @@ enum ClaudeCLIUsageParser {
             throw ClaudeCLIUsageError.invalidResponse
         }
 
-        guard envelope.isError != true, let result = envelope.result else {
+        guard envelope.isError != true else {
             let message = envelope.result?.lowercased() ?? ""
             if message.contains("expired") || message.contains("unauthorized") {
                 throw ClaudeCLIUsageError.sessionExpired
@@ -72,6 +105,9 @@ enum ClaudeCLIUsageParser {
                 throw ClaudeCLIUsageError.signInRequired
             }
             throw ClaudeCLIUsageError.commandFailed
+        }
+        guard let result = envelope.result else {
+            throw ClaudeCLIUsageError.usageUnavailable
         }
 
         var windows: [QuotaWindow] = []
@@ -113,7 +149,7 @@ enum ClaudeCLIUsageParser {
         {
             windows.append(window)
         }
-        guard !windows.isEmpty else { throw ClaudeCLIUsageError.invalidResponse }
+        guard !windows.isEmpty else { throw ClaudeCLIUsageError.usageUnavailable }
         return ClaudeCLIUsageResponse(quotaWindows: windows)
     }
 
@@ -524,7 +560,7 @@ struct ClaudeExecutableLocator: Sendable {
 }
 
 struct ClaudeCLIUsageClient: Sendable {
-    private static let arguments = [
+    private static let usageArguments = [
         "--print",
         "--no-session-persistence",
         "--setting-sources",
@@ -535,6 +571,7 @@ struct ClaudeCLIUsageClient: Sendable {
         "json",
         "/usage",
     ]
+    private static let authenticationArguments = ["auth", "status"]
 
     private let locator: ClaudeExecutableLocator
     private let processRunner: any ProcessRunning
@@ -587,7 +624,7 @@ struct ClaudeCLIUsageClient: Sendable {
 
         let command = ProcessCommand(
             executable: executableURL.path,
-            arguments: Self.arguments,
+            arguments: Self.usageArguments,
             timeout: self.timeout,
             environment: CLIProcessEnvironment.make(
                 executableURL: executableURL,
@@ -646,6 +683,49 @@ struct ClaudeCLIUsageClient: Sendable {
         let fetched = ClaudeCLIUsageResult(response: response, fetchedAt: .now)
         await self.cache.store(fetched)
         return fetched
+    }
+
+    func verifyAuthentication() async throws {
+        guard let executableURL = self.locator.resolve() else {
+            throw ClaudeCLIUsageError.executableUnavailable
+        }
+
+        let command = ProcessCommand(
+            executable: executableURL.path,
+            arguments: Self.authenticationArguments,
+            timeout: self.timeout,
+            environment: CLIProcessEnvironment.make(
+                executableURL: executableURL,
+                homeDirectory: self.homeDirectory))
+        let result: CommandResult
+        do {
+            result = try await self.processRunner.run(command)
+        } catch let error as ProcessRunnerError {
+            switch error {
+            case .launchFailed:
+                throw ClaudeCLIUsageError.launchFailed
+            case .timedOut:
+                throw ClaudeCLIUsageError.timedOut
+            }
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw ClaudeCLIUsageError.authenticationFailed
+        }
+
+        guard result.succeeded else {
+            do {
+                try ClaudeCLIAuthenticationParser.verify(
+                    Data(result.standardOutput.utf8))
+            } catch ClaudeCLIUsageError.signInRequired {
+                throw ClaudeCLIUsageError.signInRequired
+            } catch {
+                // A non-zero status without a definitive logged-out response is
+                // a command failure. Do not surface or retain account fields.
+            }
+            throw ClaudeCLIUsageError.authenticationFailed
+        }
+        try ClaudeCLIAuthenticationParser.verify(Data(result.standardOutput.utf8))
     }
 
     func invalidateCache() async {

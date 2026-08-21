@@ -27,6 +27,7 @@ struct CodexAccountTokenUsageTests {
         ])
     }
 
+    #if !os(Windows)
     @Test
     func exchangesInitializeAndUsageRequestsWithAppServer() async throws {
         let fixture = try #require(Bundle.module.url(
@@ -151,6 +152,7 @@ struct CodexAccountTokenUsageTests {
             try await client.fetch()
         }
     }
+    #endif
 
     @Test
     func reportsMissingExplicitExecutable() async {
@@ -171,14 +173,22 @@ struct CodexAccountTokenUsageTests {
     func locatesCodexInstalledByUserLevelVersionManagers() throws {
         let home = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
-        let codex = home.appending(path: ".nvm/versions/node/v24.1.0/bin/codex")
+        #if os(Windows)
+        let codex = home.appending(
+            path: ".nvm/versions/node/v24.1.0/bin/codex.exe")
+        #else
+        let codex = home.appending(
+            path: ".nvm/versions/node/v24.1.0/bin/codex")
+        #endif
         try FileManager.default.createDirectory(
             at: codex.deletingLastPathComponent(),
             withIntermediateDirectories: true)
         try Data().write(to: codex)
+        #if !os(Windows)
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o700],
             ofItemAtPath: codex.path)
+        #endif
         defer { try? FileManager.default.removeItem(at: home) }
 
         let resolved = CodexExecutableLocator(
@@ -359,6 +369,7 @@ struct CodexAccountTokenUsageTests {
             now: now.addingTimeInterval(90)) == nil)
     }
 
+    #if !os(Windows)
     private func makeExecutableScript(
         _ contents: String,
         named name: String = "codex",
@@ -374,4 +385,5 @@ struct CodexAccountTokenUsageTests {
             ofItemAtPath: executable.path)
         return executable
     }
+    #endif
 }

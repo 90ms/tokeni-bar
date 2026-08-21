@@ -22,6 +22,7 @@ static LONG tokeni_test_notification_requested;
 static LONG tokeni_companion_enabled;
 static LONG tokeni_companion_toggle_requested;
 static WCHAR tokeni_details[8192];
+static SRWLOCK tokeni_state_lock = SRWLOCK_INIT;
 
 static int tokeni_copy_utf8(
     const char *source,
@@ -48,7 +49,7 @@ static int tokeni_copy_utf8(
     return 1;
 }
 
-static void tokeni_remove_icon(void)
+static void tokeni_remove_icon_locked(void)
 {
     if (tokeni_window != NULL) {
         Shell_NotifyIconW(NIM_DELETE, &tokeni_icon);
@@ -57,27 +58,52 @@ static void tokeni_remove_icon(void)
     }
 }
 
-static void tokeni_destroy_window(void)
+static void tokeni_remove_icon(void)
 {
-    tokeni_remove_icon();
+    AcquireSRWLockExclusive(&tokeni_state_lock);
+    tokeni_remove_icon_locked();
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+}
+
+static void tokeni_destroy_window_locked(void)
+{
+    tokeni_remove_icon_locked();
     if (tokeni_class_registered) {
         UnregisterClassW(tokeni_window_class_name, tokeni_instance);
         tokeni_class_registered = 0;
     }
 }
 
+static void tokeni_destroy_window(void)
+{
+    AcquireSRWLockExclusive(&tokeni_state_lock);
+    tokeni_destroy_window_locked();
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+}
+
 static void tokeni_show_details(void)
 {
-    if (tokeni_window == NULL) {
+    HWND window;
+    WCHAR details[8192];
+
+    AcquireSRWLockShared(&tokeni_state_lock);
+    window = tokeni_window;
+    if (window != NULL) {
+        CopyMemory(details, tokeni_details, sizeof(details));
+        details[(sizeof(details) / sizeof(details[0])) - 1] = L'\0';
+    }
+    ReleaseSRWLockShared(&tokeni_state_lock);
+
+    if (window == NULL) {
         return;
     }
 
-    SetForegroundWindow(tokeni_window);
+    SetForegroundWindow(window);
     MessageBoxW(
         NULL,
-        tokeni_details[0] == L'\0'
+        details[0] == L'\0'
             ? L"Usage is not available yet."
-            : tokeni_details,
+            : details,
         L"Tokeni Bar",
         MB_OK | MB_ICONINFORMATION);
 }
@@ -104,11 +130,19 @@ static LRESULT CALLBACK tokeni_window_proc(
 
         HMENU menu = CreatePopupMenu();
         if (menu != NULL) {
+            LONG launch_at_login_enabled = InterlockedCompareExchange(
+                &tokeni_launch_at_login_enabled,
+                0,
+                0);
+            LONG companion_enabled = InterlockedCompareExchange(
+                &tokeni_companion_enabled,
+                0,
+                0);
             AppendMenuW(menu, MF_STRING, 1, L"Show details");
             AppendMenuW(menu, MF_STRING, 2, L"Refresh now");
             AppendMenuW(
                 menu,
-                MF_STRING | (tokeni_launch_at_login_enabled
+                MF_STRING | (launch_at_login_enabled
                     ? MF_CHECKED
                     : MF_UNCHECKED),
                 3,
@@ -116,7 +150,7 @@ static LRESULT CALLBACK tokeni_window_proc(
             AppendMenuW(menu, MF_STRING, 4, L"Send test notification");
             AppendMenuW(
                 menu,
-                MF_STRING | (tokeni_companion_enabled
+                MF_STRING | (companion_enabled
                     ? MF_CHECKED
                     : MF_UNCHECKED),
                 5,
@@ -203,7 +237,7 @@ int tokeni_windows_tray_start(
         tokeni_instance,
         NULL);
     if (tokeni_window == NULL) {
-        tokeni_destroy_window();
+        tokeni_destroy_window_locked();
         return 0;
     }
 
@@ -225,7 +259,7 @@ int tokeni_windows_tray_start(
             (int)(sizeof(tokeni_icon.szTip) / sizeof(tokeni_icon.szTip[0])))
         || !Shell_NotifyIconW(NIM_ADD, &tokeni_icon))
     {
-        tokeni_destroy_window();
+        tokeni_destroy_window_locked();
         return 0;
     }
 
@@ -236,6 +270,8 @@ int tokeni_windows_tray_start(
 
 int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8)
 {
+    int result;
+    AcquireSRWLockExclusive(&tokeni_state_lock);
     if (tokeni_window == NULL
         || !tokeni_copy_utf8(
             tooltip_utf8,
@@ -243,23 +279,31 @@ int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8)
             (int)(sizeof(tokeni_icon.szTip) / sizeof(tokeni_icon.szTip[0])))
         )
     {
+        ReleaseSRWLockExclusive(&tokeni_state_lock);
         return 0;
     }
 
     tokeni_icon.uFlags = NIF_TIP;
-    return Shell_NotifyIconW(NIM_MODIFY, &tokeni_icon) ? 1 : 0;
+    result = Shell_NotifyIconW(NIM_MODIFY, &tokeni_icon) ? 1 : 0;
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+    return result;
 }
 
 int tokeni_windows_tray_update_details(const char *details_utf8)
 {
+    int result;
+    AcquireSRWLockExclusive(&tokeni_state_lock);
     if (tokeni_window == NULL) {
+        ReleaseSRWLockExclusive(&tokeni_state_lock);
         return 0;
     }
 
-    return tokeni_copy_utf8(
+    result = tokeni_copy_utf8(
         details_utf8,
         tokeni_details,
         (int)(sizeof(tokeni_details) / sizeof(tokeni_details[0])));
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+    return result;
 }
 
 int tokeni_windows_tray_take_refresh_request(void)
@@ -294,14 +338,21 @@ int tokeni_windows_tray_take_companion_toggle_request(void)
 
 int tokeni_windows_tray_is_started(void)
 {
-    return tokeni_window != NULL ? 1 : 0;
+    int result;
+    AcquireSRWLockShared(&tokeni_state_lock);
+    result = tokeni_window != NULL ? 1 : 0;
+    ReleaseSRWLockShared(&tokeni_state_lock);
+    return result;
 }
 
 int tokeni_windows_tray_notify(
     const char *title_utf8,
     const char *body_utf8)
 {
+    int result;
+    AcquireSRWLockShared(&tokeni_state_lock);
     if (tokeni_window == NULL || title_utf8 == NULL || body_utf8 == NULL) {
+        ReleaseSRWLockShared(&tokeni_state_lock);
         return 0;
     }
 
@@ -317,12 +368,15 @@ int tokeni_windows_tray_notify(
             (int)(sizeof(notification.szInfo)
                 / sizeof(notification.szInfo[0]))))
     {
+        ReleaseSRWLockShared(&tokeni_state_lock);
         return 0;
     }
 
     notification.uFlags = NIF_INFO;
     notification.dwInfoFlags = NIIF_INFO;
-    return Shell_NotifyIconW(NIM_MODIFY, &notification) ? 1 : 0;
+    result = Shell_NotifyIconW(NIM_MODIFY, &notification) ? 1 : 0;
+    ReleaseSRWLockShared(&tokeni_state_lock);
+    return result;
 }
 
 int tokeni_windows_tray_run(void)
@@ -339,9 +393,13 @@ int tokeni_windows_tray_run(void)
 
 void tokeni_windows_tray_stop(void)
 {
-    if (tokeni_window != NULL) {
-        PostMessageW(tokeni_window, WM_CLOSE, 0, 0);
+    HWND window;
+    AcquireSRWLockShared(&tokeni_state_lock);
+    window = tokeni_window;
+    if (window != NULL) {
+        PostMessageW(window, WM_CLOSE, 0, 0);
     }
+    ReleaseSRWLockShared(&tokeni_state_lock);
 }
 
 #else

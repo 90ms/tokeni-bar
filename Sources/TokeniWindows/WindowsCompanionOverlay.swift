@@ -37,6 +37,32 @@ public struct WindowsCompanionOverlayState: Equatable, Sendable {
         self.speciesIndex = max(speciesIndex, 0)
         self.rarityRank = min(max(rarityRank, 0), 3)
     }
+
+    public init(companionState state: CompanionGameState?) {
+        guard let state else {
+            self.init(stage: 0, level: 0)
+            return
+        }
+
+        let stage: Int
+        switch state.stage {
+        case .egg: stage = 0
+        case .hatchling: stage = 1
+        case .junior: stage = 2
+        case .adult: stage = 3
+        }
+        let speciesIndex = state.speciesID.flatMap { speciesID in
+            CompanionSpeciesID.allCases.firstIndex(of: speciesID)
+        } ?? 0
+        let rarityRank = state.resolvedVariantID.map {
+            CompanionVariantRegistry.definition(for: $0).assetRarity.rank
+        } ?? state.rarity?.rank ?? 0
+        self.init(
+            stage: stage,
+            level: state.level,
+            speciesIndex: speciesIndex,
+            rarityRank: rarityRank)
+    }
 }
 
 /// Owns the lifecycle of the native companion overlay without exposing

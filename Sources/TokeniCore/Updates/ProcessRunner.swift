@@ -171,6 +171,17 @@ public final class SystemProcessRunner: ProcessRunning {
     }
 
     public func run(_ command: ProcessCommand) async throws -> CommandResult {
+        let baseEnvironment = CLIProcessEnvironment.make(for: command)
+        #if os(Windows)
+        let launch = try WindowsProcessCommand.prepare(
+            command,
+            environment: baseEnvironment)
+        let launchCommand = launch.command
+        let processEnvironment = launch.environment
+        #else
+        let launchCommand = command
+        let processEnvironment = baseEnvironment
+        #endif
         let controller = ProcessController(
             terminationGracePeriod: self.terminationGracePeriod)
         return try await withTaskCancellationHandler {
@@ -178,9 +189,9 @@ public final class SystemProcessRunner: ProcessRunning {
                 (continuation: CheckedContinuation<CommandResult, Error>) in
                 DispatchQueue.global(qos: .userInitiated).async {
                     let process = Process()
-                    process.executableURL = URL(fileURLWithPath: command.executable)
-                    process.arguments = command.arguments
-                    process.environment = CLIProcessEnvironment.make(for: command)
+                    process.executableURL = URL(fileURLWithPath: launchCommand.executable)
+                    process.arguments = launchCommand.arguments
+                    process.environment = processEnvironment
                     let outputPipe = Pipe()
                     let errorPipe = Pipe()
                     process.standardOutput = outputPipe
@@ -235,6 +246,101 @@ public final class SystemProcessRunner: ProcessRunning {
         }
     }
 }
+
+#if os(Windows)
+private enum WindowsProcessCommand {
+    struct Launch {
+        let command: ProcessCommand
+        let environment: [String: String]
+    }
+
+    private static let emptyArgumentVariable = "TOKENI_BATCH_EMPTY_ARGUMENT"
+    private static let unsafeArgumentCharacters = CharacterSet(
+        charactersIn: "\"%!^&|<>()\r\n\0")
+    private static let unsafePathCharacters = CharacterSet(
+        charactersIn: "\"%!^&|<>()\r\n\0")
+
+    static func prepare(
+        _ command: ProcessCommand,
+        environment: [String: String]) throws -> Launch
+    {
+        let executableURL = URL(fileURLWithPath: command.executable)
+        let fileExtension = executableURL.pathExtension.lowercased()
+        guard fileExtension == "cmd" || fileExtension == "bat" else {
+            return Launch(command: command, environment: environment)
+        }
+
+        guard self.isSafePath(command.executable),
+              command.arguments.allSatisfy(self.isSafeArgument)
+        else {
+            throw ProcessRunnerError.launchFailed(
+                "Windows batch command contains unsupported command characters.")
+        }
+
+        guard let interpreter = self.commandInterpreter(in: environment) else {
+            throw ProcessRunnerError.launchFailed(
+                "Windows command interpreter could not be located.")
+        }
+
+        var processEnvironment = environment
+        processEnvironment[self.emptyArgumentVariable] = "\"\""
+        let arguments = command.arguments.map {
+            $0.isEmpty ? "%\(self.emptyArgumentVariable)%" : $0
+        }
+
+        return Launch(
+            command: ProcessCommand(
+                executable: interpreter,
+                arguments: [
+                    "/d", "/e:on", "/v:off", "/c", "call", command.executable,
+                ] + arguments,
+                timeout: command.timeout,
+                environment: command.environment),
+            environment: processEnvironment)
+    }
+
+    private static func commandInterpreter(
+        in environment: [String: String]) -> String?
+    {
+        if let comSpec = self.value(named: "COMSPEC", in: environment),
+           URL(fileURLWithPath: comSpec).lastPathComponent
+               .caseInsensitiveCompare("cmd.exe") == .orderedSame,
+           FileManager.default.fileExists(atPath: comSpec)
+        {
+            return comSpec
+        }
+
+        for name in ["SystemRoot", "WINDIR"] {
+            guard let root = self.value(named: name, in: environment) else {
+                continue
+            }
+            let candidate = URL(fileURLWithPath: root, isDirectory: true)
+                .appending(path: "System32/cmd.exe").path
+            if FileManager.default.fileExists(atPath: candidate) {
+                return candidate
+            }
+        }
+        return nil
+    }
+
+    private static func value(
+        named name: String,
+        in environment: [String: String]) -> String?
+    {
+        environment.first {
+            $0.key.caseInsensitiveCompare(name) == .orderedSame
+        }?.value
+    }
+
+    private static func isSafeArgument(_ argument: String) -> Bool {
+        argument.rangeOfCharacter(from: self.unsafeArgumentCharacters) == nil
+    }
+
+    private static func isSafePath(_ path: String) -> Bool {
+        path.rangeOfCharacter(from: self.unsafePathCharacters) == nil
+    }
+}
+#endif
 
 private enum BoundedPipeReader {
     private static let maximumCapturedBytes = 1 * 1_024 * 1_024
