@@ -13,6 +13,7 @@ static const wchar_t tokeni_dashboard_class_name[] = L"TokeniBarDashboardWindow"
 static const UINT tokeni_tray_callback_message = WM_APP + 37;
 static const UINT tokeni_details_updated_message = WM_APP + 38;
 static const UINT tokeni_tray_identifier = 1;
+static UINT tokeni_taskbar_created_message;
 static const int tokeni_refresh_button_identifier = 101;
 static const int tokeni_hide_button_identifier = 102;
 static HWND tokeni_window;
@@ -405,6 +406,30 @@ static int tokeni_copy_utf8(
     return 1;
 }
 
+static int tokeni_add_icon_locked(void)
+{
+    if (tokeni_window == NULL) {
+        return 0;
+    }
+
+    // NIM_MODIFY callers intentionally narrow uFlags for their operation.
+    // Rebuild every field required by NIM_ADD so Explorer recovery always
+    // restores the icon, tooltip, and callback contract together.
+    tokeni_icon.cbSize = sizeof(tokeni_icon);
+    tokeni_icon.hWnd = tokeni_window;
+    tokeni_icon.uID = tokeni_tray_identifier;
+    tokeni_icon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+    tokeni_icon.uCallbackMessage = tokeni_tray_callback_message;
+    tokeni_icon.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512));
+    if (!Shell_NotifyIconW(NIM_ADD, &tokeni_icon)) {
+        return 0;
+    }
+
+    tokeni_icon.uVersion = NOTIFYICON_VERSION;
+    Shell_NotifyIconW(NIM_SETVERSION, &tokeni_icon);
+    return 1;
+}
+
 static void tokeni_remove_icon_locked(void)
 {
     if (tokeni_window != NULL) {
@@ -501,6 +526,19 @@ static LRESULT CALLBACK tokeni_window_proc(
     LPARAM l_param)
 {
     (void)w_param;
+
+    if (tokeni_taskbar_created_message != 0
+        && message == tokeni_taskbar_created_message)
+    {
+        AcquireSRWLockExclusive(&tokeni_state_lock);
+        if (tokeni_window == window) {
+            // Explorer can still be settling when it broadcasts this message.
+            // A failed re-add must not close the host or discard current state.
+            tokeni_add_icon_locked();
+        }
+        ReleaseSRWLockExclusive(&tokeni_state_lock);
+        return 0;
+    }
 
     if (message == tokeni_tray_callback_message && l_param == WM_LBUTTONUP) {
         tokeni_show_details();
@@ -612,6 +650,7 @@ int tokeni_windows_tray_start(
     if (tokeni_instance == NULL) {
         return 0;
     }
+    tokeni_taskbar_created_message = RegisterWindowMessageW(L"TaskbarCreated");
 
     WNDCLASSEXW window_class;
     ZeroMemory(&window_class, sizeof(window_class));
@@ -641,15 +680,15 @@ int tokeni_windows_tray_start(
     tokeni_dashboard_class_registered = 1;
 
     tokeni_window = CreateWindowExW(
-        0,
+        WS_EX_TOOLWINDOW,
         tokeni_window_class_name,
         tokeni_window_class_name,
+        WS_POPUP,
         0,
         0,
         0,
         0,
-        0,
-        HWND_MESSAGE,
+        NULL,
         NULL,
         tokeni_instance,
         NULL);
@@ -664,24 +703,15 @@ int tokeni_windows_tray_start(
     InterlockedExchange(&tokeni_launch_at_login_requested, 0);
     InterlockedExchange(&tokeni_test_notification_requested, 0);
     InterlockedExchange(&tokeni_companion_toggle_requested, 0);
-    tokeni_icon.cbSize = sizeof(tokeni_icon);
-    tokeni_icon.hWnd = tokeni_window;
-    tokeni_icon.uID = tokeni_tray_identifier;
-    tokeni_icon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
-    tokeni_icon.uCallbackMessage = tokeni_tray_callback_message;
-    tokeni_icon.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512));
     if (!tokeni_copy_utf8(
             tooltip_utf8,
             tokeni_icon.szTip,
             (int)(sizeof(tokeni_icon.szTip) / sizeof(tokeni_icon.szTip[0])))
-        || !Shell_NotifyIconW(NIM_ADD, &tokeni_icon))
+        || !tokeni_add_icon_locked())
     {
         tokeni_destroy_window_locked();
         return 0;
     }
-
-    tokeni_icon.uVersion = NOTIFYICON_VERSION;
-    Shell_NotifyIconW(NIM_SETVERSION, &tokeni_icon);
     return 1;
 }
 
