@@ -1,7 +1,7 @@
 # Tokeni Bar
 
-> 다음 릴리스부터 검증된 Windows portable ZIP을 macOS 파일과 함께 GitHub Release에
-> 게시합니다. 서명된 설치 프로그램 배포는 아직 활성화하지 않았습니다.
+> 검증된 Windows portable ZIP을 macOS 파일과 함께 GitHub Release에 게시합니다.
+> 서명된 설치 프로그램 배포는 아직 활성화하지 않았습니다.
 
 **한국어** | [English](README.en.md)
 

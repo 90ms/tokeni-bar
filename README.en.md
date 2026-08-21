@@ -1,7 +1,7 @@
 # Tokeni Bar
 
-> Starting with the next release, the validated Windows portable ZIP is published
-> alongside the macOS assets. Signed installer distribution is not enabled yet.
+> The validated Windows portable ZIP is published alongside the macOS assets.
+> Signed installer distribution is not enabled yet.
 
 [한국어](README.md) | **English**
 

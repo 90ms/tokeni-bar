@@ -67,9 +67,9 @@ TokeniWindows
 | PR22 | `windows/22-windows-services-ui` | 설정·알림·자동 시작 tray 액션 | CI 통과 |
 | PR23 | `windows/23-companion-integration` | companion 상태·overlay lifecycle·native fallback renderer | CI 통과 |
 | PR24 | `windows/24-companion-assets-validation` | packaged sprite parity, 최종 macOS 회귀와 Windows 실기기 검증 | CI 통과·실기기 검증 대기 |
-| PR25 | `windows/25-release-artifact` | 버전 Windows ZIP, 체크섬, 증명과 통합 GitHub Release | 태그 검증 시도·PR27에서 게시 복구 |
+| PR25 | `windows/25-release-artifact` | 버전 Windows ZIP, 체크섬, 증명과 통합 GitHub Release | PR27의 v0.26.2 배포로 복구 |
 | PR26 | `release/0.26.1-readiness` | Claude 인증 호환성, Windows CLI·companion·CI 배포 준비 수정 | CI 통과·태그 배포는 게시 전 중단 |
-| PR27 | `release/0.26.2-windows-storage` | Windows durable 저장과 실패 태그 배포 복구 | CI 통과·v0.26.2 배포 대기 |
+| PR27 | `release/0.26.2-windows-storage` | Windows durable 저장과 실패 태그 배포 복구 | v0.26.2 게시·실기기 검증과 서명 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -292,4 +292,7 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
   writer로 교체하고, 게시되지 않은 v0.26.1 릴리스 노트를 v0.26.2로 승계합니다.
 - 2026-08-21: PR27의 macOS 회귀·앱 번들 검증과 Windows 전체 suite, durable 저장 복구
   테스트, release 실행 파일 빌드, portable ZIP, companion asset 검증이 통과했습니다.
-  게시는 v0.26.2 main CI 통과 후 진행합니다.
+  이어서 v0.26.2 main CI도 통과했습니다.
+- 2026-08-21: v0.26.2에서 macOS와 Windows ZIP, 일치하는 SHA-256 파일과 각 archive의
+  GitHub attestation 1건을 게시했습니다. Homebrew tap PR 48도 Formula/Cask 설치·audit
+  검증을 통과해 병합했습니다. Windows 실기기 검증과 서명은 후속 배포 작업으로 남습니다.

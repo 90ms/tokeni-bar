@@ -68,9 +68,9 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR22 | `windows/22-windows-services-ui` | Settings, notifications, and launch-at-login tray actions | CI passed |
 | PR23 | `windows/23-companion-integration` | Companion state, overlay lifecycle, and native fallback renderer | CI passed |
 | PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | CI passed; hardware validation pending |
-| PR25 | `windows/25-release-artifact` | Versioned Windows ZIP, checksum, attestation, and unified GitHub Release | Tag validation attempted; publication recovery in PR27 |
+| PR25 | `windows/25-release-artifact` | Versioned Windows ZIP, checksum, attestation, and unified GitHub Release | Recovered by the v0.26.2 release in PR27 |
 | PR26 | `release/0.26.1-readiness` | Claude auth compatibility plus Windows CLI, companion, and CI release-readiness fixes | CI passed; tagged release stopped before publishing |
-| PR27 | `release/0.26.2-windows-storage` | Durable Windows persistence and failed-tag release recovery | CI passed; v0.26.2 release pending |
+| PR27 | `release/0.26.2-windows-storage` | Durable Windows persistence and failed-tag release recovery | v0.26.2 published; device validation and signing pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -306,4 +306,8 @@ Each PR must satisfy all applicable items:
   v0.26.1 notes forward to v0.26.2.
 - 2026-08-21: PR27's macOS regression and app-bundle validation passed alongside the full
   Windows suite, durable persistence recovery tests, release executable build, portable
-  ZIP, and companion asset validation. Publishing remains gated on the v0.26.2 main CI.
+  ZIP, and companion asset validation. The v0.26.2 main CI then passed.
+- 2026-08-21: v0.26.2 published the macOS and Windows ZIPs with matching SHA-256 files
+  and one GitHub attestation for each archive. Homebrew tap PR 48 passed Formula/Cask
+  install and audit checks and was merged. Windows hardware validation and signing remain
+  follow-up distribution work.
