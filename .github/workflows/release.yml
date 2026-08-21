@@ -107,7 +107,7 @@ jobs:
             -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsRelease" `
             -RuntimeDirectory $runtimeDirectories
 
-      - name: Validate Windows release and generate checksum
+      - name: Validate Windows release assets
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.value }}
@@ -117,6 +117,14 @@ jobs:
             "Tokeni-Bar-Windows-$env:VERSION.zip"
           if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) {
             throw "Windows release archive was not created: $archive"
+          }
+          if (-not (Test-Path -LiteralPath "$archive.sha256" -PathType Leaf)) {
+            throw "Windows release checksum was not created: $archive.sha256"
+          }
+          $expectedHash = ((Get-Content -LiteralPath "$archive.sha256" -Raw).Trim() -split '\s+')[0]
+          $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expectedHash -ne $actualHash) {
+            throw "Windows release checksum does not match the archive."
           }
           $validationDirectory = Join-Path `
             $env:RUNNER_TEMP `
@@ -129,10 +137,6 @@ jobs:
           if (-not (Test-Path -LiteralPath (Join-Path $validationDirectory "TokeniWindows.exe") -PathType Leaf)) {
             throw "Validated package does not contain TokeniWindows.exe."
           }
-          $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $([System.IO.Path]::GetFileName($archive))" | Set-Content `
-            -LiteralPath "$archive.sha256" `
-            -Encoding ascii
 
       - name: Generate Windows artifact attestation
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
