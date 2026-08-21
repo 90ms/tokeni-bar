@@ -48,10 +48,12 @@ enum ClaudeCLIUsageError: LocalizedError, Sendable, Equatable {
 }
 
 struct ClaudeCLIUsageEnvelope: Decodable, Sendable {
+    let type: String?
     let isError: Bool?
     let result: String?
 
     enum CodingKeys: String, CodingKey {
+        case type
         case isError = "is_error"
         case result
     }
@@ -87,12 +89,7 @@ enum ClaudeCLIUsageParser {
         now: Date = .now,
         timeZone: TimeZone = .current) throws -> ClaudeCLIUsageResponse
     {
-        let envelope: ClaudeCLIUsageEnvelope
-        do {
-            envelope = try JSONDecoder().decode(ClaudeCLIUsageEnvelope.self, from: data)
-        } catch {
-            throw ClaudeCLIUsageError.invalidResponse
-        }
+        let envelope = try self.decodeEnvelope(from: data)
 
         guard envelope.isError != true else {
             let message = envelope.result?.lowercased() ?? ""
@@ -151,6 +148,28 @@ enum ClaudeCLIUsageParser {
         }
         guard !windows.isEmpty else { throw ClaudeCLIUsageError.usageUnavailable }
         return ClaudeCLIUsageResponse(quotaWindows: windows)
+    }
+
+    private static func decodeEnvelope(from data: Data) throws
+        -> ClaudeCLIUsageEnvelope
+    {
+        let decoder = JSONDecoder()
+        if let envelope = try? decoder.decode(ClaudeCLIUsageEnvelope.self, from: data) {
+            return envelope
+        }
+
+        // Claude Code verbose mode returns all output events as a JSON array.
+        // Ignore the system and assistant payloads and accept exactly one
+        // result envelope without retaining or exposing their contents.
+        guard let events = try? decoder.decode(
+            [ClaudeCLIUsageEnvelope].self,
+            from: data)
+        else { throw ClaudeCLIUsageError.invalidResponse }
+        let results = events.filter { $0.type?.lowercased() == "result" }
+        guard results.count == 1, let envelope = results.first else {
+            throw ClaudeCLIUsageError.invalidResponse
+        }
+        return envelope
     }
 
     private struct WindowDescriptor {

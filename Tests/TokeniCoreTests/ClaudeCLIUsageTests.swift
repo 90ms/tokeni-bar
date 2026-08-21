@@ -85,6 +85,33 @@ struct ClaudeCLIUsageTests {
     }
 
     @Test
+    func parsesUsageEnvelopeFromVerboseEventArray() throws {
+        let fixture = try #require(Bundle.module.url(
+            forResource: "claude-cli-usage-verbose",
+            withExtension: "json",
+            subdirectory: "Fixtures"))
+
+        let response = try ClaudeCLIUsageParser.parse(Data(contentsOf: fixture))
+
+        #expect(response.quotaWindows.map(\.usedPercent) == [12, 34])
+        #expect(response.quotaWindows.allSatisfy { $0.resetsAt != nil })
+    }
+
+    @Test
+    func rejectsAmbiguousVerboseResultEnvelopes() {
+        let output = """
+        [
+          {"type":"result","is_error":false,"result":"Current session: 12% used"},
+          {"type":"result","is_error":false,"result":"Current session: 34% used"}
+        ]
+        """
+
+        #expect(throws: ClaudeCLIUsageError.invalidResponse) {
+            try ClaudeCLIUsageParser.parse(Data(output.utf8))
+        }
+    }
+
+    @Test
     func keepsAuthenticatedClaudeConnectedWhenQuotaOutputIsUnsupported() async throws {
         let root = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)

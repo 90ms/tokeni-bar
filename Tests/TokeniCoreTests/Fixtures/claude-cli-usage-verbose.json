@@ -1,0 +1,21 @@
+[
+  {
+    "type": "system",
+    "subtype": "init",
+    "session_id": "sanitized"
+  },
+  {
+    "type": "assistant",
+    "message": {
+      "content": []
+    },
+    "session_id": "sanitized"
+  },
+  {
+    "type": "result",
+    "subtype": "success",
+    "is_error": false,
+    "result": "Current session: 12% used · resets Aug 21, 3:45pm (Asia/Seoul)\nCurrent week (all models): 34% used · resets Aug 24, 12am (Asia/Seoul)\n",
+    "session_id": "sanitized"
+  }
+]
