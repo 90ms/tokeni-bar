@@ -60,6 +60,24 @@ Before removal, verify that the worktree is clean and its PR branch is pushed. U
 `git worktree remove`, not recursive filesystem deletion. Delete a merged branch only
 after removing its worktree.
 
+## Preparation decisions
+
+- Wave 1 keeps the existing Swift application/core and Win32 host. Its first surface is
+  a modeless dashboard built from standard Win32 controls. Reassess WinUI 3 after a
+  stable host-neutral API exists.
+- Development and CI keep the existing portable ZIP. Define the production installer,
+  app identity, signing, and automatic-update contract together in Wave 4; do not enable
+  automatic installation before then.
+- GitHub-hosted Windows runners gate only non-interactive executable and package smoke.
+  Keep tray, notification, overlay, DPI, and virtual-desktop behavior in an interactive
+  self-hosted or physical-device test matrix.
+- SQLite providers must not silently depend on the user's PATH. Choose a bundled
+  executable or linked library in a separate distribution PR, and preserve a verified
+  `unavailable` state until that work is complete.
+- Wave 1 starts with three independent PRs: provider preferences, modeless dashboard,
+  and packaged smoke. Only the coordinator may make follow-up shared entry-point or
+  manifest changes.
+
 ## Work waves
 
 ### Preparation
@@ -161,10 +179,10 @@ this table and the decision log when opening or merging a PR.
 
 | Wave | Track | Branch/PR | Status | Next gate |
 |---|---|---|---|---|
-| Preparation | Technology and distribution contract | TBD | Pending | Decide UI host and deployment model |
-| 1 | Application services | TBD | Pending | Merge preparation work |
-| 1 | Windows dashboard | TBD | Pending | Finalize presentation contract |
-| 1 | Provider and smoke CI | TBD | Pending | Finalize toolchain and test matrix |
+| Preparation | Technology and distribution contract | `codex/windows-preparation-decisions` | In progress | Verify and merge decision PR |
+| 1 | Provider preferences | `codex/windows-provider-preferences` | In progress | Application tests and CI |
+| 1 | Windows dashboard | `codex/windows-dashboard` | In progress | Native build and Windows CI |
+| 1 | Packaged smoke CI | `codex/windows-package-smoke` | In progress | Raw and ZIP smoke CI |
 
 ## Decision log
 
@@ -174,3 +192,7 @@ this table and the decision log when opening or merging a PR.
   write sets and shared-file ownership to prevent conflicts.
 - 2026-08-21: Every PR starts as draft, advances to ready and merge only after CI and
   review, and the next wave starts from the updated `main`.
+- 2026-08-21: Wave 1 keeps the Swift+Win32 host and portable ZIP. Reassess WinUI 3 and a
+  production installer/app identity after the shared API and deployment contract mature.
+- 2026-08-21: Hosted runners own non-interactive package smoke; physical-device testing
+  owns interactive tray, overlay, and DPI behavior.
