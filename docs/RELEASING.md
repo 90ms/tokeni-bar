@@ -53,8 +53,11 @@ git tag -a v<version> -m "Tokeni Bar <version>" <main-merge-sha>
 git push origin v<version>
 ```
 
-Never move a published tag to another commit. If publishing fails, rerun the
-`Release` workflow through `workflow_dispatch` for the existing tag.
+Never move a published tag to another commit. Rerun the `Release` workflow for
+the existing tag only when the failure was transient or external. If source or
+workflow code must change, create the next patch version and carry every
+unpublished fragment forward under a new unique filename before rendering its
+notes, as described in `.changes/README.md`.
 
 ## 4. Validate the GitHub Release
 
