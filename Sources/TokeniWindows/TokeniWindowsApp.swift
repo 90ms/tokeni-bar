@@ -74,7 +74,24 @@ struct TokeniWindowsApp {
             var companionVisible = initialCompanionVisible
             var serviceMessage: String?
             while !Task.isCancelled {
-                if tray.takeRefreshRequest() {
+                var presentation = UsageApplicationPresentation(
+                    sessionState: await session.state())
+                let knownProviderOptions = WindowsProviderSelectionFormatter
+                    .options(for: presentation)
+                var needsProviderRefresh = tray.takeRefreshRequest()
+                while let toggle = tray.takeProviderToggleRequest() {
+                    guard let change = WindowsProviderSelectionFormatter.change(
+                        for: toggle,
+                        among: knownProviderOptions)
+                    else {
+                        continue
+                    }
+                    await session.setEnabled(
+                        change.enabled,
+                        for: change.providerID)
+                    needsProviderRefresh = true
+                }
+                if needsProviderRefresh {
                     await session.refresh(forceProviderReload: true)
                 }
                 if tray.takeLaunchAtLoginRequest() {
@@ -132,11 +149,15 @@ struct TokeniWindowsApp {
                             WindowsCompanionOverlayState(companionState: state))
                     }
                 }
-                let presentation = UsageApplicationPresentation(
+                presentation = UsageApplicationPresentation(
                     sessionState: await session.state())
+                tray.updateProviderOptions(
+                    WindowsProviderSelectionFormatter.options(
+                        for: presentation))
                 tray.updateTooltip(Self.tooltip(for: presentation))
-                var details = WindowsUsageDetailFormatter.text(
+                var details = WindowsProviderSelectionFormatter.neutralMessage(
                     for: presentation)
+                    ?? WindowsUsageDetailFormatter.text(for: presentation)
                 if let serviceMessage {
                     details += "\n\n\(serviceMessage)"
                 }

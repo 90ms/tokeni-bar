@@ -13,6 +13,24 @@ int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8);
 
 int tokeni_windows_tray_update_details(const char *details_utf8);
 
+// Provider options are staged and become visible atomically on commit. A
+// failed append leaves the currently committed dashboard state unchanged.
+int tokeni_windows_tray_begin_provider_options(void);
+
+int tokeni_windows_tray_append_provider_option(
+    const char *provider_id_utf8,
+    const char *display_name_utf8,
+    int enabled);
+
+int tokeni_windows_tray_commit_provider_options(void);
+
+// Returns one coalesced final-state request. The provider ID is always copied
+// into caller-owned storage and must be revalidated by the application host.
+int tokeni_windows_tray_take_provider_toggle_request(
+    char *provider_id_utf8,
+    int provider_id_capacity,
+    int *enabled);
+
 int tokeni_windows_tray_take_refresh_request(void);
 
 void tokeni_windows_tray_set_launch_at_login_enabled(int enabled);

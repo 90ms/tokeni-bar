@@ -58,6 +58,59 @@ public final class WindowsTrayShell: @unchecked Sendable {
     }
 
     @discardableResult
+    public func updateProviderOptions(
+        _ options: [WindowsProviderSelectionOption]) -> Bool
+    {
+        self.stateLock.lock()
+        defer { self.stateLock.unlock() }
+        guard self.started,
+              options.count
+                <= WindowsProviderSelectionFormatter.maximumProviderCount,
+              tokeni_windows_tray_begin_provider_options() != 0
+        else {
+            return false
+        }
+
+        for option in options {
+            let appended = option.providerID.rawValue.withCString { providerID in
+                option.displayName.withCString { displayName in
+                    tokeni_windows_tray_append_provider_option(
+                        providerID,
+                        displayName,
+                        option.enabled ? 1 : 0) != 0
+                }
+            }
+            guard appended else { return false }
+        }
+        return tokeni_windows_tray_commit_provider_options() != 0
+    }
+
+    public func takeProviderToggleRequest()
+        -> WindowsProviderSelectionToggle?
+    {
+        var providerID = [CChar](
+            repeating: 0,
+            count: WindowsProviderSelectionFormatter
+                .maximumProviderIDByteCount + 1)
+        var enabled: Int32 = 0
+        let result = providerID.withUnsafeMutableBufferPointer { buffer in
+            tokeni_windows_tray_take_provider_toggle_request(
+                buffer.baseAddress,
+                Int32(buffer.count),
+                &enabled)
+        }
+        let rawProviderID = providerID.withUnsafeBufferPointer { buffer in
+            buffer.baseAddress.flatMap { String(validatingCString: $0) }
+        }
+        guard result != 0, let rawProviderID else {
+            return nil
+        }
+        return WindowsProviderSelectionToggle(
+            rawProviderID: rawProviderID,
+            enabled: enabled != 0)
+    }
+
+    @discardableResult
     public func setLaunchAtLoginEnabled(_ enabled: Bool) -> Bool {
         self.stateLock.lock()
         defer { self.stateLock.unlock() }
