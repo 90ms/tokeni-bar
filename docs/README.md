@@ -17,6 +17,7 @@
 
 - [Windows 포팅 계획](WINDOWS_PORTING_PLAN.ko.md) · [English](WINDOWS_PORTING_PLAN.md)
 - [Windows 멀티에이전트 개발 운영](WINDOWS_DEVELOPMENT_WORKFLOW.ko.md) · [English](WINDOWS_DEVELOPMENT_WORKFLOW.md)
+- [Windows 실기기 검증 runbook](WINDOWS_DEVICE_VALIDATION.ko.md) · [English](WINDOWS_DEVICE_VALIDATION.md)
 
 ## 아카이브
 
