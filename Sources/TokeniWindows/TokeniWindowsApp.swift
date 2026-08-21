@@ -91,13 +91,15 @@ struct TokeniWindowsApp {
         }
         let providerToggleTask = Task {
             [session, tray, providerRefreshSignal] in
+            var publishedSnapshot: WindowsProviderSelectionSnapshot?
+            var isFinalPass = false
             while true {
-                let presentation = UsageApplicationPresentation(
+                let knownPresentation = UsageApplicationPresentation(
                     sessionState: await session.state())
-                let snapshot = WindowsProviderSelectionFormatter.snapshot(
-                    for: presentation)
+                let knownSnapshot = WindowsProviderSelectionFormatter.snapshot(
+                    for: knownPresentation)
                 let persisted = await WindowsProviderToggleScheduler.drain(
-                    knownOptions: snapshot.options,
+                    knownOptions: knownSnapshot.options,
                     take: { tray.takeProviderToggleRequest() },
                     persist: { change in
                         await session.setEnabled(
@@ -111,10 +113,32 @@ struct TokeniWindowsApp {
                     await providerRefreshSignal.request()
                 }
 
-                // Cancellation wakes the short sleep, then this loop performs
-                // one final drain before returning. A click immediately before
-                // Quit is therefore persisted before the app tears down.
-                if Task.isCancelled { return }
+                // This task is the sole provider-control publisher. Capture
+                // authoritative state only after every drained request has
+                // finished persistence, so a matching native commit is a
+                // causal acknowledgement. A click racing this capture/commit
+                // remains pending natively when its final state mismatches.
+                let authoritativePresentation = UsageApplicationPresentation(
+                    sessionState: await session.state())
+                let authoritativeSnapshot = WindowsProviderSelectionFormatter
+                    .snapshot(for: authoritativePresentation)
+                if WindowsProviderToggleScheduler.shouldPublish(
+                    previous: publishedSnapshot,
+                    current: authoritativeSnapshot,
+                    persisted: persisted),
+                   tray.updateProviderOptions(authoritativeSnapshot.options)
+                {
+                    publishedSnapshot = authoritativeSnapshot
+                }
+
+                // Cancellation may arrive after this pass already drained.
+                // Run one explicit final pass after observing it; tray.run has
+                // returned by then, so no later UI click can enter the queue.
+                if Task.isCancelled {
+                    if isFinalPass { return }
+                    isFinalPass = true
+                    continue
+                }
                 try? await Task.sleep(
                     for: WindowsProviderToggleScheduler.pollingInterval)
             }
@@ -185,8 +209,6 @@ struct TokeniWindowsApp {
                     sessionState: await session.state())
                 let providerSnapshot = WindowsProviderSelectionFormatter
                     .snapshot(for: presentation)
-                tray.updateProviderOptions(
-                    providerSnapshot.options)
                 tray.updateTooltip(Self.tooltip(for: presentation))
                 var details = WindowsProviderSelectionFormatter.dashboardMessage(
                     for: presentation,
@@ -204,7 +226,6 @@ struct TokeniWindowsApp {
         providerToggleTask.cancel()
         await providerToggleTask.value
         providerRefreshTask.cancel()
-        await providerRefreshTask.value
         tooltipTask.cancel()
         await tooltipTask.value
         tray.stop()

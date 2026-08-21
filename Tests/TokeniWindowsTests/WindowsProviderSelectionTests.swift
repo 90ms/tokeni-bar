@@ -199,6 +199,28 @@ struct WindowsProviderSelectionTests {
         ])
     }
 
+    @Test
+    func publishingForcesAuthoritativeAckAfterABAPersistence() {
+        let presentation = UsageApplicationPresentation(sessionState: .init(
+            providerDescriptors: [Self.descriptor(id: .codex, name: "Codex")],
+            enabledProviderIDs: [.codex]))
+        let snapshot = WindowsProviderSelectionFormatter.snapshot(
+            for: presentation)
+
+        #expect(!WindowsProviderToggleScheduler.shouldPublish(
+            previous: snapshot,
+            current: snapshot,
+            persisted: false))
+        #expect(WindowsProviderToggleScheduler.shouldPublish(
+            previous: snapshot,
+            current: snapshot,
+            persisted: true))
+        #expect(WindowsProviderToggleScheduler.shouldPublish(
+            previous: nil,
+            current: snapshot,
+            persisted: false))
+    }
+
     private static func descriptor(
         id: ProviderID,
         name: String) -> ProviderDescriptor

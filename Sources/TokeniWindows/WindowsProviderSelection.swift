@@ -137,6 +137,17 @@ public enum WindowsProviderSelectionFormatter {
 enum WindowsProviderToggleScheduler {
     static let pollingInterval = Duration.milliseconds(150)
 
+    static func shouldPublish(
+        previous: WindowsProviderSelectionSnapshot?,
+        current: WindowsProviderSelectionSnapshot,
+        persisted: Bool) -> Bool
+    {
+        // Persistence forces an authoritative commit even when the state is
+        // equal to the last published snapshot. This is what acknowledges an
+        // ABA sequence whose final value returned to its original value.
+        persisted || previous != current
+    }
+
     static func drain(
         knownOptions: [WindowsProviderSelectionOption],
         take: @Sendable () -> WindowsProviderSelectionToggle?,
