@@ -39,7 +39,7 @@ jobs:
           run_windows=false
           while IFS= read -r path; do
             case "$path" in
-              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Scripts/package_windows.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
+              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|packaging/windows/*|Scripts/acquire_windows_sqlite.ps1|Scripts/package_windows.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
                 run_windows=true
                 break
                 ;;
@@ -69,6 +69,21 @@ jobs:
 
       - name: Set up Swift for Windows
         uses: ./.github/actions/setup-windows-swift
+
+      - name: Acquire pinned SQLite for Windows
+        shell: pwsh
+        run: |
+          $sqlitePath = (& `
+            "$env:GITHUB_WORKSPACE\Scripts\acquire_windows_sqlite.ps1" `
+            -OutputDirectory "$env:RUNNER_TEMP\TokeniSQLite" |
+              Select-Object -Last 1).Trim()
+          if (-not (Test-Path -LiteralPath $sqlitePath -PathType Leaf)) {
+            throw "Pinned SQLite executable was not acquired."
+          }
+          "TOKENI_WINDOWS_SQLITE_EXECUTABLE=$sqlitePath" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
 
       - name: Test Windows suite
         shell: pwsh
@@ -106,6 +121,7 @@ jobs:
             -Version "0.0.0" `
             -BuildDirectory "$env:SWIFT_BIN_PATH" `
             -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsPackage" `
+            -SQLiteExecutable "$env:TOKENI_WINDOWS_SQLITE_EXECUTABLE" `
             -RuntimeDirectory $runtimeDirectories
 
       - name: Validate packaged companion assets

@@ -1,0 +1,12 @@
+Tokeni Bar for Windows includes the SQLite command-line shell.
+
+SQLite version: 3.53.4
+Official archive: https://www.sqlite.org/2026/sqlite-tools-win-x64-3530400.zip
+SQLite copyright and public-domain notice: https://www.sqlite.org/copyright.html
+
+SQLite is in the public domain. The official SQLite copyright page states that
+the deliverable code may be copied, modified, published, used, compiled, sold,
+or distributed for commercial or non-commercial purposes.
+
+Only sqlite3.exe from the official Windows x64 tools archive is redistributed.
+The archive version and cryptographic digests are pinned in sqlite-tools.json.

@@ -60,7 +60,9 @@ public enum ProviderActivityEvaluator {
 }
 
 public enum ProviderRegistry {
-    public static func defaultProviders(homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser)
+    public static func defaultProviders(
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
+        sqliteQueryRunner: any ReadOnlySQLiteQuerying = SystemSQLiteQueryRunner())
         -> [any UsageProviding]
     {
         [
@@ -68,7 +70,9 @@ public enum ProviderRegistry {
             ClaudeUsageProvider(homeDirectory: homeDirectory),
             CopilotUsageProvider(homeDirectory: homeDirectory),
             ClineUsageProvider(homeDirectory: homeDirectory),
-            AntigravityUsageProvider(homeDirectory: homeDirectory),
+            AntigravityUsageProvider(
+                homeDirectory: homeDirectory,
+                sqliteQueryRunner: sqliteQueryRunner),
             GrokUsageProvider(homeDirectory: homeDirectory),
         ]
     }
