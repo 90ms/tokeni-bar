@@ -195,7 +195,9 @@ CI 실패는 원인을 확인하지 않은 채 반복 실행하지 않으며, �
 | 1 | Windows host preference 연결 | `codex/windows-provider-preference-host` / #72 | 병합 | Provider 선택 UI |
 | 1 | Dashboard 초기 DPI·focus | `codex/windows-dashboard-initial-dpi` / #73 | 병합 | 대상 기기 검증 |
 | 1 | Interactive 검증 runbook | `codex/windows-device-validation-runbook` / #74 | 병합 | 대상 기기에서 matrix 실행 |
-| 1 | Provider 선택 UI | `codex/windows-provider-selection-ui` / PR TBD | 진행 | CI 성공·병합 후 SEL-01/02/03 실행 |
+| 1 | Provider 선택 session 회귀 테스트 | `codex/windows-provider-selection-session-tests` / #75 | 병합 | Provider 선택 UI |
+| 1 | 원자적 새로고침·기록 | `codex/application-refresh-revision` / #76 | 병합 | Provider 선택 UI |
+| 1 | Provider 선택 UI | `codex/windows-provider-selection-ui` / #77 | CI | 병합 후 SEL-01/02/03 실행 |
 
 ## 결정 로그
 
@@ -218,3 +220,6 @@ CI 실패는 원인을 확인하지 않은 채 반복 실행하지 않으며, �
   Windows 기기의 interactive 검증은 완료된 것으로 간주하지 않습니다.
 - 2026-08-21: bundled SQLite PR #70을 병합하고 tray, Explorer 복구, DPI, 접근성과
   provider 검증에 사용할 privacy-safe 실기기 runbook 하나를 확정했습니다.
+- 2026-08-21: #75에서 provider 선택 회귀 테스트를, #76에서 공통 원자적
+  새로고침·기록 FIFO를 병합했습니다. Native 상태 머신 CI를 포함한 provider 선택 UI
+  PR #77을 열었으며 SEL-01, SEL-02, SEL-03은 실기기 조건으로 남겨 둡니다.
