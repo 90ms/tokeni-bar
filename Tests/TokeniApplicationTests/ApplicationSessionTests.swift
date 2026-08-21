@@ -287,7 +287,7 @@ struct ApplicationSessionTests {
     }
 
     @Test
-    func queuedNewerRefreshPreventsOlderCommitAndHistoryWrite() async {
+    func externalRuntimeRefreshRunsBeforeQueuedSessionRefresh() async {
         let directory = Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let oldDate = Self.fixedDate
@@ -309,60 +309,113 @@ struct ApplicationSessionTests {
         let historyStore = UsageHistoryStore(
             fileURL: directory.appending(path: "history.json"),
             minimumRecordInterval: 0)
+        let runtime = Self.runtime(
+            providers: providers,
+            historyStore: historyStore,
+            growthStore: TokenGrowthLedgerStore(
+                fileURL: directory.appending(path: "growth.json")))
         let session = UsageApplicationSession(
             providers: providers,
-            runtime: Self.runtime(
-                providers: providers,
-                historyStore: historyStore,
-                growthStore: TokenGrowthLedgerStore(
-                    fileURL: directory.appending(path: "growth.json"))),
-            enabledProviderIDs: [.codex])
+            runtime: runtime,
+            enabledProviderIDs: [.claude])
 
-        let oldRefresh = Task {
-            await session.refresh(now: oldDate)
+        let externalRefresh = Task {
+            await runtime.refresh(
+                enabledProviderIDs: [.codex],
+                now: oldDate)
         }
         let oldStarted = await Self.waitForFetchStart(oldProvider)
 
-        await session.setEnabledProviderIDs([.claude])
-        let newRefresh = Task {
+        let sessionRefresh = Task {
             await session.refresh(
                 forceProviderReload: true,
                 now: newDate)
         }
-        let newerQueued = await Self.waitForRefreshOperationCount(
-            2,
-            in: session)
+        let sessionQueued = await Self.waitForQueuedOperationCount(
+            1,
+            in: runtime)
 
         await oldProvider.complete()
-        await oldRefresh.value
+        let externalState = await externalRefresh.value
         let newStarted = await Self.waitForFetchStart(newProvider)
-
-        let stateAfterOldRefresh = await session.state()
-        let historyAfterOldRefresh = try? await historyStore.records()
-        #expect(stateAfterOldRefresh.applicationState.snapshots.isEmpty)
-        #expect(stateAfterOldRefresh.applicationState.lastRefresh == nil)
-        #expect(historyAfterOldRefresh?.isEmpty == true)
+        #expect(externalState.snapshots == [oldSnapshot])
+        #expect(externalState.lastRefresh == oldDate)
+        #expect(externalState.historyRecords.isEmpty)
 
         await newProvider.complete()
-        await newRefresh.value
+        await sessionRefresh.value
 
-        let state = await session.state()
+        let runtimeState = await runtime.state()
+        let sessionState = await session.state()
         let persistedHistory = try? await historyStore.records()
         #expect(oldStarted)
-        #expect(newerQueued)
+        #expect(sessionQueued)
         #expect(newStarted)
-        #expect(state.enabledProviderIDs == [.claude])
-        #expect(state.applicationState.snapshots == [newSnapshot])
-        #expect(state.applicationState.lastRefresh == newDate)
-        #expect(state.applicationState.historyRecords.map(\.providerID) == [
-            .claude,
-        ])
+        #expect(runtimeState.snapshots == [newSnapshot])
+        #expect(runtimeState.lastRefresh == newDate)
+        #expect(runtimeState.historyRecords.map(\.providerID) == [.claude])
+        #expect(sessionState.applicationState == runtimeState)
+        #expect(sessionState.enabledProviderIDs == [.claude])
         #expect(persistedHistory?.map(\.providerID) == [.claude])
-        #expect(!state.isRefreshing)
+        #expect(!sessionState.isRefreshing)
     }
 
     @Test
-    func refreshArrivingDuringHistoryWriteRunsAfterThatWrite() async {
+    func cancellingQueuedRefreshPreservesActiveRefreshResult() async {
+        let directory = Self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let activeSnapshot = Self.snapshot(
+            id: .codex,
+            tokenTotal: 12,
+            updatedAt: Self.fixedDate)
+        let queuedSnapshot = Self.snapshot(
+            id: .claude,
+            tokenTotal: 34,
+            updatedAt: Self.fixedDate.addingTimeInterval(60))
+        let activeProvider = DelayedProvider(snapshot: activeSnapshot)
+        let queuedProvider = CountingProvider(snapshot: queuedSnapshot)
+        let providers: [any UsageProviding] = [
+            activeProvider,
+            queuedProvider,
+        ]
+        let runtime = Self.runtime(
+            providers: providers,
+            historyStore: UsageHistoryStore(
+                fileURL: directory.appending(path: "history.json"),
+                minimumRecordInterval: 0),
+            growthStore: TokenGrowthLedgerStore(
+                fileURL: directory.appending(path: "growth.json")))
+
+        let activeRefresh = Task {
+            await runtime.refresh(
+                enabledProviderIDs: [.codex],
+                now: Self.fixedDate)
+        }
+        let activeStarted = await Self.waitForFetchStart(activeProvider)
+        let queuedRefresh = Task {
+            await runtime.refresh(
+                enabledProviderIDs: [.claude],
+                now: Self.fixedDate.addingTimeInterval(60))
+        }
+        let queued = await Self.waitForQueuedOperationCount(1, in: runtime)
+
+        queuedRefresh.cancel()
+        let cancelledState = await queuedRefresh.value
+        #expect(cancelledState.snapshots.isEmpty)
+        #expect(await queuedProvider.fetchCount() == 0)
+
+        await activeProvider.complete()
+        let activeState = await activeRefresh.value
+        let finalState = await runtime.state()
+        #expect(activeStarted)
+        #expect(queued)
+        #expect(activeState.snapshots == [activeSnapshot])
+        #expect(finalState == activeState)
+        #expect(await queuedProvider.fetchCount() == 0)
+    }
+
+    @Test
+    func sessionRefreshesRecordHistoryInFIFOOrder() async {
         let directory = Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let oldDate = Self.fixedDate
@@ -375,52 +428,66 @@ struct ApplicationSessionTests {
             id: .claude,
             tokenTotal: 34,
             updatedAt: newDate)
-        let history = ControlledHistoryCoordinator()
+        let oldProvider = DelayedProvider(snapshot: oldSnapshot)
+        let newProvider = DelayedProvider(snapshot: newSnapshot)
         let providers: [any UsageProviding] = [
-            TestProvider(snapshot: oldSnapshot),
-            TestProvider(snapshot: newSnapshot),
+            oldProvider,
+            newProvider,
         ]
-        let runtime = UsageApplicationRuntime(
+        let historyStore = UsageHistoryStore(
+            fileURL: directory.appending(path: "history.json"),
+            minimumRecordInterval: 0)
+        let runtime = Self.runtime(
             providers: providers,
-            historyCoordinator: history,
-            growthLedgerCoordinator: TokenGrowthLedgerCoordinator(
-                store: TokenGrowthLedgerStore(
-                    fileURL: directory.appending(path: "growth.json")),
-                engine: Self.growthEngine))
-        let session = UsageApplicationSession(
+            historyStore: historyStore,
+            growthStore: TokenGrowthLedgerStore(
+                fileURL: directory.appending(path: "growth.json")))
+        let oldSession = UsageApplicationSession(
             providers: providers,
             runtime: runtime,
             enabledProviderIDs: [.codex])
+        let newSession = UsageApplicationSession(
+            providers: providers,
+            runtime: runtime,
+            enabledProviderIDs: [.claude])
 
         let oldRefresh = Task {
-            await session.refresh(now: oldDate)
+            await oldSession.refresh(now: oldDate)
         }
-        let historyStarted = await Self.waitForHistoryStart(history)
+        let oldStarted = await Self.waitForFetchStart(oldProvider)
 
-        await session.setEnabledProviderIDs([.claude])
         let newRefresh = Task {
-            await session.refresh(now: newDate)
+            await newSession.refresh(now: newDate)
         }
-        let newerQueued = await Self.waitForRefreshOperationCount(
-            2,
-            in: session)
+        let newerQueued = await Self.waitForQueuedOperationCount(
+            1,
+            in: runtime)
 
-        await history.completeFirstRecord()
+        await oldProvider.complete()
         await oldRefresh.value
+        let newStarted = await Self.waitForFetchStart(newProvider)
+        let historyAfterOldRefresh = try? await historyStore.records()
+        #expect(historyAfterOldRefresh?.map(\.providerID) == [.codex])
+
+        await newProvider.complete()
         await newRefresh.value
 
-        let state = await session.state()
-        let persistedHistory = await history.persistedRecords()
-        #expect(historyStarted)
+        let state = await runtime.state()
+        let persistedHistory = try? await historyStore.records()
+        let oldSessionState = await oldSession.state()
+        let newSessionState = await newSession.state()
+        #expect(oldStarted)
         #expect(newerQueued)
-        #expect(state.applicationState.snapshots == [newSnapshot])
-        #expect(state.applicationState.lastRefresh == newDate)
-        #expect(state.applicationState.historyRecords.map(\.providerID) == [
+        #expect(newStarted)
+        #expect(state.snapshots == [newSnapshot])
+        #expect(state.lastRefresh == newDate)
+        #expect(state.historyRecords.map(\.providerID) == [
             .codex,
             .claude,
         ])
-        #expect(persistedHistory.map(\.providerID) == [.codex, .claude])
-        #expect(!state.isRefreshing)
+        #expect(persistedHistory?.map(\.providerID) == [.codex, .claude])
+        #expect(!oldSessionState.isRefreshing)
+        #expect(!newSessionState.isRefreshing)
     }
 
     @Test
@@ -544,22 +611,12 @@ struct ApplicationSessionTests {
         return false
     }
 
-    private static func waitForHistoryStart(
-        _ history: ControlledHistoryCoordinator) async -> Bool
-    {
-        for _ in 0..<1_000 {
-            if await history.hasRecordStarted() { return true }
-            await Task.yield()
-        }
-        return false
-    }
-
-    private static func waitForRefreshOperationCount(
+    private static func waitForQueuedOperationCount(
         _ count: Int,
-        in session: UsageApplicationSession) async -> Bool
+        in runtime: UsageApplicationRuntime) async -> Bool
     {
         for _ in 0..<1_000 {
-            if await session.activeRefreshOperationCount() == count {
+            if await runtime.queuedOperationCount() == count {
                 return true
             }
             await Task.yield()
@@ -655,64 +712,5 @@ private actor DelayedProvider: UsageProviding {
         guard let continuation = self.fetchContinuation else { return }
         self.fetchContinuation = nil
         continuation.resume(returning: self.snapshot)
-    }
-}
-
-private actor ControlledHistoryCoordinator: UsageHistoryCoordinating {
-    private var records: [UsageHistoryRecord] = []
-    private var recordCount = 0
-    private var firstRecordReleased = false
-    private var firstRecordContinuation: CheckedContinuation<Void, Never>?
-
-    func load() async throws -> [UsageHistoryRecord] {
-        self.records
-    }
-
-    func record(
-        _ snapshots: [ProviderSnapshot],
-        at timestamp: Date) async throws -> [UsageHistoryRecord]
-    {
-        self.recordCount += 1
-        if self.recordCount == 1, !self.firstRecordReleased {
-            await withCheckedContinuation { continuation in
-                self.firstRecordContinuation = continuation
-            }
-        }
-        for snapshot in snapshots where snapshot.availability == .available {
-            self.records.append(UsageHistoryRecord(
-                timestamp: timestamp,
-                providerID: snapshot.id,
-                providerName: snapshot.descriptor.displayName,
-                windows: snapshot.quotaWindows.map {
-                    UsageHistoryRecord.WindowSample(
-                        id: $0.id,
-                        label: $0.label,
-                        remainingPercent: $0.remainingPercent)
-                },
-                tokenTotal: snapshot.tokenUsage?.totalTokens,
-                costUSD: snapshot.costEstimate?.amountUSD))
-        }
-        return self.records
-    }
-
-    func clear() async throws -> [UsageHistoryRecord] {
-        self.records = []
-        return self.records
-    }
-
-    func hasRecordStarted() -> Bool {
-        self.recordCount > 0
-    }
-
-    func completeFirstRecord() {
-        guard !self.firstRecordReleased else { return }
-        self.firstRecordReleased = true
-        guard let continuation = self.firstRecordContinuation else { return }
-        self.firstRecordContinuation = nil
-        continuation.resume()
-    }
-
-    func persistedRecords() -> [UsageHistoryRecord] {
-        self.records
     }
 }
