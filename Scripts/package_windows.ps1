@@ -139,8 +139,8 @@ Compress-Archive -Path (Join-Path $stagingPath '*') `
     -CompressionLevel Optimal
 
 $archiveHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
-"$archiveHash  $([System.IO.Path]::GetFileName($archivePath))" | Set-Content `
-    -LiteralPath $checksumPath `
-    -Encoding ascii
+$checksumLine = "$archiveHash  $([System.IO.Path]::GetFileName($archivePath))`n"
+$checksumEncoding = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText($checksumPath, $checksumLine, $checksumEncoding)
 
 Write-Output $archivePath
