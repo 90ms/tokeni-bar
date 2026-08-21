@@ -28,6 +28,7 @@ typedef struct tokeni_provider_option {
     WCHAR display_name[TOKENI_PROVIDER_NAME_CAPACITY];
     int enabled;
     int pending;
+    int delivered;
 } tokeni_provider_option;
 
 static HWND tokeni_window;
@@ -736,6 +737,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
             if (committed_index >= 0) {
                 tokeni_provider_options[committed_index].enabled = enabled;
                 tokeni_provider_options[committed_index].pending = 1;
+                tokeni_provider_options[committed_index].delivered = 0;
             }
             ReleaseSRWLockExclusive(&tokeni_state_lock);
             return 0;
@@ -1268,9 +1270,22 @@ int tokeni_windows_tray_commit_provider_options(void)
         if (previous_index >= 0
             && tokeni_provider_options[previous_index].pending)
         {
-            committed[index].enabled =
-                tokeni_provider_options[previous_index].enabled;
-            committed[index].pending = 1;
+            if (committed[index].enabled
+                == tokeni_provider_options[previous_index].enabled)
+            {
+                // The application presentation now acknowledges the final
+                // state previously delivered for this stable provider ID.
+                committed[index].pending = 0;
+                committed[index].delivered = 0;
+            } else {
+                // A stale presentation must not visually revert the user's
+                // final click while persistence is still in flight.
+                committed[index].enabled =
+                    tokeni_provider_options[previous_index].enabled;
+                committed[index].pending = 1;
+                committed[index].delivered =
+                    tokeni_provider_options[previous_index].delivered;
+            }
         }
     }
 
@@ -1303,7 +1318,9 @@ int tokeni_windows_tray_take_provider_toggle_request(
 
     AcquireSRWLockExclusive(&tokeni_state_lock);
     for (int index = 0; index < tokeni_provider_option_count; index += 1) {
-        if (!tokeni_provider_options[index].pending) {
+        if (!tokeni_provider_options[index].pending
+            || tokeni_provider_options[index].delivered)
+        {
             continue;
         }
         int required_capacity = lstrlenA(
@@ -1317,7 +1334,7 @@ int tokeni_windows_tray_take_provider_toggle_request(
             tokeni_provider_options[index].provider_id,
             required_capacity);
         *enabled = tokeni_provider_options[index].enabled;
-        tokeni_provider_options[index].pending = 0;
+        tokeni_provider_options[index].delivered = 1;
         ReleaseSRWLockExclusive(&tokeni_state_lock);
         return 1;
     }

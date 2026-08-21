@@ -68,32 +68,64 @@ struct TokeniWindowsApp {
         }
         tray.setCompanionEnabled(initialCompanionVisible)
 
+        let providerRefreshSignal = WindowsProviderRefreshSignal()
+        let providerRefreshTask = Task { [session, providerRefreshSignal] in
+            var handledRevision = 0
+            while !Task.isCancelled {
+                let revision = await providerRefreshSignal.revision()
+                if revision <= handledRevision {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    continue
+                }
+
+                do {
+                    try await Task.sleep(for: .milliseconds(250))
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled else { return }
+                let targetRevision = await providerRefreshSignal.revision()
+                await session.refresh(forceProviderReload: true)
+                handledRevision = targetRevision
+            }
+        }
+        let providerToggleTask = Task {
+            [session, tray, providerRefreshSignal] in
+            while true {
+                let presentation = UsageApplicationPresentation(
+                    sessionState: await session.state())
+                let snapshot = WindowsProviderSelectionFormatter.snapshot(
+                    for: presentation)
+                let persisted = await WindowsProviderToggleScheduler.drain(
+                    knownOptions: snapshot.options,
+                    take: { tray.takeProviderToggleRequest() },
+                    persist: { change in
+                        await session.setEnabled(
+                            change.enabled,
+                            for: change.providerID)
+                    })
+                if persisted {
+                    await providerRefreshSignal.request()
+                }
+                if tray.takeRefreshRequest() {
+                    await providerRefreshSignal.request()
+                }
+
+                // Cancellation wakes the short sleep, then this loop performs
+                // one final drain before returning. A click immediately before
+                // Quit is therefore persisted before the app tears down.
+                if Task.isCancelled { return }
+                try? await Task.sleep(
+                    for: WindowsProviderToggleScheduler.pollingInterval)
+            }
+        }
+
         let tooltipTask = Task {
             [session, tray, services, companionOverlay, companionGrowth, settings,
              initialCompanionVisible] in
             var companionVisible = initialCompanionVisible
             var serviceMessage: String?
             while !Task.isCancelled {
-                var presentation = UsageApplicationPresentation(
-                    sessionState: await session.state())
-                let knownProviderOptions = WindowsProviderSelectionFormatter
-                    .options(for: presentation)
-                var needsProviderRefresh = tray.takeRefreshRequest()
-                while let toggle = tray.takeProviderToggleRequest() {
-                    guard let change = WindowsProviderSelectionFormatter.change(
-                        for: toggle,
-                        among: knownProviderOptions)
-                    else {
-                        continue
-                    }
-                    await session.setEnabled(
-                        change.enabled,
-                        for: change.providerID)
-                    needsProviderRefresh = true
-                }
-                if needsProviderRefresh {
-                    await session.refresh(forceProviderReload: true)
-                }
                 if tray.takeLaunchAtLoginRequest() {
                     do {
                         let enabled = try await services.toggleLaunchAtLogin()
@@ -149,14 +181,16 @@ struct TokeniWindowsApp {
                             WindowsCompanionOverlayState(companionState: state))
                     }
                 }
-                presentation = UsageApplicationPresentation(
+                let presentation = UsageApplicationPresentation(
                     sessionState: await session.state())
+                let providerSnapshot = WindowsProviderSelectionFormatter
+                    .snapshot(for: presentation)
                 tray.updateProviderOptions(
-                    WindowsProviderSelectionFormatter.options(
-                        for: presentation))
+                    providerSnapshot.options)
                 tray.updateTooltip(Self.tooltip(for: presentation))
-                var details = WindowsProviderSelectionFormatter.neutralMessage(
-                    for: presentation)
+                var details = WindowsProviderSelectionFormatter.dashboardMessage(
+                    for: presentation,
+                    snapshot: providerSnapshot)
                     ?? WindowsUsageDetailFormatter.text(for: presentation)
                 if let serviceMessage {
                     details += "\n\n\(serviceMessage)"
@@ -167,7 +201,12 @@ struct TokeniWindowsApp {
         }
 
         _ = tray.run()
+        providerToggleTask.cancel()
+        await providerToggleTask.value
+        providerRefreshTask.cancel()
+        await providerRefreshTask.value
         tooltipTask.cancel()
+        await tooltipTask.value
         tray.stop()
         companionOverlay.stop()
         await session.stop()

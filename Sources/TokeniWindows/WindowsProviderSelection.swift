@@ -29,31 +29,53 @@ public struct WindowsProviderSelectionChange: Equatable, Sendable {
     public let enabled: Bool
 }
 
+public struct WindowsProviderSelectionSnapshot: Equatable, Sendable {
+    public let options: [WindowsProviderSelectionOption]
+    public let unavailableMessage: String?
+}
+
 public enum WindowsProviderSelectionFormatter {
     public static let maximumProviderCount = 16
     public static let maximumProviderIDByteCount = 63
     public static let maximumDisplayNameScalarCount = 80
 
-    public static func options(
+    public static let neutralMessage =
+        "All providers are disabled. Select a provider above to view usage."
+    public static let unavailableMessage =
+        "Provider selection is unavailable in this Windows build."
+
+    public static func snapshot(
         for presentation: UsageApplicationPresentation)
-        -> [WindowsProviderSelectionOption]
+        -> WindowsProviderSelectionSnapshot
     {
+        guard presentation.providerDescriptors.count
+                <= Self.maximumProviderCount
+        else {
+            return WindowsProviderSelectionSnapshot(
+                options: [],
+                unavailableMessage: Self.unavailableMessage)
+        }
+
         var seenProviderIDs: Set<ProviderID> = []
-        return presentation.providerDescriptors.compactMap { descriptor in
+        var options: [WindowsProviderSelectionOption] = []
+        for descriptor in presentation.providerDescriptors {
             guard seenProviderIDs.insert(descriptor.id).inserted,
                   Self.isValidProviderID(descriptor.id.rawValue)
             else {
-                return nil
+                return WindowsProviderSelectionSnapshot(
+                    options: [],
+                    unavailableMessage: Self.unavailableMessage)
             }
-            return WindowsProviderSelectionOption(
+            options.append(WindowsProviderSelectionOption(
                 providerID: descriptor.id,
                 displayName: Self.sanitizedDisplayName(
                     descriptor.displayName,
                     fallback: descriptor.id.rawValue),
-                enabled: presentation.enabledProviderIDs.contains(descriptor.id))
+                enabled: presentation.enabledProviderIDs.contains(descriptor.id)))
         }
-        .prefix(Self.maximumProviderCount)
-        .map { $0 }
+        return WindowsProviderSelectionSnapshot(
+            options: options,
+            unavailableMessage: nil)
     }
 
     public static func change(
@@ -74,15 +96,19 @@ public enum WindowsProviderSelectionFormatter {
             enabled: toggle.enabled)
     }
 
-    public static func neutralMessage(
-        for presentation: UsageApplicationPresentation) -> String?
+    public static func dashboardMessage(
+        for presentation: UsageApplicationPresentation,
+        snapshot: WindowsProviderSelectionSnapshot) -> String?
     {
+        if let unavailableMessage = snapshot.unavailableMessage {
+            return unavailableMessage
+        }
         guard !presentation.providerDescriptors.isEmpty,
               presentation.enabledProviderIDs.isEmpty
         else {
             return nil
         }
-        return "All providers are disabled. Select a provider above to view usage."
+        return Self.neutralMessage
     }
 
     static func sanitizedDisplayName(
@@ -105,5 +131,41 @@ public enum WindowsProviderSelectionFormatter {
             && rawValue.unicodeScalars.allSatisfy {
                 !CharacterSet.controlCharacters.contains($0)
             }
+    }
+}
+
+enum WindowsProviderToggleScheduler {
+    static let pollingInterval = Duration.milliseconds(150)
+
+    static func drain(
+        knownOptions: [WindowsProviderSelectionOption],
+        take: @Sendable () -> WindowsProviderSelectionToggle?,
+        persist: @Sendable (WindowsProviderSelectionChange) async -> Void)
+        async -> Bool
+    {
+        var persisted = false
+        while let toggle = take() {
+            guard let change = WindowsProviderSelectionFormatter.change(
+                for: toggle,
+                among: knownOptions)
+            else {
+                continue
+            }
+            await persist(change)
+            persisted = true
+        }
+        return persisted
+    }
+}
+
+actor WindowsProviderRefreshSignal {
+    private var requestedRevision = 0
+
+    func request() {
+        self.requestedRevision += 1
+    }
+
+    func revision() -> Int {
+        self.requestedRevision
     }
 }
