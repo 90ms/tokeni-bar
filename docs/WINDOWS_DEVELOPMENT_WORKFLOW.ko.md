@@ -184,10 +184,15 @@ CI 실패는 원인을 확인하지 않은 채 반복 실행하지 않으며, �
 
 | Wave | 트랙 | 브랜치/PR | 상태 | 다음 조건 |
 |---|---|---|---|---|
-| 준비 | 기술·배포 계약 | `codex/windows-preparation-decisions` | 진행 | 결정 PR 검증·병합 |
-| 1 | Provider preference | `codex/windows-provider-preferences` | 진행 | application test·CI |
-| 1 | Windows dashboard | `codex/windows-dashboard` | 진행 | native build·Windows CI |
-| 1 | Packaged smoke CI | `codex/windows-package-smoke` | 진행 | raw·ZIP smoke CI |
+| 준비 | 기술·배포 계약 | `codex/windows-preparation-decisions` / #64 | 병합 | Wave 1 실행 |
+| 1 | Provider preference | `codex/windows-provider-preferences` / #65 | 병합 | Session 연결 |
+| 1 | Packaged smoke CI | `codex/windows-package-smoke` / #66 | 병합 | 실기기 package 검증 |
+| 1 | Windows dashboard | `codex/windows-dashboard` / #67 | 병합 | 실기기 DPI 검증 |
+| 1 | Provider preference session | `codex/windows-provider-preference-session` / #68 | 병합 | Windows host 연결 |
+| 1 | Explorer tray 복구 | `codex/windows-explorer-tray-recovery` / #69 | 병합 | 실기기 Explorer 재시작 검증 |
+| 1 | Bundled SQLite | `codex/windows-bundled-sqlite` / #70 | CI | CI 성공·병합 |
+| 1 | Windows host preference 연결 | 미정 | 대기 | #70 병합 후 최신 `main`에서 시작 |
+| 1 | Interactive 검증 | 미정 | 대기 | Explorer·DPI·대상 Windows 기기 검증 |
 
 ## 결정 로그
 
@@ -201,3 +206,10 @@ CI 실패는 원인을 확인하지 않은 채 반복 실행하지 않으며, �
   installer·app identity는 공통 API와 배포 계약이 성숙한 뒤 재평가하기로 했습니다.
 - 2026-08-21: hosted runner는 비대화면 package smoke를 담당하고, tray·overlay·DPI
   같은 interactive 동작은 실기기 검증으로 분리했습니다.
+- 2026-08-21: 준비 PR #64와 초기 Wave 1 PR #65–#67, session 연결 #68,
+  Explorer tray 복구 #69를 병합했습니다.
+- 2026-08-21: bundled SQLite PR #70이 CI를 진행하는 동안 shared
+  `TokeniWindowsApp.swift`의 후속 수정을 보류하고, #70 병합 후 최신 `main`에서
+  Windows host preference 연결을 시작하기로 했습니다.
+- 2026-08-21: hosted CI가 성공해도 Explorer 재시작 복구, per-monitor DPI와 대상
+  Windows 기기의 interactive 검증은 완료된 것으로 간주하지 않습니다.

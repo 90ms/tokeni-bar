@@ -179,10 +179,15 @@ this table and the decision log when opening or merging a PR.
 
 | Wave | Track | Branch/PR | Status | Next gate |
 |---|---|---|---|---|
-| Preparation | Technology and distribution contract | `codex/windows-preparation-decisions` | In progress | Verify and merge decision PR |
-| 1 | Provider preferences | `codex/windows-provider-preferences` | In progress | Application tests and CI |
-| 1 | Windows dashboard | `codex/windows-dashboard` | In progress | Native build and Windows CI |
-| 1 | Packaged smoke CI | `codex/windows-package-smoke` | In progress | Raw and ZIP smoke CI |
+| Preparation | Technology and distribution contract | `codex/windows-preparation-decisions` / #64 | Merged | Execute Wave 1 |
+| 1 | Provider preferences | `codex/windows-provider-preferences` / #65 | Merged | Session bridge |
+| 1 | Packaged smoke CI | `codex/windows-package-smoke` / #66 | Merged | Physical-device package validation |
+| 1 | Windows dashboard | `codex/windows-dashboard` / #67 | Merged | Physical-device DPI validation |
+| 1 | Provider preference session | `codex/windows-provider-preference-session` / #68 | Merged | Windows host wiring |
+| 1 | Explorer tray recovery | `codex/windows-explorer-tray-recovery` / #69 | Merged | Interactive Explorer restart validation |
+| 1 | Bundled SQLite | `codex/windows-bundled-sqlite` / #70 | CI | Pass CI and merge |
+| 1 | Windows host preference wiring | TBD | Pending | Start from updated `main` after #70 merges |
+| 1 | Interactive validation | TBD | Pending | Validate Explorer, DPI, and target Windows devices |
 
 ## Decision log
 
@@ -196,3 +201,10 @@ this table and the decision log when opening or merging a PR.
   production installer/app identity after the shared API and deployment contract mature.
 - 2026-08-21: Hosted runners own non-interactive package smoke; physical-device testing
   owns interactive tray, overlay, and DPI behavior.
+- 2026-08-21: Merged preparation PR #64, initial Wave 1 PRs #65–#67, the session
+  bridge in #68, and Explorer tray recovery in #69.
+- 2026-08-21: While bundled SQLite PR #70 runs CI, deferred follow-up changes to the
+  shared `TokeniWindowsApp.swift`. Start Windows host preference wiring from updated
+  `main` only after #70 merges.
+- 2026-08-21: Successful hosted CI does not complete interactive validation of Explorer
+  restart recovery, per-monitor DPI, or target Windows devices.
