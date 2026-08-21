@@ -39,7 +39,7 @@ jobs:
           run_windows=false
           while IFS= read -r path; do
             case "$path" in
-              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Scripts/package_windows.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
+              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Scripts/package_windows.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
                 run_windows=true
                 break
                 ;;
@@ -150,6 +150,20 @@ jobs:
           if (-not (Test-Path -LiteralPath (Join-Path $validationDirectory "TokeniWindows.exe") -PathType Leaf)) {
             throw "Validated package does not contain TokeniWindows.exe."
           }
+
+      - name: Smoke-test unpacked Windows package
+        shell: pwsh
+        run: |
+          $archive = Get-ChildItem `
+            -LiteralPath "$env:RUNNER_TEMP\TokeniWindowsPackage" `
+            -Filter "*.zip" `
+            -File |
+            Select-Object -First 1
+          if ($null -eq $archive) {
+            throw "Windows package archive was not created."
+          }
+          & "$env:GITHUB_WORKSPACE\Scripts\smoke_windows_package.ps1" `
+            -ArchivePath $archive.FullName
 
       - name: Upload Windows package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

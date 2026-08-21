@@ -3,10 +3,18 @@ import Foundation
 // declaration is accepted by SwiftPM on Windows as well as macOS.
 import TokeniApplication
 import TokeniCore
+import WinSDK
 
 @main
 struct TokeniWindowsApp {
     static func main() async {
+        if CommandLine.arguments.dropFirst().contains("--smoke-test") {
+            let executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+            let exitCode = WindowsRuntimeSmoke.run(executableURL: executableURL)
+            ExitProcess(UInt32(bitPattern: exitCode))
+            return
+        }
+
         let providers = ProviderRegistry.defaultProviders()
         let session = UsageApplicationSession(providers: providers)
 
