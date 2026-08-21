@@ -70,7 +70,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | CI passed; hardware validation pending |
 | PR25 | `windows/25-release-artifact` | Versioned Windows ZIP, checksum, attestation, and unified GitHub Release | Tag validation attempted; publication recovery in PR27 |
 | PR26 | `release/0.26.1-readiness` | Claude auth compatibility plus Windows CLI, companion, and CI release-readiness fixes | CI passed; tagged release stopped before publishing |
-| PR27 | `release/0.26.2-windows-storage` | Durable Windows persistence and failed-tag release recovery | In progress |
+| PR27 | `release/0.26.2-windows-storage` | Durable Windows persistence and failed-tag release recovery | CI passed; v0.26.2 release pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -304,3 +304,6 @@ Each PR must satisfy all applicable items:
   companion economy journal. The tag remains immutable. PR27 replaces all remaining
   atomic data writes with a cross-platform durable writer and carries the unpublished
   v0.26.1 notes forward to v0.26.2.
+- 2026-08-21: PR27's macOS regression and app-bundle validation passed alongside the full
+  Windows suite, durable persistence recovery tests, release executable build, portable
+  ZIP, and companion asset validation. Publishing remains gated on the v0.26.2 main CI.
