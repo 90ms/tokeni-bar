@@ -123,6 +123,11 @@ jobs:
           if (-not (Test-Path -LiteralPath $checksumPath -PathType Leaf)) {
             throw "Windows package checksum was not created."
           }
+          $checksumBytes = [System.IO.File]::ReadAllBytes($checksumPath)
+          $hasCarriageReturn = $checksumBytes -contains 13
+          if ($checksumBytes.Count -eq 0 -or $checksumBytes[-1] -ne 10 -or $hasCarriageReturn) {
+            throw "Windows package checksum must use a single LF line ending."
+          }
           $expectedHash = ((Get-Content -LiteralPath $checksumPath -Raw).Trim() -split '\s+')[0]
           $actualHash = (Get-FileHash -LiteralPath $archive.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($expectedHash -ne $actualHash) {

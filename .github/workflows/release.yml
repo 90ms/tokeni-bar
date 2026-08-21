@@ -118,6 +118,11 @@ jobs:
           if (-not (Test-Path -LiteralPath "$archive.sha256" -PathType Leaf)) {
             throw "Windows release checksum was not created: $archive.sha256"
           }
+          $checksumBytes = [System.IO.File]::ReadAllBytes("$archive.sha256")
+          $hasCarriageReturn = $checksumBytes -contains 13
+          if ($checksumBytes.Count -eq 0 -or $checksumBytes[-1] -ne 10 -or $hasCarriageReturn) {
+            throw "Windows release checksum must use a single LF line ending."
+          }
           $expectedHash = ((Get-Content -LiteralPath "$archive.sha256" -Raw).Trim() -split '\s+')[0]
           $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($expectedHash -ne $actualHash) {
