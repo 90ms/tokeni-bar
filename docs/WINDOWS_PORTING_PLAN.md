@@ -4,6 +4,11 @@ This is the living implementation plan for Windows support. Each step is develop
 top of the previous branch as a stacked pull request. The status, decisions, and
 verification results are updated before each PR is submitted.
 
+After the PR1-PR27 porting history, continue Windows feature-parity work using the waves,
+worktrees, PR gates, and status board in the
+[Windows multi-agent development workflow](WINDOWS_DEVELOPMENT_WORKFLOW.md). Preserve the
+existing stacked PR entries in this document as completed implementation history.
+
 ## Goals
 
 - Add a Windows tray client while preserving the existing macOS app.
