@@ -33,6 +33,7 @@ public actor UsageApplicationSession {
     private let runtime: UsageApplicationRuntime
     private let providerDescriptors: [ProviderDescriptor]
     private let knownProviderIDs: Set<ProviderID>
+    private let providerPreferences: ProviderPreferenceCoordinator?
     private var enabledProviderIDs: Set<ProviderID>
     private var applicationState = UsageApplicationState()
     private var isRefreshing = false
@@ -42,15 +43,21 @@ public actor UsageApplicationSession {
     public init(
         providers: [any UsageProviding],
         runtime: UsageApplicationRuntime? = nil,
-        enabledProviderIDs: Set<ProviderID>? = nil)
+        enabledProviderIDs: Set<ProviderID>? = nil,
+        providerPreferences: ProviderPreferenceCoordinator? = nil)
     {
         let descriptors = providers.map(\.descriptor)
         let knownProviderIDs = Set(descriptors.map(\.id))
+        let persistedProviderIDs = providerPreferences?
+            .load(knownProviderIDs: knownProviderIDs)
+            .enabledProviderIDs
 
         self.runtime = runtime ?? UsageApplicationRuntime(providers: providers)
         self.providerDescriptors = descriptors
         self.knownProviderIDs = knownProviderIDs
-        self.enabledProviderIDs = (enabledProviderIDs ?? knownProviderIDs)
+        self.providerPreferences = providerPreferences
+        self.enabledProviderIDs = (
+            enabledProviderIDs ?? persistedProviderIDs ?? knownProviderIDs)
             .intersection(knownProviderIDs)
     }
 
@@ -97,16 +104,23 @@ public actor UsageApplicationSession {
     }
 
     public func setEnabledProviderIDs(_ providerIDs: Set<ProviderID>) {
-        self.enabledProviderIDs = providerIDs.intersection(self.knownProviderIDs)
+        let enabledProviderIDs = providerIDs.intersection(self.knownProviderIDs)
+        self.enabledProviderIDs = self.providerPreferences?
+            .setEnabledProviderIDs(
+                enabledProviderIDs,
+                knownProviderIDs: self.knownProviderIDs)
+            .enabledProviderIDs ?? enabledProviderIDs
     }
 
     public func setEnabled(_ enabled: Bool, for providerID: ProviderID) {
         guard self.knownProviderIDs.contains(providerID) else { return }
+        var enabledProviderIDs = self.enabledProviderIDs
         if enabled {
-            self.enabledProviderIDs.insert(providerID)
+            enabledProviderIDs.insert(providerID)
         } else {
-            self.enabledProviderIDs.remove(providerID)
+            enabledProviderIDs.remove(providerID)
         }
+        self.setEnabledProviderIDs(enabledProviderIDs)
     }
 
     public func clearHistory() async throws {
