@@ -58,10 +58,12 @@ git push origin v<version>
 
 `Release` 워크플로가 다음 작업을 모두 성공했는지 확인합니다.
 
+- Windows 릴리스 전용 테스트 실행
+- 게시 전에 Windows portable ZIP 빌드 및 검증
 - 태그 버전 확인 및 구조화된 한영 릴리스 노트 렌더링
 - macOS 앱 빌드와 ad-hoc 서명
-- `TokeniBar-<version>.zip`과 SHA-256 생성
-- GitHub 빌드 증명 생성
+- macOS와 Windows ZIP 및 각 SHA-256 생성
+- 두 archive의 GitHub 빌드 증명 생성
 - 검증된 `--notes-file`로 정식 GitHub Release 게시
 - Homebrew Formula/Cask 갱신 PR 생성
 
@@ -70,6 +72,8 @@ git push origin v<version>
 ```bash
 shasum -a 256 -c TokeniBar-<version>.zip.sha256
 gh attestation verify TokeniBar-<version>.zip --repo 90ms/tokeni-bar
+shasum -a 256 -c Tokeni-Bar-Windows-<version>.zip.sha256
+gh attestation verify Tokeni-Bar-Windows-<version>.zip --repo 90ms/tokeni-bar
 ```
 
 ## 5. Homebrew 배포 완료

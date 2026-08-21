@@ -17,8 +17,144 @@ permissions:
   attestations: write
 
 jobs:
+  windows-package:
+    name: Build and validate Windows release
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v(\d+\.\d+\.\d+)$') {
+            throw "Tag must use v<major>.<minor>.<patch>, got: $env:RELEASE_TAG"
+          }
+          $version = $env:RELEASE_TAG.Substring(1)
+          git rev-parse --verify "refs/tags/$env:RELEASE_TAG^{commit}"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Release tag was not found: $env:RELEASE_TAG"
+          }
+          "tag=$env:RELEASE_TAG" | Out-File `
+            -FilePath $env:GITHUB_OUTPUT `
+            -Encoding utf8 `
+            -Append
+          "value=$version" | Out-File `
+            -FilePath $env:GITHUB_OUTPUT `
+            -Encoding utf8 `
+            -Append
+
+      - name: Restore SwiftPM build cache
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: windows-release-swiftpm-${{ hashFiles('Package.swift') }}
+          restore-keys: |
+            windows-release-swiftpm-
+            windows-swiftpm-
+
+      - name: Set up Swift for Windows
+        uses: ./.github/actions/setup-windows-swift
+
+      - name: Test Windows release surface
+        shell: pwsh
+        run: |
+          swift test --parallel --filter WindowsAppUpdateInstallerTests
+          swift test --parallel --filter WindowsUsageDetailFormatterTests
+          swift test --parallel --filter WindowsCompanionOverlayTests
+          swift test --parallel --filter WindowsCompanionAssetCatalogTests
+
+      - name: Build Windows executable
+        shell: pwsh
+        run: |
+          swift build --configuration release --product TokeniWindows
+          $buildPath = (swift build `
+            --configuration release `
+            --product TokeniWindows `
+            --show-bin-path).Trim()
+          if (-not (Test-Path (Join-Path $buildPath "TokeniWindows.exe"))) {
+            throw "TokeniWindows.exe was not produced in $buildPath."
+          }
+          "SWIFT_BIN_PATH=$buildPath" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+      - name: Create portable Windows package
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          $targetInfo = (swiftc -print-target-info | ConvertFrom-Json)
+          $runtimeDirectories = @(
+            $targetInfo.paths.runtimeLibraryPaths |
+              Where-Object { Test-Path -LiteralPath $_ -PathType Container }
+          )
+          if ($runtimeDirectories.Count -eq 0) {
+            throw "Swift runtime library directories could not be located."
+          }
+          & "$env:GITHUB_WORKSPACE\Scripts\package_windows.ps1" `
+            -Version $env:VERSION `
+            -BuildDirectory "$env:SWIFT_BIN_PATH" `
+            -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsRelease" `
+            -RuntimeDirectory $runtimeDirectories
+
+      - name: Validate Windows release assets
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          $archive = Join-Path `
+            "$env:RUNNER_TEMP\TokeniWindowsRelease" `
+            "Tokeni-Bar-Windows-$env:VERSION.zip"
+          if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) {
+            throw "Windows release archive was not created: $archive"
+          }
+          if (-not (Test-Path -LiteralPath "$archive.sha256" -PathType Leaf)) {
+            throw "Windows release checksum was not created: $archive.sha256"
+          }
+          $expectedHash = ((Get-Content -LiteralPath "$archive.sha256" -Raw).Trim() -split '\s+')[0]
+          $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expectedHash -ne $actualHash) {
+            throw "Windows release checksum does not match the archive."
+          }
+          $validationDirectory = Join-Path `
+            $env:RUNNER_TEMP `
+            "TokeniWindowsReleaseValidation"
+          Expand-Archive `
+            -LiteralPath $archive `
+            -DestinationPath $validationDirectory
+          & "$env:GITHUB_WORKSPACE\Scripts\validate_windows_companion_assets.ps1" `
+            -AssetRoot (Join-Path $validationDirectory "Resources\CompanionAssets")
+          if (-not (Test-Path -LiteralPath (Join-Path $validationDirectory "TokeniWindows.exe") -PathType Leaf)) {
+            throw "Validated package does not contain TokeniWindows.exe."
+          }
+
+      - name: Generate Windows artifact attestation
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip
+
+      - name: Upload validated Windows release assets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tokeni-bar-windows-release-${{ steps.version.outputs.value }}
+          path: |
+            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip
+            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip.sha256
+          if-no-files-found: error
+
   release:
-    name: Build and publish macOS release
+    name: Build and publish cross-platform release
+    needs: windows-package
     runs-on: macos-26
     timeout-minutes: 30
 
@@ -82,6 +218,12 @@ jobs:
         with:
           subject-path: dist/TokeniBar-${{ steps.version.outputs.value }}.zip
 
+      - name: Download validated Windows release assets
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: tokeni-bar-windows-release-${{ steps.version.outputs.value }}
+          path: dist/windows
+
       - name: Download Formula source archive
         shell: bash
         env:
@@ -104,11 +246,22 @@ jobs:
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
           VERSION: ${{ steps.version.outputs.value }}
         run: |
-          gh release create "$RELEASE_TAG" \
-            "dist/TokeniBar-$VERSION.zip" \
-            "dist/TokeniBar-$VERSION.zip.sha256" \
-            --notes-file "dist/release-notes.md" \
-            --verify-tag
+          set -euo pipefail
+          assets=(
+            "dist/TokeniBar-$VERSION.zip"
+            "dist/TokeniBar-$VERSION.zip.sha256"
+            "dist/windows/Tokeni-Bar-Windows-$VERSION.zip"
+            "dist/windows/Tokeni-Bar-Windows-$VERSION.zip.sha256"
+          )
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+            gh release edit "$RELEASE_TAG" \
+              --notes-file "dist/release-notes.md"
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --notes-file "dist/release-notes.md" \
+              --verify-tag
+          fi
 
       - name: Open Homebrew distribution update pull request
         shell: bash

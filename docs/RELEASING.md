@@ -60,10 +60,12 @@ Never move a published tag to another commit. If publishing fails, rerun the
 
 Confirm that every `Release` workflow step succeeds:
 
+- run the focused Windows release tests;
+- build and validate the portable Windows ZIP before publishing anything;
 - resolve the tag version and render structured bilingual notes;
 - build and ad-hoc sign the macOS application;
-- create `TokeniBar-<version>.zip` and its SHA-256 file;
-- generate the GitHub build attestation;
+- create macOS and Windows ZIPs and their SHA-256 files;
+- generate GitHub build attestations for both archives;
 - publish the release with the validated `--notes-file`;
 - open the Homebrew Formula/Cask update pull request.
 
@@ -72,6 +74,8 @@ Verify the published artifacts directly:
 ```bash
 shasum -a 256 -c TokeniBar-<version>.zip.sha256
 gh attestation verify TokeniBar-<version>.zip --repo 90ms/tokeni-bar
+shasum -a 256 -c Tokeni-Bar-Windows-<version>.zip.sha256
+gh attestation verify Tokeni-Bar-Windows-<version>.zip --repo 90ms/tokeni-bar
 ```
 
 ## 5. Complete Homebrew distribution

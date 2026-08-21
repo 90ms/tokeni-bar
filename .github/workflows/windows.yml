@@ -39,7 +39,7 @@ jobs:
           run_windows=false
           while IFS= read -r path; do
             case "$path" in
-              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Scripts/package_windows.ps1|Scripts/validate_windows_companion_assets.ps1|.github/workflows/windows.yml)
+              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Scripts/package_windows.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
                 run_windows=true
                 break
                 ;;
@@ -67,158 +67,8 @@ jobs:
           restore-keys: |
             windows-swiftpm-
 
-      - name: Install Swift toolchain
-        shell: pwsh
-        run: |
-          $swiftCommand = Get-Command swift -ErrorAction SilentlyContinue
-          if ($null -eq $swiftCommand) {
-            $winget = Get-Command winget -ErrorAction SilentlyContinue
-            if ($null -eq $winget) {
-              throw "WinGet is required to install the Swift toolchain."
-            }
-
-            # WinGet can return a non-zero code after successfully installing a
-            # dependency, and PowerShell 7 may treat that native exit as an
-            # action error before the script can inspect it. The executable
-            # discovered below is the authoritative result for this step.
-            $PSNativeCommandUseErrorActionPreference = $false
-            & $winget.Source install `
-              --id Swift.Toolchain `
-              --exact `
-              --source winget `
-              --accept-source-agreements `
-              --accept-package-agreements `
-              --disable-interactivity
-            $wingetExitCode = $LASTEXITCODE
-
-            $swiftExecutable = Get-ChildItem `
-              -Path "$env:LOCALAPPDATA\Programs\Swift", "$env:ProgramFiles\Swift" `
-              -Filter swift.exe `
-              -File `
-              -Recurse `
-              -ErrorAction SilentlyContinue |
-              Select-Object -First 1
-            if ($null -eq $swiftExecutable) {
-              throw "Swift was installed but swift.exe could not be located (WinGet exit $wingetExitCode)."
-            }
-
-            $swiftRuntimeDll = Get-ChildItem `
-              -Path "$env:LOCALAPPDATA\Programs\Swift", "$env:ProgramFiles\Swift" `
-              -Filter swiftCore.dll `
-              -File `
-              -Recurse `
-              -ErrorAction SilentlyContinue |
-              Select-Object -First 1
-            if ($null -eq $swiftRuntimeDll) {
-              throw "Swift was installed but its runtime DLLs could not be located (WinGet exit $wingetExitCode)."
-            }
-
-            if ($wingetExitCode -ne 0) {
-              Write-Warning "WinGet returned exit $wingetExitCode after installing Swift.Toolchain; continuing because swift.exe was found."
-            }
-
-            $swiftDirectory = $swiftExecutable.Directory.FullName
-            $swiftRuntimeDirectory = $swiftRuntimeDll.Directory.FullName
-            $pathEntries = @($swiftDirectory, $swiftRuntimeDirectory)
-            $env:PATH = (($pathEntries + $env:PATH.Split(';')) |
-              Select-Object -Unique) -join ';'
-            $pathEntries | Out-File `
-              -FilePath $env:GITHUB_PATH `
-              -Encoding utf8 `
-              -Append
-          }
-
-          swift --version
-          if ($LASTEXITCODE -ne 0) {
-            throw "Swift toolchain was found but could not execute (exit $LASTEXITCODE)."
-          }
-
-      - name: Configure Windows SDK and MSVC
-        shell: pwsh
-        run: |
-          $swiftSDK = Get-ChildItem `
-            -Path "$env:LOCALAPPDATA\Programs\Swift", "$env:ProgramFiles\Swift" `
-            -Filter Windows.sdk `
-            -Directory `
-            -Recurse `
-            -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-          if ($null -eq $swiftSDK) {
-            throw "Swift Windows SDK could not be located."
-          }
-
-          $env:SDKROOT = $swiftSDK.FullName
-          "SDKROOT=$env:SDKROOT" | Out-File `
-            -FilePath $env:GITHUB_ENV `
-            -Encoding utf8 `
-            -Append
-
-          $vsWhere = Join-Path `
-            ${env:ProgramFiles(x86)} `
-            "Microsoft Visual Studio\Installer\vswhere.exe"
-          if (-not (Test-Path -LiteralPath $vsWhere -PathType Leaf)) {
-            throw "Visual Studio locator was not found."
-          }
-
-          $vsInstallPath = (& $vsWhere `
-            -latest `
-            -products * `
-            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-            -property installationPath |
-            Select-Object -First 1).Trim()
-          if ([string]::IsNullOrWhiteSpace($vsInstallPath)) {
-            throw "Visual Studio C++ build tools were not found."
-          }
-
-          $vsDevCmd = Join-Path $vsInstallPath "Common7\Tools\VsDevCmd.bat"
-          if (-not (Test-Path -LiteralPath $vsDevCmd -PathType Leaf)) {
-            throw "Visual Studio developer command script was not found."
-          }
-
-          $vsCommand = '"{0}" -arch=x64 -host_arch=x64 && set' -f $vsDevCmd
-          $vsEnvironment = & cmd.exe /d /s /c $vsCommand
-          $vsExitCode = $LASTEXITCODE
-          if ($vsExitCode -ne 0) {
-            throw "Visual Studio developer environment failed to initialize (exit $vsExitCode)."
-          }
-
-          $persistedEnvironmentNames = @(
-            "Path",
-            "INCLUDE",
-            "LIB",
-            "LIBPATH",
-            "VCToolsInstallDir",
-            "VCINSTALLDIR",
-            "WindowsSdkDir",
-            "UniversalCRTSdkDir",
-            "UCRTVersion",
-            "VCToolsVersion",
-            "VSCMD_ARG_TGT_ARCH",
-            "VSCMD_ARG_HOST_ARCH",
-            "VSCMD_VER",
-            "VSINSTALLDIR",
-            "VisualStudioVersion"
-          )
-          foreach ($line in $vsEnvironment) {
-            $separator = $line.IndexOf('=')
-            if ($separator -le 0) {
-              continue
-            }
-            $name = $line.Substring(0, $separator)
-            if ($persistedEnvironmentNames -notcontains $name) {
-              continue
-            }
-            $value = $line.Substring($separator + 1)
-            [Environment]::SetEnvironmentVariable($name, $value, "Process")
-            "$name=$value" | Out-File `
-              -FilePath $env:GITHUB_ENV `
-              -Encoding utf8 `
-              -Append
-          }
-
-          if ($null -eq (Get-Command link.exe -ErrorAction SilentlyContinue)) {
-            throw "Visual Studio link.exe is not available after environment setup."
-          }
+      - name: Set up Swift for Windows
+        uses: ./.github/actions/setup-windows-swift
 
       - name: Test Windows package surface
         if: github.event_name == 'workflow_dispatch'
@@ -273,6 +123,15 @@ jobs:
           if ($null -eq $archive) {
             throw "Windows package archive was not created."
           }
+          $checksumPath = "$($archive.FullName).sha256"
+          if (-not (Test-Path -LiteralPath $checksumPath -PathType Leaf)) {
+            throw "Windows package checksum was not created."
+          }
+          $expectedHash = ((Get-Content -LiteralPath $checksumPath -Raw).Trim() -split '\s+')[0]
+          $actualHash = (Get-FileHash -LiteralPath $archive.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expectedHash -ne $actualHash) {
+            throw "Windows package checksum does not match the archive."
+          }
           $validationDirectory = Join-Path `
             $env:RUNNER_TEMP `
             "TokeniWindowsPackageValidation"
@@ -292,8 +151,8 @@ jobs:
           }
 
       - name: Upload Windows package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: tokeni-bar-windows-${{ github.sha }}
-          path: ${{ runner.temp }}\TokeniWindowsPackage\*.zip
+          path: ${{ runner.temp }}\TokeniWindowsPackage\*.zip*
           if-no-files-found: error

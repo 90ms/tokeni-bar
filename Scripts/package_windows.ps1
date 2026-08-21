@@ -71,12 +71,16 @@ New-Item -ItemType Directory -Path $outputPath -Force | Out-Null
 $packageName = "Tokeni-Bar-Windows-$Version"
 $stagingPath = Join-Path $outputPath $packageName
 $archivePath = Join-Path $outputPath "$packageName.zip"
+$checksumPath = "$archivePath.sha256"
 
 if (Test-Path -LiteralPath $stagingPath) {
     Remove-Item -LiteralPath $stagingPath -Recurse -Force
 }
 if (Test-Path -LiteralPath $archivePath) {
     Remove-Item -LiteralPath $archivePath -Force
+}
+if (Test-Path -LiteralPath $checksumPath) {
+    Remove-Item -LiteralPath $checksumPath -Force
 }
 New-Item -ItemType Directory -Path $stagingPath -Force | Out-Null
 
@@ -133,5 +137,10 @@ This artifact is unsigned and does not register an installer or automatic update
 Compress-Archive -Path (Join-Path $stagingPath '*') `
     -DestinationPath $archivePath `
     -CompressionLevel Optimal
+
+$archiveHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+"$archiveHash  $([System.IO.Path]::GetFileName($archivePath))" | Set-Content `
+    -LiteralPath $checksumPath `
+    -Encoding ascii
 
 Write-Output $archivePath

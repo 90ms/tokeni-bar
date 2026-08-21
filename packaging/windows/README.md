@@ -2,16 +2,20 @@
 
 ## Current artifact
 
-The Windows CI produces `Tokeni-Bar-Windows-<version>.zip`. Extract the archive and
-run `TokeniWindows.exe`; the package is portable and does not need a machine-wide
+The release workflow produces `Tokeni-Bar-Windows-<version>.zip` and its SHA-256
+file after the Windows tests, release build, and package validation pass. It publishes
+both files in the same GitHub Release as the macOS assets. Extract the archive and run
+`TokeniWindows.exe`; the package is portable and does not need a machine-wide
 installation. The archive includes the executable, native DLLs, Swift runtime DLLs,
 SwiftPM resource bundles emitted by the release build, and the complete companion
 sprite catalog under `Resources\CompanionAssets`.
 
-현재 Windows CI는 `Tokeni-Bar-Windows-<version>.zip`을 생성합니다. 압축을 푼 뒤
-`TokeniWindows.exe`를 실행하면 되며, 시스템 전체 설치가 필요 없는 portable
-패키지입니다. release 빌드에서 나온 실행 파일·native DLL·SwiftPM resource bundle과
-`Resources\CompanionAssets`의 companion sprite catalog를 함께 포함합니다.
+릴리스 workflow는 Windows 테스트·release 빌드·패키지 검증을 통과한 뒤
+`Tokeni-Bar-Windows-<version>.zip`과 SHA-256 파일을 만들고 macOS 파일과 같은
+GitHub Release에 게시합니다. 압축을 푼 뒤 `TokeniWindows.exe`를 실행하면 되며,
+시스템 전체 설치가 필요 없는 portable 패키지입니다. release 빌드에서 나온 실행
+파일·native DLL·SwiftPM resource bundle과 `Resources\CompanionAssets`의 companion
+sprite catalog를 함께 포함합니다.
 
 ## Scope and limitations
 

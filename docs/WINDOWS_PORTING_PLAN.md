@@ -68,6 +68,7 @@ verified, and merged in this order; the plan is updated before each submission.
 | PR22 | `windows/22-windows-services-ui` | Settings, notifications, and launch-at-login tray actions | CI passed |
 | PR23 | `windows/23-companion-integration` | Companion state, overlay lifecycle, and native fallback renderer | CI passed |
 | PR24 | `windows/24-companion-assets-validation` | Packaged sprite parity, final macOS regression, and Windows hardware validation | CI passed; hardware validation pending |
+| PR25 | `windows/25-release-artifact` | Versioned Windows ZIP, checksum, attestation, and unified GitHub Release | CI passed; tag validation pending |
 
 PR8's Cline and Grok/Gemini workstreams have disjoint provider and test write sets, so
 they were reviewed and prepared in parallel. Shared documentation and the release-note
@@ -280,3 +281,9 @@ Each PR must satisfy all applicable items:
   companion manifest/PNG validation passed. The macOS build was skipped because the
   changes are Windows-only; real Windows display, tray, and overlay interaction checks
   remain for a Windows device or dedicated hardware runner.
+- 2026-08-21: Started PR25 after publishing the macOS v0.26.0 release. The unified
+  release workflow builds and validates the Windows package before publishing, then
+  attaches its versioned ZIP, SHA-256 file, and build attestation alongside macOS.
+- 2026-08-21: PR25's macOS regression, Windows release build, portable ZIP validation,
+  and generated SHA-256 verification passed CI. Publishing the unified asset set remains
+  gated on the next semantic-version tag; real-device validation and signing remain open.
