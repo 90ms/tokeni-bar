@@ -61,6 +61,24 @@ worktree를 제거하기 전에 변경이 없고 PR 브랜치가 원격에 push�
 재귀 삭제로 제거하지 않고 `git worktree remove`를 사용합니다. 병합된 브랜치는
 worktree 제거 후 삭제합니다.
 
+## 준비 단계 결정
+
+- Wave 1 UI는 기존 Swift application/core와 Win32 host를 유지합니다. 첫 화면은
+  표준 Win32 control로 만든 modeless dashboard이며, 안정적인 host-neutral API가
+  준비된 뒤 WinUI 3 전환 여부를 다시 평가합니다.
+- 개발·CI artifact는 기존 portable ZIP을 유지합니다. 정식 installer, app identity,
+  서명과 자동 update 계약은 Wave 4에서 함께 확정하며, 그전에는 자동 설치를
+  활성화하지 않습니다.
+- GitHub-hosted Windows runner는 비대화면 EXE·package smoke까지만 release gate로
+  사용합니다. tray, notification, overlay, DPI와 virtual desktop은 interactive
+  self-hosted runner 또는 실기기 검증 항목으로 유지합니다.
+- SQLite provider는 사용자 PATH에 조용히 의존하지 않습니다. bundled executable과
+  linked library 중 배포 전략을 별도 PR에서 결정하고, 준비 전에는 확인 가능한
+  `unavailable` 상태를 유지합니다.
+- Wave 1은 provider preference 기반, modeless dashboard, packaged smoke의 세 독립
+  PR로 시작합니다. 공통 진입점이나 manifest 변경은 총괄이 후속 통합 PR에서만
+  수행합니다.
+
 ## 작업 Wave
 
 ### 준비 단계
@@ -166,10 +184,10 @@ CI 실패는 원인을 확인하지 않은 채 반복 실행하지 않으며, �
 
 | Wave | 트랙 | 브랜치/PR | 상태 | 다음 조건 |
 |---|---|---|---|---|
-| 준비 | 기술·배포 계약 | 미정 | 대기 | UI host와 배포 모델 결정 |
-| 1 | Application service | 미정 | 대기 | 준비 단계 병합 |
-| 1 | Windows dashboard | 미정 | 대기 | presentation 계약 확정 |
-| 1 | Provider·smoke CI | 미정 | 대기 | toolchain과 test matrix 확정 |
+| 준비 | 기술·배포 계약 | `codex/windows-preparation-decisions` | 진행 | 결정 PR 검증·병합 |
+| 1 | Provider preference | `codex/windows-provider-preferences` | 진행 | application test·CI |
+| 1 | Windows dashboard | `codex/windows-dashboard` | 진행 | native build·Windows CI |
+| 1 | Packaged smoke CI | `codex/windows-package-smoke` | 진행 | raw·ZIP smoke CI |
 
 ## 결정 로그
 
@@ -179,3 +197,7 @@ CI 실패는 원인을 확인하지 않은 채 반복 실행하지 않으며, �
   공유 파일 소유권으로 충돌을 예방하기로 했습니다.
 - 2026-08-21: 모든 PR은 draft로 시작해 CI·review가 완료된 뒤 ready와 merge로
   진행하며, 병합 후 최신 `main`에서 다음 wave를 시작하기로 했습니다.
+- 2026-08-21: Wave 1은 Swift+Win32 host와 portable ZIP을 유지하고, WinUI 3와 정식
+  installer·app identity는 공통 API와 배포 계약이 성숙한 뒤 재평가하기로 했습니다.
+- 2026-08-21: hosted runner는 비대화면 package smoke를 담당하고, tray·overlay·DPI
+  같은 interactive 동작은 실기기 검증으로 분리했습니다.
