@@ -67,7 +67,7 @@ TokeniWindows
 | PR22 | `windows/22-windows-services-ui` | 설정·알림·자동 시작 tray 액션 | CI 통과 |
 | PR23 | `windows/23-companion-integration` | companion 상태·overlay lifecycle·native fallback renderer | CI 통과 |
 | PR24 | `windows/24-companion-assets-validation` | packaged sprite parity, 최종 macOS 회귀와 Windows 실기기 검증 | CI 통과·실기기 검증 대기 |
-| PR25 | `windows/25-release-artifact` | 버전 Windows ZIP, 체크섬, 증명과 통합 GitHub Release | 진행 중 |
+| PR25 | `windows/25-release-artifact` | 버전 Windows ZIP, 체크섬, 증명과 통합 GitHub Release | CI 통과·태그 검증 대기 |
 
 PR8의 Cline과 Grok/Gemini 작업은 서로 다른 provider 디렉터리와 테스트를 담당하므로
 에이전트가 병렬로 검토·준비했고, 공통 문서와 릴리스 노트는 통합 담당자가 관리합니다.
@@ -273,3 +273,6 @@ Gemini와 OpenCode는 구현·테스트가 있지만 현재 기본 `ProviderRegi
 - 2026-08-21: macOS v0.26.0 릴리스를 게시한 뒤 PR25를 시작했습니다. 통합 release
   workflow는 게시 전에 Windows 패키지를 빌드·검증하고, 버전 ZIP·SHA-256 파일·빌드
   증명을 macOS 파일과 함께 첨부합니다.
+- 2026-08-21: PR25의 macOS 회귀, Windows release 빌드, portable ZIP 검증과 생성된
+  SHA-256 확인이 CI를 통과했습니다. 통합 파일 게시 검증은 다음 semantic version 태그에서
+  진행하며, 실기기 검증과 서명은 계속 남아 있습니다.
