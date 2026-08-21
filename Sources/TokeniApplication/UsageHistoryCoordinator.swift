@@ -1,7 +1,15 @@
 import Foundation
 import TokeniCore
 
-public actor UsageHistoryCoordinator {
+public protocol UsageHistoryCoordinating: Sendable {
+    func load() async throws -> [UsageHistoryRecord]
+    func record(
+        _ snapshots: [ProviderSnapshot],
+        at timestamp: Date) async throws -> [UsageHistoryRecord]
+    func clear() async throws -> [UsageHistoryRecord]
+}
+
+public actor UsageHistoryCoordinator: UsageHistoryCoordinating {
     private let store: UsageHistoryStore
     private var cachedRecords: [UsageHistoryRecord] = []
 

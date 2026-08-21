@@ -77,7 +77,9 @@ public actor UsageApplicationSession {
     }
 
     /// Refreshes enabled providers and then attempts to persist a history
-    /// sample. A history write failure must not discard a successful refresh.
+    /// sample. This operation shares the runtime's FIFO order with direct
+    /// refresh and history calls. A history write failure must not discard a
+    /// successful refresh.
     public func refresh(
         forceProviderReload: Bool = false,
         now: Date = .now) async
@@ -89,18 +91,10 @@ public actor UsageApplicationSession {
             self.isRefreshing = self.refreshOperationCount > 0
         }
 
-        let refreshedState = await self.runtime.refresh(
+        self.applicationState = await self.runtime.refreshAndRecordHistory(
             enabledProviderIDs: self.enabledProviderIDs,
             forceProviderReload: forceProviderReload,
             now: now)
-        self.applicationState = refreshedState
-
-        do {
-            self.applicationState = try await self.runtime.recordHistory(at: now)
-        } catch {
-            // Usage data is still valid when its optional history sample could
-            // not be saved. Keep the state returned by the provider refresh.
-        }
     }
 
     public func setEnabledProviderIDs(_ providerIDs: Set<ProviderID>) {
