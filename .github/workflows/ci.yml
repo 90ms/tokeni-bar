@@ -72,7 +72,7 @@ jobs:
                 fi
                 echo "Package.swift changes are limited to the Windows conditional block."
                 ;;
-              Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniBar/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/Scripts/*|Scripts/test.sh|Scripts/package_app.sh|Scripts/validate_companion_assets.sh|packaging/Info.plist|packaging/AppIcon.png|.github/workflows/ci.yml)
+              Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniBar/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/Scripts/*|Scripts/test.sh|Scripts/package_app.sh|Scripts/validate_companion_assets.sh|packaging/Info.plist|packaging/AppIcon.png|.github/workflows/ci.yml|.github/workflows/release.yml)
                 run_macos=true
                 break
                 ;;

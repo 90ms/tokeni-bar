@@ -1,7 +1,7 @@
 # Tokeni Bar
 
-> Windows packaging is being validated in the stacked Windows PRs. The current
-> Windows artifact is a portable ZIP; signed installer distribution is not enabled yet.
+> Starting with the next release, the validated Windows portable ZIP is published
+> alongside the macOS assets. Signed installer distribution is not enabled yet.
 
 [한국어](README.md) | **English**
 
