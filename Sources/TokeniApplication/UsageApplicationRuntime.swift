@@ -35,6 +35,7 @@ public actor UsageApplicationRuntime {
     private let historyCoordinator: UsageHistoryCoordinator
     private let growthLedgerCoordinator: TokenGrowthLedgerCoordinator
     private var currentState: UsageApplicationState
+    private var refreshRevision: UInt64 = 0
 
     public init(
         providers: [any UsageProviding],
@@ -59,10 +60,15 @@ public actor UsageApplicationRuntime {
         forceProviderReload: Bool = false,
         now: Date = .now) async -> UsageApplicationState
     {
+        self.refreshRevision &+= 1
+        let revision = self.refreshRevision
         let result = await self.refreshCoordinator.refresh(
             enabledProviderIDs: enabledProviderIDs,
             forceProviderReload: forceProviderReload,
             now: now)
+        guard revision == self.refreshRevision else {
+            return self.currentState
+        }
         self.currentState = UsageApplicationState(
             snapshots: result.snapshots,
             historyRecords: self.currentState.historyRecords,

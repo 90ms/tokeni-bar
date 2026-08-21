@@ -287,6 +287,63 @@ struct ApplicationSessionTests {
     }
 
     @Test
+    func newerRefreshWinsWhenAnOlderProviderCompletesLast() async {
+        let directory = Self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let oldDate = Self.fixedDate
+        let newDate = oldDate.addingTimeInterval(60)
+        let oldSnapshot = Self.snapshot(
+            id: .codex,
+            tokenTotal: 12,
+            updatedAt: oldDate)
+        let newSnapshot = Self.snapshot(
+            id: .claude,
+            tokenTotal: 34,
+            updatedAt: newDate)
+        let delayedProvider = DelayedProvider(snapshot: oldSnapshot)
+        let providers: [any UsageProviding] = [
+            delayedProvider,
+            TestProvider(snapshot: newSnapshot),
+        ]
+        let session = UsageApplicationSession(
+            providers: providers,
+            runtime: Self.runtime(
+                providers: providers,
+                historyStore: UsageHistoryStore(
+                    fileURL: directory.appending(path: "history.json"),
+                    minimumRecordInterval: 0),
+                growthStore: TokenGrowthLedgerStore(
+                    fileURL: directory.appending(path: "growth.json"))),
+            enabledProviderIDs: [.codex])
+
+        let oldRefresh = Task {
+            await session.refresh(now: oldDate)
+        }
+        await delayedProvider.waitUntilFetchStarts()
+
+        await session.setEnabledProviderIDs([.claude])
+        await session.refresh(
+            forceProviderReload: true,
+            now: newDate)
+
+        var state = await session.state()
+        #expect(state.applicationState.snapshots == [newSnapshot])
+        #expect(state.applicationState.lastRefresh == newDate)
+
+        await delayedProvider.complete()
+        await oldRefresh.value
+
+        state = await session.state()
+        #expect(state.enabledProviderIDs == [.claude])
+        #expect(state.applicationState.snapshots == [newSnapshot])
+        #expect(state.applicationState.lastRefresh == newDate)
+        #expect(state.applicationState.historyRecords.map(\.providerID) == [
+            .claude,
+        ])
+        #expect(!state.isRefreshing)
+    }
+
+    @Test
     func processesAndMarksGrowthThroughSessionState() async throws {
         let directory = Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -452,5 +509,42 @@ private actor CountingProvider: UsageProviding {
 
     func fetchCount() -> Int {
         self.fetches
+    }
+}
+
+private actor DelayedProvider: UsageProviding {
+    nonisolated let descriptor: ProviderDescriptor
+    private let snapshot: ProviderSnapshot
+    private var didStart = false
+    private var startWaiters: [CheckedContinuation<Void, Never>] = []
+    private var fetchContinuation: CheckedContinuation<ProviderSnapshot, Never>?
+
+    init(snapshot: ProviderSnapshot) {
+        self.descriptor = snapshot.descriptor
+        self.snapshot = snapshot
+    }
+
+    func fetchUsage() async -> ProviderSnapshot {
+        self.didStart = true
+        let waiters = self.startWaiters
+        self.startWaiters.removeAll()
+        for waiter in waiters {
+            waiter.resume()
+        }
+        return await withCheckedContinuation { continuation in
+            self.fetchContinuation = continuation
+        }
+    }
+
+    func waitUntilFetchStarts() async {
+        guard !self.didStart else { return }
+        await withCheckedContinuation { continuation in
+            self.startWaiters.append(continuation)
+        }
+    }
+
+    func complete() {
+        self.fetchContinuation?.resume(returning: self.snapshot)
+        self.fetchContinuation = nil
     }
 }

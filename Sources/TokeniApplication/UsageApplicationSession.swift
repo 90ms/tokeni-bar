@@ -38,6 +38,7 @@ public actor UsageApplicationSession {
     private var applicationState = UsageApplicationState()
     private var isRefreshing = false
     private var refreshOperationCount = 0
+    private var refreshRevision: UInt64 = 0
     private var periodicRefreshTask: Task<Void, Never>?
 
     public init(
@@ -82,6 +83,8 @@ public actor UsageApplicationSession {
         forceProviderReload: Bool = false,
         now: Date = .now) async
     {
+        self.refreshRevision &+= 1
+        let revision = self.refreshRevision
         self.refreshOperationCount += 1
         self.isRefreshing = true
         defer {
@@ -93,10 +96,13 @@ public actor UsageApplicationSession {
             enabledProviderIDs: self.enabledProviderIDs,
             forceProviderReload: forceProviderReload,
             now: now)
+        guard revision == self.refreshRevision else { return }
         self.applicationState = refreshedState
 
         do {
-            self.applicationState = try await self.runtime.recordHistory(at: now)
+            let recordedState = try await self.runtime.recordHistory(at: now)
+            guard revision == self.refreshRevision else { return }
+            self.applicationState = recordedState
         } catch {
             // Usage data is still valid when its optional history sample could
             // not be saved. Keep the state returned by the provider refresh.
