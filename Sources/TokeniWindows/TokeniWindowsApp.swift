@@ -15,7 +15,10 @@ struct TokeniWindowsApp {
             return
         }
 
-        let providers = ProviderRegistry.defaultProviders()
+        let executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+        let providers = ProviderRegistry.defaultProviders(
+            sqliteQueryRunner: WindowsSQLiteRuntime.queryRunner(
+                for: executableURL))
         let session = UsageApplicationSession(providers: providers)
 
         _ = try? await session.bootstrap()
@@ -31,7 +34,6 @@ struct TokeniWindowsApp {
         let settings = JSONFileSettingsStore(
             fileURL: directories.localApplicationSupportDirectory.appending(
                 path: "settings.json"))
-        let executableURL = URL(fileURLWithPath: CommandLine.arguments.first ?? "")
         let services = WindowsTrayServiceCoordinator(
             executableURL: executableURL,
             settings: settings)

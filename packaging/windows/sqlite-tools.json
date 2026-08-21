@@ -1,0 +1,9 @@
+{
+  "version": "3.53.4",
+  "architecture": "x64",
+  "archive_url": "https://www.sqlite.org/2026/sqlite-tools-win-x64-3530400.zip",
+  "archive_sha256": "f46ee2475de4cbe287e6e5f7d43c838796b14e7379cd216bdbb28d391429f9fc",
+  "archive_sha3_256": "88b4659fe747896b853af10157316b4ade143553efb89c1c8ca7423a278dcc8b",
+  "executable": "sqlite3.exe",
+  "executable_sha256": "5da2398d4913b893bd1ea578d85403b3a83a06fabf9d2303ca9f63ef0849fc6f"
+}

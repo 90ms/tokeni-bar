@@ -9,6 +9,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string] $OutputDirectory,
 
+    [Parameter(Mandatory = $true)]
+    [string] $SQLiteExecutable,
+
     [string[]] $RuntimeDirectory = @()
 )
 
@@ -48,6 +51,7 @@ function Assert-SafeOutputDirectory {
 
 $buildPath = Resolve-InputPath $BuildDirectory
 $outputPath = Resolve-InputPath $OutputDirectory
+$sqliteExecutablePath = Resolve-InputPath $SQLiteExecutable
 Assert-SafeOutputDirectory $outputPath
 
 if (-not (Test-Path -LiteralPath $buildPath -PathType Container)) {
@@ -57,6 +61,22 @@ if (-not (Test-Path -LiteralPath $buildPath -PathType Container)) {
 $binaryPath = Join-Path $buildPath "TokeniWindows.exe"
 if (-not (Test-Path -LiteralPath $binaryPath -PathType Leaf)) {
     throw "TokeniWindows.exe was not found in: $buildPath"
+}
+if (-not (Test-Path -LiteralPath $sqliteExecutablePath -PathType Leaf) -or
+    [System.IO.Path]::GetFileName($sqliteExecutablePath) -cne "sqlite3.exe") {
+    throw "The pinned sqlite3.exe was not found: $sqliteExecutablePath"
+}
+$sqliteManifestPath = Join-Path `
+    $projectDirectory `
+    "packaging\windows\sqlite-tools.json"
+$sqliteManifest = Get-Content -LiteralPath $sqliteManifestPath -Raw |
+    ConvertFrom-Json
+$sqliteHash = Get-FileHash `
+    -LiteralPath $sqliteExecutablePath `
+    -Algorithm SHA256
+if ($sqliteHash.Hash.ToLowerInvariant() -ne
+    $sqliteManifest.executable_sha256) {
+    throw "The supplied sqlite3.exe does not match the pinned manifest."
 }
 
 $companionAssetSourcePath = Join-Path `
@@ -101,6 +121,21 @@ foreach ($runtimePath in $RuntimeDirectory) {
         }
 }
 
+$toolsPath = Join-Path $stagingPath "Tools"
+New-Item -ItemType Directory -Path $toolsPath -Force | Out-Null
+Copy-Item `
+    -LiteralPath $sqliteExecutablePath `
+    -Destination (Join-Path $toolsPath "sqlite3.exe") `
+    -Force
+Copy-Item `
+    -LiteralPath $sqliteManifestPath `
+    -Destination $toolsPath `
+    -Force
+Copy-Item `
+    -LiteralPath (Join-Path $projectDirectory "packaging\windows\THIRD-PARTY-NOTICES.txt") `
+    -Destination $stagingPath `
+    -Force
+
 $resourcesToCopy = Get-ChildItem -LiteralPath $buildPath -Directory -Force |
     Where-Object {
         $_.Name.EndsWith('.bundle', [System.StringComparison]::OrdinalIgnoreCase) -or
@@ -131,6 +166,9 @@ Version: $Version
 
 Run TokeniWindows.exe to start the portable application.
 Companion sprites are included under Resources\CompanionAssets.
+The pinned SQLite CLI is included under Tools\sqlite3.exe.
+Its immutable acquisition manifest is included under Tools\sqlite-tools.json.
+Third-party provenance is recorded in THIRD-PARTY-NOTICES.txt.
 This artifact is unsigned and does not register an installer or automatic update.
 "@ | Set-Content -LiteralPath (Join-Path $stagingPath 'README.txt') -Encoding utf8
 

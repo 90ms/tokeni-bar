@@ -135,6 +135,47 @@ struct PlatformInfrastructureTests {
 
     #if os(Windows)
     @Test
+    func pinnedWindowsSQLitePerformsReadOnlyJSONRoundTrip() async throws {
+        let environment = ProcessInfo.processInfo.environment
+        let executablePath = try #require(
+            environment["TOKENI_WINDOWS_SQLITE_EXECUTABLE"],
+            "Windows CI must provide the pinned SQLite executable")
+        let executable = URL(fileURLWithPath: executablePath)
+        #expect(FileManager.default.fileExists(atPath: executable.path))
+
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true)
+        let database = root.appending(path: "sqlite-roundtrip.db")
+        let createResult = try await SystemProcessRunner().run(ProcessCommand(
+            executable: executable.path,
+            arguments: [
+                "-batch",
+                "-init", "NUL",
+                database.path,
+                "CREATE TABLE smoke(value INTEGER); INSERT INTO smoke VALUES(7);",
+            ],
+            timeout: 10))
+        #expect(createResult.succeeded, "SQLite stderr: \(createResult.standardError)")
+        let databaseBefore = try Data(contentsOf: database)
+
+        let data = try await ProcessSQLiteQueryRunner(
+            executableURL: executable).queryJSON(
+                databaseURL: database,
+                sql: "SELECT value FROM smoke;")
+        let rows = try JSONDecoder().decode(
+            [SQLiteRoundTripRow].self,
+            from: data)
+        let databaseAfter = try Data(contentsOf: database)
+
+        #expect(rows == [SQLiteRoundTripRow(value: 7)])
+        #expect(databaseAfter == databaseBefore)
+    }
+
+    @Test
     func systemProcessRunnerExecutesBatchFilesWithQuotedArguments() async throws {
         let root = FileManager.default.temporaryDirectory
             .appending(path: "tokeni batch \(UUID().uuidString)", directoryHint: .isDirectory)
@@ -191,6 +232,10 @@ struct PlatformInfrastructureTests {
         }
     }
     #endif
+}
+
+private struct SQLiteRoundTripRow: Decodable, Equatable {
+    let value: Int
 }
 
 private actor RecordingProcessRunner: ProcessRunning {
