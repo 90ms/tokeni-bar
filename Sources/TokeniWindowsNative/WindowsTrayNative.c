@@ -80,6 +80,68 @@ static int tokeni_scale_for_dpi(int value, UINT dpi)
     return MulDiv(value, (int)dpi, 96);
 }
 
+static void tokeni_dashboard_set_initial_frame(
+    HWND window,
+    const MONITORINFO *monitor)
+{
+    typedef BOOL(WINAPI *adjust_window_rect_for_dpi_fn)(
+        LPRECT,
+        DWORD,
+        BOOL,
+        DWORD,
+        UINT);
+
+    UINT dpi = tokeni_dashboard_dpi(window);
+    DWORD style = (DWORD)GetWindowLongW(window, GWL_STYLE);
+    DWORD extended_style = (DWORD)GetWindowLongW(window, GWL_EXSTYLE);
+    RECT frame = {
+        0,
+        0,
+        tokeni_scale_for_dpi(600, dpi),
+        tokeni_scale_for_dpi(460, dpi),
+    };
+
+    adjust_window_rect_for_dpi_fn adjust_for_dpi = NULL;
+    HMODULE user32 = GetModuleHandleW(L"user32.dll");
+    if (user32 != NULL) {
+        adjust_for_dpi = (adjust_window_rect_for_dpi_fn)GetProcAddress(
+            user32,
+            "AdjustWindowRectExForDpi");
+    }
+    if (adjust_for_dpi != NULL) {
+        adjust_for_dpi(
+            &frame,
+            style,
+            GetMenu(window) != NULL,
+            extended_style,
+            dpi);
+    } else {
+        AdjustWindowRectEx(
+            &frame,
+            style,
+            GetMenu(window) != NULL,
+            extended_style);
+    }
+
+    int width = frame.right - frame.left;
+    int height = frame.bottom - frame.top;
+    int work_width = monitor->rcWork.right - monitor->rcWork.left;
+    int work_height = monitor->rcWork.bottom - monitor->rcWork.top;
+    width = min(width, work_width);
+    height = min(height, work_height);
+    int x = monitor->rcWork.left + ((work_width - width) / 2);
+    int y = monitor->rcWork.top + ((work_height - height) / 2);
+
+    SetWindowPos(
+        window,
+        NULL,
+        x,
+        y,
+        width,
+        height,
+        SWP_NOACTIVATE | SWP_NOZORDER);
+}
+
 static void tokeni_dashboard_set_fonts(HWND window)
 {
     UINT dpi = tokeni_dashboard_dpi(window);
@@ -511,12 +573,16 @@ static void tokeni_show_details(void)
         if (tokeni_dashboard_window == NULL) {
             return;
         }
+        tokeni_dashboard_set_initial_frame(
+            tokeni_dashboard_window,
+            &monitor);
     }
 
     tokeni_dashboard_apply_details();
     ShowWindow(tokeni_dashboard_window, SW_RESTORE);
     SetForegroundWindow(tokeni_dashboard_window);
     BringWindowToTop(tokeni_dashboard_window);
+    SetFocus(tokeni_dashboard_details);
 }
 
 static LRESULT CALLBACK tokeni_window_proc(
@@ -836,6 +902,7 @@ int tokeni_windows_tray_run(void)
     MSG message;
     while (GetMessageW(&message, NULL, 0, 0) > 0) {
         if (tokeni_dashboard_window == NULL
+            || !IsWindowVisible(tokeni_dashboard_window)
             || !IsDialogMessageW(tokeni_dashboard_window, &message))
         {
             TranslateMessage(&message);
