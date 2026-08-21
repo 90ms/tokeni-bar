@@ -39,6 +39,7 @@ public actor UsageApplicationSession {
     private var isRefreshing = false
     private var refreshOperationCount = 0
     private var refreshRevision: UInt64 = 0
+    private let refreshGate = UsageApplicationRefreshGate()
     private var periodicRefreshTask: Task<Void, Never>?
 
     public init(
@@ -92,21 +93,36 @@ public actor UsageApplicationSession {
             self.isRefreshing = self.refreshOperationCount > 0
         }
 
-        let refreshedState = await self.runtime.refresh(
+        guard await self.refreshGate.acquire() else { return }
+        if Task.isCancelled {
+            await self.refreshGate.release()
+            return
+        }
+
+        let refreshResult = await self.runtime.fetchUsage(
             enabledProviderIDs: self.enabledProviderIDs,
             forceProviderReload: forceProviderReload,
             now: now)
-        guard revision == self.refreshRevision else { return }
-        self.applicationState = refreshedState
+        if revision == self.refreshRevision, !Task.isCancelled {
+            // This check is the refresh linearization point. A newer request
+            // admitted during provider fetching prevents every irreversible
+            // state and history transition below.
+            let refreshedState = await self.runtime.commitRefresh(refreshResult)
+            if revision == self.refreshRevision {
+                self.applicationState = refreshedState
 
-        do {
-            let recordedState = try await self.runtime.recordHistory(at: now)
-            guard revision == self.refreshRevision else { return }
-            self.applicationState = recordedState
-        } catch {
-            // Usage data is still valid when its optional history sample could
-            // not be saved. Keep the state returned by the provider refresh.
+                do {
+                    let recordedState = try await self.runtime.recordHistory(at: now)
+                    if revision == self.refreshRevision {
+                        self.applicationState = recordedState
+                    }
+                } catch {
+                    // Usage data is still valid when its optional history sample
+                    // could not be saved. Keep the provider refresh state.
+                }
+            }
         }
+        await self.refreshGate.release()
     }
 
     public func setEnabledProviderIDs(_ providerIDs: Set<ProviderID>) {
@@ -170,5 +186,59 @@ public actor UsageApplicationSession {
         periodicRefreshTask.cancel()
         self.periodicRefreshTask = nil
         await periodicRefreshTask.value
+    }
+
+    func activeRefreshOperationCount() -> Int {
+        self.refreshOperationCount
+    }
+}
+
+private actor UsageApplicationRefreshGate {
+    private struct Waiter {
+        let id: UUID
+        let continuation: CheckedContinuation<Bool, Never>
+    }
+
+    private var isAcquired = false
+    private var waiters: [Waiter] = []
+
+    func acquire() async -> Bool {
+        guard !Task.isCancelled else { return false }
+        guard self.isAcquired else {
+            self.isAcquired = true
+            return true
+        }
+
+        let waiterID = UUID()
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                if Task.isCancelled {
+                    continuation.resume(returning: false)
+                } else {
+                    self.waiters.append(Waiter(
+                        id: waiterID,
+                        continuation: continuation))
+                }
+            }
+        } onCancel: {
+            Task { await self.cancel(waiterID) }
+        }
+    }
+
+    func release() {
+        guard !self.waiters.isEmpty else {
+            self.isAcquired = false
+            return
+        }
+        let waiter = self.waiters.removeFirst()
+        waiter.continuation.resume(returning: true)
+    }
+
+    private func cancel(_ waiterID: UUID) {
+        guard let index = self.waiters.firstIndex(where: {
+            $0.id == waiterID
+        }) else { return }
+        let waiter = self.waiters.remove(at: index)
+        waiter.continuation.resume(returning: false)
     }
 }

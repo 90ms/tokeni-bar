@@ -32,14 +32,14 @@ public struct UsageApplicationState: Equatable, Sendable {
 /// transitions that must be shared by macOS and Windows clients.
 public actor UsageApplicationRuntime {
     private let refreshCoordinator: UsageRefreshCoordinator
-    private let historyCoordinator: UsageHistoryCoordinator
+    private let historyCoordinator: any UsageHistoryCoordinating
     private let growthLedgerCoordinator: TokenGrowthLedgerCoordinator
     private var currentState: UsageApplicationState
     private var refreshRevision: UInt64 = 0
 
     public init(
         providers: [any UsageProviding],
-        historyCoordinator: UsageHistoryCoordinator = UsageHistoryCoordinator(),
+        historyCoordinator: any UsageHistoryCoordinating = UsageHistoryCoordinator(),
         growthLedgerCoordinator: TokenGrowthLedgerCoordinator =
             TokenGrowthLedgerCoordinator(),
         initialState: UsageApplicationState = UsageApplicationState())
@@ -62,13 +62,28 @@ public actor UsageApplicationRuntime {
     {
         self.refreshRevision &+= 1
         let revision = self.refreshRevision
-        let result = await self.refreshCoordinator.refresh(
+        let result = await self.fetchUsage(
             enabledProviderIDs: enabledProviderIDs,
             forceProviderReload: forceProviderReload,
             now: now)
         guard revision == self.refreshRevision else {
             return self.currentState
         }
+        return self.commitRefresh(result)
+    }
+
+    func fetchUsage(
+        enabledProviderIDs: Set<ProviderID>,
+        forceProviderReload: Bool = false,
+        now: Date = .now) async -> UsageRefreshResult
+    {
+        await self.refreshCoordinator.refresh(
+            enabledProviderIDs: enabledProviderIDs,
+            forceProviderReload: forceProviderReload,
+            now: now)
+    }
+
+    func commitRefresh(_ result: UsageRefreshResult) -> UsageApplicationState {
         self.currentState = UsageApplicationState(
             snapshots: result.snapshots,
             historyRecords: self.currentState.historyRecords,
