@@ -132,6 +132,61 @@ struct PlatformInfrastructureTests {
         #expect(command.arguments.contains("-readonly"))
         #expect(command.arguments.last == "SELECT value FROM usage;")
     }
+
+    #if os(Windows)
+    @Test
+    func systemProcessRunnerExecutesBatchFilesWithQuotedArguments() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "tokeni batch \(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true)
+        let batchFile = root.appending(path: "argument check.cmd")
+        let script = """
+            @echo off
+            if not "%~1"=="argument with spaces" exit /b 41
+            if not "%~2"=="" exit /b 42
+            if not "%~3"=="slash/value" exit /b 43
+            echo arguments-ok
+            """
+        try Data(script.replacingOccurrences(
+            of: "\n",
+            with: "\r\n").utf8).write(to: batchFile)
+        let located = try #require(SystemExecutableLocator().locate(
+            executableNames: ["argument check"],
+            pathEnvironment: root.path,
+            homeDirectory: root))
+
+        let result = try await SystemProcessRunner().run(ProcessCommand(
+            executable: located.path,
+            arguments: ["argument with spaces", "", "slash/value"],
+            timeout: 10))
+
+        #expect(located == batchFile)
+        #expect(result.exitCode == 0)
+        #expect(result.standardOutput.contains("arguments-ok"))
+    }
+
+    @Test
+    func systemProcessRunnerRejectsBatchCommandInjectionCharacters() async {
+        do {
+            _ = try await SystemProcessRunner().run(ProcessCommand(
+                executable: "C:\\tokeni\\test.cmd",
+                arguments: ["safe & echo injected"],
+                timeout: 10))
+            Issue.record("Expected unsafe batch arguments to be rejected")
+        } catch let error as ProcessRunnerError {
+            guard case let .launchFailed(message) = error else {
+                Issue.record("Expected a launch failure, got \(error)")
+                return
+            }
+            #expect(message.contains("unsupported command characters"))
+        } catch {
+            Issue.record("Expected ProcessRunnerError, got \(error)")
+        }
+    }
+    #endif
 }
 
 private actor RecordingProcessRunner: ProcessRunning {

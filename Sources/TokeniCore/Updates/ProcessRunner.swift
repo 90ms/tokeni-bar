@@ -171,6 +171,14 @@ public final class SystemProcessRunner: ProcessRunning {
     }
 
     public func run(_ command: ProcessCommand) async throws -> CommandResult {
+        let processEnvironment = CLIProcessEnvironment.make(for: command)
+        #if os(Windows)
+        let launchCommand = try WindowsProcessCommand.prepare(
+            command,
+            environment: processEnvironment)
+        #else
+        let launchCommand = command
+        #endif
         let controller = ProcessController(
             terminationGracePeriod: self.terminationGracePeriod)
         return try await withTaskCancellationHandler {
@@ -178,9 +186,9 @@ public final class SystemProcessRunner: ProcessRunning {
                 (continuation: CheckedContinuation<CommandResult, Error>) in
                 DispatchQueue.global(qos: .userInitiated).async {
                     let process = Process()
-                    process.executableURL = URL(fileURLWithPath: command.executable)
-                    process.arguments = command.arguments
-                    process.environment = CLIProcessEnvironment.make(for: command)
+                    process.executableURL = URL(fileURLWithPath: launchCommand.executable)
+                    process.arguments = launchCommand.arguments
+                    process.environment = processEnvironment
                     let outputPipe = Pipe()
                     let errorPipe = Pipe()
                     process.standardOutput = outputPipe
@@ -235,6 +243,90 @@ public final class SystemProcessRunner: ProcessRunning {
         }
     }
 }
+
+#if os(Windows)
+private enum WindowsProcessCommand {
+    private static let unsafeArgumentCharacters = CharacterSet(
+        charactersIn: "\"%!^&|<>()\r\n\0")
+    private static let unsafePathCharacters = CharacterSet(
+        charactersIn: "\"%!\r\n\0")
+
+    static func prepare(
+        _ command: ProcessCommand,
+        environment: [String: String]) throws -> ProcessCommand
+    {
+        let executableURL = URL(fileURLWithPath: command.executable)
+        let fileExtension = executableURL.pathExtension.lowercased()
+        guard fileExtension == "cmd" || fileExtension == "bat" else {
+            return command
+        }
+
+        guard self.isSafePath(command.executable),
+              command.arguments.allSatisfy(self.isSafeArgument)
+        else {
+            throw ProcessRunnerError.launchFailed(
+                "Windows batch command contains unsupported command characters.")
+        }
+
+        guard let interpreter = self.commandInterpreter(in: environment) else {
+            throw ProcessRunnerError.launchFailed(
+                "Windows command interpreter could not be located.")
+        }
+
+        let tokens = [command.executable] + command.arguments
+        let quotedCommand = tokens
+            .map { "\"\($0)\"" }
+            .joined(separator: " ")
+
+        return ProcessCommand(
+            executable: interpreter,
+            arguments: ["/d", "/e:on", "/v:off", "/s", "/c", "\"\(quotedCommand)\""],
+            timeout: command.timeout,
+            environment: command.environment)
+    }
+
+    private static func commandInterpreter(
+        in environment: [String: String]) -> String?
+    {
+        if let comSpec = self.value(named: "COMSPEC", in: environment),
+           URL(fileURLWithPath: comSpec).lastPathComponent
+               .caseInsensitiveCompare("cmd.exe") == .orderedSame,
+           FileManager.default.fileExists(atPath: comSpec)
+        {
+            return comSpec
+        }
+
+        for name in ["SystemRoot", "WINDIR"] {
+            guard let root = self.value(named: name, in: environment) else {
+                continue
+            }
+            let candidate = URL(fileURLWithPath: root, isDirectory: true)
+                .appending(path: "System32/cmd.exe").path
+            if FileManager.default.fileExists(atPath: candidate) {
+                return candidate
+            }
+        }
+        return nil
+    }
+
+    private static func value(
+        named name: String,
+        in environment: [String: String]) -> String?
+    {
+        environment.first {
+            $0.key.caseInsensitiveCompare(name) == .orderedSame
+        }?.value
+    }
+
+    private static func isSafeArgument(_ argument: String) -> Bool {
+        argument.rangeOfCharacter(from: self.unsafeArgumentCharacters) == nil
+    }
+
+    private static func isSafePath(_ path: String) -> Bool {
+        path.rangeOfCharacter(from: self.unsafePathCharacters) == nil
+    }
+}
+#endif
 
 private enum BoundedPipeReader {
     private static let maximumCapturedBytes = 1 * 1_024 * 1_024

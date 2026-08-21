@@ -30,11 +30,17 @@ struct TokeniWindowsApp {
         tray.setLaunchAtLoginEnabled(
             await services.isLaunchAtLoginEnabled())
 
-        let companionState = try? await CompanionGameStateStore().load()
+        let companionGrowth = WindowsCompanionGrowthCoordinator(session: session)
+        var companionState = try? await companionGrowth.load()
+        if companionState != nil {
+            companionState = (try? await companionGrowth.applyPendingAwards())
+                ?? companionState
+        }
         let companionOverlay = WindowsCompanionOverlay()
         companionOverlay.setAssetRoot(
             WindowsCompanionAssetCatalog.assetRoot(for: executableURL))
-        companionOverlay.setState(Self.overlayState(for: companionState))
+        companionOverlay.setState(WindowsCompanionOverlayState(
+            companionState: companionState))
         companionOverlay.setClickThrough(true)
         let companionOverlayStarted = companionOverlay.start(
             frame: WindowsCompanionOverlayFrame(
@@ -50,7 +56,7 @@ struct TokeniWindowsApp {
         tray.setCompanionEnabled(initialCompanionVisible)
 
         let tooltipTask = Task {
-            [session, tray, services, companionOverlay, settings,
+            [session, tray, services, companionOverlay, companionGrowth, settings,
              initialCompanionVisible] in
             var companionVisible = initialCompanionVisible
             var serviceMessage: String?
@@ -97,6 +103,22 @@ struct TokeniWindowsApp {
                             "Companion overlay could not be changed."
                     }
                 }
+                if await companionGrowth.currentState() != nil {
+                    let refreshedAt = await session.state()
+                        .applicationState.lastRefresh
+                    do {
+                        let state = try await companionGrowth.synchronize(
+                            afterRefreshAt: refreshedAt)
+                        companionOverlay.setState(
+                            WindowsCompanionOverlayState(companionState: state))
+                    } catch {
+                        // A persisted state remains safe to display. Failed
+                        // awards stay pending and are retried on the next pass.
+                        let state = await companionGrowth.currentState()
+                        companionOverlay.setState(
+                            WindowsCompanionOverlayState(companionState: state))
+                    }
+                }
                 let presentation = UsageApplicationPresentation(
                     sessionState: await session.state())
                 tray.updateTooltip(Self.tooltip(for: presentation))
@@ -126,31 +148,5 @@ struct TokeniWindowsApp {
                 : "Tokeni Bar"
         }
         return "Tokeni Bar · \(Int(remaining.rounded()))% remaining"
-    }
-
-    private static func overlayState(
-        for state: CompanionGameState?) -> WindowsCompanionOverlayState
-    {
-        guard let state else {
-            return WindowsCompanionOverlayState(stage: 0, level: 0)
-        }
-        let stage: Int
-        switch state.stage {
-        case .egg: stage = 0
-        case .hatchling: stage = 1
-        case .junior: stage = 2
-        case .adult: stage = 3
-        }
-        let speciesIndex = state.speciesID.flatMap { speciesID in
-            CompanionSpeciesID.allCases.firstIndex(of: speciesID)
-        } ?? 0
-        let rarityRank = state.resolvedVariantID.map {
-            CompanionVariantRegistry.definition(for: $0).assetRarity.rank
-        } ?? state.rarity?.rank ?? 0
-        return WindowsCompanionOverlayState(
-            stage: stage,
-            level: state.level,
-            speciesIndex: speciesIndex,
-            rarityRank: rarityRank)
     }
 }

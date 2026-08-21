@@ -61,10 +61,13 @@ tray icon을 마우스 오른쪽 버튼으로 클릭하면 사용량을 새로 �
 자동 시작을 켜거나 끄고, 테스트 알림을 보낼 수 있습니다. 서명된 패키지 계약이
 준비되기 전까지 자동 업데이트 설치는 비활성화되어 있습니다.
 
-The same menu can show or hide the companion overlay. This layer uses the shared
-companion growth state and packaged sprite sheets when available. If the asset root is
-missing or a sheet cannot be decoded, the native fallback renderer remains available.
+The same menu can show or hide the companion overlay. This layer applies pending awards
+from the provider-neutral growth ledger after each verified refresh, persists the shared
+companion state before acknowledging an award, and updates the overlay from that state.
+If the asset root is missing or a sheet cannot be decoded, the native fallback renderer
+remains available.
 
-같은 메뉴에서 companion overlay를 표시하거나 숨길 수 있습니다. 공통 companion 성장
-상태와 packaged sprite sheet를 우선 사용합니다. 자산 경로가 없거나 sheet를 해석할 수
+같은 메뉴에서 companion overlay를 표시하거나 숨길 수 있습니다. 검증된 갱신마다
+provider-neutral 성장 ledger의 pending award를 적용하고, award 완료를 기록하기 전에 공통
+companion 상태를 저장한 뒤 overlay를 갱신합니다. 자산 경로가 없거나 sheet를 해석할 수
 없으면 native fallback renderer로 안전하게 전환합니다.
