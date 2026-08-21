@@ -140,6 +140,17 @@ jobs:
             throw "Validated package does not contain TokeniWindows.exe."
           }
 
+      - name: Smoke-test unpacked Windows release
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          $archive = Join-Path `
+            "$env:RUNNER_TEMP\TokeniWindowsRelease" `
+            "Tokeni-Bar-Windows-$env:VERSION.zip"
+          & "$env:GITHUB_WORKSPACE\Scripts\smoke_windows_package.ps1" `
+            -ArchivePath $archive
+
       - name: Generate Windows artifact attestation
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
         with:

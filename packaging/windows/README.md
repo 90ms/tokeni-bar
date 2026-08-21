@@ -53,6 +53,29 @@ SwiftPM build cache. The full macOS CI runs only when shared or macOS code chang
 Dispatching the Windows workflow manually also runs focused Windows update-installer and
 tray-detail tests.
 
+After validating the archive layout and companion sprite sheets, CI extracts the ZIP
+into a unique temporary directory and starts the packaged executable in its offline
+`--smoke-test` mode. This verifies that the shipped runtime DLLs can load, companion
+resources resolve relative to the executable, and the provider-neutral presentation
+layer can produce deterministic output. The process has a bounded timeout and CI checks
+its explicit exit code and stable success marker.
+
+archive 구조와 companion sprite sheet를 검증한 뒤 CI는 ZIP을 고유한 임시 디렉터리에
+풀고 패키지의 실행 파일을 offline `--smoke-test` 모드로 시작합니다. 이를 통해 배포된
+runtime DLL을 불러올 수 있는지, 실행 파일 기준으로 companion resource를 찾는지,
+provider-neutral presentation 계층이 결정적인 출력을 만드는지 확인합니다. 프로세스에는
+제한 시간이 있으며 CI는 명시적인 종료 코드와 고정된 성공 marker를 검사합니다.
+
+The smoke mode does not instantiate providers, scan a user profile, read credentials or
+usage logs, contact a network, or assert interactive tray behavior. Tray visibility,
+notifications, overlays, DPI, multiple monitors, and Explorer restart recovery still
+require an interactive Windows test environment.
+
+smoke mode는 provider를 생성하거나 사용자 profile을 검색하지 않으며 credential 또는
+usage log를 읽거나 network에 연결하지 않고 interactive tray 동작도 검증하지 않습니다.
+tray 표시, 알림, overlay, DPI, 다중 monitor 및 Explorer 재시작 복구는 여전히 interactive
+Windows 테스트 환경에서 확인해야 합니다.
+
 Right-click the tray icon to refresh usage, toggle per-user startup, or send a test
 notification. Automatic update installation remains disabled until a signed package
 contract is available.
