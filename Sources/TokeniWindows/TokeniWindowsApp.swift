@@ -29,13 +29,12 @@ struct TokeniWindowsApp {
                 settings: settings))
 
         _ = try? await session.bootstrap()
-        await session.start()
 
         let tray = WindowsTrayShell()
         guard tray.start() else {
-            await session.stop()
             return
         }
+        await session.start()
 
         let services = WindowsTrayServiceCoordinator(
             executableURL: executableURL,
@@ -225,12 +224,32 @@ struct TokeniWindowsApp {
         _ = tray.run()
         providerToggleTask.cancel()
         await providerToggleTask.value
+
+        // Persisted final toggles are durable, but their best-effort refresh
+        // is intentionally skipped during Quit. Provider implementations may
+        // ignore cancellation, so normal teardown has a strict upper bound.
         providerRefreshTask.cancel()
         tooltipTask.cancel()
         await tooltipTask.value
+        let sessionStopTask = Task { await session.stop() }
+        let providerShutdownSignal = WindowsTaskCompletionSignal()
+        Task {
+            await providerRefreshTask.value
+            await sessionStopTask.value
+            providerShutdownSignal.finish()
+        }
+        let providerShutdownCompleted = await WindowsBoundedShutdown.wait(
+            for: providerShutdownSignal,
+            timeout: WindowsBoundedShutdown.providerDeadline)
+        guard providerShutdownCompleted else {
+            // Do not tear down host-owned windows while a cancellation-ignoring
+            // provider can still return into session/history state. Ending the
+            // process first makes the timeout policy bounded and race-free.
+            ExitProcess(0)
+            return
+        }
         tray.stop()
         companionOverlay.stop()
-        await session.stop()
     }
 
     private static func tooltip(

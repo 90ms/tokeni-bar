@@ -1,4 +1,5 @@
 #include "TokeniWindowsNative.h"
+#include "TokeniWindowsProviderState.h"
 
 #ifdef _WIN32
 
@@ -18,8 +19,8 @@ static UINT tokeni_taskbar_created_message;
 static const int tokeni_refresh_button_identifier = 101;
 static const int tokeni_hide_button_identifier = 102;
 static const int tokeni_provider_button_identifier_base = 200;
-#define TOKENI_MAX_PROVIDERS 16
-#define TOKENI_PROVIDER_ID_CAPACITY 64
+#define TOKENI_MAX_PROVIDERS TOKENI_WINDOWS_PROVIDER_MAX_COUNT
+#define TOKENI_PROVIDER_ID_CAPACITY TOKENI_WINDOWS_PROVIDER_ID_CAPACITY
 #define TOKENI_PROVIDER_NAME_MAX_CODE_POINTS 80
 #define TOKENI_PROVIDER_NAME_CAPACITY 161
 
@@ -27,8 +28,6 @@ typedef struct tokeni_provider_option {
     char provider_id[TOKENI_PROVIDER_ID_CAPACITY];
     WCHAR display_name[TOKENI_PROVIDER_NAME_CAPACITY];
     int enabled;
-    int pending;
-    int delivered;
 } tokeni_provider_option;
 
 static HWND tokeni_window;
@@ -60,6 +59,7 @@ static tokeni_provider_option tokeni_provider_options[TOKENI_MAX_PROVIDERS];
 static int tokeni_provider_option_count;
 static tokeni_provider_option tokeni_staged_provider_options
     [TOKENI_MAX_PROVIDERS];
+static tokeni_windows_provider_state tokeni_provider_toggle_state;
 static int tokeni_staged_provider_option_count;
 static int tokeni_provider_transaction_active;
 static SRWLOCK tokeni_state_lock = SRWLOCK_INIT;
@@ -196,19 +196,6 @@ static int tokeni_copy_provider_name(
             TOKENI_PROVIDER_NAME_CAPACITY) != 0;
     }
     return 1;
-}
-
-static int tokeni_provider_index_for_id_locked(const char *provider_id)
-{
-    for (int index = 0; index < tokeni_provider_option_count; index += 1) {
-        if (lstrcmpA(
-                tokeni_provider_options[index].provider_id,
-                provider_id) == 0)
-        {
-            return index;
-        }
-    }
-    return -1;
 }
 
 static void tokeni_dashboard_set_initial_frame(
@@ -732,13 +719,10 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
                 provider_id);
 
             AcquireSRWLockExclusive(&tokeni_state_lock);
-            int committed_index = tokeni_provider_index_for_id_locked(
-                provider_id);
-            if (committed_index >= 0) {
-                tokeni_provider_options[committed_index].enabled = enabled;
-                tokeni_provider_options[committed_index].pending = 1;
-                tokeni_provider_options[committed_index].delivered = 0;
-            }
+            tokeni_windows_provider_state_click(
+                &tokeni_provider_toggle_state,
+                provider_id,
+                enabled);
             ReleaseSRWLockExclusive(&tokeni_state_lock);
             return 0;
         }
@@ -1121,6 +1105,7 @@ int tokeni_windows_tray_start(
     ZeroMemory(
         tokeni_staged_provider_options,
         sizeof(tokeni_staged_provider_options));
+    tokeni_windows_provider_state_reset(&tokeni_provider_toggle_state);
     tokeni_provider_option_count = 0;
     tokeni_staged_provider_option_count = 0;
     tokeni_provider_transaction_active = 0;
@@ -1259,34 +1244,36 @@ int tokeni_windows_tray_commit_provider_options(void)
     }
 
     tokeni_provider_option committed[TOKENI_MAX_PROVIDERS];
+    tokeni_windows_provider_state_option authoritative[TOKENI_MAX_PROVIDERS];
     ZeroMemory(committed, sizeof(committed));
+    ZeroMemory(authoritative, sizeof(authoritative));
     for (int index = 0;
          index < tokeni_staged_provider_option_count;
          index += 1)
     {
         committed[index] = tokeni_staged_provider_options[index];
-        int previous_index = tokeni_provider_index_for_id_locked(
-            committed[index].provider_id);
-        if (previous_index >= 0
-            && tokeni_provider_options[previous_index].pending)
-        {
-            if (committed[index].enabled
-                == tokeni_provider_options[previous_index].enabled)
-            {
-                // The application presentation now acknowledges the final
-                // state previously delivered for this stable provider ID.
-                committed[index].pending = 0;
-                committed[index].delivered = 0;
-            } else {
-                // A stale presentation must not visually revert the user's
-                // final click while persistence is still in flight.
-                committed[index].enabled =
-                    tokeni_provider_options[previous_index].enabled;
-                committed[index].pending = 1;
-                committed[index].delivered =
-                    tokeni_provider_options[previous_index].delivered;
-            }
-        }
+        CopyMemory(
+            authoritative[index].provider_id,
+            committed[index].provider_id,
+            TOKENI_PROVIDER_ID_CAPACITY);
+        authoritative[index].enabled = committed[index].enabled;
+    }
+    if (!tokeni_windows_provider_state_commit(
+            &tokeni_provider_toggle_state,
+            authoritative,
+            tokeni_staged_provider_option_count))
+    {
+        tokeni_provider_transaction_active = 0;
+        tokeni_staged_provider_option_count = 0;
+        ReleaseSRWLockExclusive(&tokeni_state_lock);
+        return 0;
+    }
+    for (int index = 0;
+         index < tokeni_staged_provider_option_count;
+         index += 1)
+    {
+        committed[index].enabled =
+            tokeni_provider_toggle_state.options[index].enabled;
     }
 
     ZeroMemory(tokeni_provider_options, sizeof(tokeni_provider_options));
@@ -1317,29 +1304,13 @@ int tokeni_windows_tray_take_provider_toggle_request(
     }
 
     AcquireSRWLockExclusive(&tokeni_state_lock);
-    for (int index = 0; index < tokeni_provider_option_count; index += 1) {
-        if (!tokeni_provider_options[index].pending
-            || tokeni_provider_options[index].delivered)
-        {
-            continue;
-        }
-        int required_capacity = lstrlenA(
-            tokeni_provider_options[index].provider_id) + 1;
-        if (provider_id_capacity < required_capacity) {
-            ReleaseSRWLockExclusive(&tokeni_state_lock);
-            return 0;
-        }
-        CopyMemory(
-            provider_id_utf8,
-            tokeni_provider_options[index].provider_id,
-            required_capacity);
-        *enabled = tokeni_provider_options[index].enabled;
-        tokeni_provider_options[index].delivered = 1;
-        ReleaseSRWLockExclusive(&tokeni_state_lock);
-        return 1;
-    }
+    int result = tokeni_windows_provider_state_take(
+        &tokeni_provider_toggle_state,
+        provider_id_utf8,
+        provider_id_capacity,
+        enabled);
     ReleaseSRWLockExclusive(&tokeni_state_lock);
-    return 0;
+    return result;
 }
 
 int tokeni_windows_tray_take_refresh_request(void)

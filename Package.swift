@@ -47,6 +47,9 @@ targets.insert(
 
 #if os(Windows)
 products.append(.executable(name: "TokeniWindows", targets: ["TokeniWindows"]))
+products.append(.executable(
+    name: "TokeniWindowsNativeStateTests",
+    targets: ["TokeniWindowsNativeStateTests"]))
 targets.append(
     .target(
         name: "TokeniWindowsNative",
@@ -76,6 +79,11 @@ targets.append(
         dependencies: ["TokeniWindows", "TokeniCore"],
         path: "Tests/TokeniWindowsTests",
         swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]))
+targets.append(
+    .executableTarget(
+        name: "TokeniWindowsNativeStateTests",
+        dependencies: ["TokeniWindowsNative"],
+        path: "Tests/TokeniWindowsNativeStateTests"))
 #endif
 
 let package = Package(

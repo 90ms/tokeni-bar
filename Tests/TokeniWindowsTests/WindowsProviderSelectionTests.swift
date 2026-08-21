@@ -221,6 +221,20 @@ struct WindowsProviderSelectionTests {
             persisted: false))
     }
 
+    @Test
+    func boundedShutdownRecognizesFinishedAndTimesOutUnfinishedSignals() async {
+        let finished = WindowsTaskCompletionSignal()
+        finished.finish()
+        #expect(await WindowsBoundedShutdown.wait(
+            for: finished,
+            timeout: .milliseconds(50)))
+
+        let unfinished = WindowsTaskCompletionSignal()
+        #expect(!(await WindowsBoundedShutdown.wait(
+            for: unfinished,
+            timeout: .milliseconds(10))))
+    }
+
     private static func descriptor(
         id: ProviderID,
         name: String) -> ProviderDescriptor

@@ -39,7 +39,7 @@ jobs:
           run_windows=false
           while IFS= read -r path; do
             case "$path" in
-              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|packaging/windows/*|Scripts/acquire_windows_sqlite.ps1|Scripts/package_windows.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
+              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Tests/TokeniWindowsNativeStateTests/*|packaging/windows/*|Scripts/acquire_windows_sqlite.ps1|Scripts/package_windows.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
                 run_windows=true
                 break
                 ;;
@@ -89,6 +89,11 @@ jobs:
         shell: pwsh
         run: |
           swift test --parallel
+
+      - name: Test native provider state machine
+        shell: pwsh
+        run: |
+          swift run TokeniWindowsNativeStateTests
 
       - name: Build Windows executable
         shell: pwsh
