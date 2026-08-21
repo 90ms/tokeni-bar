@@ -29,13 +29,12 @@ struct TokeniWindowsApp {
                 settings: settings))
 
         _ = try? await session.bootstrap()
-        await session.start()
 
         let tray = WindowsTrayShell()
         guard tray.start() else {
-            await session.stop()
             return
         }
+        await session.start()
 
         let services = WindowsTrayServiceCoordinator(
             executableURL: executableURL,
@@ -68,15 +67,88 @@ struct TokeniWindowsApp {
         }
         tray.setCompanionEnabled(initialCompanionVisible)
 
+        let providerRefreshSignal = WindowsProviderRefreshSignal()
+        let providerRefreshTask = Task { [session, providerRefreshSignal] in
+            var handledRevision = 0
+            while !Task.isCancelled {
+                let revision = await providerRefreshSignal.revision()
+                if revision <= handledRevision {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    continue
+                }
+
+                do {
+                    try await Task.sleep(for: .milliseconds(250))
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled else { return }
+                let targetRevision = await providerRefreshSignal.revision()
+                await session.refresh(forceProviderReload: true)
+                handledRevision = targetRevision
+            }
+        }
+        let providerToggleTask = Task {
+            [session, tray, providerRefreshSignal] in
+            var publishedSnapshot: WindowsProviderSelectionSnapshot?
+            var isFinalPass = false
+            while true {
+                let knownPresentation = UsageApplicationPresentation(
+                    sessionState: await session.state())
+                let knownSnapshot = WindowsProviderSelectionFormatter.snapshot(
+                    for: knownPresentation)
+                let persisted = await WindowsProviderToggleScheduler.drain(
+                    knownOptions: knownSnapshot.options,
+                    take: { tray.takeProviderToggleRequest() },
+                    persist: { change in
+                        await session.setEnabled(
+                            change.enabled,
+                            for: change.providerID)
+                    })
+                if persisted {
+                    await providerRefreshSignal.request()
+                }
+                if tray.takeRefreshRequest() {
+                    await providerRefreshSignal.request()
+                }
+
+                // This task is the sole provider-control publisher. Capture
+                // authoritative state only after every drained request has
+                // finished persistence, so a matching native commit is a
+                // causal acknowledgement. A click racing this capture/commit
+                // remains pending natively when its final state mismatches.
+                let authoritativePresentation = UsageApplicationPresentation(
+                    sessionState: await session.state())
+                let authoritativeSnapshot = WindowsProviderSelectionFormatter
+                    .snapshot(for: authoritativePresentation)
+                if WindowsProviderToggleScheduler.shouldPublish(
+                    previous: publishedSnapshot,
+                    current: authoritativeSnapshot,
+                    persisted: persisted),
+                   tray.updateProviderOptions(authoritativeSnapshot.options)
+                {
+                    publishedSnapshot = authoritativeSnapshot
+                }
+
+                // Cancellation may arrive after this pass already drained.
+                // Run one explicit final pass after observing it; tray.run has
+                // returned by then, so no later UI click can enter the queue.
+                if Task.isCancelled {
+                    if isFinalPass { return }
+                    isFinalPass = true
+                    continue
+                }
+                try? await Task.sleep(
+                    for: WindowsProviderToggleScheduler.pollingInterval)
+            }
+        }
+
         let tooltipTask = Task {
             [session, tray, services, companionOverlay, companionGrowth, settings,
              initialCompanionVisible] in
             var companionVisible = initialCompanionVisible
             var serviceMessage: String?
             while !Task.isCancelled {
-                if tray.takeRefreshRequest() {
-                    await session.refresh(forceProviderReload: true)
-                }
                 if tray.takeLaunchAtLoginRequest() {
                     do {
                         let enabled = try await services.toggleLaunchAtLogin()
@@ -134,9 +206,13 @@ struct TokeniWindowsApp {
                 }
                 let presentation = UsageApplicationPresentation(
                     sessionState: await session.state())
+                let providerSnapshot = WindowsProviderSelectionFormatter
+                    .snapshot(for: presentation)
                 tray.updateTooltip(Self.tooltip(for: presentation))
-                var details = WindowsUsageDetailFormatter.text(
-                    for: presentation)
+                var details = WindowsProviderSelectionFormatter.dashboardMessage(
+                    for: presentation,
+                    snapshot: providerSnapshot)
+                    ?? WindowsUsageDetailFormatter.text(for: presentation)
                 if let serviceMessage {
                     details += "\n\n\(serviceMessage)"
                 }
@@ -146,10 +222,34 @@ struct TokeniWindowsApp {
         }
 
         _ = tray.run()
+        providerToggleTask.cancel()
+        await providerToggleTask.value
+
+        // Persisted final toggles are durable, but their best-effort refresh
+        // is intentionally skipped during Quit. Provider implementations may
+        // ignore cancellation, so normal teardown has a strict upper bound.
+        providerRefreshTask.cancel()
         tooltipTask.cancel()
+        await tooltipTask.value
+        let sessionStopTask = Task { await session.stop() }
+        let providerShutdownSignal = WindowsTaskCompletionSignal()
+        Task {
+            await providerRefreshTask.value
+            await sessionStopTask.value
+            providerShutdownSignal.finish()
+        }
+        let providerShutdownCompleted = await WindowsBoundedShutdown.wait(
+            for: providerShutdownSignal,
+            timeout: WindowsBoundedShutdown.providerDeadline)
+        guard providerShutdownCompleted else {
+            // Do not tear down host-owned windows while a cancellation-ignoring
+            // provider can still return into session/history state. Ending the
+            // process first makes the timeout policy bounded and race-free.
+            ExitProcess(0)
+            return
+        }
         tray.stop()
         companionOverlay.stop()
-        await session.stop()
     }
 
     private static func tooltip(
