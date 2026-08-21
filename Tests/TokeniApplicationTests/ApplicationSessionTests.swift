@@ -5,6 +5,100 @@ import TokeniCore
 
 struct ApplicationSessionTests {
     @Test
+    func defaultsToEveryKnownProviderWhenPersistedSelectionIsMissing() async {
+        let directory = Self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let settings = JSONFileSettingsStore(
+            fileURL: directory.appending(path: "settings.json"))
+        let providers = Self.preferenceProviders()
+        let session = UsageApplicationSession(
+            providers: providers,
+            providerPreferences: ProviderPreferenceCoordinator(
+                settings: settings))
+
+        let state = await session.state()
+
+        #expect(state.enabledProviderIDs == [.codex, .claude])
+        #expect(!settings.containsValue(forKey: "enabledProviderIDs"))
+    }
+
+    @Test
+    func restoresPersistedProviderSelectionAndFiltersUnknownProviders() async {
+        let directory = Self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let settings = JSONFileSettingsStore(
+            fileURL: directory.appending(path: "settings.json"))
+        settings.set(
+            [ProviderID.codex.rawValue, "removed-provider"],
+            forKey: "enabledProviderIDs")
+        let session = UsageApplicationSession(
+            providers: Self.preferenceProviders(),
+            providerPreferences: ProviderPreferenceCoordinator(
+                settings: settings))
+
+        let state = await session.state()
+
+        #expect(state.enabledProviderIDs == [.codex])
+    }
+
+    @Test
+    func explicitSelectionWinsAndSettersPersistTheCurrentSessionState() async {
+        let directory = Self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let fileURL = directory.appending(path: "settings.json")
+        let settings = JSONFileSettingsStore(fileURL: fileURL)
+        settings.set(
+            [ProviderID.claude.rawValue],
+            forKey: "enabledProviderIDs")
+        let providers = Self.preferenceProviders()
+        let session = UsageApplicationSession(
+            providers: providers,
+            enabledProviderIDs: [.codex],
+            providerPreferences: ProviderPreferenceCoordinator(
+                settings: settings))
+
+        await session.setEnabled(false, for: .codex)
+        var state = await session.state()
+        #expect(state.enabledProviderIDs.isEmpty)
+        #expect(settings.stringArray(forKey: "enabledProviderIDs")?.isEmpty == true)
+
+        await session.setEnabled(true, for: .claude)
+        state = await session.state()
+        #expect(state.enabledProviderIDs == [.claude])
+
+        let reloaded = UsageApplicationSession(
+            providers: providers,
+            providerPreferences: ProviderPreferenceCoordinator(
+                settings: JSONFileSettingsStore(fileURL: fileURL)))
+        #expect((await reloaded.state()).enabledProviderIDs == [.claude])
+    }
+
+    @Test
+    func setEnabledProviderIDsFiltersAndPersistsDeterministically() async {
+        let directory = Self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let settings = JSONFileSettingsStore(
+            fileURL: directory.appending(path: "settings.json"))
+        let session = UsageApplicationSession(
+            providers: Self.preferenceProviders(),
+            providerPreferences: ProviderPreferenceCoordinator(
+                settings: settings))
+
+        await session.setEnabledProviderIDs([
+            .codex,
+            .claude,
+            ProviderID(rawValue: "removed-provider"),
+        ])
+
+        let state = await session.state()
+        #expect(state.enabledProviderIDs == [.codex, .claude])
+        #expect(settings.stringArray(forKey: "enabledProviderIDs") == [
+            ProviderID.claude.rawValue,
+            ProviderID.codex.rawValue,
+        ])
+    }
+
+    @Test
     func bootstrapsPersistedHistoryAndGrowthState() async throws {
         let directory = Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -203,6 +297,17 @@ struct ApplicationSessionTests {
             growthLedgerCoordinator: TokenGrowthLedgerCoordinator(
                 store: growthStore,
                 engine: Self.growthEngine))
+    }
+
+    private static func preferenceProviders() -> [any UsageProviding] {
+        [
+            TestProvider(snapshot: Self.snapshot(
+                id: .codex,
+                updatedAt: Self.fixedDate)),
+            TestProvider(snapshot: Self.snapshot(
+                id: .claude,
+                updatedAt: Self.fixedDate)),
+        ]
     }
 
     private static func snapshot(
