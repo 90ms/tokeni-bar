@@ -1071,7 +1071,7 @@ int tokeni_windows_tray_start(
     dashboard_class.hInstance = tokeni_instance;
     dashboard_class.lpfnWndProc = tokeni_dashboard_window_proc;
     dashboard_class.lpszClassName = tokeni_dashboard_class_name;
-    dashboard_class.hCursor = LoadCursorW(NULL, IDC_ARROW);
+    dashboard_class.hCursor = LoadCursorW(NULL, MAKEINTRESOURCEW(32512));
     dashboard_class.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512));
     dashboard_class.hIconSm = dashboard_class.hIcon;
     dashboard_class.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);

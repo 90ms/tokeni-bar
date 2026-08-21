@@ -93,7 +93,25 @@ jobs:
       - name: Test native provider state machine
         shell: pwsh
         run: |
-          swift run TokeniWindowsNativeStateTests
+          $harnessPath = Join-Path `
+            $env:RUNNER_TEMP `
+            "TokeniWindowsNativeStateTests.exe"
+          & clang `
+            -std=c11 `
+            -Wall `
+            -Wextra `
+            -Werror `
+            "Tests/TokeniWindowsNativeStateTests/main.c" `
+            "Sources/TokeniWindowsNative/WindowsProviderState.c" `
+            -I "Sources/TokeniWindowsNative/include" `
+            -o $harnessPath
+          if ($LASTEXITCODE -ne 0) {
+            throw "Native provider state harness compilation failed."
+          }
+          & $harnessPath
+          if ($LASTEXITCODE -ne 0) {
+            throw "Native provider state harness failed."
+          }
 
       - name: Build Windows executable
         shell: pwsh
