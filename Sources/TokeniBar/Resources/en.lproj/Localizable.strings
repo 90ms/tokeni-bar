@@ -395,7 +395,7 @@
 "companion.rewards.title" = "Star Shard Rewards";
 "companion.rewards.balance" = "%d Star Shards";
 "companion.rewards.description" = "Earn Star Shards from attendance, verified growth, discoveries, and collection milestones, then unlock boosters and auras at level milestones.";
-"companion.rewards.description.simplified" = "Your first growth activity each day grants 100 Star Shards and one Starlight Egg, with more shards from growth and collection milestones.";
+"companion.rewards.description.simplified" = "Your first growth activity each day grants 300 Star Shards and one Starlight Egg, with more shards from growth and collection milestones.";
 "companion.rewards.sources" = "Each stable release also includes a 300 Star Shard reward that you claim manually.";
 "companion.rewards.sources.simplified" = "Daily attendance · Growth and collection rewards · Update rewards";
 "companion.rewards.received" = "Received %d Star Shards!";

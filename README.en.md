@@ -170,7 +170,9 @@ Cosmetics now include independent Ground and Sidekick slots alongside existing
 auras, backgrounds, and palettes. Cloud Cushion, Hologram Platform, and Meadow
 Patch sit beneath a pet; Pixel Chick, Star Sprite, and Mini Drone move beside it.
 
-The first growth activity each day grants 100 Star Shards and one Starlight Egg.
+The first growth activity each day grants 300 Star Shards and one Starlight Egg.
+Weekly attendance grants another 100, 200, and 300 shards on days 3, 5, and 7,
+and monthly attendance grants another 500 shards on day 20.
 Automatic activity attendance, the first verified growth of a day, weekly and
 monthly activity, species and variant discoveries, and a manually claimed
 300-shard reward for each stable app version also grant Star Shards. Shards are

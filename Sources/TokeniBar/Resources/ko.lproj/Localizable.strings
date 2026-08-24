@@ -395,7 +395,7 @@
 "companion.rewards.title" = "별조각 보상";
 "companion.rewards.balance" = "별조각 %d개";
 "companion.rewards.description" = "출석, 검증된 성장, 새로운 펫·외형 발견과 도감 달성으로 별조각을 얻고 레벨 구간에서 부스터와 오라를 해금합니다.";
-"companion.rewards.description.simplified" = "매일 첫 성장 활동으로 별조각 100개와 별빛 알 1개를 받고, 성장과 도감 달성으로 추가 별조각을 얻습니다.";
+"companion.rewards.description.simplified" = "매일 첫 성장 활동으로 별조각 300개와 별빛 알 1개를 받고, 성장과 도감 달성으로 추가 별조각을 얻습니다.";
 "companion.rewards.sources" = "새 안정 버전마다 별조각 300개를 버튼으로 직접 받을 수 있습니다.";
 "companion.rewards.sources.simplified" = "일일 출석 · 성장 및 도감 보상 · 업데이트 보상";
 "companion.rewards.received" = "별조각 %d개를 받았습니다!";

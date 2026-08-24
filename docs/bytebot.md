@@ -39,7 +39,8 @@ growth target for repeatable shard conversion.
 Tokeni supports Starter, Homecoming, Mystery, Starlight, and Prismatic Eggs.
 Each egg has a UUID and stable seed so interruption cannot reroll its result.
 The first verified growth activity each local day grants one Starlight Egg and
-100 Star Shards.
+300 Star Shards. Weekly attendance grants another 100, 200, and 300 shards on
+days 3, 5, and 7, and monthly attendance grants another 500 shards on day 20.
 The available content generation is frozen when an egg is acquired. Eggs saved
 before the update keep the generation-one pool; newly acquired eggs include
 generation two without changing an older seed's outcome.

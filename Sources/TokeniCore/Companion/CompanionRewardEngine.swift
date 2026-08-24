@@ -2,10 +2,10 @@ import Foundation
 
 public struct CompanionRewardRules: Sendable {
     public static let standard = CompanionRewardRules(
-        dailyAttendance: 100,
-        weeklyAttendance: [3: 10, 5: 20, 7: 30],
+        dailyAttendance: 300,
+        weeklyAttendance: [3: 100, 5: 200, 7: 300],
         monthlyAttendanceDays: 20,
-        monthlyAttendanceReward: 50,
+        monthlyAttendanceReward: 500,
         speciesDiscovery: 20,
         mutationDiscovery: 30,
         variantDiscovery: [.mutated: 30, .prismatic: 50],

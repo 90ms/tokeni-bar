@@ -26,8 +26,8 @@ struct CompanionRewardEngineTests {
             total += grants.reduce(0) { $0 + $1.amount }
         }
 
-        #expect(total == 760)
-        #expect(state.starShards == 760)
+        #expect(total == 2_700)
+        #expect(state.starShards == 2_700)
         #expect(engine.attendanceCountThisWeek(
             at: start,
             in: state) == 7)
@@ -62,7 +62,7 @@ struct CompanionRewardEngineTests {
             at: start,
             in: state) == 20)
         #expect(finalGrants.contains {
-            $0.reason == .monthlyAttendance(days: 20) && $0.amount == 50
+            $0.reason == .monthlyAttendance(days: 20) && $0.amount == 500
         })
     }
 
@@ -82,7 +82,7 @@ struct CompanionRewardEngineTests {
             try engine.checkIn(at: earlier, in: &state)
         }
         #expect(state.attendanceRecords.count == 1)
-        #expect(state.starShards == 100)
+        #expect(state.starShards == 300)
     }
 
     @Test("Collection and journey rewards reconcile idempotently")

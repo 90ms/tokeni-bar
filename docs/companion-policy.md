@@ -149,8 +149,10 @@ levels from 60, and every level from 70. The complete level journey grants 460
 shards. Level 100 grants 50 of that total. First mutation discovery is handled once as an appearance
 discovery. A mutation appearance never grants stronger benefits than Standard.
 
-The first verified growth activity of each local day grants 100 shards and one
-Starlight Egg. Booster items of the same multiplier extend the active expiry by
+The first verified growth activity of each local day grants 300 shards and one
+Starlight Egg. Weekly attendance grants another 100, 200, and 300 shards on
+days 3, 5, and 7, and monthly attendance grants another 500 shards on day 20.
+Booster items of the same multiplier extend the active expiry by
 their full duration. Activating a different multiplier replaces the active
 booster and discards its remaining time after explicit confirmation.
 
