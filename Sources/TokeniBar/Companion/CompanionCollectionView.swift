@@ -1679,16 +1679,36 @@ struct CompanionCollectionView: View {
                                 systemImage: "shippingbox.fill")
                         }
                         .buttonStyle(.borderedProminent)
-                        Text(self.store.companionLevel
-                                == CompanionLevelCurve.standard.maximumLevel
-                            ? AppLocalization.string(
-                                "companion.maxLevel.growthHint")
-                            : AppLocalization.format(
+                        if self.store.companionLevel
+                            == CompanionLevelCurve.standard.maximumLevel
+                        {
+                            VStack(alignment: .leading, spacing: 2) {
+                                if self.store.activeCompanionIsGrowthTarget,
+                                   let remainder = self.store
+                                    .companionMaxLevelConversionRemainder
+                                {
+                                    Text(AppLocalization.format(
+                                        "companion.maxLevel.conversionProgress",
+                                        remainder,
+                                        CompanionRewardEngine
+                                            .maxLevelTokenCost))
+                                    Text(AppLocalization.string(
+                                        "companion.maxLevel.growthHint"))
+                                } else {
+                                    Text(AppLocalization.string(
+                                        "companion.maxLevel.selectGrowthTargetHint"))
+                                }
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        } else {
+                            Text(AppLocalization.format(
                                 "companion.level.nextReward",
                                 self.store.companionNextRecurringRewardLevel,
                                 self.store.companionNextRecurringRewardShards))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     Spacer()
                 }
@@ -2597,6 +2617,36 @@ struct CompanionCollectionView: View {
                     "companion.personality.\(personalityID.rawValue)"))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+            }
+
+            if isMaximumLevel {
+                if isGrowthTarget {
+                    let remainder = self.store.companionRewardState
+                        .maxLevelConversionRemainders[
+                            generation.generationID,
+                            default: 0]
+                    ProgressView(
+                        value: Double(remainder),
+                        total: Double(
+                            CompanionRewardEngine.maxLevelTokenCost))
+                        .accessibilityLabel(AppLocalization.string(
+                            "companion.maxLevel.progress.accessibility"))
+                        .accessibilityValue(AppLocalization.format(
+                            "companion.maxLevel.conversionProgress",
+                            remainder,
+                            CompanionRewardEngine.maxLevelTokenCost))
+                    Text(AppLocalization.format(
+                        "companion.maxLevel.conversionProgress",
+                        remainder,
+                        CompanionRewardEngine.maxLevelTokenCost))
+                        .font(.caption2)
+                        .foregroundStyle(.green)
+                } else {
+                    Text(AppLocalization.string(
+                        "companion.maxLevel.selectGrowthTargetHint"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             HStack {

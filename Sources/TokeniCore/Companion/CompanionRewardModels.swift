@@ -131,7 +131,7 @@ public struct CompanionAttendanceRecord: Codable, Hashable, Sendable {
 }
 
 public struct CompanionRewardState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 8
+    public static let currentSchemaVersion = 9
 
     public var schemaVersion: Int
     public var starShards: Int
@@ -152,7 +152,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
     public var activeEnergyBooster: CompanionActiveEnergyBooster?
     public var rewardedBondMilestoneIDs: Set<String>
     public var processedEggTransactionIDs: [UUID]
-    public var maxLevelGrowthRemainders: [UUID: Int]
+    public var maxLevelConversionRemainders: [UUID: Int64]
     public var processedMaxLevelGrowthAwardIDs: [UUID]
     public var updatedAt: Date
 
@@ -176,7 +176,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         activeEnergyBooster: CompanionActiveEnergyBooster? = nil,
         rewardedBondMilestoneIDs: Set<String> = [],
         processedEggTransactionIDs: [UUID] = [],
-        maxLevelGrowthRemainders: [UUID: Int] = [:],
+        maxLevelConversionRemainders: [UUID: Int64] = [:],
         processedMaxLevelGrowthAwardIDs: [UUID] = [],
         updatedAt: Date = .now)
     {
@@ -203,9 +203,8 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         self.rewardedBondMilestoneIDs = rewardedBondMilestoneIDs
         self.processedEggTransactionIDs = Array(
             processedEggTransactionIDs.suffix(512))
-        self.maxLevelGrowthRemainders = maxLevelGrowthRemainders.mapValues {
-            max($0, 0)
-        }
+        self.maxLevelConversionRemainders =
+            maxLevelConversionRemainders.mapValues { max($0, 0) }
         self.processedMaxLevelGrowthAwardIDs = Array(
             processedMaxLevelGrowthAwardIDs.suffix(512))
         self.updatedAt = updatedAt
@@ -239,7 +238,9 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             && self.energyBoosterInventory.values.allSatisfy { $0 >= 0 }
             && Set(self.processedEggTransactionIDs).count
                 == self.processedEggTransactionIDs.count
-            && self.maxLevelGrowthRemainders.values.allSatisfy { $0 >= 0 }
+            && self.maxLevelConversionRemainders.values.allSatisfy {
+                $0 >= 0 && $0 < CompanionRewardEngine.maxLevelTokenCost
+            }
             && Set(self.processedMaxLevelGrowthAwardIDs).count
                 == self.processedMaxLevelGrowthAwardIDs.count
     }
@@ -265,6 +266,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         case activeEnergyBooster
         case rewardedBondMilestoneIDs
         case processedEggTransactionIDs
+        case maxLevelConversionRemainders
         case maxLevelGrowthRemainders
         case processedMaxLevelGrowthAwardIDs
         case updatedAt
@@ -307,10 +309,27 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         if rewardedRarities.contains(.legendary) {
             rewardedVariantIDs.insert(.prismatic)
         }
+        let decodedStarShards = try container.decodeIfPresent(
+            Int.self,
+            forKey: .starShards) ?? 0
+        let migratedMaxLevelState: (
+            starShards: Int,
+            remainders: [UUID: Int64])
+        if decodedVersion >= 9 {
+            migratedMaxLevelState = (
+                decodedStarShards,
+                try container.decodeIfPresent(
+                    [UUID: Int64].self,
+                    forKey: .maxLevelConversionRemainders) ?? [:])
+        } else {
+            migratedMaxLevelState = Self.migrateLegacyMaxLevelGrowth(
+                try container.decodeIfPresent(
+                    [UUID: Int].self,
+                    forKey: .maxLevelGrowthRemainders) ?? [:],
+                starShards: decodedStarShards)
+        }
         self.init(
-            starShards: try container.decodeIfPresent(
-                Int.self,
-                forKey: .starShards) ?? 0,
+            starShards: migratedMaxLevelState.starShards,
             attendanceRecords: try container.decodeIfPresent(
                 [CompanionAttendanceRecord].self,
                 forKey: .attendanceRecords) ?? [],
@@ -354,9 +373,7 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             processedEggTransactionIDs: try container.decodeIfPresent(
                 [UUID].self,
                 forKey: .processedEggTransactionIDs) ?? [],
-            maxLevelGrowthRemainders: try container.decodeIfPresent(
-                [UUID: Int].self,
-                forKey: .maxLevelGrowthRemainders) ?? [:],
+            maxLevelConversionRemainders: migratedMaxLevelState.remainders,
             processedMaxLevelGrowthAwardIDs: try container.decodeIfPresent(
                 [UUID].self,
                 forKey: .processedMaxLevelGrowthAwardIDs) ?? [],
@@ -419,12 +436,42 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
             self.processedEggTransactionIDs,
             forKey: .processedEggTransactionIDs)
         try container.encode(
-            self.maxLevelGrowthRemainders,
-            forKey: .maxLevelGrowthRemainders)
+            self.maxLevelConversionRemainders,
+            forKey: .maxLevelConversionRemainders)
         try container.encode(
             self.processedMaxLevelGrowthAwardIDs,
             forKey: .processedMaxLevelGrowthAwardIDs)
         try container.encode(self.updatedAt, forKey: .updatedAt)
+    }
+
+    private static func migrateLegacyMaxLevelGrowth(
+        _ legacyRemainders: [UUID: Int],
+        starShards: Int) -> (starShards: Int, remainders: [UUID: Int64])
+    {
+        var migratedStarShards = max(starShards, 0)
+        var migratedRemainders: [UUID: Int64] = [:]
+        for (generationID, legacyEnergy) in legacyRemainders {
+            let (tokenProduct, tokenOverflow) = Int64(max(legacyEnergy, 0))
+                .multipliedReportingOverflow(
+                    by: TokenGrowthEnergyFormula.standard.tokensPerEnergy)
+            let tokens = tokenOverflow ? Int64.max : tokenProduct
+            let cycles = tokens / CompanionRewardEngine.maxLevelTokenCost
+            let (shardProduct, shardOverflow) = cycles
+                .multipliedReportingOverflow(by: Int64(
+                    CompanionRewardEngine.maxLevelTokenShardReward))
+            let shardValue = shardOverflow ? Int64.max : shardProduct
+            let shards = shardValue >= Int64(Int.max)
+                ? Int.max
+                : Int(shardValue)
+            let (sum, overflow) = migratedStarShards.addingReportingOverflow(
+                shards)
+            migratedStarShards = overflow ? Int.max : sum
+            let remainder = tokens % CompanionRewardEngine.maxLevelTokenCost
+            if remainder > 0 {
+                migratedRemainders[generationID] = remainder
+            }
+        }
+        return (migratedStarShards, migratedRemainders)
     }
 }
 

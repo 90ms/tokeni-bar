@@ -14,7 +14,7 @@ state contains no provider name, raw token total, prompt, or response.
 4. Collect new species and appearances from eggs.
 5. Convert an identical hatch into XP for the existing pet.
 6. Inspect pet details and action animations in the collection.
-7. At level 100, keep converting verified base Growth Energy into Star Shards.
+7. At level 100, keep converting verified tokens into Star Shards.
 
 ## Growth to level 100
 
@@ -27,8 +27,8 @@ cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)
 Level 100 requires 300 million verified tokens. Early levels arrive quickly and
 growth slows toward 100. Evolution is manual and spends no XP. XP stops at
 level 100 and overflow is not stored as XP. A level-100 growth target instead
-converts every 100 verified base Growth Energy into 20 Star Shards. Booster
-multipliers do not affect this conversion.
+converts every 100,000 verified tokens into 10 Star Shards. Progress toward the
+next conversion is preserved per pet, and booster multipliers do not apply.
 
 The displayed companion and growth target are independent. A favorite max-level
 pet can stay visible while another owned pet receives Growth XP, or remain the
@@ -123,8 +123,9 @@ recorded in local reward state so it cannot pay twice.
 
 Schema v11 stores pet UUIDs, species, appearance, Growth XP normalized to the
 500-XP cap, growth target, eggs, names, personalities, memories, collection,
-and local rewards. Reward schema v8 stores max-level conversion remainders and
-processed award IDs, never raw token totals. Migration removes v10 synthesis records and inactive
-synthesized mutation pets. Unverifiable or stale usage never becomes XP. See
-the [pet system policy](companion-policy.md) and [usage display guide](usage.md)
-for details.
+and local rewards. Reward schema v9 stores only per-pet progress toward the next
+max-level conversion and processed award IDs, never raw token totals. Previous
+energy remainders migrate at the new rate. Migration also removes v10 synthesis
+records and inactive synthesized mutation pets. Unverifiable or stale usage
+never becomes XP. See the [pet system policy](companion-policy.md) and
+[usage display guide](usage.md) for details.

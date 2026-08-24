@@ -41,23 +41,62 @@ public struct GrowthEnergyAward: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let dateKey: String
     public let energy: Int
+    public let verifiedTokens: Int64
     public let createdAt: Date
 
     public init(
         id: UUID = UUID(),
         dateKey: String,
         energy: Int,
+        verifiedTokens: Int64 = 0,
         createdAt: Date)
     {
         self.id = id
         self.dateKey = dateKey
         self.energy = max(energy, 0)
+        self.verifiedTokens = max(verifiedTokens, 0)
         self.createdAt = createdAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case dateKey
+        case energy
+        case verifiedTokens
+        case createdAt
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let energy = try container.decode(Int.self, forKey: .energy)
+        let legacyVerifiedTokens: Int64 = {
+            let (tokens, overflow) = Int64(max(energy, 0))
+                .multipliedReportingOverflow(
+                    by: TokenGrowthEnergyFormula.standard.tokensPerEnergy)
+            return overflow ? Int64.max : tokens
+        }()
+        self.init(
+            id: try container.decode(UUID.self, forKey: .id),
+            dateKey: try container.decode(String.self, forKey: .dateKey),
+            energy: energy,
+            verifiedTokens: try container.decodeIfPresent(
+                Int64.self,
+                forKey: .verifiedTokens) ?? legacyVerifiedTokens,
+            createdAt: try container.decode(Date.self, forKey: .createdAt))
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.id, forKey: .id)
+        try container.encode(self.dateKey, forKey: .dateKey)
+        try container.encode(self.energy, forKey: .energy)
+        try container.encode(self.verifiedTokens, forKey: .verifiedTokens)
+        try container.encode(self.createdAt, forKey: .createdAt)
     }
 }
 
 public struct TokenGrowthLedgerState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
 
     public var schemaVersion: Int
     public var checkpoints: [GrowthMeasurementCheckpoint]
@@ -225,16 +264,19 @@ public struct TokenGrowthLedgerEngine: Sendable {
             state.conversionRemainderTokens = max(
                 convertibleTokens - consumedTokens,
                 0)
-            guard energy > 0,
-                  let creditIndex = state.dayCredits.firstIndex(where: {
-                      $0.dateKey == dateKey
-                  })
-            else { continue }
-            state.dayCredits[creditIndex].targetEnergy += energy
-            state.dayCredits[creditIndex].awardedEnergy += energy
+            if energy > 0,
+               let creditIndex = state.dayCredits.firstIndex(where: {
+                   $0.dateKey == dateKey
+               })
+            {
+                state.dayCredits[creditIndex].targetEnergy += energy
+                state.dayCredits[creditIndex].awardedEnergy += energy
+            }
+            guard newTokens > 0 else { continue }
             let award = GrowthEnergyAward(
                 dateKey: dateKey,
                 energy: energy,
+                verifiedTokens: newTokens,
                 createdAt: now)
             state.pendingAwards.append(award)
             awards.append(award)

@@ -403,10 +403,13 @@ struct CompanionRewardEngineTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let store = CompanionRewardStateStore(fileURL: file)
         let updatedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let generationID = try #require(UUID(
+            uuidString: "1E4E38EE-91F0-4FC4-943F-F82AFE3C410E"))
         let state = CompanionRewardState(
             starShards: 42,
             rewardedSpeciesIDs: [.bytebot],
             rewardedJourneyCount: 1,
+            maxLevelConversionRemainders: [generationID: 50_000],
             updatedAt: updatedAt)
 
         try await store.save(state)
@@ -481,6 +484,30 @@ struct CompanionRewardEngineTests {
         #expect(state.selectedCosmeticIDs == [.sparkleAura])
     }
 
+    @Test("Version eight max-level energy remainder migrates at the new rate")
+    func legacyMaxLevelRemainderMigration() throws {
+        let generationID = try #require(UUID(
+            uuidString: "A64D2846-FE95-4B7F-901B-E55A5942D646"))
+        let data = Data(
+            """
+            {
+              "schemaVersion" : 8,
+              "starShards" : 20,
+              "maxLevelGrowthRemainders" : {
+                "\(generationID.uuidString)" : 3
+              }
+            }
+            """.utf8)
+
+        let state = try JSONDecoder().decode(
+            CompanionRewardState.self,
+            from: data)
+
+        #expect(state.schemaVersion == CompanionRewardState.currentSchemaVersion)
+        #expect(state.starShards == 200)
+        #expect(state.maxLevelConversionRemainders.isEmpty)
+    }
+
     @Test("Level milestones replace bond rewards without duplicate grants")
     func levelMilestones() {
         let engine = CompanionRewardEngine()
@@ -541,30 +568,31 @@ struct CompanionRewardEngineTests {
         #expect(state.starShards == 460)
     }
 
-    @Test("Maximum-level base growth repeatedly converts to shards")
-    func maximumLevelGrowthConversion() {
+    @Test("Maximum-level verified tokens repeatedly convert to shards")
+    func maximumLevelTokenConversion() {
         let engine = CompanionRewardEngine()
         let generationID = UUID()
         let firstAwardID = UUID()
         var state = CompanionRewardState()
 
-        #expect(engine.consumeMaxLevelGrowth(
+        #expect(engine.consumeMaxLevelTokens(
             generationID: generationID,
             awardID: firstAwardID,
-            baseEnergy: 250,
-            in: &state) == 40)
-        #expect(state.maxLevelGrowthRemainders[generationID] == 50)
-        #expect(engine.consumeMaxLevelGrowth(
+            verifiedTokens: 100_000,
+            in: &state) == 10)
+        #expect(state.maxLevelConversionRemainders[generationID] == 0)
+        #expect(engine.consumeMaxLevelTokens(
             generationID: generationID,
             awardID: firstAwardID,
-            baseEnergy: 250,
+            verifiedTokens: 100_000,
             in: &state) == 0)
-        #expect(engine.consumeMaxLevelGrowth(
+        #expect(engine.consumeMaxLevelTokens(
             generationID: generationID,
             awardID: UUID(),
-            baseEnergy: 50,
+            verifiedTokens: 250_000,
             in: &state) == 20)
-        #expect(state.starShards == 60)
+        #expect(state.maxLevelConversionRemainders[generationID] == 50_000)
+        #expect(state.starShards == 30)
     }
 
     @Test("Imported pets skip historical rewards but earn future milestones")

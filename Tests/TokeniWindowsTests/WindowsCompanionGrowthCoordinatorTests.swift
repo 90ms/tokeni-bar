@@ -24,6 +24,26 @@ struct WindowsCompanionGrowthCoordinatorTests {
     }
 
     @Test
+    func tokenOnlyAwardsRemainDurableWithoutAddingGrowthEnergy() async throws {
+        let award = GrowthEnergyAward(
+            id: UUID(uuidString: "F46CD794-B70F-4239-B71B-B4BA069308E3")!,
+            dateKey: "2026-08-21",
+            energy: 0,
+            verifiedTokens: 100_000,
+            createdAt: Date(timeIntervalSince1970: 1_777_000_050))
+        let harness = GrowthHarness(award: award)
+        let coordinator = Self.coordinator(harness: harness)
+
+        _ = try await coordinator.load()
+        let state = try await coordinator.applyPendingAwards()
+
+        #expect(state.growthEnergy == 0)
+        #expect(state.appliedGrowthAwardIDs == [award.id])
+        #expect(await harness.events() == [.saved, .marked])
+        #expect(await harness.pendingAwardIDs().isEmpty)
+    }
+
+    @Test
     func failedSaveLeavesAwardPendingAndDoesNotChangeCurrentState() async throws {
         let award = GrowthEnergyAward(
             id: UUID(uuidString: "7D205948-41EE-429E-BCAC-129D939E862B")!,

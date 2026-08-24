@@ -185,7 +185,10 @@
 "companion.maxLevel.talk" = "Talk to your fully grown friend";
 "companion.maxLevel.action" = "A grown friend’s request";
 "companion.level.maximum" = "Level 100 · Fully grown";
-"companion.maxLevel.growthHint" = "Earn 20 Star Shards for every 100 verified base Growth Energy.";
+"companion.maxLevel.growthHint" = "Earn 10 Star Shards for every 100,000 verified tokens.";
+"companion.maxLevel.conversionProgress" = "Star Shard conversion progress: %lld / %lld tokens";
+"companion.maxLevel.progress.accessibility" = "Max-level Star Shard conversion progress";
+"companion.maxLevel.selectGrowthTargetHint" = "Select this pet as the growth target to earn Star Shards.";
 "companion.maxLevel.message.1" = "I’m all grown up! Shall we help another friend?";
 "companion.maxLevel.message.2" = "Thanks for raising me. Another friend is waiting for you!";
 "companion.maxLevel.message.3" = "I’m ready! Let’s help someone else grow.";
@@ -521,12 +524,12 @@
 "settings.companion.animationIntensity.full" = "Full";
 "settings.companion.motion" = "Animations pause automatically with Reduce Motion or Low Power Mode.";
 "settings.companion.growth" = "Growth";
-"settings.companion.rules" = "Every 600,000 verified tokens grant one Growth XP up to level 100. Evolution is manual at levels 10 and 25; milestone levels from 30 grant Star Shards, and every 100 base Growth Energy after level 100 grants 20 shards.";
+"settings.companion.rules" = "Every 600,000 verified tokens grant one Growth XP up to level 100. Evolution is manual at levels 10 and 25; milestone levels from 30 grant Star Shards, and every 100,000 verified tokens after level 100 grant 10 shards.";
 "settings.companion.today" = "Today: %lld tokens → +%d energy";
 "settings.companion.wallet" = "Current energy %d · carried today %d";
 "settings.companion.providers" = "Growth data available from %d of %d connected providers.";
 "settings.companion.privacy.title" = "Local progress";
-"settings.companion.privacy" = "Pet UUIDs, species, variants, forms, Growth XP, eggs, names, personalities, memories, collection guarantees, and egg transaction IDs are saved to companion state. Star Shards, attendance dates, cosmetics, boosters, and awarded milestone identifiers stay in a separate local reward file. Token checkpoints stay in the local usage ledger. Provider names, raw token totals, prompts, responses, and credentials are never saved to companion state.";
+"settings.companion.privacy" = "Pet UUIDs, species, variants, forms, Growth XP, eggs, names, personalities, memories, collection guarantees, and egg transaction IDs are saved to companion state. Star Shards, attendance dates, cosmetics, boosters, max-level conversion progress, and awarded milestone identifiers stay in a separate local reward file. Token checkpoints stay in the local usage ledger. Provider names, raw token totals, prompts, responses, and credentials are never saved to companion state.";
 "settings.launchAtLogin" = "Launch at login";
 "settings.launchAtLogin.approval" = "Approval is required in System Settings → General → Login Items.";
 "settings.updates.title" = "App Updates";

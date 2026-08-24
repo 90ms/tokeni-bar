@@ -27,9 +27,27 @@ struct TokenGrowthLedgerTests {
             in: &state)
 
         #expect(awards.map(\.energy) == [4])
+        #expect(awards.map(\.verifiedTokens) == [100_000])
         #expect(state.dayCredits.first?.aggregateTokens == 100_000)
         #expect(state.dayCredits.first?.targetEnergy == 4)
         #expect(state.pendingAwards == awards)
+    }
+
+    @Test("Verified sub-energy token deltas create durable awards")
+    func subEnergyTokenAwards() throws {
+        let now = try #require(self.date("2026-07-26T12:00:00Z"))
+        let engine = TokenGrowthLedgerEngine(calendar: self.calendar)
+        var state = TokenGrowthLedgerState()
+
+        let awards = engine.process(
+            observations: [self.daily(.codex, tokens: 100_000, at: now)],
+            at: now,
+            in: &state)
+
+        #expect(awards.map(\.energy) == [0])
+        #expect(awards.map(\.verifiedTokens) == [100_000])
+        #expect(state.pendingAwards == awards)
+        #expect(state.conversionRemainderTokens == 100_000)
     }
 
     @Test("Repeated daily observations never pay twice")
@@ -101,6 +119,26 @@ struct TokenGrowthLedgerTests {
 
         #expect(decoded.schemaVersion == TokenGrowthLedgerState.currentSchemaVersion)
         #expect(decoded.conversionRemainderTokens == 0)
+    }
+
+    @Test("Legacy growth awards recover their verified-token delta")
+    func legacyGrowthAwardDecoding() throws {
+        let data = Data(
+            """
+            {
+              "id" : "BC134094-E4D0-4EA4-85B9-25383F1865DC",
+              "dateKey" : "2026-07-26",
+              "energy" : 2,
+              "createdAt" : 1772366400
+            }
+            """.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+
+        let award = try decoder.decode(GrowthEnergyAward.self, from: data)
+
+        #expect(award.energy == 2)
+        #expect(award.verifiedTokens == 1_200_000)
     }
 
     @Test("A delayed daily bucket is credited to its original usage date")

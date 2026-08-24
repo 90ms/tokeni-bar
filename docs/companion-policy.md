@@ -38,12 +38,12 @@ arrive quickly and progression slows toward level 100. Hatchling, junior, and
 adult forms correspond to levels 1, 10, and 25. Evolution is manual and spends
 no XP.
 
-XP clamps to 500 at level 100 and overflow is not stored as XP. Verified base
-Growth Energy earned while a level-100 pet is the target enters a separate
-repeatable conversion: each 100 energy grants 20 Star Shards, with the remainder
-kept per pet. Booster multipliers do not apply to this conversion. A later cap increase
-changes the maximum-level and cumulative-XP policy values together; hidden XP
-beyond the previous cap is never banked.
+XP clamps to 500 at level 100 and overflow is not stored as XP. Verified tokens
+earned while a level-100 pet is the target enter a separate repeatable
+conversion: every 100,000 verified tokens grant 10 Star Shards, with progress
+toward the next conversion kept per pet. Booster multipliers do not apply. A
+later cap increase changes the maximum-level and cumulative-XP policy values
+together; hidden XP beyond the previous cap is never banked.
 
 ## 3. Displayed companion and growth target
 
@@ -170,8 +170,9 @@ palette.
 ## 9. Persistence and safety
 
 Schema v11 stores XP normalized to level 100 and an optional growth-target UUID.
-Reward schema v8 stores per-pet max-level conversion remainders and processed
-award IDs without storing raw token totals.
+Reward schema v9 stores only per-pet progress toward the next max-level
+conversion and processed award IDs without storing raw token totals. Previous
+energy remainders migrate at the new rate.
 Version 10 loads into v11, discarding synthesis data and XP beyond the cap. The
 growth target must refer to the active pet or an owned inactive pet.
 

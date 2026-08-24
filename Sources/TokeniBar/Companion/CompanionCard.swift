@@ -139,39 +139,68 @@ struct CompanionCard: View {
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
 
-                if !self.store.isShowingArchivedCompanion,
-                   self.store.companionStage != .egg
+                if self.store.displayedCompanionStage != .egg
                 {
-                    ProgressView(value: self.store.companionStageProgress)
-                        .accessibilityLabel(AppLocalization.string(
-                            "companion.progress.accessibility.label"))
-                        .accessibilityValue(AppLocalization.format(
-                            "companion.progress.accessibility.value",
-                            self.store.companionXPIntoLevel,
-                            self.store.companionNextLevelXP))
-                    if self.store.companionLevel
+                    if self.store.displayedCompanionLevel
                         == CompanionLevelCurve.standard.maximumLevel
                     {
-                        Text(AppLocalization.string(
-                            "companion.maxLevel.growthHint"))
-                            .font(.caption2)
-                            .foregroundStyle(.green)
-                    } else if let evolutionLevel = self.store.companionNextEvolutionLevel {
-                        Text(AppLocalization.format(
-                            "companion.level.nextEvolution",
-                            evolutionLevel))
-                            .font(.caption2)
-                            .foregroundStyle(
-                                self.store.canPerformCompanionAction
-                                    ? Color.green
-                                    : Color.secondary)
-                    } else {
-                        Text(AppLocalization.format(
-                            "companion.level.nextReward",
-                            self.store.companionNextRecurringRewardLevel,
-                            self.store.companionNextRecurringRewardShards))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        if self.store.displayedCompanionIsGrowthTarget,
+                           let remainder = self.store
+                            .companionMaxLevelConversionRemainder
+                        {
+                            ProgressView(
+                                value: Double(remainder),
+                                total: Double(
+                                    CompanionRewardEngine.maxLevelTokenCost))
+                                .accessibilityLabel(AppLocalization.string(
+                                    "companion.maxLevel.progress.accessibility"))
+                                .accessibilityValue(AppLocalization.format(
+                                    "companion.maxLevel.conversionProgress",
+                                    remainder,
+                                    CompanionRewardEngine.maxLevelTokenCost))
+                            Text(AppLocalization.format(
+                                "companion.maxLevel.conversionProgress",
+                                remainder,
+                                CompanionRewardEngine.maxLevelTokenCost))
+                                .font(.caption2)
+                                .foregroundStyle(.green)
+                            Text(AppLocalization.string(
+                                "companion.maxLevel.growthHint"))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text(AppLocalization.string(
+                                "companion.maxLevel.selectGrowthTargetHint"))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else if !self.store.isShowingArchivedCompanion {
+                        ProgressView(value: self.store.companionStageProgress)
+                            .accessibilityLabel(AppLocalization.string(
+                                "companion.progress.accessibility.label"))
+                            .accessibilityValue(AppLocalization.format(
+                                "companion.progress.accessibility.value",
+                                self.store.companionXPIntoLevel,
+                                self.store.companionNextLevelXP))
+                        if let evolutionLevel = self.store
+                            .companionNextEvolutionLevel
+                        {
+                            Text(AppLocalization.format(
+                                "companion.level.nextEvolution",
+                                evolutionLevel))
+                                .font(.caption2)
+                                .foregroundStyle(
+                                    self.store.canPerformCompanionAction
+                                        ? Color.green
+                                        : Color.secondary)
+                        } else {
+                            Text(AppLocalization.format(
+                                "companion.level.nextReward",
+                                self.store.companionNextRecurringRewardLevel,
+                                self.store.companionNextRecurringRewardShards))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }

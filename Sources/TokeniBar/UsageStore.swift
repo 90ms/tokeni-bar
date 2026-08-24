@@ -1928,6 +1928,29 @@ final class UsageStore: ObservableObject {
             afterDailyTokens: self.tokenGrowthLedgerState.conversionRemainderTokens)
     }
 
+    var companionMaxLevelConversionRemainder: Int64? {
+        guard self.companionState.growthTargetLevel
+                >= CompanionLevelCurve.standard.maximumLevel,
+              let generationID = self.companionState
+                .resolvedGrowthTargetGenerationID
+        else { return nil }
+        return self.companionRewardState.maxLevelConversionRemainders[
+            generationID,
+            default: 0]
+    }
+
+    var activeCompanionIsGrowthTarget: Bool {
+        self.companionState.resolvedGrowthTargetGenerationID
+            == self.companionState.generationID
+    }
+
+    var displayedCompanionIsGrowthTarget: Bool {
+        let displayedGenerationID = self.showcasedCompanion?.generationID
+            ?? self.companionState.generationID
+        return self.companionState.resolvedGrowthTargetGenerationID
+            == displayedGenerationID
+    }
+
     var companionGrowthProviderBreakdown: [CompanionGrowthProviderBreakdown] {
         let dateKey = GrowthLocalDate.key(for: .now)
         let totals = self.tokenGrowthLedgerState.providerDayTotals
@@ -2213,6 +2236,7 @@ final class UsageStore: ObservableObject {
                 id: award.id,
                 dateKey: award.dateKey,
                 energy: overflow ? Int.max : boostedEnergy,
+                verifiedTokens: award.verifiedTokens,
                 createdAt: award.createdAt)
             let events: [CompanionGameEvent]
             do {
@@ -2233,10 +2257,10 @@ final class UsageStore: ObservableObject {
                let targetID = companion.resolvedGrowthTargetGenerationID
             {
                 let shardIncrease = self.companionRewardEngine
-                    .consumeMaxLevelGrowth(
+                    .consumeMaxLevelTokens(
                         generationID: targetID,
                         awardID: award.id,
-                        baseEnergy: award.energy,
+                        verifiedTokens: award.verifiedTokens,
                         at: award.createdAt,
                         in: &rewards)
                 if shardIncrease > 0 {

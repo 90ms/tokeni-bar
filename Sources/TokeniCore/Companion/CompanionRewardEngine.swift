@@ -63,8 +63,8 @@ public struct CompanionRewardRules: Sendable {
 }
 
 public struct CompanionRewardEngine: Sendable {
-    public static let maxLevelGrowthCost = 100
-    public static let maxLevelGrowthShardReward = 20
+    public static let maxLevelTokenCost: Int64 = 100_000
+    public static let maxLevelTokenShardReward = 10
     public static let recurringLevelRewardStart = 30
 
     public let rules: CompanionRewardRules
@@ -433,28 +433,29 @@ public struct CompanionRewardEngine: Sendable {
     }
 
     @discardableResult
-    public func consumeMaxLevelGrowth(
+    public func consumeMaxLevelTokens(
         generationID: UUID,
         awardID: UUID,
-        baseEnergy: Int,
+        verifiedTokens: Int64,
         at date: Date = .now,
         in state: inout CompanionRewardState) -> Int
     {
-        guard baseEnergy > 0,
+        guard verifiedTokens > 0,
               !state.processedMaxLevelGrowthAwardIDs.contains(awardID)
         else { return 0 }
         state.processedMaxLevelGrowthAwardIDs.append(awardID)
         state.processedMaxLevelGrowthAwardIDs = Array(
             state.processedMaxLevelGrowthAwardIDs.suffix(512))
         let accumulated = Self.saturatedAdd(
-            state.maxLevelGrowthRemainders[generationID, default: 0],
-            baseEnergy)
-        let cycles = accumulated / Self.maxLevelGrowthCost
-        state.maxLevelGrowthRemainders[generationID] =
-            accumulated % Self.maxLevelGrowthCost
-        let shards = Self.saturatedMultiply(
-            cycles,
-            Self.maxLevelGrowthShardReward)
+            state.maxLevelConversionRemainders[generationID, default: 0],
+            verifiedTokens)
+        let cycles = accumulated / Self.maxLevelTokenCost
+        state.maxLevelConversionRemainders[generationID] =
+            accumulated % Self.maxLevelTokenCost
+        let shards = Self.saturatedInt(
+            Self.saturatedMultiply(
+                cycles,
+                Int64(Self.maxLevelTokenShardReward)))
         state.starShards = Self.saturatedAdd(state.starShards, shards)
         state.updatedAt = date
         return shards
@@ -676,5 +677,19 @@ public struct CompanionRewardEngine: Sendable {
     private static func saturatedMultiply(_ lhs: Int, _ rhs: Int) -> Int {
         let (product, overflow) = lhs.multipliedReportingOverflow(by: rhs)
         return overflow ? Int.max : product
+    }
+
+    private static func saturatedAdd(_ lhs: Int64, _ rhs: Int64) -> Int64 {
+        let (sum, overflow) = lhs.addingReportingOverflow(rhs)
+        return overflow ? Int64.max : sum
+    }
+
+    private static func saturatedMultiply(_ lhs: Int64, _ rhs: Int64) -> Int64 {
+        let (product, overflow) = lhs.multipliedReportingOverflow(by: rhs)
+        return overflow ? Int64.max : product
+    }
+
+    private static func saturatedInt(_ value: Int64) -> Int {
+        value >= Int64(Int.max) ? Int.max : Int(value)
     }
 }
