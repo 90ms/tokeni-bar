@@ -493,9 +493,10 @@ struct CompanionRewardEngineTests {
             {
               "schemaVersion" : 8,
               "starShards" : 20,
-              "maxLevelGrowthRemainders" : {
-                "\(generationID.uuidString)" : 3
-              }
+              "maxLevelGrowthRemainders" : [
+                "\(generationID.uuidString)",
+                3
+              ]
             }
             """.utf8)
 
