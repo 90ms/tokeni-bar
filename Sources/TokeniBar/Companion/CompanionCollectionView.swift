@@ -968,7 +968,7 @@ struct CompanionCollectionView: View {
                                 speciesID: companion.speciesID,
                                 stage: self.store.displayedCompanionStage,
                                 rarity: companion.rarity,
-                                variantID: companion.variantID,
+                                variantID: self.store.displayedCompanionVariantID,
                                 behavior: .idle,
                                 dimension: 50,
                                 animationsEnabled: false)
