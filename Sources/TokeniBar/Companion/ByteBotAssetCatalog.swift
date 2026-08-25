@@ -95,6 +95,7 @@ final class CompanionAssetCatalog {
                 of: cropped,
                 width: frameWidth,
                 height: frameHeight,
+                palette: manifest.palette,
                 mutatedSpeciesID: variantID == .mutated && stage != .egg
                     ? speciesID
                     : nil)
@@ -132,6 +133,7 @@ final class CompanionAssetCatalog {
         of image: CGImage,
         width: Int,
         height: Int,
+        palette: [String],
         mutatedSpeciesID: CompanionSpeciesID?) -> CGImage?
     {
         guard let context = CGContext(
@@ -157,14 +159,16 @@ final class CompanionAssetCatalog {
             Self.drawMutationFeature(
                 for: mutatedSpeciesID,
                 in: context,
-                opaqueBounds: opaqueBounds)
+                canvasSize: CGSize(width: CGFloat(width), height: CGFloat(height)),
+                opaqueBounds: opaqueBounds,
+                palette: palette)
         }
         return context.makeImage()
     }
 
-    /// Finds the visible sprite in the detached RGBA frame. Mutation details
-    /// are anchored to this box so they follow differently sized life stages
-    /// and animated poses instead of floating at fixed sheet coordinates.
+    /// Finds the pet body in the detached RGBA frame. The largest connected
+    /// component deliberately excludes detached celebration sparks and action
+    /// particles so the intrinsic body trait remains attached to the pet.
     private static func opaqueBounds(
         in context: CGContext,
         width: Int,
@@ -172,115 +176,180 @@ final class CompanionAssetCatalog {
     {
         guard let data = context.data else { return nil }
         let bytes = data.assumingMemoryBound(to: UInt8.self)
-        var minX = width
-        var minY = height
-        var maxX = -1
-        var maxY = -1
+        let pixelCount = width * height
+        var opaque = Array(repeating: false, count: pixelCount)
         for y in 0..<height {
             let row = y * context.bytesPerRow
-            for x in 0..<width where bytes[row + x * 4 + 3] > 0 {
+            for x in 0..<width {
+                opaque[y * width + x] = bytes[row + x * 4 + 3] > 0
+            }
+        }
+
+        var visited = Array(repeating: false, count: pixelCount)
+        var bestCount = 0
+        var bestBounds: (minX: Int, minY: Int, maxX: Int, maxY: Int)?
+        for start in 0..<pixelCount where opaque[start] && !visited[start] {
+            var stack = [start]
+            visited[start] = true
+            var componentCount = 0
+            var minX = width
+            var minY = height
+            var maxX = -1
+            var maxY = -1
+            while let index = stack.popLast() {
+                let x = index % width
+                let y = index / width
+                componentCount += 1
                 minX = min(minX, x)
                 minY = min(minY, y)
                 maxX = max(maxX, x)
                 maxY = max(maxY, y)
+                let neighbors = [
+                    x > 0 ? index - 1 : -1,
+                    x + 1 < width ? index + 1 : -1,
+                    y > 0 ? index - width : -1,
+                    y + 1 < height ? index + width : -1,
+                ]
+                for neighbor in neighbors
+                where neighbor >= 0 && opaque[neighbor] && !visited[neighbor]
+                {
+                    visited[neighbor] = true
+                    stack.append(neighbor)
+                }
+            }
+            if componentCount > bestCount {
+                bestCount = componentCount
+                bestBounds = (minX, minY, maxX, maxY)
             }
         }
-        guard maxX >= minX, maxY >= minY else { return nil }
+        guard let bestBounds else { return nil }
         return CGRect(
-            x: CGFloat(minX),
-            y: CGFloat(minY),
-            width: CGFloat(max(maxX - minX + 1, 1)),
-            height: CGFloat(max(maxY - minY + 1, 1)))
+            x: CGFloat(bestBounds.minX),
+            y: CGFloat(bestBounds.minY),
+            width: CGFloat(max(bestBounds.maxX - bestBounds.minX + 1, 1)),
+            height: CGFloat(max(bestBounds.maxY - bestBounds.minY + 1, 1)))
     }
 
-    /// Adds a stable, species-specific silhouette detail without recoloring the
-    /// original sprite. Coordinates are expressed in the manifest's logical
-    /// 32-pixel frame and scale for future higher-resolution sheets.
+    /// Derives the intrinsic Mutation resource from the Standard frame. The
+    /// additions use the species' existing palette and extend its silhouette;
+    /// they are part of the cached frame, not an equipable aura or decoration.
     private static func drawMutationFeature(
         for speciesID: CompanionSpeciesID,
         in context: CGContext,
-        opaqueBounds: CGRect)
+        canvasSize: CGSize,
+        opaqueBounds: CGRect,
+        palette: [String])
     {
-        func rect(_ x: CGFloat, _ y: CGFloat, _ width: CGFloat, _ height: CGFloat) {
-            context.fill(CGRect(x: x, y: y, width: width, height: height))
-        }
-        func line(_ points: [CGPoint]) {
-            guard let first = points.first else { return }
-            context.beginPath()
-            context.move(to: first)
-            for point in points.dropFirst() {
-                context.addLine(to: point)
-            }
-            context.strokePath()
-        }
+        let pixel = max(floor(min(canvasSize.width, canvasSize.height) / 32), 1)
+        let outline = Self.color(from: palette.first)
+            ?? CGColor(red: 0.03, green: 0.08, blue: 0.15, alpha: 1)
+        let body = Self.color(from: palette.dropFirst().first)
+            ?? CGColor(red: 0.12, green: 0.35, blue: 0.48, alpha: 1)
+        let accent = Self.color(from: palette.last)
+            ?? CGColor(red: 0.35, green: 0.95, blue: 0.88, alpha: 1)
 
-        let scaleX = opaqueBounds.width / 32
-        let scaleY = opaqueBounds.height / 32
+        func snapped(_ value: CGFloat) -> CGFloat {
+            floor(value / pixel) * pixel
+        }
+        func block(
+            x: CGFloat,
+            y: CGFloat,
+            width: CGFloat,
+            height: CGFloat,
+            fill: CGColor? = nil)
+        {
+            let requested = CGRect(
+                x: snapped(x),
+                y: snapped(y),
+                width: min(max(snapped(width), pixel * 2), canvasSize.width),
+                height: min(max(snapped(height), pixel * 2), canvasSize.height))
+            let canvas = CGRect(origin: .zero, size: canvasSize)
+            let frame = CGRect(
+                x: min(max(requested.minX, canvas.minX), canvas.maxX - requested.width),
+                y: min(max(requested.minY, canvas.minY), canvas.maxY - requested.height),
+                width: requested.width,
+                height: requested.height)
+            context.setFillColor(outline)
+            context.fill(frame)
+            let inset = frame.insetBy(dx: pixel, dy: pixel)
+            if inset.width >= pixel, inset.height >= pixel {
+                context.setFillColor(fill ?? body)
+                context.fill(inset)
+            }
+        }
         context.saveGState()
         defer { context.restoreGState() }
-        context.translateBy(x: opaqueBounds.minX, y: opaqueBounds.minY)
-        context.scaleBy(x: scaleX, y: scaleY)
         context.setShouldAntialias(false)
-        context.setLineWidth(1 / max(min(scaleX, scaleY), 0.25))
-        context.setLineCap(.square)
-        context.setStrokeColor(CGColor(red: 0.03, green: 0.11, blue: 0.21, alpha: 1))
-        context.setFillColor(CGColor(red: 0.03, green: 0.11, blue: 0.21, alpha: 1))
+
+        let left = opaqueBounds.minX
+        let right = opaqueBounds.maxX
+        let bottom = opaqueBounds.minY
+        let top = opaqueBounds.maxY
+        let centerX = opaqueBounds.midX
+        let centerY = opaqueBounds.midY
 
         switch speciesID {
         case .bytebot:
-            // Forked antenna.
-            line([CGPoint(x: 16, y: 24), CGPoint(x: 16, y: 29), CGPoint(x: 13, y: 31)])
-            line([CGPoint(x: 16, y: 29), CGPoint(x: 19, y: 31)])
-            rect(12, 30, 2, 2)
-            rect(18, 30, 2, 2)
+            // Thick forked antenna with two illuminated tips.
+            block(x: centerX - pixel, y: top - pixel, width: pixel * 2, height: pixel * 5)
+            block(x: centerX - pixel * 5, y: top + pixel * 2, width: pixel * 5, height: pixel * 2)
+            block(x: centerX + pixel, y: top + pixel * 2, width: pixel * 5, height: pixel * 2)
+            block(x: centerX - pixel * 6, y: top + pixel, width: pixel * 3, height: pixel * 4, fill: accent)
+            block(x: centerX + pixel * 3, y: top + pixel, width: pixel * 3, height: pixel * 4, fill: accent)
         case .cachecat:
-            // Split tail tips.
-            line([CGPoint(x: 23, y: 12), CGPoint(x: 28, y: 15), CGPoint(x: 31, y: 19)])
-            line([CGPoint(x: 28, y: 15), CGPoint(x: 31, y: 13)])
+            // A second, clearly separated fork on the tail side.
+            block(x: right - pixel * 2, y: centerY - pixel * 2, width: pixel * 6, height: pixel * 3)
+            block(x: right + pixel * 2, y: centerY, width: pixel * 4, height: pixel * 3, fill: accent)
+            block(x: right + pixel, y: centerY - pixel * 5, width: pixel * 4, height: pixel * 3, fill: accent)
         case .kernelcrab:
-            // Oversized asymmetric claw.
-            rect(1, 14, 5, 5)
-            rect(0, 16, 2, 5)
-            rect(5, 17, 2, 4)
+            // Oversized asymmetric claw beyond the body shell.
+            block(x: left - pixel * 6, y: centerY - pixel * 4, width: pixel * 7, height: pixel * 7)
+            block(x: left - pixel * 8, y: centerY + pixel, width: pixel * 4, height: pixel * 5, fill: accent)
+            block(x: left - pixel * 8, y: centerY - pixel * 6, width: pixel * 4, height: pixel * 5, fill: accent)
         case .loophare:
-            // Loop bridge between the ears.
-            line([
-                CGPoint(x: 11, y: 27), CGPoint(x: 11, y: 31),
-                CGPoint(x: 21, y: 31), CGPoint(x: 21, y: 27),
-            ])
+            // A third central loop-ear changes the upper silhouette.
+            block(x: centerX - pixel * 3, y: top - pixel, width: pixel * 6, height: pixel * 8)
+            block(x: centerX - pixel, y: top + pixel, width: pixel * 2, height: pixel * 5, fill: outline)
         case .nullslime:
-            // A small satellite blob.
-            rect(25, 23, 4, 4)
-            rect(27, 27, 2, 2)
+            // A substantial satellite blob joined by a short stalk.
+            block(x: right - pixel, y: top - pixel * 2, width: pixel * 5, height: pixel * 2)
+            block(x: right + pixel * 2, y: top - pixel, width: pixel * 6, height: pixel * 6, fill: accent)
         case .patchpanda:
-            // Notched ear tufts.
-            rect(5, 25, 3, 3)
-            rect(24, 25, 3, 3)
-            rect(7, 28, 2, 3)
-            rect(23, 28, 2, 3)
+            // Large stepped ear tufts on both sides.
+            block(x: left - pixel * 2, y: top - pixel * 2, width: pixel * 6, height: pixel * 6, fill: accent)
+            block(x: right - pixel * 4, y: top - pixel * 2, width: pixel * 6, height: pixel * 6, fill: accent)
+            block(x: left, y: top + pixel * 3, width: pixel * 3, height: pixel * 3)
+            block(x: right - pixel * 3, y: top + pixel * 3, width: pixel * 3, height: pixel * 3)
         case .promptpup:
-            // Long folded ear tip.
-            line([
-                CGPoint(x: 7, y: 27), CGPoint(x: 3, y: 24),
-                CGPoint(x: 5, y: 20), CGPoint(x: 8, y: 22),
-            ])
+            // One long folded ear with a bright terminal block.
+            block(x: left - pixel * 5, y: top - pixel * 4, width: pixel * 7, height: pixel * 4)
+            block(x: left - pixel * 7, y: top - pixel * 8, width: pixel * 4, height: pixel * 7, fill: accent)
         case .queryowl:
-            // Monocle lens and stem.
-            context.strokeEllipse(in: CGRect(x: 17, y: 17, width: 7, height: 7))
-            line([CGPoint(x: 23, y: 18), CGPoint(x: 27, y: 14)])
+            // Twin horned brow blocks create a different head contour.
+            block(x: left + pixel, y: top - pixel * 2, width: pixel * 5, height: pixel * 6, fill: accent)
+            block(x: right - pixel * 6, y: top - pixel * 2, width: pixel * 5, height: pixel * 6, fill: accent)
         case .relayray:
-            // Twin signal fins.
-            line([CGPoint(x: 8, y: 23), CGPoint(x: 3, y: 28), CGPoint(x: 9, y: 27)])
-            line([CGPoint(x: 24, y: 23), CGPoint(x: 29, y: 28), CGPoint(x: 23, y: 27)])
+            // Broad stepped signal fins on both sides.
+            block(x: left - pixel * 6, y: centerY, width: pixel * 7, height: pixel * 5, fill: accent)
+            block(x: right - pixel, y: centerY, width: pixel * 7, height: pixel * 5, fill: accent)
         case .stackfox:
-            // A second, blocky tail.
-            line([
-                CGPoint(x: 23, y: 12), CGPoint(x: 29, y: 9),
-                CGPoint(x: 31, y: 13), CGPoint(x: 27, y: 16),
-            ])
-        default:
-            break
+            // A second blocky tail, large enough to remain visible in cards.
+            block(x: right - pixel * 2, y: bottom + pixel * 2, width: pixel * 6, height: pixel * 4)
+            block(x: right + pixel * 2, y: bottom + pixel * 4, width: pixel * 5, height: pixel * 7, fill: accent)
         }
+    }
+
+    private static func color(from hex: String?) -> CGColor? {
+        guard var hex else { return nil }
+        if hex.hasPrefix("#") { hex.removeFirst() }
+        guard hex.count == 6, let value = UInt32(hex, radix: 16) else {
+            return nil
+        }
+        return CGColor(
+            red: CGFloat((value >> 16) & 0xFF) / 255,
+            green: CGFloat((value >> 8) & 0xFF) / 255,
+            blue: CGFloat(value & 0xFF) / 255,
+            alpha: 1)
     }
 
     private func manifest(
