@@ -321,6 +321,7 @@ private struct CompanionOverlayView: View {
                 speciesID: self.store.displayedCompanionSpeciesID,
                 stage: self.store.displayedCompanionStage,
                 rarity: self.store.displayedCompanionRarity,
+                variantID: self.store.displayedCompanionVariantID,
                 behavior: self.store.companionBehavior,
                 mutationID: self.store.displayedCompanionMutationID,
                 cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,

@@ -34,6 +34,7 @@ struct CompanionHatchBatchRevealView: View {
                             speciesID: reveal.speciesID,
                             stage: .hatchling,
                             rarity: reveal.rarity,
+                            variantID: reveal.variantID,
                             behavior: reveal.variantID == .standard
                                 ? .idle
                                 : .celebrate,
@@ -93,6 +94,7 @@ struct CompanionHatchRevealView: View {
                 speciesID: self.reveal.speciesID,
                 stage: .hatchling,
                 rarity: self.reveal.rarity,
+                variantID: self.reveal.variantID,
                 behavior: .celebrate,
                 dimension: 150,
                 animationsEnabled: self.animationsEnabled)

@@ -21,9 +21,26 @@ struct CompanionSpriteManifest: Decodable {
 
     func sheetName(
         for stage: CompanionGameStage,
-        rarity requestedRarity: CompanionRarity) -> String?
+        variantID: CompanionVariantID,
+        fallbackRarity: CompanionRarity) -> String?
     {
-        let rarity = stage == .egg ? CompanionRarity.normal : requestedRarity
+        if stage != .egg,
+           let variantSheet = self.forms[
+               "\(stage.rawValue).\(variantID.rawValue)"]
+        {
+            return variantSheet
+        }
+        let rarity: CompanionRarity = if stage == .egg {
+            .normal
+        } else {
+            switch variantID {
+            case .standard, .mutated: .normal
+            case .prismatic: .legendary
+            case .legacyAzure: .rare
+            case .legacyViolet: .epic
+            default: fallbackRarity
+            }
+        }
         let key = "\(stage.rawValue).\(rarity.rawValue)"
         return self.forms[key]
             ?? self.forms["\(stage.rawValue).\(CompanionRarity.normal.rawValue)"]

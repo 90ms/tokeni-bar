@@ -440,6 +440,11 @@ final class UsageStore: ObservableObject {
                 self.companionGameEngine.reconcileEggMilestones(
                     at: .now,
                     in: &self.companionState)
+                let automaticGrowthEvents = self.companionGameEngine
+                    .reconcileAutomaticGrowthTarget(
+                    at: .now,
+                    in: &self.companionState)
+                self.handleAutomaticGrowthTargetEvents(automaticGrowthEvents)
                 self.suppressImportedCompanionRewardBackfill()
                 self.reconcileLegacyCompanionPalettes()
                 self.reconcileCompanionRewards()
@@ -851,19 +856,35 @@ final class UsageStore: ObservableObject {
         var state = self.companionState
         guard let eggID = state.eggs.first?.id,
               let events = try? self.companionGameEngine.openEgg(
-                eggID,
-                in: &state)
+                  eggID,
+                  in: &state)
         else { return }
+        let hatchPresentation = events.compactMap { event -> (
+            CompanionSpeciesID,
+            CompanionRarity,
+            Bool)? in
+            guard case let .hatched(speciesID, rarity, isNewSpecies, _) = event
+            else { return nil }
+            return (speciesID, rarity, isNewSpecies)
+        }.first.map { hatch in
+            (
+                hatch.0,
+                hatch.1,
+                state.resolvedVariantID ?? .standard,
+                state.personalityID ?? .calm,
+                hatch.2)
+        }
+        let automaticGrowthEvents = self.companionGameEngine
+            .reconcileAutomaticGrowthTarget(in: &state)
         self.companionState = state
-        for event in events {
-            if case let .hatched(speciesID, rarity, isNewSpecies, _) = event {
-                self.presentCompanionHatch(
-                    speciesID: speciesID,
-                    rarity: rarity,
-                    variantID: state.resolvedVariantID ?? .standard,
-                    personalityID: state.personalityID ?? .calm,
-                    isNewSpecies: isNewSpecies)
-            }
+        self.handleAutomaticGrowthTargetEvents(automaticGrowthEvents)
+        if let hatchPresentation {
+            self.presentCompanionHatch(
+                speciesID: hatchPresentation.0,
+                rarity: hatchPresentation.1,
+                variantID: hatchPresentation.2,
+                personalityID: hatchPresentation.3,
+                isNewSpecies: hatchPresentation.4)
         }
         self.reconcileCompanionRewards()
         self.saveCompanionState()
@@ -1034,11 +1055,15 @@ final class UsageStore: ObservableObject {
                         reveals.append(reveal)
                     }
                 }
+                let automaticGrowthEvents = self.companionGameEngine
+                    .reconcileAutomaticGrowthTarget(
+                    in: &state)
                 self.companionStateSaveRevision &+= 1
                 try await self.companionStateStore.save(
                     state,
                     revision: self.companionStateSaveRevision)
                 self.companionState = state
+                self.handleAutomaticGrowthTargetEvents(automaticGrowthEvents)
                 if eggIDs.count == 1, let reveal = reveals.first {
                     self.presentCompanionHatch(reveal)
                 } else {
@@ -1327,6 +1352,16 @@ final class UsageStore: ObservableObject {
         self.saveCompanionBenefitState()
     }
 
+    private func handleAutomaticGrowthTargetEvents(
+        _ events: [CompanionGameEvent])
+    {
+        for event in events {
+            guard case let .activeCompanionChanged(generationID) = event
+            else { continue }
+            self.removeCompanionFromPassiveLineup(generationID)
+        }
+    }
+
     func evolveCompanion() {
         guard self.companionEnabled,
               self.companionStateLoaded,
@@ -1572,16 +1607,6 @@ final class UsageStore: ObservableObject {
     }
 
     var displayedCompanionRarity: CompanionRarity? {
-        if self.companionRewardState.selectedCosmeticIDs.contains(
-            .azurePalette)
-        {
-            return .rare
-        }
-        if self.companionRewardState.selectedCosmeticIDs.contains(
-            .violetPalette)
-        {
-            return .epic
-        }
         return self.showcasedCompanion?.finalRarity
             ?? self.companionState.rarity
     }
@@ -2225,6 +2250,8 @@ final class UsageStore: ObservableObject {
         guard self.companionStateLoaded else { return }
         for award in self.tokenGrowthLedgerState.pendingAwards {
             var companion = self.companionState
+            let previousGrowthTargetID = companion
+                .resolvedGrowthTargetGenerationID
             let wasMaximumLevel = companion.growthTargetLevel
                 >= CompanionLevelCurve.standard.maximumLevel
             let multiplier = self.companionRewardEngine.energyMultiplier(
@@ -2252,9 +2279,12 @@ final class UsageStore: ObservableObject {
                 return
             }
             self.companionState = companion
+            self.handleAutomaticGrowthTargetEvents(events)
             var rewards = self.companionRewardState
             if wasMaximumLevel,
-               let targetID = companion.resolvedGrowthTargetGenerationID
+               companion.resolvedGrowthTargetGenerationID
+                   == previousGrowthTargetID,
+               let targetID = previousGrowthTargetID
             {
                 let shardIncrease = self.companionRewardEngine
                     .consumeMaxLevelTokens(
@@ -2266,6 +2296,15 @@ final class UsageStore: ObservableObject {
                 if shardIncrease > 0 {
                     self.companionRewardNoticeAmount = shardIncrease
                 }
+            }
+            for event in events {
+                guard case let .levelIncreased(targetID, _, level) = event
+                else { continue }
+                self.companionRewardEngine.reconcileLevelMilestones(
+                    generationID: targetID,
+                    level: level,
+                    at: award.createdAt,
+                    in: &rewards)
             }
             if let targetID = companion.resolvedGrowthTargetGenerationID {
                 self.companionRewardEngine.reconcileLevelMilestones(
@@ -2448,10 +2487,10 @@ final class UsageStore: ObservableObject {
         var state = self.companionRewardState
         let legacyVariants = self.companionState.collection.discoveredVariantIDs
         if legacyVariants.contains(.legacyAzure) {
-            state.unlockedCosmeticIDs.insert(.azurePalette)
+            state.unlockedCosmeticIDs.insert(.constellationFrame)
         }
         if legacyVariants.contains(.legacyViolet) {
-            state.unlockedCosmeticIDs.insert(.violetPalette)
+            state.unlockedCosmeticIDs.insert(.pixelPortalFrame)
         }
         guard state != self.companionRewardState else { return }
         state.updatedAt = .now

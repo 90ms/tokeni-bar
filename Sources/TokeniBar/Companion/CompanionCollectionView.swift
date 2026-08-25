@@ -25,8 +25,8 @@ private enum CompanionCosmeticSlotFilter:
     case all
     case aura
     case background
-    case palette
-    case ground
+    case frame
+    case scene
     case sidekick
 
     var id: Self { self }
@@ -36,8 +36,8 @@ private enum CompanionCosmeticSlotFilter:
         case .all: nil
         case .aura: .aura
         case .background: .background
-        case .palette: .palette
-        case .ground: .ground
+        case .frame: .frame
+        case .scene: .scene
         case .sidekick: .sidekick
         }
     }
@@ -968,6 +968,7 @@ struct CompanionCollectionView: View {
                                 speciesID: companion.speciesID,
                                 stage: self.store.displayedCompanionStage,
                                 rarity: companion.rarity,
+                                variantID: self.store.displayedCompanionVariantID,
                                 behavior: .idle,
                                 dimension: 50,
                                 animationsEnabled: false)
@@ -1115,6 +1116,7 @@ struct CompanionCollectionView: View {
                             speciesID: generation.speciesID,
                             stage: generation.stage,
                             rarity: generation.finalRarity,
+                            variantID: generation.variantID,
                             behavior: .idle,
                             dimension: 38,
                             animationsEnabled: false)
@@ -1369,7 +1371,8 @@ struct CompanionCollectionView: View {
             ByteBotTransitionView(
                 speciesID: self.store.displayedCompanionSpeciesID,
                 stage: self.store.displayedCompanionStage,
-                    rarity: self.previewRarity(for: cosmeticIDs),
+                rarity: self.store.displayedCompanionRarity,
+                variantID: self.store.displayedCompanionVariantID,
                     behavior: .idle,
                     mutationID: self.store.displayedCompanionMutationID,
                     cosmeticIDs: cosmeticIDs,
@@ -1378,17 +1381,6 @@ struct CompanionCollectionView: View {
                 animationIntensity: self.store
                     .companionAnimationIntensity.motionScale)
         }
-    }
-
-    private func previewRarity(
-        for cosmeticIDs: Set<CompanionCosmeticID>) -> CompanionRarity?
-    {
-        if cosmeticIDs.contains(.azurePalette) { return .rare }
-        if cosmeticIDs.contains(.violetPalette) { return .epic }
-        let variantID = self.store.displayedCompanionVariantID
-        return variantID.map {
-            CompanionVariantRegistry.definition(for: $0).assetRarity
-        } ?? self.store.displayedCompanionRarity
     }
 
     private func cosmeticCard(_ cosmetic: CompanionCosmetic) -> some View {
@@ -1548,6 +1540,7 @@ struct CompanionCollectionView: View {
                     speciesID: self.store.displayedCompanionSpeciesID,
                     stage: self.store.displayedCompanionStage,
                     rarity: self.store.displayedCompanionRarity,
+                    variantID: self.store.displayedCompanionVariantID,
                     behavior: self.store.companionBehavior,
                     mutationID: self.store.displayedCompanionMutationID,
                     cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
@@ -2220,6 +2213,7 @@ struct CompanionCollectionView: View {
                         speciesID: record.speciesID,
                         stage: record.stage,
                         rarity: record.rarity,
+                        variantID: variantID,
                         behavior: .idle,
                         dimension: 76,
                         animationsEnabled: false)
@@ -2553,6 +2547,7 @@ struct CompanionCollectionView: View {
                         speciesID: generation.speciesID,
                         stage: generation.stage,
                         rarity: generation.finalRarity,
+                        variantID: generation.variantID,
                         behavior: .idle,
                         dimension: 52,
                         animationsEnabled: false)
@@ -2760,6 +2755,7 @@ struct CompanionCollectionView: View {
                         speciesID: generation.speciesID,
                         stage: generation.stage,
                         rarity: generation.finalRarity,
+                        variantID: generation.variantID,
                         behavior: .idle,
                         dimension: 112,
                         animationsEnabled: false)
@@ -2960,6 +2956,7 @@ struct CompanionCollectionView: View {
                         speciesID: selection.speciesID,
                         stage: record.stage,
                         rarity: record.rarity,
+                        variantID: selection.variantID,
                         behavior: self.collectionPreviewBehavior,
                         dimension: 144,
                         animationsEnabled: self.store.companionAnimationsEnabled)

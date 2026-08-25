@@ -15,6 +15,7 @@ public struct CompanionGameEngine: Sendable {
     public func apply(
         award: GrowthEnergyAward,
         bondEnergy: Int? = nil,
+        automaticGrowthTargetUnitValue: Double = .random(in: 0...1),
         to state: inout CompanionGameState) -> [CompanionGameEvent]
     {
         guard !state.appliedGrowthAwardIDs.contains(award.id) else { return [] }
@@ -24,6 +25,10 @@ public struct CompanionGameEngine: Sendable {
         state.updatedAt = award.createdAt
         guard award.energy > 0 else { return [] }
 
+        var events = self.reconcileAutomaticGrowthTarget(
+            unitValue: automaticGrowthTargetUnitValue,
+            at: award.createdAt,
+            in: &state)
         let targetID = state.resolvedGrowthTargetGenerationID
         let previousLevel = state.growthTargetLevel
         let credited: Int
@@ -73,7 +78,6 @@ public struct CompanionGameEngine: Sendable {
                 credited)
         }
 
-        var events: [CompanionGameEvent] = []
         if credited > 0 {
             events.append(.energyApplied(credited))
         }
@@ -83,6 +87,58 @@ public struct CompanionGameEngine: Sendable {
                 from: previousLevel,
                 to: state.growthTargetLevel))
         }
+        if previousLevel < CompanionLevelCurve.standard.maximumLevel,
+           state.growthTargetLevel >= CompanionLevelCurve.standard.maximumLevel
+        {
+            events += self.reconcileAutomaticGrowthTarget(
+                unitValue: automaticGrowthTargetUnitValue,
+                at: award.createdAt,
+                in: &state)
+        }
+        return events
+    }
+
+    /// Selects an unfinished owned companion after the current growth target is
+    /// fully grown. The selected companion is made active as well as the growth
+    /// target so growth and the visible companion cannot drift apart.
+    @discardableResult
+    public func reconcileAutomaticGrowthTarget(
+        unitValue: Double = .random(in: 0...1),
+        at now: Date = .now,
+        in state: inout CompanionGameState) -> [CompanionGameEvent]
+    {
+        guard state.stage != .egg,
+              state.growthTargetLevel >= CompanionLevelCurve.standard.maximumLevel
+        else { return [] }
+
+        var eligibleIDs: [UUID] = []
+        if state.level < CompanionLevelCurve.standard.maximumLevel {
+            eligibleIDs.append(state.generationID)
+        }
+        eligibleIDs += state.collection.archivedGenerations.compactMap {
+            CompanionLevelCurve.standard.level(forXP: $0.growthXP)
+                < CompanionLevelCurve.standard.maximumLevel
+                ? $0.generationID
+                : nil
+        }
+        guard !eligibleIDs.isEmpty else { return [] }
+
+        let bounded = min(max(unitValue, 0), 1)
+        let index = min(
+            Int(bounded * Double(eligibleIDs.count)),
+            eligibleIDs.count - 1)
+        let selectedID = eligibleIDs[index]
+        var events: [CompanionGameEvent] = []
+        if selectedID != state.generationID,
+           let activationEvents = try? self.activateArchivedGeneration(
+               selectedID,
+               at: now,
+               in: &state)
+        {
+            events += activationEvents
+        }
+        state.growthTargetGenerationID = state.generationID
+        state.updatedAt = now
         return events
     }
 

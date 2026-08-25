@@ -120,94 +120,55 @@ struct CompanionCosmeticDecoration: View {
                                 y: sin(angle) * self.canvasDimension * 0.23)
                     }
                 }
-            case .cloudCushion:
+            case .cloudCushion, .hologramPlatform, .meadowPatch:
+                EmptyView()
+            case .driftingClouds:
                 ZStack {
-                    Capsule()
-                        .fill(.blue.opacity(0.18))
-                        .frame(
-                            width: self.canvasDimension * 0.72,
-                            height: self.canvasDimension * 0.17)
-                        .blur(radius: 2)
-                    HStack(spacing: -self.canvasDimension * 0.08) {
-                        ForEach(0..<3, id: \.self) { index in
-                            Image(systemName: "cloud.fill")
-                                .font(.system(
-                                    size: self.canvasDimension
-                                        * (index == 1 ? 0.25 : 0.20)))
-                                .foregroundStyle(index == 1
-                                    ? Color.white.opacity(0.92)
-                                    : Color.cyan.opacity(0.72))
-                        }
-                    }
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: self.canvasDimension * 0.075))
-                        .foregroundStyle(.pink)
-                        .offset(
-                            x: self.canvasDimension * 0.25,
-                            y: -self.canvasDimension * 0.08)
-                        .scaleEffect(1 + abs(slowWave) * 0.12)
-                }
-                .offset(y: self.canvasDimension * 0.34)
-            case .hologramPlatform:
-                ZStack {
-                    Capsule()
-                        .fill(.cyan.opacity(0.12))
-                        .frame(
-                            width: self.canvasDimension * 0.72,
-                            height: self.canvasDimension * 0.17)
-                        .shadow(color: .cyan.opacity(0.8), radius: 6)
-                    Capsule()
-                        .stroke(.cyan.opacity(0.85), lineWidth: 2)
-                        .frame(
-                            width: self.canvasDimension * 0.72,
-                            height: self.canvasDimension * 0.17)
-                    Capsule()
-                        .stroke(.purple.opacity(0.7), lineWidth: 1)
-                        .frame(
-                            width: self.canvasDimension * 0.48,
-                            height: self.canvasDimension * 0.09)
-                    ForEach(0..<5, id: \.self) { index in
-                        Rectangle()
-                            .fill(index.isMultiple(of: 2) ? .cyan : .purple)
-                            .frame(width: 3, height: 3)
-                            .offset(
-                                x: (CGFloat(index) - 2)
-                                    * self.canvasDimension * 0.105,
-                                y: -self.canvasDimension
-                                    * (0.09 + 0.02 * CGFloat(
-                                        sin(time * 2 + Double(index)))))
-                    }
-                }
-                .offset(y: self.canvasDimension * 0.35)
-            case .meadowPatch:
-                ZStack {
-                    Capsule()
-                        .fill(LinearGradient(
-                            colors: [.green.opacity(0.78), .mint.opacity(0.45)],
-                            startPoint: .leading,
-                            endPoint: .trailing))
-                        .frame(
-                            width: self.canvasDimension * 0.76,
-                            height: self.canvasDimension * 0.18)
-                    ForEach(0..<5, id: \.self) { index in
-                        Image(systemName: index.isMultiple(of: 2)
-                            ? "camera.macro"
-                            : "leaf.fill")
-                            .font(.system(size: self.canvasDimension * 0.085))
+                    ForEach(0..<4, id: \.self) { index in
+                        Image(systemName: "cloud.fill")
+                            .font(.system(size: self.canvasDimension
+                                * (0.13 + CGFloat(index % 2) * 0.04)))
                             .foregroundStyle(index.isMultiple(of: 2)
-                                ? Color.pink
-                                : Color.green)
+                                ? Color.white.opacity(0.65)
+                                : Color.cyan.opacity(0.42))
                             .offset(
-                                x: (CGFloat(index) - 2)
-                                    * self.canvasDimension * 0.14,
-                                y: -self.canvasDimension
-                                    * (0.08 + 0.018 * CGFloat(
-                                        sin(time * 1.7 + Double(index)))))
-                            .rotationEffect(.degrees(
-                                Double(slowWave) * 4 + Double(index - 2) * 2))
+                                x: (CGFloat(index) - 1.5) * self.canvasDimension * 0.28
+                                    + slowWave * 4,
+                                y: (index.isMultiple(of: 2) ? -1 : 1)
+                                    * self.canvasDimension * 0.37)
                     }
                 }
-                .offset(y: self.canvasDimension * 0.35)
+            case .hologramScanlines:
+                ZStack {
+                    ForEach(0..<7, id: \.self) { index in
+                        Rectangle()
+                            .fill(index.isMultiple(of: 2)
+                                ? Color.cyan.opacity(0.22)
+                                : Color.purple.opacity(0.16))
+                            .frame(height: 1)
+                            .offset(y: (CGFloat(index) - 3) * self.canvasDimension * 0.13)
+                    }
+                    RoundedRectangle(cornerRadius: self.canvasDimension * 0.14)
+                        .stroke(Color.cyan.opacity(0.38), lineWidth: 1)
+                        .padding(self.canvasDimension * 0.04)
+                }
+                .opacity(0.65 + abs(slowWave) * 0.25)
+            case .fallingPetals:
+                ZStack {
+                    ForEach(0..<8, id: \.self) { index in
+                        Image(systemName: index.isMultiple(of: 3)
+                            ? "leaf.fill" : "camera.macro")
+                            .font(.system(size: self.canvasDimension * 0.07))
+                            .foregroundStyle(index.isMultiple(of: 2)
+                                ? Color.pink.opacity(0.7)
+                                : Color.mint.opacity(0.65))
+                            .offset(
+                                x: (CGFloat(index % 4) - 1.5) * self.canvasDimension * 0.25,
+                                y: (CGFloat(index / 4) * 2 - 1) * self.canvasDimension * 0.38
+                                    + slowWave * CGFloat(index.isMultiple(of: 2) ? 4 : -4))
+                            .rotationEffect(.degrees(time * 12 + Double(index) * 31))
+                    }
+                }
             case .miniDrone:
                 ZStack {
                     HStack(spacing: self.canvasDimension * 0.17) {
@@ -399,36 +360,38 @@ struct CompanionCosmeticDecoration: View {
                     .clipShape(
                         RoundedRectangle(cornerRadius: self.canvasDimension * 0.16))
                     .padding(self.canvasDimension * 0.03)
-            case .azurePalette:
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [.cyan, .blue, .indigo],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing))
-                    .frame(
-                        width: self.canvasDimension * 0.64,
-                        height: self.canvasDimension * 0.64)
+            case .azurePalette, .violetPalette:
+                EmptyView()
+            case .constellationFrame:
+                RoundedRectangle(cornerRadius: self.canvasDimension * 0.15)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.cyan, .blue, .indigo, .cyan],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing),
+                        style: StrokeStyle(lineWidth: 4, dash: [3, 7]))
                     .overlay {
-                        Image(systemName: "paintpalette.fill")
-                            .font(.system(size: self.canvasDimension * 0.24))
-                            .foregroundStyle(.white)
+                        ForEach(0..<6, id: \.self) { index in
+                            Image(systemName: "star.fill")
+                                .font(.system(size: self.canvasDimension * 0.055))
+                                .foregroundStyle(index.isMultiple(of: 2) ? .cyan : .yellow)
+                                .offset(
+                                    x: (index < 3 ? -1 : 1) * self.canvasDimension * 0.48,
+                                    y: (CGFloat(index % 3) - 1) * self.canvasDimension * 0.32)
+                        }
                     }
-                    .rotationEffect(.degrees(Double(slowWave) * 2))
-            case .violetPalette:
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [.pink, .purple, .indigo],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing))
-                    .frame(
-                        width: self.canvasDimension * 0.64,
-                        height: self.canvasDimension * 0.64)
-                    .overlay {
-                        Image(systemName: "paintpalette.fill")
-                            .font(.system(size: self.canvasDimension * 0.24))
-                            .foregroundStyle(.white)
-                    }
-                    .scaleEffect(1 + slowWave * 0.015)
+                    .padding(self.canvasDimension * 0.025)
+            case .pixelPortalFrame:
+                RoundedRectangle(cornerRadius: self.canvasDimension * 0.12)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.pink, .purple, .cyan, .pink],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing),
+                        style: StrokeStyle(lineWidth: 6, dash: [10, 3]))
+                    .shadow(color: .purple.opacity(0.55), radius: 4)
+                    .padding(self.canvasDimension * 0.03)
+                    .opacity(0.78 + abs(slowWave) * 0.2)
             }
         }
     }

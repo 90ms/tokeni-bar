@@ -15,6 +15,11 @@ public enum CompanionCosmeticID: String, Codable, CaseIterable, Hashable, Sendab
     case cloudCushion
     case hologramPlatform
     case meadowPatch
+    case constellationFrame
+    case pixelPortalFrame
+    case driftingClouds
+    case hologramScanlines
+    case fallingPetals
     case miniDrone
     case starSprite
     case pixelChick
@@ -29,6 +34,10 @@ public enum CompanionCosmeticID: String, Codable, CaseIterable, Hashable, Sendab
             .palette
         case .cloudCushion, .hologramPlatform, .meadowPatch:
             .ground
+        case .constellationFrame, .pixelPortalFrame:
+            .frame
+        case .driftingClouds, .hologramScanlines, .fallingPetals:
+            .scene
         case .miniDrone, .starSprite, .pixelChick:
             .sidekick
         }
@@ -41,6 +50,8 @@ public enum CompanionCosmeticSlot: String, Codable, CaseIterable, Hashable, Send
     case palette
     case ground
     case sidekick
+    case frame
+    case scene
 }
 
 public struct CompanionCosmetic: Identifiable, Hashable, Sendable {
@@ -131,7 +142,7 @@ public struct CompanionAttendanceRecord: Codable, Hashable, Sendable {
 }
 
 public struct CompanionRewardState: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 9
+    public static let currentSchemaVersion = 10
 
     public var schemaVersion: Int
     public var starShards: Int
@@ -181,6 +192,10 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         updatedAt: Date = .now)
     {
         let removedCosmetics: Set<CompanionCosmeticID> = [.nightRing]
+        let migratedUnlockedCosmeticIDs = Self.migrateLegacyCosmetics(
+            unlockedCosmeticIDs)
+        let migratedSelectedCosmeticIDs = Self.migrateLegacyCosmetics(
+            selectedCosmeticIDs)
         self.schemaVersion = schemaVersion
         self.starShards = max(starShards, 0)
         self.attendanceRecords = Array(attendanceRecords.suffix(400))
@@ -194,8 +209,10 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         self.rewardedGrowthDateKeys = Array(rewardedGrowthDateKeys.suffix(400))
         self.latestRewardedAppVersion = latestRewardedAppVersion
         self.latestObservedDateKey = latestObservedDateKey
-        self.unlockedCosmeticIDs = unlockedCosmeticIDs.subtracting(removedCosmetics)
-        self.selectedCosmeticIDs = selectedCosmeticIDs.subtracting(removedCosmetics)
+        self.unlockedCosmeticIDs = migratedUnlockedCosmeticIDs
+            .subtracting(removedCosmetics)
+        self.selectedCosmeticIDs = migratedSelectedCosmeticIDs
+            .subtracting(removedCosmetics)
         self.energyBoosterInventory = energyBoosterInventory.mapValues {
             max($0, 0)
         }
@@ -208,6 +225,19 @@ public struct CompanionRewardState: Codable, Hashable, Sendable {
         self.processedMaxLevelGrowthAwardIDs = Array(
             processedMaxLevelGrowthAwardIDs.suffix(512))
         self.updatedAt = updatedAt
+    }
+
+    private static func migrateLegacyCosmetics(
+        _ cosmeticIDs: Set<CompanionCosmeticID>) -> Set<CompanionCosmeticID>
+    {
+        let replacements: [CompanionCosmeticID: CompanionCosmeticID] = [
+            .azurePalette: .constellationFrame,
+            .violetPalette: .pixelPortalFrame,
+            .cloudCushion: .driftingClouds,
+            .hologramPlatform: .hologramScanlines,
+            .meadowPatch: .fallingPetals,
+        ]
+        return Set(cosmeticIDs.map { replacements[$0] ?? $0 })
     }
 
     public func isValid() -> Bool {

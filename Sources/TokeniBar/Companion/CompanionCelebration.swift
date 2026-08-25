@@ -116,6 +116,7 @@ struct CompanionCelebrationView: View {
                         ? self.celebration.stage
                         : (self.celebration.fromStage ?? .hatchling),
                     rarity: self.celebration.rarity,
+                    variantID: self.celebration.variantID,
                     behavior: .celebrate,
                     dimension: 240,
                     animationsEnabled: self.animationsEnabled)
