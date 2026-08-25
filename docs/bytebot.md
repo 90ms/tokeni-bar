@@ -26,13 +26,14 @@ cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)
 
 Level 100 requires 300 million verified tokens. Early levels arrive quickly and
 growth slows toward 100. Evolution is manual and spends no XP. XP stops at
-level 100 and overflow is not stored as XP. A level-100 growth target instead
-converts every 100,000 verified tokens into 10 Star Shards. Progress toward the
-next conversion is preserved per pet, and booster multipliers do not apply.
+level 100 and overflow is not stored as XP. On reaching level 100, Tokeni
+randomly activates an owned pet below level 100 and makes it the new growth
+target. Only when every owned pet is level 100 does the current target convert
+every 100,000 verified tokens into 10 Star Shards. Progress toward the next
+conversion is preserved per pet, and booster multipliers do not apply.
 
-The displayed companion and growth target are independent. A favorite max-level
-pet can stay visible while another owned pet receives Growth XP, or remain the
-growth target for repeatable shard conversion.
+The displayed companion and growth target can be selected independently, but
+automatic rotation takes priority while an unfinished owned pet remains.
 
 ## Eggs and duplicate pets
 
@@ -61,8 +62,9 @@ appearance odds are:
 | Prismatic | 8% | Equal |
 | Mutation | 1% | Equal |
 
-Mutation changes species-specific sprite colors and features without changing
-power. It enters the collection on hatch and provides a signature action:
+Mutation keeps the Standard palette and adds a species-specific silhouette
+feature without changing power. It enters the collection on hatch and provides
+a signature action:
 
 - ByteBot: Reassemble
 - CacheCat: Data Chase
@@ -78,14 +80,14 @@ power. It enters the collection on hatch and provides a signature action:
 ## Generation 2: Signal Expedition
 
 Generation 2 contains QueryOwl, PatchPanda, LoopHare, RelayRay, and KernelCrab.
-Every growth stage and Standard, Prismatic, and Mutation appearance has its own
-sprite. A visible signal core persists across modes, while wings, ears, fins,
+Every growth stage and Standard, Prismatic, and Mutation appearance is rendered
+independently. A visible signal core persists across modes, while wings, ears, fins,
 and shells shift during working, warning, and signature actions.
 
 Benefits are not stronger than generation 1. QueryOwl and RelayRay reuse the
 active benefits of ByteBot and CacheCat. KernelCrab, LoopHare, and PatchPanda
 reuse the passive benefits of StackFox, PromptPup, and NullSlime at identical
-values. Finding three generation-two species unlocks Hologram Platform; finding
+values. Finding three generation-two species unlocks Hologram Scanlines; finding
 all five unlocks the Mini Drone sidekick.
 
 ## Collection and actions
@@ -112,8 +114,9 @@ booster and discards its remaining time after confirmation.
 
 Collection milestones grant one Prismatic Egg at 5, 10, 20, and 30 discovered
 species/appearance combinations, and one Starlight Egg at 5 and 10 distinct
-species. Ground and Sidekick cosmetics use independent slots, so they can be
-equipped alongside an aura, background, and palette.
+species. Aura, Background, Sidekick, Frame, and Scene Effect cosmetics can be
+equipped independently. Frames and scene effects use the full companion canvas;
+legacy Body Color and Ground items migrate to corresponding new items.
 
 Each stable app version shows a one-time update-reward button in the Customize
 tab. Claiming it manually grants 300 Star Shards, and the claimed version is
@@ -123,7 +126,7 @@ recorded in local reward state so it cannot pay twice.
 
 Schema v11 stores pet UUIDs, species, appearance, Growth XP normalized to the
 500-XP cap, growth target, eggs, names, personalities, memories, collection,
-and local rewards. Reward schema v9 stores only per-pet progress toward the next
+and local rewards. Reward schema v10 stores only per-pet progress toward the next
 max-level conversion and processed award IDs, never raw token totals. Previous
 energy remainders migrate at the new rate. Migration also removes v10 synthesis
 records and inactive synthesized mutation pets. Unverifiable or stale usage

@@ -421,6 +421,11 @@
 "companion.cosmetic.cloudCushion" = "구름 방석";
 "companion.cosmetic.hologramPlatform" = "홀로그램 발판";
 "companion.cosmetic.meadowPatch" = "꽃밭 매트";
+"companion.cosmetic.constellationFrame" = "별자리 프레임";
+"companion.cosmetic.pixelPortalFrame" = "픽셀 포털 프레임";
+"companion.cosmetic.driftingClouds" = "떠다니는 구름";
+"companion.cosmetic.hologramScanlines" = "홀로그램 스캔라인";
+"companion.cosmetic.fallingPetals" = "흩날리는 꽃잎";
 "companion.cosmetic.miniDrone" = "꼬마 드론";
 "companion.cosmetic.starSprite" = "별빛 요정";
 "companion.cosmetic.pixelChick" = "픽셀 병아리";
@@ -429,6 +434,8 @@
 "companion.cosmetic.slot.palette" = "바디 컬러";
 "companion.cosmetic.slot.ground" = "발판";
 "companion.cosmetic.slot.sidekick" = "사이드킥";
+"companion.cosmetic.slot.frame" = "프레임";
+"companion.cosmetic.slot.scene" = "장면 효과";
 "companion.cosmetic.price" = "별조각 %d개";
 "companion.cosmetic.buy" = "구매";
 "companion.cosmetic.equip" = "착용";
@@ -444,6 +451,8 @@
 "companion.cosmetic.filter.slot.palette" = "바디";
 "companion.cosmetic.filter.slot.ground" = "발판";
 "companion.cosmetic.filter.slot.sidekick" = "사이드킥";
+"companion.cosmetic.filter.slot.frame" = "프레임";
+"companion.cosmetic.filter.slot.scene" = "장면";
 "companion.cosmetic.filter.ownership" = "보유 상태";
 "companion.cosmetic.filter.ownership.all" = "전체";
 "companion.cosmetic.filter.ownership.owned" = "보유";

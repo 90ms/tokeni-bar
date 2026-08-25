@@ -958,6 +958,156 @@ struct CompanionGameEngineTests {
         try engine.selectGrowthTarget(state.generationID, in: &state)
     }
 
+    @Test("Reaching level 100 activates a deterministic unfinished companion")
+    func maximumLevelAutomaticallySwitchesCompanion() {
+        let unfinishedID = UUID()
+        let originalID = UUID()
+        let unfinished = CompletedCompanionGeneration(
+            generationID: unfinishedID,
+            generationNumber: 2,
+            speciesID: .cachecat,
+            finalRarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            bondEnergy: 0,
+            growthXP: 0,
+            stage: .hatchling,
+            completedAt: .now)
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            generationID: originalID,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            growthXP: CompanionLevelCurve.standard.maximumXP - 1,
+            collection: CompanionCollection(
+                recentCompletedGenerations: [unfinished]))
+
+        let events = CompanionGameEngine(calendar: self.calendar).apply(
+            award: GrowthEnergyAward(
+                dateKey: state.growthDateKey,
+                energy: 1,
+                createdAt: .now),
+            automaticGrowthTargetUnitValue: 0,
+            to: &state)
+
+        #expect(state.generationID == unfinishedID)
+        #expect(state.resolvedGrowthTargetGenerationID == unfinishedID)
+        #expect(state.level == 1)
+        #expect(state.collection.archivedGenerations.contains {
+            $0.generationID == originalID
+                && CompanionLevelCurve.standard.level(forXP: $0.growthXP) == 100
+        })
+        #expect(events.contains(.levelIncreased(
+            generationID: originalID,
+            from: 99,
+            to: 100)))
+        #expect(events.contains(.activeCompanionChanged(unfinishedID)))
+    }
+
+    @Test("A loaded maximum-level target switches to an unfinished active pet")
+    func reconcilesLoadedMaximumTarget() {
+        let maximumID = UUID()
+        let maximum = CompletedCompanionGeneration(
+            generationID: maximumID,
+            generationNumber: 2,
+            speciesID: .cachecat,
+            finalRarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            bondEnergy: 0,
+            growthXP: CompanionLevelCurve.standard.maximumXP,
+            stage: .adult,
+            completedAt: .now)
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .hatchling,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            growthTargetGenerationID: maximumID,
+            growthXP: 0,
+            collection: CompanionCollection(
+                recentCompletedGenerations: [maximum]))
+
+        let events = CompanionGameEngine(calendar: self.calendar)
+            .reconcileAutomaticGrowthTarget(unitValue: 0, in: &state)
+
+        #expect(events.isEmpty)
+        #expect(state.resolvedGrowthTargetGenerationID == state.generationID)
+        #expect(state.generationID != maximumID)
+    }
+
+    @Test("A growth award after load is credited to the automatic replacement")
+    func loadedMaximumTargetDoesNotDiscardNextAward() {
+        let unfinishedID = UUID()
+        let unfinished = CompletedCompanionGeneration(
+            generationID: unfinishedID,
+            generationNumber: 2,
+            speciesID: .cachecat,
+            finalRarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            bondEnergy: 0,
+            growthXP: 0,
+            stage: .hatchling,
+            completedAt: .now)
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            growthXP: CompanionLevelCurve.standard.maximumXP,
+            collection: CompanionCollection(
+                recentCompletedGenerations: [unfinished]))
+
+        let events = CompanionGameEngine(calendar: self.calendar).apply(
+            award: GrowthEnergyAward(
+                dateKey: state.growthDateKey,
+                energy: 20,
+                createdAt: .now),
+            automaticGrowthTargetUnitValue: 0,
+            to: &state)
+
+        #expect(state.generationID == unfinishedID)
+        #expect(state.growthXP == 20)
+        #expect(events.contains(.energyApplied(20)))
+    }
+
+    @Test("All maximum-level companions preserve the selected target")
+    func allMaximumCompanionsDoNotSwitch() {
+        let archivedID = UUID()
+        let archived = CompletedCompanionGeneration(
+            generationID: archivedID,
+            generationNumber: 2,
+            speciesID: .cachecat,
+            finalRarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            bondEnergy: 0,
+            growthXP: CompanionLevelCurve.standard.maximumXP,
+            stage: .adult,
+            completedAt: .now)
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            growthTargetGenerationID: archivedID,
+            growthXP: CompanionLevelCurve.standard.maximumXP,
+            collection: CompanionCollection(
+                recentCompletedGenerations: [archived]))
+
+        let events = CompanionGameEngine(calendar: self.calendar)
+            .reconcileAutomaticGrowthTarget(unitValue: 0, in: &state)
+
+        #expect(events.isEmpty)
+        #expect(state.resolvedGrowthTargetGenerationID == archivedID)
+    }
+
     private func date(_ value: String) -> Date? {
         ISO8601DateFormatter().date(from: value)
     }

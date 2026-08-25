@@ -38,9 +38,11 @@ arrive quickly and progression slows toward level 100. Hatchling, junior, and
 adult forms correspond to levels 1, 10, and 25. Evolution is manual and spends
 no XP.
 
-XP clamps to 500 at level 100 and overflow is not stored as XP. Verified tokens
-earned while a level-100 pet is the target enter a separate repeatable
-conversion: every 100,000 verified tokens grant 10 Star Shards, with progress
+XP clamps to 500 at level 100 and overflow is not stored as XP. When the target
+reaches level 100 and an unfinished owned pet exists, Tokeni randomly makes one
+such pet both current and the new growth target. Only after every owned pet is
+level 100 do verified tokens enter a separate repeatable conversion: every
+100,000 verified tokens grant 10 Star Shards, with progress
 toward the next conversion kept per pet. Booster multipliers do not apply. A
 later cap increase changes the maximum-level and cumulative-XP policy values
 together; hidden XP beyond the previous cap is never banked.
@@ -48,10 +50,9 @@ together; hidden XP beyond the previous cap is never banked.
 ## 3. Displayed companion and growth target
 
 The menu-bar companion and the pet receiving verified Growth XP are selected
-independently. A favorite max-level pet can remain visible while another owned
-pet grows. A level-100 pet can also remain the growth target for repeatable shard
-conversion. Selling or removing the target safely falls back to the active pet
-or another owned pet.
+independently through manual actions, but automatic rotation takes priority while
+an unfinished owned pet remains. Selling or removing the target safely falls
+back to the active pet or another owned pet.
 
 The menu popover does not show a separate max-level conversation button. The
 collection detail may still preview predefined localized pet messages; they
@@ -85,8 +86,8 @@ The Mutation Lab, three-pet synthesis, and undiscovered-mutation guarantee are
 removed. A normal egg has a 1% seeded chance to hatch the selected species'
 mutation appearance. Mutation has no synthesis pity counter.
 
-A mutation changes species-specific sprite colors and features instead of
-adding a shared aura. It never changes XP, benefits, resale value, or other
+A mutation keeps the Standard palette and adds a species-specific silhouette
+feature instead of a shared aura. It never changes XP, benefits, resale value, or other
 odds. The existing Prismatic appearance and its guarantee rules remain a
 separate appearance.
 
@@ -162,15 +163,16 @@ version prevents duplicate claims and claims after downgrading.
 
 Collection milestones grant one Prismatic Egg at 5, 10, 20, and 30 discovered
 species/appearance combinations, and one Starlight Egg at 5 and 10 distinct
-species. Finding three generation-two species unlocks Hologram Platform;
-finding all five unlocks the Mini Drone sidekick. Ground and Sidekick are
-independent cosmetic slots that can be equipped with an aura, background, and
-palette.
+species. Finding three generation-two species unlocks Hologram Scanlines;
+finding all five unlocks the Mini Drone sidekick. Aura, Background, Sidekick,
+Frame, and Scene Effect are independent cosmetic slots. Frames and scene effects
+use the full companion canvas, and legacy Body Color and Ground items migrate to
+their corresponding replacements.
 
 ## 9. Persistence and safety
 
 Schema v11 stores XP normalized to level 100 and an optional growth-target UUID.
-Reward schema v9 stores only per-pet progress toward the next max-level
+Reward schema v10 stores only per-pet progress toward the next max-level
 conversion and processed award IDs without storing raw token totals. Previous
 energy remainders migrate at the new rate.
 Version 10 loads into v11, discarding synthesis data and XP beyond the cap. The

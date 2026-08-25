@@ -76,15 +76,15 @@ public struct CompanionRewardEngine: Sendable {
         cosmetics: [CompanionCosmetic] = [
             CompanionCosmetic(id: .sparkleAura, cost: 300),
             CompanionCosmetic(id: .pixelHearts, cost: 400),
-            CompanionCosmetic(id: .azurePalette, cost: 450),
-            CompanionCosmetic(id: .cloudCushion, cost: 450),
+            CompanionCosmetic(id: .constellationFrame, cost: 450),
+            CompanionCosmetic(id: .driftingClouds, cost: 450),
             CompanionCosmetic(id: .pixelChick, cost: 500),
-            CompanionCosmetic(id: .violetPalette, cost: 550),
+            CompanionCosmetic(id: .pixelPortalFrame, cost: 550),
             CompanionCosmetic(id: .fireflyAura, cost: 650),
-            CompanionCosmetic(id: .hologramPlatform, cost: 650),
+            CompanionCosmetic(id: .hologramScanlines, cost: 650),
             CompanionCosmetic(id: .starSprite, cost: 700),
             CompanionCosmetic(id: .terminalNight, cost: 800),
-            CompanionCosmetic(id: .meadowPatch, cost: 850),
+            CompanionCosmetic(id: .fallingPetals, cost: 850),
             CompanionCosmetic(id: .orbitAura, cost: 900),
             CompanionCosmetic(id: .miniDrone, cost: 950),
             CompanionCosmetic(id: .cloudGarden, cost: 1_100),
@@ -225,7 +225,7 @@ public struct CompanionRewardEngine: Sendable {
         let discoveredGenerationTwo = collection.discoveredSpeciesIDs
             .intersection(generationTwoSpecies)
         if discoveredGenerationTwo.count >= 3 {
-            state.unlockedCosmeticIDs.insert(.hologramPlatform)
+            state.unlockedCosmeticIDs.insert(.hologramScanlines)
         }
         if discoveredGenerationTwo == generationTwoSpecies {
             state.unlockedCosmeticIDs.insert(.miniDrone)

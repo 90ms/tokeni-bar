@@ -74,7 +74,8 @@ levels arrive quickly and progression slows toward the cap.
 The initial level cap is 100. At levels 10 and 25, the player can manually evolve the pet
 into its Juvenile and Adult appearance without spending XP. Delaying evolution
 does not stop level growth. The displayed companion and XP growth target can be
-selected independently.
+selected independently. When a growth target reaches level 100, Tokeni randomly
+chooses an owned pet below level 100 and makes it both current and the new target.
 
 Starting at level 30, every ten levels grant 10 Star Shards so adult pets retain
 a recurring goal.
@@ -82,9 +83,10 @@ a recurring goal.
 ### 2. Collect new pets through eggs
 
 Level rewards arrive at 30 and 40, every five levels from 50, every three levels
-from 60, and every level from 70. A full journey grants 460 shards. A level-100
-growth target converts each 100,000 verified tokens into 10 shards repeatedly,
-with per-pet progress preserved toward the next conversion.
+from 60, and every level from 70. A full journey grants 460 shards. Once every
+owned pet is level 100, the current growth target converts each 100,000 verified
+tokens into 10 shards repeatedly, with per-pet progress preserved toward the
+next conversion.
 
 The first launch grants one non-sellable Starter Egg, which hatches for free.
 Further pets come from the Egg Vault and shop without completing or replacing
@@ -139,7 +141,8 @@ Generation 2 is visually distinct through a visible signal core and behavior
 mode shifts: wings, ears, fins, or shells change silhouette during work,
 warning, and signature actions. It has no power advantage and maps to the same
 five balanced benefits as generation 1. Finding three generation-two species
-unlocks Hologram Platform; finding all five unlocks the Mini Drone sidekick.
+unlocks the Hologram Scanlines scene effect; finding all five unlocks the Mini
+Drone sidekick.
 
 | Variant | Base odds | Power |
 |---|---:|---|
@@ -153,8 +156,9 @@ and Mutation—while evolution appearances are recorded in each combination's
 growth album.
 
 A normal egg has a 1% chance to hatch that species' rare Mutation appearance.
-It changes the species sprite and adds a signature action without changing
-power. Hatching the same `species + appearance` again grants the matching pet
+It keeps the Standard palette while adding a species-specific silhouette detail
+and signature action without changing power. Hatching the same
+`species + appearance` again grants the matching pet
 25% of its next-level XP requirement instead of creating another pet. Mutation
 appearances are registered in the collection with Standard and Prismatic.
 
@@ -167,9 +171,10 @@ appearances are registered in the collection with Standard and Prismatic.
 | 20 | Firefly Aura |
 | 25 | 5x, 10-minute booster and Orbit Aura |
 
-Cosmetics now include independent Ground and Sidekick slots alongside existing
-auras, backgrounds, and palettes. Cloud Cushion, Hologram Platform, and Meadow
-Patch sit beneath a pet; Pixel Chick, Star Sprite, and Mini Drone move beside it.
+Cosmetics use Aura, Background, Sidekick, Frame, and Scene Effect slots. Frames
+and scene effects are positioned against the full companion canvas instead of
+the pet body or feet. Legacy Body Color and Ground ownership and selection are
+migrated to their corresponding Frame and Scene Effect items.
 
 The first growth activity each day grants 300 Star Shards and one Starlight Egg.
 Weekly attendance grants another 100, 200, and 300 shards on days 3, 5, and 7,

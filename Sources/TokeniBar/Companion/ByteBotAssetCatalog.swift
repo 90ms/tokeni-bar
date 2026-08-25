@@ -41,6 +41,7 @@ final class CompanionAssetCatalog {
         speciesID requestedSpeciesID: CompanionSpeciesID?,
         stage: CompanionGameStage,
         rarity: CompanionRarity,
+        variantID: CompanionVariantID,
         behavior: CompanionBehavior,
         index: Int) -> CGImage?
     {
@@ -48,7 +49,10 @@ final class CompanionAssetCatalog {
             ? CompanionSpeciesID.bytebot
             : requestedSpeciesID ?? .bytebot
         guard let manifest = self.manifests[speciesID],
-              let sheetName = manifest.sheetName(for: stage, rarity: rarity),
+              let sheetName = manifest.sheetName(
+                  for: stage,
+                  variantID: variantID,
+                  fallbackRarity: rarity),
               let animation = manifest.animation(for: behavior)
         else {
             return nil
@@ -58,6 +62,7 @@ final class CompanionAssetCatalog {
         let frameKey = NSString(string: [
             speciesID.rawValue,
             sheetName,
+            variantID.rawValue,
             behavior.rawValue,
             String(column),
         ].joined(separator: ":"))
@@ -89,7 +94,10 @@ final class CompanionAssetCatalog {
             let frame = Self.detachedCopy(
                 of: cropped,
                 width: frameWidth,
-                height: frameHeight)
+                height: frameHeight,
+                mutatedSpeciesID: variantID == .mutated && stage != .egg
+                    ? speciesID
+                    : nil)
         else { return nil }
         self.frameCache.setObject(
             ImageBox(frame),
@@ -123,7 +131,8 @@ final class CompanionAssetCatalog {
     private static func detachedCopy(
         of image: CGImage,
         width: Int,
-        height: Int) -> CGImage?
+        height: Int,
+        mutatedSpeciesID: CompanionSpeciesID?) -> CGImage?
     {
         guard let context = CGContext(
             data: nil,
@@ -139,7 +148,139 @@ final class CompanionAssetCatalog {
         context.draw(
             image,
             in: CGRect(x: 0, y: 0, width: width, height: height))
+        if let mutatedSpeciesID,
+           let opaqueBounds = Self.opaqueBounds(
+               in: context,
+               width: width,
+               height: height)
+        {
+            Self.drawMutationFeature(
+                for: mutatedSpeciesID,
+                in: context,
+                opaqueBounds: opaqueBounds)
+        }
         return context.makeImage()
+    }
+
+    /// Finds the visible sprite in the detached RGBA frame. Mutation details
+    /// are anchored to this box so they follow differently sized life stages
+    /// and animated poses instead of floating at fixed sheet coordinates.
+    private static func opaqueBounds(
+        in context: CGContext,
+        width: Int,
+        height: Int) -> CGRect?
+    {
+        guard let data = context.data else { return nil }
+        let bytes = data.assumingMemoryBound(to: UInt8.self)
+        var minX = width
+        var minY = height
+        var maxX = -1
+        var maxY = -1
+        for y in 0..<height {
+            let row = y * context.bytesPerRow
+            for x in 0..<width where bytes[row + x * 4 + 3] > 0 {
+                minX = min(minX, x)
+                minY = min(minY, y)
+                maxX = max(maxX, x)
+                maxY = max(maxY, y)
+            }
+        }
+        guard maxX >= minX, maxY >= minY else { return nil }
+        return CGRect(
+            x: CGFloat(minX),
+            y: CGFloat(minY),
+            width: CGFloat(max(maxX - minX + 1, 1)),
+            height: CGFloat(max(maxY - minY + 1, 1)))
+    }
+
+    /// Adds a stable, species-specific silhouette detail without recoloring the
+    /// original sprite. Coordinates are expressed in the manifest's logical
+    /// 32-pixel frame and scale for future higher-resolution sheets.
+    private static func drawMutationFeature(
+        for speciesID: CompanionSpeciesID,
+        in context: CGContext,
+        opaqueBounds: CGRect)
+    {
+        func rect(_ x: CGFloat, _ y: CGFloat, _ width: CGFloat, _ height: CGFloat) {
+            context.fill(CGRect(x: x, y: y, width: width, height: height))
+        }
+        func line(_ points: [CGPoint]) {
+            guard let first = points.first else { return }
+            context.beginPath()
+            context.move(to: first)
+            for point in points.dropFirst() {
+                context.addLine(to: point)
+            }
+            context.strokePath()
+        }
+
+        let scaleX = opaqueBounds.width / 32
+        let scaleY = opaqueBounds.height / 32
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.translateBy(x: opaqueBounds.minX, y: opaqueBounds.minY)
+        context.scaleBy(x: scaleX, y: scaleY)
+        context.setShouldAntialias(false)
+        context.setLineWidth(1 / max(min(scaleX, scaleY), 0.25))
+        context.setLineCap(.square)
+        context.setStrokeColor(CGColor(red: 0.03, green: 0.11, blue: 0.21, alpha: 1))
+        context.setFillColor(CGColor(red: 0.03, green: 0.11, blue: 0.21, alpha: 1))
+
+        switch speciesID {
+        case .bytebot:
+            // Forked antenna.
+            line([CGPoint(x: 16, y: 24), CGPoint(x: 16, y: 29), CGPoint(x: 13, y: 31)])
+            line([CGPoint(x: 16, y: 29), CGPoint(x: 19, y: 31)])
+            rect(12, 30, 2, 2)
+            rect(18, 30, 2, 2)
+        case .cachecat:
+            // Split tail tips.
+            line([CGPoint(x: 23, y: 12), CGPoint(x: 28, y: 15), CGPoint(x: 31, y: 19)])
+            line([CGPoint(x: 28, y: 15), CGPoint(x: 31, y: 13)])
+        case .kernelcrab:
+            // Oversized asymmetric claw.
+            rect(1, 14, 5, 5)
+            rect(0, 16, 2, 5)
+            rect(5, 17, 2, 4)
+        case .loophare:
+            // Loop bridge between the ears.
+            line([
+                CGPoint(x: 11, y: 27), CGPoint(x: 11, y: 31),
+                CGPoint(x: 21, y: 31), CGPoint(x: 21, y: 27),
+            ])
+        case .nullslime:
+            // A small satellite blob.
+            rect(25, 23, 4, 4)
+            rect(27, 27, 2, 2)
+        case .patchpanda:
+            // Notched ear tufts.
+            rect(5, 25, 3, 3)
+            rect(24, 25, 3, 3)
+            rect(7, 28, 2, 3)
+            rect(23, 28, 2, 3)
+        case .promptpup:
+            // Long folded ear tip.
+            line([
+                CGPoint(x: 7, y: 27), CGPoint(x: 3, y: 24),
+                CGPoint(x: 5, y: 20), CGPoint(x: 8, y: 22),
+            ])
+        case .queryowl:
+            // Monocle lens and stem.
+            context.strokeEllipse(in: CGRect(x: 17, y: 17, width: 7, height: 7))
+            line([CGPoint(x: 23, y: 18), CGPoint(x: 27, y: 14)])
+        case .relayray:
+            // Twin signal fins.
+            line([CGPoint(x: 8, y: 23), CGPoint(x: 3, y: 28), CGPoint(x: 9, y: 27)])
+            line([CGPoint(x: 24, y: 23), CGPoint(x: 29, y: 28), CGPoint(x: 23, y: 27)])
+        case .stackfox:
+            // A second, blocky tail.
+            line([
+                CGPoint(x: 23, y: 12), CGPoint(x: 29, y: 9),
+                CGPoint(x: 31, y: 13), CGPoint(x: 27, y: 16),
+            ])
+        default:
+            break
+        }
     }
 
     private func manifest(

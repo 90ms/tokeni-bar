@@ -421,6 +421,11 @@
 "companion.cosmetic.cloudCushion" = "Cloud Cushion";
 "companion.cosmetic.hologramPlatform" = "Hologram Platform";
 "companion.cosmetic.meadowPatch" = "Flower Meadow Mat";
+"companion.cosmetic.constellationFrame" = "Constellation Frame";
+"companion.cosmetic.pixelPortalFrame" = "Pixel Portal Frame";
+"companion.cosmetic.driftingClouds" = "Drifting Clouds";
+"companion.cosmetic.hologramScanlines" = "Hologram Scanlines";
+"companion.cosmetic.fallingPetals" = "Falling Petals";
 "companion.cosmetic.miniDrone" = "Tiny Drone";
 "companion.cosmetic.starSprite" = "Starlight Sprite";
 "companion.cosmetic.pixelChick" = "Pixel Chick";
@@ -429,6 +434,8 @@
 "companion.cosmetic.slot.palette" = "Body Color";
 "companion.cosmetic.slot.ground" = "Ground";
 "companion.cosmetic.slot.sidekick" = "Sidekick";
+"companion.cosmetic.slot.frame" = "Frame";
+"companion.cosmetic.slot.scene" = "Scene Effect";
 "companion.cosmetic.price" = "%d Star Shards";
 "companion.cosmetic.buy" = "Buy";
 "companion.cosmetic.equip" = "Equip";
@@ -444,6 +451,8 @@
 "companion.cosmetic.filter.slot.palette" = "Body";
 "companion.cosmetic.filter.slot.ground" = "Ground";
 "companion.cosmetic.filter.slot.sidekick" = "Sidekick";
+"companion.cosmetic.filter.slot.frame" = "Frame";
+"companion.cosmetic.filter.slot.scene" = "Scene";
 "companion.cosmetic.filter.ownership" = "Ownership";
 "companion.cosmetic.filter.ownership.all" = "All";
 "companion.cosmetic.filter.ownership.owned" = "Owned";

@@ -110,7 +110,7 @@ struct CompanionRewardEngineTests {
         #expect(state.rewardedVariantIDs == [.prismatic])
         #expect(state.rewardedJourneyCount == 2)
         #expect(state.rewardedFormMilestones == [5, 10])
-        #expect(state.unlockedCosmeticIDs.contains(.hologramPlatform))
+        #expect(state.unlockedCosmeticIDs.contains(.hologramScanlines))
         #expect(state.unlockedCosmeticIDs.contains(.miniDrone))
         #expect(repeated.isEmpty)
     }
@@ -129,13 +129,13 @@ struct CompanionRewardEngineTests {
             collection: CompanionCollection(forms: Array(standardForms.prefix(2))),
             at: now,
             in: &state)
-        #expect(!state.unlockedCosmeticIDs.contains(.hologramPlatform))
+        #expect(!state.unlockedCosmeticIDs.contains(.hologramScanlines))
 
         _ = engine.reconcile(
             collection: CompanionCollection(forms: Array(standardForms.prefix(3))),
             at: now,
             in: &state)
-        #expect(state.unlockedCosmeticIDs.contains(.hologramPlatform))
+        #expect(state.unlockedCosmeticIDs.contains(.hologramScanlines))
         #expect(!state.unlockedCosmeticIDs.contains(.miniDrone))
 
         _ = engine.reconcile(
@@ -262,23 +262,23 @@ struct CompanionRewardEngineTests {
         #expect(state.selectedCosmeticIDs == [.terminalNight, .sparkleAura])
         try engine.purchase(cosmeticID: .pixelHearts, at: now, in: &state)
         #expect(state.selectedCosmeticIDs == [.terminalNight, .pixelHearts])
-        try engine.purchase(cosmeticID: .azurePalette, at: now, in: &state)
+        try engine.purchase(cosmeticID: .constellationFrame, at: now, in: &state)
         #expect(state.selectedCosmeticIDs == [
             .terminalNight,
             .pixelHearts,
-            .azurePalette,
+            .constellationFrame,
         ])
-        try engine.purchase(cosmeticID: .violetPalette, at: now, in: &state)
+        try engine.purchase(cosmeticID: .pixelPortalFrame, at: now, in: &state)
         #expect(state.selectedCosmeticIDs == [
             .terminalNight,
             .pixelHearts,
-            .violetPalette,
+            .pixelPortalFrame,
         ])
-        try engine.purchase(cosmeticID: .cloudCushion, at: now, in: &state)
-        #expect(state.selectedCosmeticIDs.contains(.cloudCushion))
-        try engine.purchase(cosmeticID: .hologramPlatform, at: now, in: &state)
-        #expect(!state.selectedCosmeticIDs.contains(.cloudCushion))
-        #expect(state.selectedCosmeticIDs.contains(.hologramPlatform))
+        try engine.purchase(cosmeticID: .driftingClouds, at: now, in: &state)
+        #expect(state.selectedCosmeticIDs.contains(.driftingClouds))
+        try engine.purchase(cosmeticID: .hologramScanlines, at: now, in: &state)
+        #expect(!state.selectedCosmeticIDs.contains(.driftingClouds))
+        #expect(state.selectedCosmeticIDs.contains(.hologramScanlines))
         try engine.purchase(cosmeticID: .pixelChick, at: now, in: &state)
         #expect(state.selectedCosmeticIDs.contains(.pixelChick))
         try engine.purchase(cosmeticID: .starSprite, at: now, in: &state)
@@ -482,6 +482,45 @@ struct CompanionRewardEngineTests {
 
         #expect(state.unlockedCosmeticIDs == [.sparkleAura])
         #expect(state.selectedCosmeticIDs == [.sparkleAura])
+    }
+
+    @Test("Removed body and ground cosmetics migrate one-to-one")
+    func removedCosmeticsMigration() throws {
+        let engine = CompanionRewardEngine()
+        let removedIDs: Set<CompanionCosmeticID> = [
+            .azurePalette, .violetPalette, .cloudCushion,
+            .hologramPlatform, .meadowPatch,
+        ]
+        #expect(engine.cosmetics.allSatisfy { !removedIDs.contains($0.id) })
+        for cosmeticID in removedIDs {
+            var purchaseState = CompanionRewardState(starShards: Int.max)
+            #expect(throws: CompanionRewardError.unknownCosmetic) {
+                try engine.purchase(cosmeticID: cosmeticID, in: &purchaseState)
+            }
+        }
+
+        let data = Data(
+            """
+            {
+              "schemaVersion" : 9,
+              "unlockedCosmeticIDs" : [
+                "azurePalette", "violetPalette", "cloudCushion",
+                "hologramPlatform", "meadowPatch"
+              ],
+              "selectedCosmeticIDs" : ["violetPalette", "meadowPatch"]
+            }
+            """.utf8)
+
+        let state = try JSONDecoder().decode(
+            CompanionRewardState.self,
+            from: data)
+
+        #expect(state.unlockedCosmeticIDs == [
+            .constellationFrame, .pixelPortalFrame, .driftingClouds,
+            .hologramScanlines, .fallingPetals,
+        ])
+        #expect(state.selectedCosmeticIDs == [.pixelPortalFrame, .fallingPetals])
+        #expect(state.isValid())
     }
 
     @Test("Version eight max-level energy remainder migrates at the new rate")

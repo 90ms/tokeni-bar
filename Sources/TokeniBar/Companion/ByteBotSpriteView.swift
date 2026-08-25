@@ -9,6 +9,7 @@ struct ByteBotSpriteView: View {
     let speciesID: CompanionSpeciesID?
     let stage: CompanionGameStage
     let rarity: CompanionRarity
+    var variantID: CompanionVariantID? = nil
     let behavior: CompanionBehavior
     var dimension: CGFloat = 64
     var animationsEnabled = true
@@ -33,6 +34,8 @@ struct ByteBotSpriteView: View {
                 speciesID: self.speciesID,
                 stage: self.stage,
                 rarity: self.rarity,
+                variantID: self.variantID
+                    ?? CompanionVariantRegistry.migrated(from: self.rarity),
                 behavior: self.behavior,
                 index: frameIndex)
             {

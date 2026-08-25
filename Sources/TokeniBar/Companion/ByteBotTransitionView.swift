@@ -9,6 +9,7 @@ struct ByteBotTransitionView: View {
     let speciesID: CompanionSpeciesID?
     let stage: CompanionGameStage
     let rarity: CompanionRarity?
+    var variantID: CompanionVariantID? = nil
     let behavior: CompanionBehavior
     var mutationID: CompanionMutationID? = nil
     var cosmeticIDs: Set<CompanionCosmeticID> = []
@@ -41,6 +42,15 @@ struct ByteBotTransitionView: View {
                     isBackground: true)
             }
 
+            if let cosmeticID = self.cosmeticID(in: .scene) {
+                CompanionCosmeticDecoration(
+                    cosmeticID: cosmeticID,
+                    dimension: self.dimension,
+                    animationsEnabled: self.cosmeticMotionEnabled,
+                    motionIntensity: self.animationIntensity,
+                    isBackground: true)
+            }
+
             if let cosmeticID = self.cosmeticID(in: .aura) {
                 CompanionCosmeticDecoration(
                     cosmeticID: cosmeticID,
@@ -49,14 +59,6 @@ struct ByteBotTransitionView: View {
                     motionIntensity: self.animationIntensity,
                     lightBackground: self.cosmeticID(in: .background)
                         == .cloudGarden)
-            }
-
-            if let cosmeticID = self.cosmeticID(in: .ground) {
-                CompanionCosmeticDecoration(
-                    cosmeticID: cosmeticID,
-                    dimension: self.dimension,
-                    animationsEnabled: self.cosmeticMotionEnabled,
-                    motionIntensity: self.animationIntensity)
             }
 
             if let effect {
@@ -80,6 +82,7 @@ struct ByteBotTransitionView: View {
                 speciesID: self.displayedKey.speciesID,
                 stage: self.displayedKey.stage,
                 rarity: self.displayedKey.rarity ?? .normal,
+                variantID: self.displayedKey.variantID,
                 behavior: self.behavior,
                 dimension: self.dimension,
                 animationsEnabled: self.animationsEnabled)
@@ -92,6 +95,16 @@ struct ByteBotTransitionView: View {
                     dimension: self.dimension,
                     animationsEnabled: self.cosmeticMotionEnabled,
                     motionIntensity: self.animationIntensity)
+            }
+
+
+            if let cosmeticID = self.cosmeticID(in: .frame) {
+                CompanionCosmeticDecoration(
+                    cosmeticID: cosmeticID,
+                    dimension: self.dimension,
+                    animationsEnabled: self.cosmeticMotionEnabled,
+                    motionIntensity: self.animationIntensity,
+                    isBackground: true)
             }
 
             if let effect {
@@ -220,7 +233,8 @@ struct ByteBotTransitionView: View {
         TransitionKey(
             speciesID: self.speciesID,
             stage: self.stage,
-            rarity: self.rarity)
+            rarity: self.rarity,
+            variantID: self.variantID)
     }
 
     private var displayDimension: CGFloat {
@@ -269,19 +283,26 @@ struct ByteBotTransitionView: View {
             effect = Effect(
                 kind: .evolution,
                 rarity: rarity,
+                variantID: newValue.variantID,
                 stage: newValue.stage)
         } else if oldValue.stage == .egg,
            newValue.stage == .hatchling,
            let rarity = newValue.rarity
         {
-            effect = Effect(kind: .hatch, rarity: rarity, stage: newValue.stage)
+            effect = Effect(
+                kind: .hatch,
+                rarity: rarity,
+                variantID: newValue.variantID,
+                stage: newValue.stage)
         } else if let oldRarity = oldValue.rarity,
                   let newRarity = newValue.rarity,
-                  newRarity.rank > oldRarity.rank
+                  newValue.variantID != oldValue.variantID
+                    || newRarity.rank > oldRarity.rank
         {
             effect = Effect(
                 kind: .rarityUp,
                 rarity: newRarity,
+                variantID: newValue.variantID,
                 stage: newValue.stage)
         } else {
             effect = nil
@@ -398,8 +419,8 @@ struct ByteBotTransitionView: View {
     }
 
     private func message(for effect: Effect) -> String {
-        let variantID = CompanionVariantRegistry.migrated(
-            from: effect.rarity)
+        let variantID = effect.variantID
+            ?? CompanionVariantRegistry.migrated(from: effect.rarity)
         let variant = AppLocalization.string(
             "companion.variant.\(variantID.rawValue)")
         switch effect.kind {
@@ -421,6 +442,7 @@ private struct TransitionKey: Equatable {
     let speciesID: CompanionSpeciesID?
     let stage: CompanionGameStage
     let rarity: CompanionRarity?
+    let variantID: CompanionVariantID?
 }
 
 private struct Effect: Equatable {
@@ -432,5 +454,6 @@ private struct Effect: Equatable {
 
     let kind: Kind
     let rarity: CompanionRarity
+    let variantID: CompanionVariantID?
     let stage: CompanionGameStage
 }
