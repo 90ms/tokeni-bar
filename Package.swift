@@ -43,6 +43,11 @@ targets.insert(
         ],
         swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]),
     at: 1)
+targets.append(
+    .testTarget(
+        name: "TokeniBarTests",
+        dependencies: ["TokeniBar", "TokeniCore"],
+        swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]))
 #endif
 
 #if os(Windows)

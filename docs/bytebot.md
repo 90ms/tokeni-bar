@@ -62,9 +62,11 @@ appearance odds are:
 | Prismatic | 8% | Equal |
 | Mutation | 1% | Equal |
 
-Mutation keeps the Standard palette and adds a species-specific silhouette
-feature without changing power. It enters the collection on hatch and provides
-a signature action:
+Mutation keeps the Standard palette and animation. Every displayed frame is
+derived with a pronounced species-specific body feature and cached as that
+pet's intrinsic appearance, rather than layered as an equipable decoration.
+It enters the collection on hatch without changing power and provides a
+signature action:
 
 - ByteBot: Reassemble
 - CacheCat: Data Chase

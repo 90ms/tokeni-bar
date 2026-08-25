@@ -86,10 +86,11 @@ The Mutation Lab, three-pet synthesis, and undiscovered-mutation guarantee are
 removed. A normal egg has a 1% seeded chance to hatch the selected species'
 mutation appearance. Mutation has no synthesis pity counter.
 
-A mutation keeps the Standard palette and adds a species-specific silhouette
-feature instead of a shared aura. It never changes XP, benefits, resale value, or other
-odds. The existing Prismatic appearance and its guarantee rules remain a
-separate appearance.
+A mutation keeps the Standard palette and animation. Every displayed frame is
+derived with a pronounced species-specific body feature and cached as the pet's
+intrinsic appearance instead of being layered as an equipable aura. It never
+changes XP, benefits, resale value, or other odds. The existing Prismatic
+appearance and its guarantee rules remain a separate appearance.
 
 Schema v11 discards legacy synthesis records, counts, and inactive synthesized
 mutation pets. An active legacy mutation decoration is cleared while the pet

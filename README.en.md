@@ -156,8 +156,9 @@ and Mutation—while evolution appearances are recorded in each combination's
 growth album.
 
 A normal egg has a 1% chance to hatch that species' rare Mutation appearance.
-It keeps the Standard palette while adding a species-specific silhouette detail
-and signature action without changing power. Hatching the same
+It keeps the Standard palette and animation while deriving every frame with a
+pronounced species-specific body trait. Mutation is intrinsic to the pet rather
+than an equipable decoration and provides no power advantage. Hatching the same
 `species + appearance` again grants the matching pet
 25% of its next-level XP requirement instead of creating another pet. Mutation
 appearances are registered in the collection with Standard and Prismatic.
