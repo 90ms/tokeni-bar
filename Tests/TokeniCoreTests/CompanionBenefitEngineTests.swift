@@ -27,7 +27,7 @@ struct CompanionBenefitEngineTests {
                     .luckyCheer,
                     .rewardAbsorption,
                 ]))
-        #expect(CompanionSpeciesID.totalRegisteredFormCount == 150)
+        #expect(CompanionSpeciesID.totalRegisteredFormCount == 90)
         #expect(CompanionSpeciesID.totalCollectibleVariantCount == 30)
     }
 

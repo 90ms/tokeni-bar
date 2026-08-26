@@ -36,13 +36,13 @@ struct CompanionMutationFrameTests {
                         let mutatedBytes = try self.rgbaBytes(of: mutated)
 
                         #expect(mutatedBytes != standardBytes)
-                        let addedPixelCount = self.addedOpaquePixelCount(
+                        let changedPixelCount = self.changedPixelCount(
                             standard: standardBytes,
                             mutated: mutatedBytes)
                         let standardPixelCount = self.opaquePixelCount(standardBytes)
 
-                        #expect(addedPixelCount > 0)
-                        #expect(addedPixelCount <= max(standardPixelCount / 5, 12))
+                        #expect(changedPixelCount > 0)
+                        #expect(changedPixelCount <= max(standardPixelCount / 5, 12))
                     }
                 }
             }
@@ -55,16 +55,17 @@ struct CompanionMutationFrameTests {
         return data as Data
     }
 
-    private func addedOpaquePixelCount(
+    private func changedPixelCount(
         standard: Data,
         mutated: Data) -> Int
     {
         guard standard.count == mutated.count else { return 0 }
         var count = 0
-        for alphaIndex in stride(from: 3, to: standard.count, by: 4)
-        where standard[alphaIndex] == 0 && mutated[alphaIndex] > 0
-        {
-            count += 1
+        for pixelStart in stride(from: 0, to: standard.count, by: 4) {
+            let pixelEnd = min(pixelStart + 4, standard.count)
+            if standard[pixelStart..<pixelEnd] != mutated[pixelStart..<pixelEnd] {
+                count += 1
+            }
         }
         return count
     }
