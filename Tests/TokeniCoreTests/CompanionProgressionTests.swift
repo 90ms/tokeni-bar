@@ -42,8 +42,8 @@ struct CompanionProgressionTests {
     @Test("Evolution milestones are level-gated")
     func evolutionMilestones() {
         #expect(CompanionEvolutionRegistry.requiredLevel(for: .hatchling) == 1)
-        #expect(CompanionEvolutionRegistry.requiredLevel(for: .junior) == 10)
-        #expect(CompanionEvolutionRegistry.requiredLevel(for: .adult) == 25)
+        #expect(CompanionEvolutionRegistry.requiredLevel(for: .junior) == 30)
+        #expect(CompanionEvolutionRegistry.requiredLevel(for: .adult) == 70)
         #expect(CompanionEvolutionRegistry.next(after: .adult) == nil)
     }
 }

@@ -160,6 +160,7 @@
 "companion.stage.hatchling" = "Hatchling";
 "companion.stage.junior" = "Juvenile";
 "companion.stage.adult" = "Adult";
+"companion.displayStage.title" = "Displayed growth stage";
 "companion.rarity.normal" = "Normal";
 "companion.rarity.rare" = "Rare";
 "companion.rarity.epic" = "Epic";
@@ -196,8 +197,6 @@
 "companion.maxLevel.message.5" = "Who will be the next friend to grow this strong?";
 "companion.maxLevel.message.6" = "I’ll stay right here. Let’s raise another friend!";
 "companion.maxLevel.message.7" = "Level 100! Let’s share this joy with someone new.";
-"companion.variant.legacy-azure" = "Legacy Azure";
-"companion.variant.legacy-violet" = "Legacy Violet";
 "companion.personality.calm" = "Calm";
 "companion.personality.curious" = "Curious";
 "companion.personality.playful" = "Playful";
@@ -533,7 +532,7 @@
 "settings.companion.animationIntensity.full" = "Full";
 "settings.companion.motion" = "Animations pause automatically with Reduce Motion or Low Power Mode.";
 "settings.companion.growth" = "Growth";
-"settings.companion.rules" = "Every 600,000 verified tokens grant one Growth XP up to level 100. Evolution is manual at levels 10 and 25; milestone levels from 30 grant Star Shards, and every 100,000 verified tokens after level 100 grant 10 shards.";
+"settings.companion.rules" = "Every 600,000 verified tokens grant one Growth XP up to level 100. Evolution is manual at levels 30 and 70; milestone levels from 30 grant Star Shards, and every 100,000 verified tokens after level 100 grant 10 shards.";
 "settings.companion.today" = "Today: %lld tokens → +%d energy";
 "settings.companion.wallet" = "Current energy %d · carried today %d";
 "settings.companion.providers" = "Growth data available from %d of %d connected providers.";

@@ -160,6 +160,7 @@
 "companion.stage.hatchling" = "유년기";
 "companion.stage.junior" = "성장기";
 "companion.stage.adult" = "성체";
+"companion.displayStage.title" = "화면에 표시할 성장기";
 "companion.rarity.normal" = "일반";
 "companion.rarity.rare" = "희귀";
 "companion.rarity.epic" = "영웅";
@@ -196,8 +197,6 @@
 "companion.maxLevel.message.5" = "나만큼 멋지게 자랄 다음 친구는 누구일까?";
 "companion.maxLevel.message.6" = "계속 곁에 있을게. 이제 다른 친구도 키워보자!";
 "companion.maxLevel.message.7" = "드디어 100레벨! 다음 친구에게도 이 기쁨을 알려줘.";
-"companion.variant.legacy-azure" = "레거시 블루";
-"companion.variant.legacy-violet" = "레거시 바이올렛";
 "companion.personality.calm" = "차분한 성격";
 "companion.personality.curious" = "호기심 많은 성격";
 "companion.personality.playful" = "장난꾸러기 성격";
@@ -533,7 +532,7 @@
 "settings.companion.animationIntensity.full" = "풍부하게";
 "settings.companion.motion" = "동작 줄이기 또는 저전력 모드에서는 애니메이션이 자동으로 멈춥니다.";
 "settings.companion.growth" = "성장";
-"settings.companion.rules" = "검증된 토큰 60만 개마다 성장 XP 1을 얻어 최대 100레벨까지 오릅니다. 레벨 10·25 진화는 직접 실행하며, 레벨 30부터 단계별 별조각을 받고 100레벨 이후 검증된 토큰 10만 개마다 별조각 10개를 얻습니다.";
+"settings.companion.rules" = "검증된 토큰 60만 개마다 성장 XP 1을 얻어 최대 100레벨까지 오릅니다. 레벨 30·70 진화는 직접 실행하며, 레벨 30부터 단계별 별조각을 받고 100레벨 이후 검증된 토큰 10만 개마다 별조각 10개를 얻습니다.";
 "settings.companion.today" = "오늘: 토큰 %lld → 에너지 +%d";
 "settings.companion.wallet" = "현재 에너지 %d · 오늘 이월 %d";
 "settings.companion.providers" = "연결된 제공자 %d/%d개의 성장 데이터를 반영합니다.";

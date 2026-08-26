@@ -71,7 +71,7 @@ cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)
 Level 100 requires 500 cumulative XP, or 300 million verified tokens. Early
 levels arrive quickly and progression slows toward the cap.
 
-The initial level cap is 100. At levels 10 and 25, the player can manually evolve the pet
+The initial level cap is 100. At levels 30 and 70, the player can manually evolve the pet
 into its Juvenile and Adult appearance without spending XP. Delaying evolution
 does not stop level growth. The displayed companion and XP growth target can be
 selected independently. When a growth target reaches level 100, Tokeni randomly

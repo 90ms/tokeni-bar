@@ -45,7 +45,16 @@ public struct WindowsCompanionOverlayState: Equatable, Sendable {
         }
 
         let stage: Int
-        switch state.stage {
+        let renderedStage = if state.level
+            == CompanionLevelCurve.standard.maximumLevel,
+           state.displayStageGenerationID == state.generationID,
+           let displayStage = state.displayStage
+        {
+            displayStage
+        } else {
+            state.stage
+        }
+        switch renderedStage {
         case .egg: stage = 0
         case .hatchling: stage = 1
         case .junior: stage = 2

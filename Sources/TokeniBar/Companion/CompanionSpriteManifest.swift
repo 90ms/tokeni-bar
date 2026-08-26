@@ -36,8 +36,6 @@ struct CompanionSpriteManifest: Decodable {
             switch variantID {
             case .standard, .mutated: .normal
             case .prismatic: .legendary
-            case .legacyAzure: .rare
-            case .legacyViolet: .epic
             default: fallbackRarity
             }
         }

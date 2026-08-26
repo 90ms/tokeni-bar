@@ -98,16 +98,6 @@ add_rarity_style() {
 rarity_filter() {
     local species="$1" rarity="$2"
     case "$species:$rarity" in
-        queryowl:rare) echo "colorchannelmixer=rr=0.82:rb=0.12:gg=1.08:gb=0.08:br=0.06:bb=1.10,eq=contrast=1.08:brightness=0.02:saturation=1.28" ;;
-        queryowl:epic) echo "colorchannelmixer=rr=0.92:rb=0.22:gg=0.80:gb=0.18:br=0.18:bb=1.20,eq=contrast=1.10:brightness=0.03:saturation=1.35" ;;
-        patchpanda:rare) echo "colorchannelmixer=rr=1.05:gg=0.92:gb=0.06:bb=1.08,eq=contrast=1.08:brightness=0.02:saturation=1.18" ;;
-        patchpanda:epic) echo "colorchannelmixer=rr=0.94:rb=0.18:gg=0.84:gb=0.14:br=0.16:bb=1.18,eq=contrast=1.10:brightness=0.025:saturation=1.25" ;;
-        loophare:rare) echo "colorchannelmixer=rr=0.90:rg=0.08:gg=1.05:gb=0.06:bb=1.02,eq=contrast=1.08:brightness=0.02:saturation=1.28" ;;
-        loophare:epic) echo "colorchannelmixer=rr=0.90:rb=0.18:gg=0.82:gb=0.16:br=0.18:bb=1.20,eq=contrast=1.10:brightness=0.03:saturation=1.36" ;;
-        relayray:rare) echo "colorchannelmixer=rr=0.82:rg=0.08:gg=1.08:gb=0.06:br=0.08:bb=1.06,eq=contrast=1.08:brightness=0.02:saturation=1.30" ;;
-        relayray:epic) echo "colorchannelmixer=rr=0.88:rb=0.22:gg=0.80:gb=0.18:br=0.20:bb=1.18,eq=contrast=1.10:brightness=0.03:saturation=1.35" ;;
-        kernelcrab:rare) echo "colorchannelmixer=rr=1.08:rg=0.04:gg=0.88:gb=0.08:bb=1.04,eq=contrast=1.08:brightness=0.02:saturation=1.30" ;;
-        kernelcrab:epic) echo "colorchannelmixer=rr=0.94:rb=0.18:gg=0.78:gb=0.16:br=0.16:bb=1.20,eq=contrast=1.10:brightness=0.03:saturation=1.38" ;;
         *:legendary) echo "colorchannelmixer=rr=1.08:rg=0.10:gg=1.10:gb=0.04:br=0.04:bg=0.08:bb=0.82,eq=contrast=1.06:brightness=0.07:saturation=1.02" ;;
         *) echo "eq=contrast=1.08:brightness=0.02:saturation=1.25" ;;
     esac
@@ -146,10 +136,6 @@ for species in "${species_ids[@]}"; do
 
         normal="$asset_dir/${stage}-normal.png"
         render_sheet "$species" "$stage" "$normal"
-        add_rarity_style "$normal" "$asset_dir/${stage}-rare.png" \
-            "$(rarity_filter "$species" rare)"
-        add_rarity_style "$normal" "$asset_dir/${stage}-epic.png" \
-            "$(rarity_filter "$species" epic)"
         add_rarity_style "$normal" "$asset_dir/${stage}-legendary.png" \
             "$(rarity_filter "$species" legendary)"
     done

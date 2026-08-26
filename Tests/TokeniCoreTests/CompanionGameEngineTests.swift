@@ -163,31 +163,31 @@ struct CompanionGameEngineTests {
         var state = CompanionGameState(
             speciesID: .bytebot,
             stage: .hatchling,
-            rarity: .rare,
-            variantID: .legacyAzure,
+            rarity: .normal,
+            variantID: .standard,
             growthEnergy: 2_200,
             growthDateKey: "2027-01-15")
 
         _ = try engine.evolve(unitValue: 0.10, at: now, in: &state)
         #expect(state.stage == .junior)
         #expect(state.speciesID == .bytebot)
-        #expect(state.rarity == .rare)
-        #expect(state.variantID == .legacyAzure)
+        #expect(state.rarity == .normal)
+        #expect(state.variantID == .standard)
         #expect(state.growthEnergy == 2_200)
 
         _ = try engine.evolve(unitValue: 0.90, at: now, in: &state)
         #expect(state.stage == .adult)
         #expect(state.speciesID == .bytebot)
-        #expect(state.rarity == .rare)
-        #expect(state.variantID == .legacyAzure)
+        #expect(state.rarity == .normal)
+        #expect(state.variantID == .standard)
         #expect(state.growthEnergy == 2_200)
         #expect(state.growthSpentToday == 0)
         #expect(state.collection.forms.map(\.formID).sorted() == [
-            "bytebot.adult.legacy-azure",
-            "bytebot.junior.legacy-azure",
+            "bytebot.adult.standard",
+            "bytebot.junior.standard",
         ])
         #expect(!state.collection.forms.contains {
-            $0.variantID != .legacyAzure
+            $0.variantID != .standard
         })
     }
 
@@ -200,17 +200,17 @@ struct CompanionGameEngineTests {
             rarity: .normal,
             variantID: .standard,
             personalityID: .calm,
-            growthXP: CompanionLevelCurve.standard.totalXPRequired(forLevel: 10) - 1,
+            growthXP: CompanionLevelCurve.standard.totalXPRequired(forLevel: 30) - 1,
             growthDateKey: "2027-01-15")
 
         #expect(throws: CompanionGameError.evolutionLevelRequired(
-            required: 10,
-            current: 9))
+            required: 30,
+            current: 29))
         {
             try engine.evolve(unitValue: 0, in: &state)
         }
 
-        let juniorXP = CompanionLevelCurve.standard.totalXPRequired(forLevel: 10)
+        let juniorXP = CompanionLevelCurve.standard.totalXPRequired(forLevel: 30)
         state.growthXP = juniorXP
         _ = try engine.evolve(unitValue: 0, in: &state)
         #expect(state.stage == .junior)
@@ -457,7 +457,7 @@ struct CompanionGameEngineTests {
             to: &state)
 
         #expect(state.growthXP
-            == CompanionLevelCurve.standard.totalXPRequired(forLevel: 25) + 120)
+            == CompanionLevelCurve.standard.totalXPRequired(forLevel: 70) + 120)
         #expect(state.growthEnergy == 0)
         #expect(state.bondEnergy == 0)
         #expect(state.memories.compactMap(\.bondLevel).isEmpty)
@@ -481,7 +481,7 @@ struct CompanionGameEngineTests {
 
         #expect(state.growthEnergy == 0)
         #expect(state.growthXP
-            == CompanionLevelCurve.standard.totalXPRequired(forLevel: 25) + 50)
+            == CompanionLevelCurve.standard.totalXPRequired(forLevel: 70) + 50)
         #expect(state.bondEnergy == 0)
     }
 
@@ -558,7 +558,7 @@ struct CompanionGameEngineTests {
         #expect(state.stage == .junior)
         #expect(state.rarity == .epic)
         #expect(state.growthEnergy == 0)
-        #expect(state.level >= 10)
+        #expect(state.level >= 30)
     }
 
     @Test("Version eight adults migrate into unbounded level progress")
@@ -595,15 +595,15 @@ struct CompanionGameEngineTests {
 
         #expect(state.schemaVersion == CompanionGameState.currentSchemaVersion)
         #expect(state.stage == .adult)
-        #expect(state.level >= 25)
+        #expect(state.level >= 70)
         #expect(state.growthXP >= CompanionLevelCurve.standard
-            .totalXPRequired(forLevel: 25))
+            .totalXPRequired(forLevel: 70))
         #expect(state.growthEnergy == 0)
         #expect(state.legacyMigratedGenerationIDs.contains(state.generationID))
         #expect(state.eggs.contains { $0.source == .migrationGift })
     }
 
-    @Test("Version five rarity migrates to a non-ranked visual variant")
+    @Test("Version five non-prismatic rarity migrates to Standard")
     func migratesVersionFiveVariant() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
@@ -636,7 +636,7 @@ struct CompanionGameEngineTests {
 
         #expect(state.schemaVersion == CompanionGameState.currentSchemaVersion)
         #expect(state.speciesID == .cachecat)
-        #expect(state.variantID == .legacyViolet)
+        #expect(state.variantID == .standard)
         #expect(state.rarity == .epic)
     }
 
@@ -767,7 +767,7 @@ struct CompanionGameEngineTests {
             speciesID: .bytebot,
             stage: .junior,
             rarity: .epic,
-            variantID: .legacyViolet,
+            variantID: .mutated,
             personalityID: .dreamy,
             growthEnergy: 120,
             growthDateKey: "2027-01-15",

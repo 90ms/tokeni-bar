@@ -32,4 +32,22 @@ struct WindowsCompanionOverlayTests {
         #expect(state.speciesIndex == 0)
         #expect(state.rarityRank == 0)
     }
+
+    @Test
+    func maximumLevelOverlayUsesSelectedGrowthStage() {
+        var companion = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            growthXP: CompanionLevelCurve.standard.maximumXP)
+        companion.displayStageGenerationID = companion.generationID
+        companion.displayStage = .hatchling
+
+        let state = WindowsCompanionOverlayState(companionState: companion)
+
+        #expect(state.stage == 1)
+        #expect(state.level == CompanionLevelCurve.standard.maximumLevel)
+    }
 }

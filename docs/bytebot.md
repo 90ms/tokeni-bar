@@ -10,7 +10,7 @@ state contains no provider name, raw token total, prompt, or response.
 
 1. Hatch the free Starter Egg.
 2. Gain one Growth XP per 600,000 verified tokens.
-3. Manually evolve at levels 10 and 25.
+3. Manually evolve at levels 30 and 70.
 4. Collect new species and appearances from eggs.
 5. Convert an identical hatch into XP for the existing pet.
 6. Inspect pet details and action animations in the collection.

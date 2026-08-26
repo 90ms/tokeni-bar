@@ -446,7 +446,6 @@ final class UsageStore: ObservableObject {
                     in: &self.companionState)
                 self.handleAutomaticGrowthTargetEvents(automaticGrowthEvents)
                 self.suppressImportedCompanionRewardBackfill()
-                self.reconcileLegacyCompanionPalettes()
                 self.reconcileCompanionRewards()
                 self.companionStateLoaded = true
                 self.saveCompanionState()
@@ -1403,6 +1402,22 @@ final class UsageStore: ObservableObject {
         self.saveCompanionState()
     }
 
+    func selectDisplayedCompanionStage(_ stage: CompanionGameStage) {
+        guard self.companionEnabled,
+              self.companionStateLoaded,
+              stage != .egg,
+              self.displayedCompanionLevel
+                == CompanionLevelCurve.standard.maximumLevel
+        else { return }
+        var state = self.companionState
+        state.displayStageGenerationID = self.showcasedCompanion?.generationID
+            ?? state.generationID
+        state.displayStage = stage
+        state.updatedAt = .now
+        self.companionState = state
+        self.saveCompanionState()
+    }
+
     func setPassiveCompanion(_ generationID: UUID?, slot: Int) {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionBenefitState
@@ -1603,7 +1618,16 @@ final class UsageStore: ObservableObject {
     }
 
     var displayedCompanionStage: CompanionGameStage {
-        self.showcasedCompanion?.stage ?? self.companionStage
+        let naturalStage = self.showcasedCompanion?.stage ?? self.companionStage
+        let generationID = self.showcasedCompanion?.generationID
+            ?? self.companionState.generationID
+        guard self.displayedCompanionLevel
+                == CompanionLevelCurve.standard.maximumLevel,
+              self.companionState.displayStageGenerationID == generationID,
+              let selectedStage = self.companionState.displayStage,
+              selectedStage != .egg
+        else { return naturalStage }
+        return selectedStage
     }
 
     var displayedCompanionRarity: CompanionRarity? {
@@ -2426,7 +2450,6 @@ final class UsageStore: ObservableObject {
     }
 
     private func reconcileCompanionRewards() {
-        self.reconcileLegacyCompanionPalettes()
         var state = self.companionRewardState
         _ = self.companionRewardEngine.reconcile(
             collection: self.companionState.collection,
@@ -2481,21 +2504,6 @@ final class UsageStore: ObservableObject {
         self.companionRewardSaveRevision &+= 1
         let revision = self.companionRewardSaveRevision
         self.companionRewardSaveCoordinator.enqueue(state, revision: revision)
-    }
-
-    private func reconcileLegacyCompanionPalettes() {
-        var state = self.companionRewardState
-        let legacyVariants = self.companionState.collection.discoveredVariantIDs
-        if legacyVariants.contains(.legacyAzure) {
-            state.unlockedCosmeticIDs.insert(.constellationFrame)
-        }
-        if legacyVariants.contains(.legacyViolet) {
-            state.unlockedCosmeticIDs.insert(.pixelPortalFrame)
-        }
-        guard state != self.companionRewardState else { return }
-        state.updatedAt = .now
-        self.companionRewardState = state
-        self.saveCompanionRewardState()
     }
 
     private func refreshPricingCatalogIfNeeded(force: Bool = false) async {

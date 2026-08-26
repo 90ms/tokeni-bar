@@ -17,16 +17,10 @@
   "forms": {
     "egg.normal": "egg.png",
     "hatchling.normal": "baby.png",
-    "hatchling.rare": "hatchling-rare.png",
-    "hatchling.epic": "hatchling-epic.png",
     "hatchling.legendary": "hatchling-legendary.png",
     "junior.normal": "junior-normal.png",
-    "junior.rare": "junior-rare.png",
-    "junior.epic": "junior-epic.png",
     "junior.legendary": "junior-legendary.png",
     "adult.normal": "adult.png",
-    "adult.rare": "adult-rare.png",
-    "adult.epic": "adult-epic.png",
     "adult.legendary": "adult-legendary.png"
   },
   "animations": {

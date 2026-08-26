@@ -106,8 +106,8 @@ public struct CompanionEvolutionDefinition: Identifiable, Hashable, Sendable {
 public enum CompanionEvolutionRegistry {
     public static let definitions: [CompanionEvolutionDefinition] = [
         CompanionEvolutionDefinition(stage: .hatchling, requiredLevel: 1),
-        CompanionEvolutionDefinition(stage: .junior, requiredLevel: 10),
-        CompanionEvolutionDefinition(stage: .adult, requiredLevel: 25),
+        CompanionEvolutionDefinition(stage: .junior, requiredLevel: 30),
+        CompanionEvolutionDefinition(stage: .adult, requiredLevel: 70),
     ]
 
     public static func requiredLevel(for stage: CompanionGameStage) -> Int? {

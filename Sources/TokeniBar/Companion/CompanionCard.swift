@@ -113,6 +113,29 @@ struct CompanionCard: View {
                 .foregroundStyle(.secondary)
             }
 
+            if self.store.displayedCompanionLevel
+                == CompanionLevelCurve.standard.maximumLevel
+            {
+                Picker(
+                    AppLocalization.string("companion.displayStage.title"),
+                    selection: Binding(
+                        get: { self.store.displayedCompanionStage },
+                        set: { self.store.selectDisplayedCompanionStage($0) }))
+                {
+                    ForEach(
+                        [CompanionGameStage.hatchling, .junior, .adult],
+                        id: \.self)
+                    { stage in
+                        Text(AppLocalization.string(
+                            "companion.stage.\(stage.rawValue)"))
+                            .tag(stage)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel(AppLocalization.string(
+                    "companion.displayStage.title"))
+            }
+
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
                     if self.store.isShowingArchivedCompanion {

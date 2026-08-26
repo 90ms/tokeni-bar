@@ -46,9 +46,8 @@ public enum CompanionRarity: String, Codable, CaseIterable, Hashable, Sendable {
 
 /// A visual-only appearance carried by one companion for its entire journey.
 ///
-/// `CompanionRarity` remains in persisted models as a compatibility bridge for
-/// releases that ranked the four original sprite palettes. New game rules and
-/// UI must use variants instead: variants have no rank and grant no power.
+/// `CompanionRarity` remains in persisted models as a decoding bridge for old
+/// saves. New game rules and UI use variants: variants have no rank or power.
 public struct CompanionVariantID: RawRepresentable, Codable, Hashable, Sendable {
     public let rawValue: String
 
@@ -59,8 +58,6 @@ public struct CompanionVariantID: RawRepresentable, Codable, Hashable, Sendable 
     public static let standard = Self(rawValue: "standard")
     public static let mutated = Self(rawValue: "mutated")
     public static let prismatic = Self(rawValue: "prismatic")
-    public static let legacyAzure = Self(rawValue: "legacy-azure")
-    public static let legacyViolet = Self(rawValue: "legacy-violet")
 }
 
 public struct CompanionVariantDefinition: Identifiable, Hashable, Sendable {
@@ -97,23 +94,13 @@ public enum CompanionVariantRegistry {
             isSpecial: false),
         CompanionVariantDefinition(
             id: .mutated,
-            assetRarity: .rare,
+            assetRarity: .normal,
             isCollectible: true,
             isSpecial: true),
         CompanionVariantDefinition(
             id: .prismatic,
             assetRarity: .legendary,
             isCollectible: true,
-            isSpecial: true),
-        CompanionVariantDefinition(
-            id: .legacyAzure,
-            assetRarity: .rare,
-            isCollectible: false,
-            isSpecial: true),
-        CompanionVariantDefinition(
-            id: .legacyViolet,
-            assetRarity: .epic,
-            isCollectible: false,
             isSpecial: true),
     ]
 
@@ -143,8 +130,7 @@ public enum CompanionVariantRegistry {
     public static func migrated(from rarity: CompanionRarity) -> CompanionVariantID {
         switch rarity {
         case .normal: .standard
-        case .rare: .legacyAzure
-        case .epic: .legacyViolet
+        case .rare, .epic: .standard
         case .legendary: .prismatic
         }
     }
@@ -646,6 +632,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var lastPattedAt: Date?
     public var celebrationUntil: Date?
     public var showcasedGenerationID: UUID?
+    public var displayStageGenerationID: UUID?
+    public var displayStage: CompanionGameStage?
     public var generationCreatedAt: Date
     public var updatedAt: Date
 
@@ -685,6 +673,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         lastPattedAt: Date? = nil,
         celebrationUntil: Date? = nil,
         showcasedGenerationID: UUID? = nil,
+        displayStageGenerationID: UUID? = nil,
+        displayStage: CompanionGameStage? = nil,
         generationCreatedAt: Date = .now,
         updatedAt: Date = .now)
     {
@@ -746,6 +736,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
         self.lastPattedAt = lastPattedAt
         self.celebrationUntil = celebrationUntil
         self.showcasedGenerationID = showcasedGenerationID
+        self.displayStageGenerationID = displayStageGenerationID
+        self.displayStage = displayStage == .egg ? nil : displayStage
         self.generationCreatedAt = generationCreatedAt
         self.updatedAt = updatedAt
     }
@@ -963,7 +955,8 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                       generation.stage == .adult
                 else { return generation }
                 let base = CompanionLevelCurve.standard.totalXPRequired(
-                    forLevel: 25)
+                    forLevel: CompanionEvolutionRegistry.requiredLevel(
+                        for: .adult) ?? 70)
                 let (xp, overflow) = base.addingReportingOverflow(
                     max(generation.bondEnergy, 0))
                 return CompletedCompanionGeneration(
