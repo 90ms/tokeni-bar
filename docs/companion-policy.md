@@ -2,12 +2,12 @@
 
 [한국어](companion-policy.ko.md) | **English**
 
-- Policy version: 3.2.0
-- Updated: 2026-08-14
+- Policy version: 3.3.0
+- Updated: 2026-08-26
 - Status: implemented
 
 This document defines the product rules for level-100 growth, owned pets, egg
-hatching, duplicate conversion, rare mutations, the collection, and actions.
+hatching, duplicate conversion, Mutation variants, the collection, and actions.
 
 ## 1. Invariants
 
@@ -35,7 +35,7 @@ level range = 1...100
 
 Every adjacent level is normalized to differ by at least one XP. Early levels
 arrive quickly and progression slows toward level 100. Hatchling, junior, and
-adult forms correspond to levels 1, 10, and 25. Evolution is manual and spends
+adult forms correspond to levels 1, 30, and 70. Evolution is manual and spends
 no XP.
 
 XP clamps to 500 at level 100 and overflow is not stored as XP. When the target
@@ -53,6 +53,9 @@ The menu-bar companion and the pet receiving verified Growth XP are selected
 independently through manual actions, but automatic rotation takes priority while
 an unfinished owned pet remains. Selling or removing the target safely falls
 back to the active pet or another owned pet.
+
+At maximum level, the displayed pet may use its Hatchling, Junior, or Adult
+sprite without changing its level, collection identity, or growth target.
 
 The menu popover does not show a separate max-level conversation button. The
 collection detail may still preview predefined localized pet messages; they
@@ -80,15 +83,16 @@ While undiscovered species remain, five duplicate-species hatches guarantee
 that the next normal hatch chooses an undiscovered species. The active pet
 cannot be sold, and resale never exceeds purchase cost.
 
-## 5. Rare mutations
+## 5. Mutation variants
 
 The Mutation Lab, three-pet synthesis, and undiscovered-mutation guarantee are
 removed. A normal egg has a 1% seeded chance to hatch the selected species'
 mutation appearance. Mutation has no synthesis pity counter.
 
-A mutation keeps the Standard palette and animation. Every displayed frame is
-derived with a pronounced species-specific body feature and cached as the pet's
-intrinsic appearance instead of being layered as an equipable aura. It never
+A mutation is a species-specific intrinsic body variation instead of an
+equipable aura. Dedicated Mutation sheets are the target asset format; until
+those reviewed sheets replace the temporary renderer, displayed frames derive
+a restrained trait from the Standard animation. Mutation never
 changes XP, benefits, resale value, or other odds. The existing Prismatic
 appearance and its guarantee rules remain a separate appearance.
 
@@ -137,8 +141,9 @@ replaced with independent frames later while preserving its stable action ID.
 Reduce Motion, disabled animations, and Low Power Mode remain respected.
 
 Generation 2, the **Signal Expedition**, contains QueryOwl, PatchPanda,
-LoopHare, RelayRay, and KernelCrab. Every growth stage and appearance has an
-independent sprite. A persistent signal core and behavior-specific wing, ear,
+LoopHare, RelayRay, and KernelCrab. Every growth stage has an independent
+Standard and Prismatic sprite; dedicated Mutation sheets are in progress. A
+persistent signal core and behavior-specific wing, ear,
 fin, and shell mode shifts distinguish it from generation 1. Its benefit
 mappings reuse the five generation-one active and passive values and add no
 higher tier.
@@ -172,7 +177,8 @@ their corresponding replacements.
 
 ## 9. Persistence and safety
 
-Schema v11 stores XP normalized to level 100 and an optional growth-target UUID.
+Schema v11 stores XP normalized to level 100, an optional growth-target UUID,
+and the max-level pet UUID and growth stage selected for on-screen display.
 Reward schema v10 stores only per-pet progress toward the next max-level
 conversion and processed award IDs without storing raw token totals. Previous
 energy remainders migrate at the new rate.
@@ -185,9 +191,21 @@ Collection and speech state contain no work content or raw usage values.
 
 ## 10. Adding content
 
+These requirements apply unchanged to every future pet generation; a new
+generation may extend the roster but must not relax the art or asset contract.
+
 1. Register stable species, appearance, action, or egg IDs.
-2. Add every growth-stage sprite and manifest entry.
-3. Document egg odds, price, resale, and unlock rules.
-4. Declare duplicate identity and collection-denominator behavior.
-5. Add probability-boundary, duplicate-XP, round-trip, and migration tests.
-6. Update Korean and English strings, policy docs, and a change fragment.
+2. Design Hatchling, Junior, and Adult as recognizably related but structurally
+   distinct forms; scaling one drawing is not an evolution.
+3. Preserve the species' defining anatomy, palette, pixel density, outline,
+   behavior poses, particles, and props across every stage and animation frame.
+4. Add separate Standard, Prismatic, and Mutation PNG sheets for every growth
+   stage. Mutation must grow from species anatomy, not from pasted blocks,
+   generic horns, auras, or accessories.
+5. Keep the 8-column × 6-row transparent sprite-sheet contract and validate
+   every manifest reference before registration.
+6. Document egg odds, price, resale, and unlock rules.
+7. Declare duplicate identity and collection-denominator behavior.
+8. Add probability-boundary, duplicate-XP, asset-contract, round-trip, and
+   migration tests.
+9. Update Korean and English strings, policy docs, and a change fragment.

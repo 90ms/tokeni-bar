@@ -49,8 +49,8 @@ for index in "${!expected_species[@]}"; do
     [[ -s "$referenced_files" ]] \
         || fail "$species manifest references no sprite sheets"
     reference_count="$(wc -l < "$referenced_files" | tr -d ' ')"
-    expected_reference_count=12
-    [[ "$species" == bytebot ]] && expected_reference_count=13
+    expected_reference_count=6
+    [[ "$species" == bytebot ]] && expected_reference_count=7
     [[ "$reference_count" == "$expected_reference_count" ]] \
         || fail "$species references $reference_count sprite sheets; expected $expected_reference_count"
     while IFS= read -r file_name; do

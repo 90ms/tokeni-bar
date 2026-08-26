@@ -856,6 +856,27 @@ struct CompanionGameEngineTests {
         #expect(!ungradedAdult.isValid())
     }
 
+    @Test("Displayed growth stage requires a matching maximum-level pet")
+    func validatesDisplayedGrowthStageSelection() {
+        var state = CompanionGameState(
+            speciesID: .bytebot,
+            stage: .adult,
+            rarity: .normal,
+            variantID: .standard,
+            personalityID: .calm,
+            growthXP: CompanionLevelCurve.standard.maximumXP)
+        state.displayStageGenerationID = state.generationID
+        state.displayStage = .junior
+        #expect(state.isValid())
+
+        state.growthXP = CompanionLevelCurve.standard.maximumXP - 1
+        #expect(!state.isValid())
+
+        state.growthXP = CompanionLevelCurve.standard.maximumXP
+        state.displayStageGenerationID = nil
+        #expect(!state.isValid())
+    }
+
     @Test("Published variant roll produces prismatic and mutation frequencies")
     func variantDistribution() {
         let engine = CompanionGameEngine(calendar: self.calendar)

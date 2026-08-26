@@ -87,7 +87,7 @@ foreach ($species in $expectedSpecies) {
     if ($referencedFiles.Count -eq 0) {
         Fail-Validation "$species manifest references no sprite sheets"
     }
-    $expectedReferenceCount = if ($species -eq "bytebot") { 13 } else { 12 }
+    $expectedReferenceCount = if ($species -eq "bytebot") { 7 } else { 6 }
     if ($referencedFiles.Count -ne $expectedReferenceCount) {
         Fail-Validation "$species references $($referencedFiles.Count) sheets; expected $expectedReferenceCount"
     }

@@ -34,6 +34,8 @@ conversion is preserved per pet, and booster multipliers do not apply.
 
 The displayed companion and growth target can be selected independently, but
 automatic rotation takes priority while an unfinished owned pet remains.
+At level 100, the on-screen form can be switched among Hatchling, Junior, and
+Adult without changing growth or collection progress.
 
 ## Eggs and duplicate pets
 
@@ -51,7 +53,7 @@ pet; it grants the matching pet 25% of its current next-level XP requirement,
 rounded up. Name, personality, and growth stage do not affect identity, and the
 collection encounter record still increases.
 
-## Rare mutations
+## Mutation variants
 
 Three-pet synthesis and shared mutation auras are removed. Normal hatch
 appearance odds are:
@@ -62,9 +64,10 @@ appearance odds are:
 | Prismatic | 8% | Equal |
 | Mutation | 1% | Equal |
 
-Mutation keeps the Standard palette and animation. Every displayed frame is
-derived with a pronounced species-specific body feature and cached as that
-pet's intrinsic appearance, rather than layered as an equipable decoration.
+Mutation is a species-specific intrinsic body variation rather than an
+equipable decoration. Dedicated Mutation sheets are being prepared from the
+reviewed concepts; the current app temporarily derives the variation from the
+Standard animation.
 It enters the collection on hatch without changing power and provides a
 signature action:
 
@@ -82,8 +85,9 @@ signature action:
 ## Generation 2: Signal Expedition
 
 Generation 2 contains QueryOwl, PatchPanda, LoopHare, RelayRay, and KernelCrab.
-Every growth stage and Standard, Prismatic, and Mutation appearance is rendered
-independently. A visible signal core persists across modes, while wings, ears, fins,
+Every growth stage has independent Standard and Prismatic sprites; dedicated
+Mutation sheets are in progress. A visible signal core persists across modes,
+while wings, ears, fins,
 and shells shift during working, warning, and signature actions.
 
 Benefits are not stronger than generation 1. QueryOwl and RelayRay reuse the
@@ -127,8 +131,8 @@ recorded in local reward state so it cannot pay twice.
 ## Persistence and privacy
 
 Schema v11 stores pet UUIDs, species, appearance, Growth XP normalized to the
-500-XP cap, growth target, eggs, names, personalities, memories, collection,
-and local rewards. Reward schema v10 stores only per-pet progress toward the next
+500-XP cap, growth target, displayed growth stage, eggs, names, personalities,
+memories, collection, and local rewards. Reward schema v10 stores only per-pet progress toward the next
 max-level conversion and processed award IDs, never raw token totals. Previous
 energy remainders migrate at the new rate. Migration also removes v10 synthesis
 records and inactive synthesized mutation pets. Unverifiable or stale usage

@@ -853,6 +853,24 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                     $0.generationID == targetID
                 }
         } != false
+        let displayStageSelectionIsValid: Bool = switch (
+            self.displayStageGenerationID,
+            self.displayStage)
+        {
+        case (nil, nil):
+            true
+        case let (generationID?, stage?):
+            stage != .egg && (generationID == self.generationID
+                ? self.level == CompanionLevelCurve.standard.maximumLevel
+                : self.collection.archivedGenerations.contains { generation in
+                    generation.generationID == generationID
+                        && CompanionLevelCurve.standard.level(
+                            forXP: generation.growthXP)
+                            == CompanionLevelCurve.standard.maximumLevel
+                })
+        default:
+            false
+        }
         guard self.schemaVersion == Self.currentSchemaVersion,
               self.generationNumber >= 1,
               self.growthEnergy >= 0,
@@ -902,6 +920,7 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
                 == self.collection.archivedGenerations.count,
               activeGenerationIsNotArchived,
               growthTargetIsValid,
+              displayStageSelectionIsValid,
               archivedGenerationsAreValid,
               showcasedGenerationIsValid,
               self.collection.forms.count

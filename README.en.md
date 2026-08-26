@@ -50,7 +50,7 @@ brew install --formula tokeni-bar
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
 | Tokeni pets | Level 100 cap, evolution appearances, a separate growth target, names, personalities, memories, behavior, and an optional desktop overlay |
-| Pet manager, eggs, and rewards | Collection details and owned roster, duplicate XP, rare mutations, action previews, Starter Egg and Star Shard shop, level rewards, boosters, and cosmetics |
+| Pet manager, eggs, and rewards | Collection details and owned roster, duplicate XP, Mutation variants, action previews, Starter Egg and Star Shard shop, level rewards, boosters, and cosmetics |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -76,6 +76,7 @@ into its Juvenile and Adult appearance without spending XP. Delaying evolution
 does not stop level growth. The displayed companion and XP growth target can be
 selected independently. When a growth target reaches level 100, Tokeni randomly
 chooses an owned pet below level 100 and makes it both current and the new target.
+At level 100, choose Hatchling, Juvenile, or Adult as that pet's on-screen form.
 
 Starting at level 30, every ten levels grant 10 Star Shards so adult pets retain
 a recurring goal.
@@ -120,7 +121,7 @@ not increase resale value, and collection discoveries remain recorded.
 
 One **Pets** screen now combines the current companion, growth status, Collection,
 and Owned sections. Collection records discovered species, appearances, lifecycle
-forms, and rare mutations; Owned lists each hatched pet with its level, name,
+forms, and Mutation variants; Owned lists each hatched pet with its level, name,
 personality, memories, switching, showcasing, and resale actions. In Owned, choose a
 species from **View by pet** to show only that species.
 
@@ -155,10 +156,11 @@ collection contains 30 combinations—ten species times Standard, Prismatic,
 and Mutation—while evolution appearances are recorded in each combination's
 growth album.
 
-A normal egg has a 1% chance to hatch that species' rare Mutation appearance.
-It keeps the Standard palette and animation while deriving every frame with a
-pronounced species-specific body trait. Mutation is intrinsic to the pet rather
-than an equipable decoration and provides no power advantage. Hatching the same
+A normal egg has a 1% chance to hatch that species' Mutation appearance.
+Mutation is an intrinsic, species-specific body variation rather than an
+equipable decoration and provides no power advantage. Dedicated Mutation sprite
+sheets are being prepared from the reviewed lifecycle concepts; the current app
+temporarily derives the variation from the Standard animation. Hatching the same
 `species + appearance` again grants the matching pet
 25% of its next-level XP requirement instead of creating another pet. Mutation
 appearances are registered in the collection with Standard and Prismatic.
@@ -194,7 +196,7 @@ balance records.
 ## Menu bar and on-screen pet
 
 Every menu-bar display mode uses a native monochrome status icon. A red badge
-appears when an egg can be opened or a level 10 or 25 evolution is ready.
+appears when an egg can be opened or a level 30 or 70 evolution is ready.
 
 The menu popover keeps its header and history, settings, and quit actions
 fixed while the center content scrolls. The pet status card appears first,
@@ -271,7 +273,7 @@ shasum -a 256 -c TokeniBar-<version>.zip.sha256
 | Stored locally | Never stored |
 |---|---|
 | Aggregate quota, tokens, and estimated cost | Prompts and model responses |
-| Pet IDs, level/XP, stage, appearance, growth target, name, personality, egg inventory, owned roster, memories, collection, and guarantees | Access tokens, refresh tokens, and cookies |
+| Pet IDs, level/XP, stage, appearance, growth target, displayed growth stage, name, personality, egg inventory, owned roster, memories, collection, and guarantees | Access tokens, refresh tokens, and cookies |
 | Star Shards, egg transaction IDs, attendance dates, purchased cosmetics, boosters, and awarded milestone IDs | Account secrets and server telemetry |
 | On-screen pet preferences and last position | Screen captures and input content |
 | Local progress-validation data | Remote game accounts and analytics telemetry |

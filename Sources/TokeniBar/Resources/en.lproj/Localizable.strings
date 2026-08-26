@@ -537,7 +537,7 @@
 "settings.companion.wallet" = "Current energy %d · carried today %d";
 "settings.companion.providers" = "Growth data available from %d of %d connected providers.";
 "settings.companion.privacy.title" = "Local progress";
-"settings.companion.privacy" = "Pet UUIDs, species, variants, forms, Growth XP, eggs, names, personalities, memories, collection guarantees, and egg transaction IDs are saved to companion state. Star Shards, attendance dates, cosmetics, boosters, max-level conversion progress, and awarded milestone identifiers stay in a separate local reward file. Token checkpoints stay in the local usage ledger. Provider names, raw token totals, prompts, responses, and credentials are never saved to companion state.";
+"settings.companion.privacy" = "Pet UUIDs, species, variants, forms, Growth XP, growth target, displayed growth stage, eggs, names, personalities, memories, collection guarantees, and egg transaction IDs are saved to companion state. Star Shards, attendance dates, cosmetics, boosters, max-level conversion progress, and awarded milestone identifiers stay in a separate local reward file. Token checkpoints stay in the local usage ledger. Provider names, raw token totals, prompts, responses, and credentials are never saved to companion state.";
 "settings.launchAtLogin" = "Launch at login";
 "settings.launchAtLogin.approval" = "Approval is required in System Settings → General → Login Items.";
 "settings.updates.title" = "App Updates";
