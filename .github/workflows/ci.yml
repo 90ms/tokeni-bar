@@ -124,16 +124,10 @@ jobs:
           for asset in \
             egg.png \
             baby.png \
-            hatchling-rare.png \
-            hatchling-epic.png \
             hatchling-legendary.png \
             junior-normal.png \
-            junior-rare.png \
-            junior-epic.png \
             junior-legendary.png \
             adult.png \
-            adult-rare.png \
-            adult-epic.png \
             adult-legendary.png
           do
             test -f "$companion/$asset"
