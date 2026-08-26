@@ -230,9 +230,9 @@ final class CompanionAssetCatalog {
             height: CGFloat(max(bestBounds.maxY - bestBounds.minY + 1, 1)))
     }
 
-    /// Derives the intrinsic Mutation resource from the Standard frame. The
-    /// additions use the species' existing palette and extend its silhouette;
-    /// they are part of the cached frame, not an equipable aura or decoration.
+    /// Derives the intrinsic Mutation resource from the Standard frame. Keep
+    /// these traits small and use the sprite's body colors: a Mutation should
+    /// read as a close biological variation, not as an attached decoration.
     private static func drawMutationFeature(
         for speciesID: CompanionSpeciesID,
         in context: CGContext,
@@ -245,8 +245,6 @@ final class CompanionAssetCatalog {
             ?? CGColor(red: 0.03, green: 0.08, blue: 0.15, alpha: 1)
         let body = Self.color(from: palette.dropFirst().first)
             ?? CGColor(red: 0.12, green: 0.35, blue: 0.48, alpha: 1)
-        let accent = Self.color(from: palette.last)
-            ?? CGColor(red: 0.35, green: 0.95, blue: 0.88, alpha: 1)
 
         func snapped(_ value: CGFloat) -> CGFloat {
             floor(value / pixel) * pixel
@@ -255,14 +253,13 @@ final class CompanionAssetCatalog {
             x: CGFloat,
             y: CGFloat,
             width: CGFloat,
-            height: CGFloat,
-            fill: CGColor? = nil)
+            height: CGFloat)
         {
             let requested = CGRect(
                 x: snapped(x),
                 y: snapped(y),
-                width: min(max(snapped(width), pixel * 2), canvasSize.width),
-                height: min(max(snapped(height), pixel * 2), canvasSize.height))
+                width: min(max(snapped(width), pixel), canvasSize.width),
+                height: min(max(snapped(height), pixel), canvasSize.height))
             let canvas = CGRect(origin: .zero, size: canvasSize)
             let frame = CGRect(
                 x: min(max(requested.minX, canvas.minX), canvas.maxX - requested.width),
@@ -272,8 +269,8 @@ final class CompanionAssetCatalog {
             context.setFillColor(outline)
             context.fill(frame)
             let inset = frame.insetBy(dx: pixel, dy: pixel)
-            if inset.width >= pixel, inset.height >= pixel {
-                context.setFillColor(fill ?? body)
+            if inset.width > 0, inset.height > 0 {
+                context.setFillColor(body)
                 context.fill(inset)
             }
         }
@@ -290,52 +287,49 @@ final class CompanionAssetCatalog {
 
         switch speciesID {
         case .bytebot:
-            // Thick forked antenna with two illuminated tips.
-            block(x: centerX - pixel, y: top - pixel, width: pixel * 2, height: pixel * 5)
-            block(x: centerX - pixel * 5, y: top + pixel * 2, width: pixel * 5, height: pixel * 2)
-            block(x: centerX + pixel, y: top + pixel * 2, width: pixel * 5, height: pixel * 2)
-            block(x: centerX - pixel * 6, y: top + pixel, width: pixel * 3, height: pixel * 4, fill: accent)
-            block(x: centerX + pixel * 3, y: top + pixel, width: pixel * 3, height: pixel * 4, fill: accent)
+            // A short fork at the tip of the existing antenna.
+            block(x: centerX, y: top, width: pixel, height: pixel * 3)
+            block(x: centerX - pixel * 2, y: top + pixel * 2, width: pixel * 2, height: pixel)
+            block(x: centerX + pixel, y: top + pixel * 2, width: pixel * 2, height: pixel)
         case .cachecat:
-            // A second, clearly separated fork on the tail side.
-            block(x: right - pixel * 2, y: centerY - pixel * 2, width: pixel * 6, height: pixel * 3)
-            block(x: right + pixel * 2, y: centerY, width: pixel * 4, height: pixel * 3, fill: accent)
-            block(x: right + pixel, y: centerY - pixel * 5, width: pixel * 4, height: pixel * 3, fill: accent)
+            // A compact split at the existing tail side.
+            block(x: right, y: centerY, width: pixel * 3, height: pixel)
+            block(x: right + pixel * 2, y: centerY - pixel * 2, width: pixel, height: pixel * 2)
+            block(x: right + pixel * 2, y: centerY + pixel, width: pixel, height: pixel * 2)
         case .kernelcrab:
-            // Oversized asymmetric claw beyond the body shell.
-            block(x: left - pixel * 6, y: centerY - pixel * 4, width: pixel * 7, height: pixel * 7)
-            block(x: left - pixel * 8, y: centerY + pixel, width: pixel * 4, height: pixel * 5, fill: accent)
-            block(x: left - pixel * 8, y: centerY - pixel * 6, width: pixel * 4, height: pixel * 5, fill: accent)
+            // One claw is only slightly broader than its counterpart.
+            block(x: left - pixel * 3, y: centerY - pixel * 2, width: pixel * 4, height: pixel * 4)
+            block(x: left - pixel * 4, y: centerY + pixel, width: pixel * 2, height: pixel * 2)
         case .loophare:
-            // A third central loop-ear changes the upper silhouette.
-            block(x: centerX - pixel * 3, y: top - pixel, width: pixel * 6, height: pixel * 8)
-            block(x: centerX - pixel, y: top + pixel, width: pixel * 2, height: pixel * 5, fill: outline)
+            // A small central ear loop echoes the original paired ears.
+            block(x: centerX - pixel, y: top, width: pixel * 3, height: pixel * 4)
+            context.clear(CGRect(x: snapped(centerX), y: snapped(top + pixel), width: pixel, height: pixel * 2))
         case .nullslime:
-            // A substantial satellite blob joined by a short stalk.
-            block(x: right - pixel, y: top - pixel * 2, width: pixel * 5, height: pixel * 2)
-            block(x: right + pixel * 2, y: top - pixel, width: pixel * 6, height: pixel * 6, fill: accent)
+            // A small bud grows directly from the slime body.
+            block(x: right - pixel, y: top - pixel, width: pixel * 3, height: pixel)
+            block(x: right + pixel, y: top, width: pixel * 3, height: pixel * 3)
         case .patchpanda:
-            // Large stepped ear tufts on both sides.
-            block(x: left - pixel * 2, y: top - pixel * 2, width: pixel * 6, height: pixel * 6, fill: accent)
-            block(x: right - pixel * 4, y: top - pixel * 2, width: pixel * 6, height: pixel * 6, fill: accent)
-            block(x: left, y: top + pixel * 3, width: pixel * 3, height: pixel * 3)
-            block(x: right - pixel * 3, y: top + pixel * 3, width: pixel * 3, height: pixel * 3)
+            // Tiny stepped tufts alter the round ears without covering them.
+            block(x: left, y: top, width: pixel * 2, height: pixel * 2)
+            block(x: right - pixel, y: top, width: pixel * 2, height: pixel * 2)
+            block(x: left - pixel, y: top + pixel, width: pixel, height: pixel)
+            block(x: right + pixel, y: top + pixel, width: pixel, height: pixel)
         case .promptpup:
-            // One long folded ear with a bright terminal block.
-            block(x: left - pixel * 5, y: top - pixel * 4, width: pixel * 7, height: pixel * 4)
-            block(x: left - pixel * 7, y: top - pixel * 8, width: pixel * 4, height: pixel * 7, fill: accent)
+            // One ear has a short folded tip.
+            block(x: left - pixel * 2, y: top - pixel, width: pixel * 3, height: pixel * 2)
+            block(x: left - pixel * 3, y: top - pixel * 2, width: pixel * 2, height: pixel * 2)
         case .queryowl:
-            // Twin horned brow blocks create a different head contour.
-            block(x: left + pixel, y: top - pixel * 2, width: pixel * 5, height: pixel * 6, fill: accent)
-            block(x: right - pixel * 6, y: top - pixel * 2, width: pixel * 5, height: pixel * 6, fill: accent)
+            // Subtle paired brow tufts follow the existing head contour.
+            block(x: left + pixel, y: top, width: pixel * 2, height: pixel * 2)
+            block(x: right - pixel * 2, y: top, width: pixel * 2, height: pixel * 2)
         case .relayray:
-            // Broad stepped signal fins on both sides.
-            block(x: left - pixel * 6, y: centerY, width: pixel * 7, height: pixel * 5, fill: accent)
-            block(x: right - pixel, y: centerY, width: pixel * 7, height: pixel * 5, fill: accent)
+            // Small paired points extend the original fins.
+            block(x: left - pixel * 2, y: centerY, width: pixel * 3, height: pixel * 2)
+            block(x: right, y: centerY, width: pixel * 3, height: pixel * 2)
         case .stackfox:
-            // A second blocky tail, large enough to remain visible in cards.
-            block(x: right - pixel * 2, y: bottom + pixel * 2, width: pixel * 6, height: pixel * 4)
-            block(x: right + pixel * 2, y: bottom + pixel * 4, width: pixel * 5, height: pixel * 7, fill: accent)
+            // A compact branch at the tail base suggests a second tail.
+            block(x: right - pixel, y: bottom + pixel * 2, width: pixel * 3, height: pixel * 2)
+            block(x: right + pixel, y: bottom + pixel * 3, width: pixel * 3, height: pixel * 3)
         }
     }
 
