@@ -188,6 +188,7 @@ final class CompanionOverlayController: NSObject, ObservableObject {
         panel.delegate = nil
         panel.close()
         self.panel = nil
+        CompanionAssetCatalog.shared.removeCachedImages()
     }
 
     private func startMouseRouting() {

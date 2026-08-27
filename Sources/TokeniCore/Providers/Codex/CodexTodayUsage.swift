@@ -7,12 +7,34 @@ struct CodexTodayUsage: Sendable {
     let sessionCount: Int
 }
 
+struct CodexTodayFileAggregate: Sendable {
+    let observedAt: Date
+    let inputTokens: Int64
+    let cachedInputTokens: Int64
+    let outputTokens: Int64
+    let reasoningTokens: Int64
+    let totalTokens: Int64
+    let modelIDs: Set<String>
+    let amountUSD: Double
+    let allDeltasPriced: Bool
+    let deltaCount: Int
+}
+
 enum CodexTodayLogParser {
     static func aggregate(
         files: [URL],
         since startDate: Date) -> CodexTodayUsage?
     {
         guard LocalFiles.totalSize(of: files) != nil else { return nil }
+        return self.combine(
+            files.compactMap { self.aggregate(file: $0, since: startDate) },
+            since: startDate)
+    }
+
+    static func combine(
+        _ sessions: [CodexTodayFileAggregate],
+        since startDate: Date) -> CodexTodayUsage?
+    {
         var input: Int64 = 0
         var cached: Int64 = 0
         var output: Int64 = 0
@@ -25,8 +47,7 @@ enum CodexTodayLogParser {
         var allDeltasPriced = true
         var deltaCount = 0
 
-        for file in files {
-            guard let session = self.aggregate(file: file, since: startDate) else { continue }
+        for session in sessions {
             sessionCount += 1
             observedAt = max(observedAt, session.observedAt)
             input = saturatedAdd(input, session.inputTokens)
@@ -62,9 +83,9 @@ enum CodexTodayLogParser {
             sessionCount: sessionCount)
     }
 
-    private static func aggregate(
+    static func aggregate(
         file: URL,
-        since startDate: Date) -> SessionAggregate?
+        since startDate: Date) -> CodexTodayFileAggregate?
     {
         let decoder = JSONDecoder()
         var currentModelID: String?
@@ -154,7 +175,7 @@ enum CodexTodayLogParser {
         }) else { return nil }
 
         guard sawTokenEventToday, deltaCount > 0 else { return nil }
-        return SessionAggregate(
+        return CodexTodayFileAggregate(
             observedAt: observedAt,
             inputTokens: input,
             cachedInputTokens: cached,
@@ -170,19 +191,6 @@ enum CodexTodayLogParser {
     private static func saturatedAdd(_ lhs: Int64, _ rhs: Int64) -> Int64 {
         let result = lhs.addingReportingOverflow(max(rhs, 0))
         return result.overflow ? .max : result.partialValue
-    }
-
-    private struct SessionAggregate {
-        let observedAt: Date
-        let inputTokens: Int64
-        let cachedInputTokens: Int64
-        let outputTokens: Int64
-        let reasoningTokens: Int64
-        let totalTokens: Int64
-        let modelIDs: Set<String>
-        let amountUSD: Double
-        let allDeltasPriced: Bool
-        let deltaCount: Int
     }
 
     private struct Event: Decodable {

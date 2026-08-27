@@ -10,6 +10,7 @@ public struct ClineUsageProvider: UsageProviding, UsageActivityProviding {
 
     private let roots: [URL]
     private let calendar: Calendar
+    private let usageCache = ClineUsageCache()
 
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
@@ -27,7 +28,9 @@ public struct ClineUsageProvider: UsageProviding, UsageActivityProviding {
         let startOfDay = self.calendar.startOfDay(for: .now)
         let files = self.usageFiles(modifiedAfter: startOfDay)
         guard !files.isEmpty,
-              let usage = ClineLogParser.aggregate(files: files, since: startOfDay)
+              let usage = await self.usageCache.aggregate(
+                files: files,
+                since: startOfDay)
         else {
             return .init(
                 descriptor: self.descriptor,
@@ -100,11 +103,34 @@ public struct ClineUsageProvider: UsageProviding, UsageActivityProviding {
     }
 }
 
-struct ClineTodayUsage {
+struct ClineTodayUsage: Sendable {
     let tokenUsage: TokenUsage
     let costEstimate: TokenCostEstimate?
     let observedAt: Date
     let taskCount: Int
+}
+
+actor ClineUsageCache {
+    private var signatures: [LocalFileSignature]?
+    private var startDate: Date?
+    private var result: ClineTodayUsage?
+    private var hasResult = false
+
+    func aggregate(files: [URL], since startDate: Date) -> ClineTodayUsage? {
+        let nextSignatures = LocalFiles.signatures(for: files)
+        if self.signatures == nextSignatures,
+           self.startDate == startDate,
+           self.hasResult
+        {
+            return self.result
+        }
+        let result = ClineLogParser.aggregate(files: files, since: startDate)
+        self.signatures = nextSignatures
+        self.startDate = startDate
+        self.result = result
+        self.hasResult = true
+        return result
+    }
 }
 
 enum ClineLogParser {

@@ -271,6 +271,12 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
 }
 
 actor CodexLocalUsageCache {
+    private struct TodayFileCache: Sendable {
+        let signature: LocalFileSignature
+        let startDate: Date
+        let result: CodexTodayFileAggregate?
+    }
+
     private var latestSignatures: [LocalFileSignature]?
     private var latestResult: CodexParsedUsage?
     private var hasLatestResult = false
@@ -278,6 +284,7 @@ actor CodexLocalUsageCache {
     private var todayStartDate: Date?
     private var todayResult: CodexTodayUsage?
     private var hasTodayResult = false
+    private var todayFileResults: [String: TodayFileCache] = [:]
 
     func latestUsage(files: [URL]) -> CodexParsedUsage? {
         let nextSignatures = LocalFiles.signatures(for: files)
@@ -307,9 +314,32 @@ actor CodexLocalUsageCache {
             return self.todayResult
         }
 
-        let result = CodexTodayLogParser.aggregate(
-            files: files,
-            since: startDate)
+        guard LocalFiles.totalSize(of: files) != nil else { return nil }
+        let activePaths = Set(nextSignatures.map(\.path))
+        self.todayFileResults = self.todayFileResults.filter {
+            activePaths.contains($0.key)
+        }
+        var aggregates: [CodexTodayFileAggregate] = []
+        aggregates.reserveCapacity(files.count)
+        for (file, signature) in zip(files, nextSignatures) {
+            let cached = self.todayFileResults[signature.path]
+            let fileResult: CodexTodayFileAggregate?
+            if cached?.signature == signature,
+               cached?.startDate == startDate
+            {
+                fileResult = cached?.result
+            } else {
+                fileResult = CodexTodayLogParser.aggregate(
+                    file: file,
+                    since: startDate)
+                self.todayFileResults[signature.path] = TodayFileCache(
+                    signature: signature,
+                    startDate: startDate,
+                    result: fileResult)
+            }
+            if let fileResult { aggregates.append(fileResult) }
+        }
+        let result = CodexTodayLogParser.combine(aggregates, since: startDate)
         self.todaySignatures = nextSignatures
         self.todayStartDate = startDate
         self.todayResult = result
@@ -325,6 +355,7 @@ actor CodexLocalUsageCache {
         self.todayStartDate = nil
         self.todayResult = nil
         self.hasTodayResult = false
+        self.todayFileResults = [:]
     }
 }
 

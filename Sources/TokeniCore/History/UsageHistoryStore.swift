@@ -44,17 +44,21 @@ public actor UsageHistoryStore {
     private let fileURL: URL
     private let retentionInterval: TimeInterval
     private let minimumRecordInterval: TimeInterval
+    private let maximumRecordCount: Int
     private var cachedRecords: [UsageHistoryRecord]?
+    private var lastTimestampByProvider: [ProviderID: Date]?
 
     public init(
         fileURL: URL? = nil,
         retentionDays: Int = 30,
-        minimumRecordInterval: TimeInterval = 15 * 60)
+        minimumRecordInterval: TimeInterval = 15 * 60,
+        maximumRecordCount: Int = 50_000)
     {
         self.fileURL = fileURL ?? AppStoragePaths.applicationSupportDirectory()
             .appending(path: "usage-history.json")
         self.retentionInterval = TimeInterval(retentionDays * 24 * 60 * 60)
         self.minimumRecordInterval = minimumRecordInterval
+        self.maximumRecordCount = max(maximumRecordCount, 0)
     }
 
     public func records() throws -> [UsageHistoryRecord] {
@@ -67,6 +71,7 @@ public actor UsageHistoryStore {
                 try decoder.decode([UsageHistoryRecord].self, from: $0)
             }) ?? []
         self.cachedRecords = records
+        self.lastTimestampByProvider = Self.lastTimestamps(in: records)
         return records
     }
 
@@ -76,10 +81,13 @@ public actor UsageHistoryStore {
         let originalCount = records.count
         records.removeAll { $0.timestamp < cutoff }
         var didChange = records.count != originalCount
+        let requiresSorting = records.last.map { timestamp < $0.timestamp } ?? false
 
+        var lastTimestamps = self.lastTimestampByProvider
+            ?? Self.lastTimestamps(in: records)
         for snapshot in snapshots where snapshot.availability == .available {
             guard !snapshot.quotaWindows.isEmpty || snapshot.tokenUsage != nil else { continue }
-            let lastTimestamp = records.last(where: { $0.providerID == snapshot.id })?.timestamp
+            let lastTimestamp = lastTimestamps[snapshot.id]
             guard lastTimestamp.map({ timestamp.timeIntervalSince($0) >= self.minimumRecordInterval }) != false
             else { continue }
 
@@ -95,12 +103,18 @@ public actor UsageHistoryStore {
                 },
                 tokenTotal: snapshot.tokenUsage?.totalTokens,
                 costUSD: snapshot.costEstimate?.amountUSD))
+            lastTimestamps[snapshot.id] = timestamp
             didChange = true
         }
 
         guard didChange else { return }
 
-        records.sort { $0.timestamp < $1.timestamp }
+        if requiresSorting {
+            records.sort { $0.timestamp < $1.timestamp }
+        }
+        if records.count > self.maximumRecordCount {
+            records.removeFirst(records.count - self.maximumRecordCount)
+        }
         try FileManager.default.createDirectory(
             at: self.fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true)
@@ -111,10 +125,24 @@ public actor UsageHistoryStore {
             encoder.encode(records),
             to: self.fileURL)
         self.cachedRecords = records
+        self.lastTimestampByProvider = Self.lastTimestamps(in: records)
     }
 
     public func clear() throws {
         try RecoverableFileStorage.removePrimaryAndBackups(for: self.fileURL)
         self.cachedRecords = []
+        self.lastTimestampByProvider = [:]
+    }
+
+    private static func lastTimestamps(
+        in records: [UsageHistoryRecord]) -> [ProviderID: Date]
+    {
+        var result: [ProviderID: Date] = [:]
+        for record in records {
+            if result[record.providerID].map({ record.timestamp > $0 }) != false {
+                result[record.providerID] = record.timestamp
+            }
+        }
+        return result
     }
 }
