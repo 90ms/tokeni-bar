@@ -70,14 +70,6 @@ struct ByteBotTransitionView: View {
                     .transition(.opacity)
             }
 
-            if let mutationID = self.mutationID {
-                CompanionMutationDecoration(
-                    mutationID: mutationID,
-                    dimension: self.dimension,
-                    animationsEnabled: self.animationsEnabled,
-                    motionIntensity: self.animationIntensity)
-            }
-
             ByteBotSpriteView(
                 speciesID: self.displayedKey.speciesID,
                 stage: self.displayedKey.stage,
@@ -238,9 +230,7 @@ struct ByteBotTransitionView: View {
     }
 
     private var displayDimension: CGFloat {
-        guard self.mutationID != nil else { return self.dimension }
-        return CompanionMutationDecoration.displayDimension(
-            for: self.dimension)
+        self.dimension
     }
 
     private var displayedKey: TransitionKey {

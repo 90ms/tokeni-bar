@@ -167,6 +167,10 @@ final class CompanionAssetCatalog {
         context.draw(
             image,
             in: CGRect(x: 0, y: 0, width: width, height: height))
+        let standardOpaquePixels = Self.opaquePixelMask(
+            in: context,
+            width: width,
+            height: height)
         if let mutatedSpeciesID,
            let opaqueBounds = Self.opaqueBounds(
                in: context,
@@ -179,8 +183,86 @@ final class CompanionAssetCatalog {
                 canvasSize: CGSize(width: CGFloat(width), height: CGFloat(height)),
                 opaqueBounds: opaqueBounds,
                 palette: palette)
+            Self.removeDetachedMutationPixels(
+                from: context,
+                width: width,
+                height: height,
+                standardOpaquePixels: standardOpaquePixels)
         }
         return context.makeImage()
+    }
+
+    private static func opaquePixelMask(
+        in context: CGContext,
+        width: Int,
+        height: Int) -> [Bool]
+    {
+        guard let data = context.data else { return [] }
+        let bytes = data.assumingMemoryBound(to: UInt8.self)
+        return (0..<(width * height)).map { index in
+            let x = index % width
+            let y = index / width
+            return bytes[y * context.bytesPerRow + x * 4 + 3] > 0
+        }
+    }
+
+    /// A mutation may extend the original silhouette, but every new group of
+    /// pixels must touch the pet. Original action particles remain untouched.
+    private static func removeDetachedMutationPixels(
+        from context: CGContext,
+        width: Int,
+        height: Int,
+        standardOpaquePixels: [Bool])
+    {
+        guard standardOpaquePixels.count == width * height,
+              let data = context.data
+        else { return }
+        let bytes = data.assumingMemoryBound(to: UInt8.self)
+        let mutatedOpaquePixels = Self.opaquePixelMask(
+            in: context,
+            width: width,
+            height: height)
+        var visited = Array(repeating: false, count: width * height)
+
+        for start in 0..<(width * height)
+        where mutatedOpaquePixels[start]
+            && !standardOpaquePixels[start]
+            && !visited[start]
+        {
+            var stack = [start]
+            var component: [Int] = []
+            var touchesStandard = false
+            visited[start] = true
+            while let index = stack.popLast() {
+                component.append(index)
+                let x = index % width
+                let y = index / width
+                let neighbors = [
+                    x > 0 ? index - 1 : -1,
+                    x + 1 < width ? index + 1 : -1,
+                    y > 0 ? index - width : -1,
+                    y + 1 < height ? index + width : -1,
+                ]
+                for neighbor in neighbors where neighbor >= 0 {
+                    if standardOpaquePixels[neighbor] {
+                        touchesStandard = true
+                    } else if mutatedOpaquePixels[neighbor], !visited[neighbor] {
+                        visited[neighbor] = true
+                        stack.append(neighbor)
+                    }
+                }
+            }
+            guard !touchesStandard else { continue }
+            for index in component {
+                let x = index % width
+                let y = index / width
+                let offset = y * context.bytesPerRow + x * 4
+                bytes[offset] = 0
+                bytes[offset + 1] = 0
+                bytes[offset + 2] = 0
+                bytes[offset + 3] = 0
+            }
+        }
     }
 
     /// Finds the pet body in the detached RGBA frame. The largest connected
@@ -305,12 +387,12 @@ final class CompanionAssetCatalog {
         switch speciesID {
         case .bytebot:
             // A short fork at the tip of the existing antenna.
-            block(x: centerX, y: top, width: pixel, height: pixel * 3)
+            block(x: centerX, y: top - pixel, width: pixel, height: pixel * 4)
             block(x: centerX - pixel * 2, y: top + pixel * 2, width: pixel * 2, height: pixel)
             block(x: centerX + pixel, y: top + pixel * 2, width: pixel * 2, height: pixel)
         case .cachecat:
             // A compact split at the existing tail side.
-            block(x: right, y: centerY, width: pixel * 3, height: pixel)
+            block(x: right - pixel, y: centerY, width: pixel * 4, height: pixel)
             block(x: right + pixel * 2, y: centerY - pixel * 2, width: pixel, height: pixel * 2)
             block(x: right + pixel * 2, y: centerY + pixel, width: pixel, height: pixel * 2)
         case .kernelcrab:
@@ -319,7 +401,7 @@ final class CompanionAssetCatalog {
             block(x: left - pixel * 4, y: centerY + pixel, width: pixel * 2, height: pixel * 2)
         case .loophare:
             // A small central ear loop echoes the original paired ears.
-            block(x: centerX - pixel, y: top, width: pixel * 3, height: pixel * 4)
+            block(x: centerX - pixel, y: top - pixel, width: pixel * 3, height: pixel * 5)
             context.clear(CGRect(x: snapped(centerX), y: snapped(top + pixel), width: pixel, height: pixel * 2))
         case .nullslime:
             // A small bud grows directly from the slime body.
@@ -333,7 +415,7 @@ final class CompanionAssetCatalog {
             block(x: right + pixel, y: top + pixel, width: pixel, height: pixel)
         case .promptpup:
             // One ear has a short folded tip.
-            block(x: left - pixel * 2, y: top - pixel, width: pixel * 3, height: pixel * 2)
+            block(x: left - pixel * 2, y: top - pixel, width: pixel * 4, height: pixel * 2)
             block(x: left - pixel * 3, y: top - pixel * 2, width: pixel * 2, height: pixel * 2)
         case .queryowl:
             // Subtle paired brow tufts follow the existing head contour.
@@ -342,7 +424,7 @@ final class CompanionAssetCatalog {
         case .relayray:
             // Small paired points extend the original fins.
             block(x: left - pixel * 2, y: centerY, width: pixel * 3, height: pixel * 2)
-            block(x: right, y: centerY, width: pixel * 3, height: pixel * 2)
+            block(x: right - pixel, y: centerY, width: pixel * 3, height: pixel * 2)
         case .stackfox:
             // A compact branch at the tail base suggests a second tail.
             block(x: right - pixel, y: bottom + pixel * 2, width: pixel * 3, height: pixel * 2)
