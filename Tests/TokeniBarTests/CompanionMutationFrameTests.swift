@@ -55,9 +55,23 @@ struct CompanionMutationFrameTests {
     }
 
     private func rgbaBytes(of image: CGImage) throws -> Data {
-        let provider = try #require(image.dataProvider)
-        let data = try #require(provider.data)
-        return data as Data
+        let bytesPerRow = image.width * 4
+        let context = try #require(CGContext(
+            data: nil,
+            width: image.width,
+            height: image.height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue
+                | CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.interpolationQuality = .none
+        context.setShouldAntialias(false)
+        context.draw(
+            image,
+            in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        let bytes = try #require(context.data)
+        return Data(bytes: bytes, count: bytesPerRow * image.height)
     }
 
     private func changedPixelCount(
