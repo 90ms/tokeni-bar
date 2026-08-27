@@ -18,7 +18,7 @@ struct CompanionCosmeticDecoration: View {
 
     var body: some View {
         TimelineView(.animation(
-            minimumInterval: 1.0 / 15.0,
+            minimumInterval: 1.0 / 12.0,
             paused: !self.motionEnabled))
         { timeline in
             self.decoration(
@@ -53,12 +53,10 @@ struct CompanionCosmeticDecoration: View {
                         index,
                         point in
                         let wave = (sin(time * 2.4 + Double(index) * 1.73) + 1) / 2
-                        Image(systemName: index.isMultiple(of: 3)
-                            ? "star.fill"
-                            : "sparkle")
-                            .font(.system(
-                                size: self.canvasDimension
-                                    * (0.065 + CGFloat(wave) * 0.055)))
+                        CompanionRasterSymbol(
+                            name: index.isMultiple(of: 3) ? "star.fill" : "sparkle",
+                            size: self.canvasDimension
+                                * (0.065 + CGFloat(wave) * 0.055))
                             .foregroundStyle(
                                 self.sparkleColor(index: index))
                             .offset(
@@ -78,11 +76,12 @@ struct CompanionCosmeticDecoration: View {
                             .truncatingRemainder(dividingBy: 1)
                         let x = Self.heartX[index] * self.canvasDimension
                             + CGFloat(sin(time * 2 + Double(index))) * 3
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: max(
+                        CompanionRasterSymbol(
+                            name: "heart.fill",
+                            size: max(
                                 self.canvasDimension
                                     * (0.075 + 0.04 * CGFloat(1 - progress)),
-                                7)))
+                                7))
                             .foregroundStyle(index.isMultiple(of: 2) ? .pink : .red)
                             .offset(
                                 x: x,
@@ -125,9 +124,10 @@ struct CompanionCosmeticDecoration: View {
             case .driftingClouds:
                 ZStack {
                     ForEach(0..<4, id: \.self) { index in
-                        Image(systemName: "cloud.fill")
-                            .font(.system(size: self.canvasDimension
-                                * (0.13 + CGFloat(index % 2) * 0.04)))
+                        CompanionRasterSymbol(
+                            name: "cloud.fill",
+                            size: self.canvasDimension
+                                * (0.13 + CGFloat(index % 2) * 0.04))
                             .foregroundStyle(index.isMultiple(of: 2)
                                 ? Color.white.opacity(0.65)
                                 : Color.cyan.opacity(0.42))
@@ -156,9 +156,10 @@ struct CompanionCosmeticDecoration: View {
             case .fallingPetals:
                 ZStack {
                     ForEach(0..<8, id: \.self) { index in
-                        Image(systemName: index.isMultiple(of: 3)
-                            ? "leaf.fill" : "camera.macro")
-                            .font(.system(size: self.canvasDimension * 0.07))
+                        CompanionRasterSymbol(
+                            name: index.isMultiple(of: 3)
+                                ? "leaf.fill" : "camera.macro",
+                            size: self.canvasDimension * 0.07)
                             .foregroundStyle(index.isMultiple(of: 2)
                                 ? Color.pink.opacity(0.7)
                                 : Color.mint.opacity(0.65))
@@ -199,8 +200,9 @@ struct CompanionCosmeticDecoration: View {
                                     .frame(width: 3, height: 3)
                             }
                         }
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.system(size: self.canvasDimension * 0.07))
+                    CompanionRasterSymbol(
+                        name: "antenna.radiowaves.left.and.right",
+                        size: self.canvasDimension * 0.07)
                         .foregroundStyle(.cyan)
                         .offset(y: -self.canvasDimension * 0.12)
                 }
@@ -210,8 +212,9 @@ struct CompanionCosmeticDecoration: View {
                         + slowWave * self.canvasDimension * 0.025)
             case .starSprite:
                 ZStack {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: self.canvasDimension * 0.25))
+                    CompanionRasterSymbol(
+                        name: "star.fill",
+                        size: self.canvasDimension * 0.25)
                         .foregroundStyle(.yellow)
                         .shadow(color: .yellow.opacity(0.75), radius: 5)
                     HStack(spacing: self.canvasDimension * 0.035) {
@@ -223,8 +226,9 @@ struct CompanionCosmeticDecoration: View {
                             .frame(width: 3, height: 4)
                     }
                     .offset(y: -self.canvasDimension * 0.012)
-                    Image(systemName: "sparkle")
-                        .font(.system(size: self.canvasDimension * 0.08))
+                    CompanionRasterSymbol(
+                        name: "sparkle",
+                        size: self.canvasDimension * 0.08)
                         .foregroundStyle(.white)
                         .offset(
                             x: -self.canvasDimension * 0.13,
@@ -253,8 +257,9 @@ struct CompanionCosmeticDecoration: View {
                             }
                             .offset(y: -self.canvasDimension * 0.025)
                         }
-                    Image(systemName: "diamond.fill")
-                        .font(.system(size: self.canvasDimension * 0.055))
+                    CompanionRasterSymbol(
+                        name: "diamond.fill",
+                        size: self.canvasDimension * 0.055)
                         .foregroundStyle(.orange)
                         .offset(y: self.canvasDimension * 0.025)
                     HStack(spacing: self.canvasDimension * 0.17) {
@@ -288,10 +293,9 @@ struct CompanionCosmeticDecoration: View {
                             .offset(
                                 y: (CGFloat(index) - 2) * self.canvasDimension * 0.2)
                     }
-                    Image(systemName: "chevron.right")
-                        .font(.system(
-                            size: max(self.canvasDimension * 0.12, 7),
-                            weight: .bold))
+                    CompanionRasterSymbol(
+                        name: "chevron.right",
+                        size: max(self.canvasDimension * 0.12, 7))
                         .foregroundStyle(.green.opacity(0.55))
                         .offset(
                             x: -self.canvasDimension * 0.31,
@@ -312,17 +316,21 @@ struct CompanionCosmeticDecoration: View {
                             colors: [.cyan.opacity(0.34), .blue.opacity(0.12)],
                             startPoint: .top,
                             endPoint: .bottom))
-                    Image(systemName: "sun.max.fill")
-                        .font(.system(size: max(self.canvasDimension * 0.18, 9)))
+                    CompanionRasterSymbol(
+                        name: "sun.max.fill",
+                        size: max(self.canvasDimension * 0.18, 9))
                         .foregroundStyle(.yellow.opacity(0.8))
                         .offset(
                             x: self.canvasDimension * 0.27,
                             y: -self.canvasDimension * 0.27)
                     HStack(spacing: -self.canvasDimension * 0.06) {
-                        Image(systemName: "cloud.fill")
-                        Image(systemName: "cloud.fill")
+                        CompanionRasterSymbol(
+                            name: "cloud.fill",
+                            size: max(self.canvasDimension * 0.24, 12))
+                        CompanionRasterSymbol(
+                            name: "cloud.fill",
+                            size: max(self.canvasDimension * 0.24, 12))
                     }
-                    .font(.system(size: max(self.canvasDimension * 0.24, 12)))
                     .foregroundStyle(.white.opacity(0.72))
                     .offset(
                         x: slowWave * self.canvasDimension * 0.08,
@@ -336,8 +344,9 @@ struct CompanionCosmeticDecoration: View {
                         startPoint: .top,
                         endPoint: .bottom))
                     .overlay {
-                        Image(systemName: "sun.horizon.fill")
-                            .font(.system(size: self.canvasDimension * 0.5))
+                        CompanionRasterSymbol(
+                            name: "sun.horizon.fill",
+                            size: self.canvasDimension * 0.5)
                             .foregroundStyle(.orange.opacity(0.55))
                     }
                     .padding(self.canvasDimension * 0.03)
@@ -350,10 +359,11 @@ struct CompanionCosmeticDecoration: View {
                     .overlay {
                         HStack(spacing: 5) {
                             ForEach(0..<4, id: \.self) { _ in
-                                Image(systemName: "tree.fill")
+                                CompanionRasterSymbol(
+                                    name: "tree.fill",
+                                    size: self.canvasDimension * 0.18)
                             }
                         }
-                        .font(.system(size: self.canvasDimension * 0.18))
                         .foregroundStyle(.green.opacity(0.55))
                         .offset(y: self.canvasDimension * 0.22)
                     }
@@ -372,8 +382,9 @@ struct CompanionCosmeticDecoration: View {
                         style: StrokeStyle(lineWidth: 4, dash: [3, 7]))
                     .overlay {
                         ForEach(0..<6, id: \.self) { index in
-                            Image(systemName: "star.fill")
-                                .font(.system(size: self.canvasDimension * 0.055))
+                            CompanionRasterSymbol(
+                                name: "star.fill",
+                                size: self.canvasDimension * 0.055)
                                 .foregroundStyle(index.isMultiple(of: 2) ? .cyan : .yellow)
                                 .offset(
                                     x: (index < 3 ? -1 : 1) * self.canvasDimension * 0.48,
