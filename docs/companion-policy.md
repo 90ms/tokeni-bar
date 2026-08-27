@@ -2,8 +2,8 @@
 
 [한국어](companion-policy.ko.md) | **English**
 
-- Policy version: 3.3.0
-- Updated: 2026-08-26
+- Policy version: 3.3.1
+- Updated: 2026-08-27
 - Status: implemented
 
 This document defines the product rules for level-100 growth, owned pets, egg
@@ -90,9 +90,11 @@ removed. A normal egg has a 1% seeded chance to hatch the selected species'
 mutation appearance. Mutation has no synthesis pity counter.
 
 A mutation is a species-specific intrinsic body variation instead of an
-equipable aura. Dedicated Mutation sheets are the target asset format; until
-those reviewed sheets replace the temporary renderer, displayed frames derive
-a restrained trait from the Standard animation. Mutation never
+equipable aura. The current app derives a restrained trait by recoloring only
+pixels that are already opaque in the Standard animation with an existing
+palette color. It creates no new pixel or detached particle, preserving the
+original silhouette and alpha exactly. Reviewed dedicated Mutation sheets may
+replace these derived frames later. Mutation never
 changes XP, benefits, resale value, or other odds. The existing Prismatic
 appearance and its guarantee rules remain a separate appearance.
 
@@ -142,8 +144,9 @@ Reduce Motion, disabled animations, and Low Power Mode remain respected.
 
 Generation 2, the **Signal Expedition**, contains QueryOwl, PatchPanda,
 LoopHare, RelayRay, and KernelCrab. Every growth stage has an independent
-Standard and Prismatic sprite; dedicated Mutation sheets are in progress. A
-persistent signal core and behavior-specific wing, ear,
+Standard and Prismatic sprite, while its Mutation appearance uses a trait
+integrated into the original body. Reviewed dedicated Mutation sheets may
+replace it later. A persistent signal core and behavior-specific wing, ear,
 fin, and shell mode shifts distinguish it from generation 1. Its benefit
 mappings reuse the five generation-one active and passive values and add no
 higher tier.

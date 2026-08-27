@@ -158,9 +158,11 @@ growth album.
 
 A normal egg has a 1% chance to hatch that species' Mutation appearance.
 Mutation is an intrinsic, species-specific body variation rather than an
-equipable decoration and provides no power advantage. Dedicated Mutation sprite
-sheets are being prepared from the reviewed lifecycle concepts; the current app
-temporarily derives the variation from the Standard animation. Hatching the same
+equipable decoration and provides no power advantage. The current appearance
+derives its trait only from the Standard animation's existing body pixels and
+palette, adding no detached decoration or particle while preserving the original
+silhouette and alpha. Reviewed dedicated Mutation sheets may replace it later.
+Hatching the same
 `species + appearance` again grants the matching pet
 25% of its next-level XP requirement instead of creating another pet. Mutation
 appearances are registered in the collection with Standard and Prismatic.

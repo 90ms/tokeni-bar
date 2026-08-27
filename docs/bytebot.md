@@ -65,9 +65,10 @@ appearance odds are:
 | Mutation | 1% | Equal |
 
 Mutation is a species-specific intrinsic body variation rather than an
-equipable decoration. Dedicated Mutation sheets are being prepared from the
-reviewed concepts; the current app temporarily derives the variation from the
-Standard animation.
+equipable decoration. The current app derives a restrained trait by recoloring
+only existing body pixels with the sprite palette. It adds no detached
+decoration or particle and preserves the Standard silhouette and alpha exactly.
+Reviewed dedicated Mutation sheets may replace it later.
 It enters the collection on hatch without changing power and provides a
 signature action:
 
@@ -85,8 +86,9 @@ signature action:
 ## Generation 2: Signal Expedition
 
 Generation 2 contains QueryOwl, PatchPanda, LoopHare, RelayRay, and KernelCrab.
-Every growth stage has independent Standard and Prismatic sprites; dedicated
-Mutation sheets are in progress. A visible signal core persists across modes,
+Every growth stage has independent Standard and Prismatic sprites, while its
+Mutation appearance uses a trait integrated into the original body. Reviewed
+dedicated Mutation sheets may replace it later. A visible signal core persists across modes,
 while wings, ears, fins,
 and shells shift during working, warning, and signature actions.
 
