@@ -202,8 +202,10 @@ final class CompanionAssetCatalog {
         palette: [String])
     {
         guard standardOpaquePixels.count == width * height,
-              let accent = Self.color(from: palette.last)
+              let accent = Self.rgb(from: palette.last),
+              let data = context.data
         else { return }
+        let bytes = data.assumingMemoryBound(to: UInt8.self)
         let normalizedTarget: (x: CGFloat, y: CGFloat) = switch speciesID {
         case .bytebot: (0.5, 0.36)
         case .cachecat: (0.68, 0.48)
@@ -231,13 +233,14 @@ final class CompanionAssetCatalog {
                     < hypot(rhsX - targetX, rhsY - targetY)
             }
             .prefix(2)
-        context.setFillColor(accent)
         for index in candidates {
-            context.fill(CGRect(
-                x: CGFloat(index % width),
-                y: CGFloat(index / width),
-                width: 1,
-                height: 1))
+            let x = index % width
+            let y = index / width
+            let offset = y * context.bytesPerRow + x * 4
+            let alpha = UInt16(bytes[offset + 3])
+            bytes[offset] = UInt8(UInt16(accent.red) * alpha / 255)
+            bytes[offset + 1] = UInt8(UInt16(accent.green) * alpha / 255)
+            bytes[offset + 2] = UInt8(UInt16(accent.blue) * alpha / 255)
         }
     }
 
@@ -319,17 +322,16 @@ final class CompanionAssetCatalog {
             height: CGFloat(max(bestBounds.maxY - bestBounds.minY + 1, 1)))
     }
 
-    private static func color(from hex: String?) -> CGColor? {
+    private static func rgb(from hex: String?) -> (red: UInt8, green: UInt8, blue: UInt8)? {
         guard var hex else { return nil }
         if hex.hasPrefix("#") { hex.removeFirst() }
         guard hex.count == 6, let value = UInt32(hex, radix: 16) else {
             return nil
         }
-        return CGColor(
-            red: CGFloat((value >> 16) & 0xFF) / 255,
-            green: CGFloat((value >> 8) & 0xFF) / 255,
-            blue: CGFloat(value & 0xFF) / 255,
-            alpha: 1)
+        return (
+            UInt8((value >> 16) & 0xFF),
+            UInt8((value >> 8) & 0xFF),
+            UInt8(value & 0xFF))
     }
 
     private func manifest(

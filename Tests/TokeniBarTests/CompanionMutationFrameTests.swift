@@ -43,6 +43,8 @@ struct CompanionMutationFrameTests {
 
                         #expect(changedPixelCount > 0)
                         #expect(changedPixelCount <= max(standardPixelCount / 5, 12))
+                        #expect(self.alphaBytes(in: mutatedBytes)
+                            == self.alphaBytes(in: standardBytes))
                         #expect(self.allIntroducedPixelsAttachToStandard(
                             standard: standardBytes,
                             mutated: mutatedBytes,
@@ -96,6 +98,10 @@ struct CompanionMutationFrameTests {
                 count += 1
             }
         }
+    }
+
+    private func alphaBytes(in bytes: Data) -> [UInt8] {
+        stride(from: 3, to: bytes.count, by: 4).map { bytes[$0] }
     }
 
     private func allIntroducedPixelsAttachToStandard(
