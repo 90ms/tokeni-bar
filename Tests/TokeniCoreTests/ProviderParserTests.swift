@@ -336,6 +336,42 @@ struct ProviderParserTests {
     }
 
     @Test
+    func usageHistoryKeepsAnExplicitMaximumRecordCount() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = UsageHistoryStore(
+            fileURL: directory.appending(path: "history.json"),
+            retentionDays: 30,
+            minimumRecordInterval: 0,
+            maximumRecordCount: 2)
+        let descriptor = ProviderDescriptor(
+            id: .codex,
+            displayName: "Codex",
+            shortName: "Codex",
+            systemImage: "chart.bar",
+            capabilities: .init(supportsTokenUsage: true))
+        let snapshot = ProviderSnapshot(
+            descriptor: descriptor,
+            availability: .available,
+            source: .localSessionLog,
+            tokenUsage: TokenUsage(label: "Today", totalTokens: 1))
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+
+        for offset in 0..<3 {
+            try await store.record(
+                [snapshot],
+                at: start.addingTimeInterval(TimeInterval(offset)))
+        }
+
+        let records = try await store.records()
+        #expect(records.map(\.timestamp) == [
+            start.addingTimeInterval(1),
+            start.addingTimeInterval(2),
+        ])
+    }
+
+    @Test
     func exchangeRateUsesSameDayCachedQuote() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)

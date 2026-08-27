@@ -22,6 +22,23 @@ struct DailyProviderParserTests {
         #expect(abs((aggregate.costEstimate?.amountUSD ?? 0) - 0.0131) < 0.000_000_1)
     }
 
+    @Test("Codex file aggregates combine to the same daily result")
+    func codexFileAggregateReuse() throws {
+        let file = try self.fixture("codex-today", fileExtension: "jsonl")
+        let start = try #require(TimestampParser.parse("2026-08-14T00:00:00Z"))
+        let direct = try #require(
+            CodexTodayLogParser.aggregate(files: [file], since: start))
+        let fileAggregate = try #require(
+            CodexTodayLogParser.aggregate(file: file, since: start))
+        let combined = try #require(
+            CodexTodayLogParser.combine([fileAggregate], since: start))
+
+        #expect(combined.tokenUsage == direct.tokenUsage)
+        #expect(combined.costEstimate == direct.costEstimate)
+        #expect(combined.observedAt == direct.observedAt)
+        #expect(combined.sessionCount == direct.sessionCount)
+    }
+
     @Test("Grok Build counts complete turns once and trusts complete recorded cost")
     func grokToday() throws {
         let file = try self.fixture("grok-updates", fileExtension: "jsonl")

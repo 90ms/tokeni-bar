@@ -11,16 +11,13 @@ public protocol UsageHistoryCoordinating: Sendable {
 
 public actor UsageHistoryCoordinator: UsageHistoryCoordinating {
     private let store: UsageHistoryStore
-    private var cachedRecords: [UsageHistoryRecord] = []
 
     public init(store: UsageHistoryStore = UsageHistoryStore()) {
         self.store = store
     }
 
     public func load() async throws -> [UsageHistoryRecord] {
-        let records = try await self.store.records()
-        self.cachedRecords = records
-        return records
+        try await self.store.records()
     }
 
     public func record(
@@ -33,7 +30,6 @@ public actor UsageHistoryCoordinator: UsageHistoryCoordinating {
 
     public func clear() async throws -> [UsageHistoryRecord] {
         try await self.store.clear()
-        self.cachedRecords = []
-        return self.cachedRecords
+        return []
     }
 }

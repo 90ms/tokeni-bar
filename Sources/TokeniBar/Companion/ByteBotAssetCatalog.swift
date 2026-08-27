@@ -1,4 +1,5 @@
 import AppKit
+import Dispatch
 import Foundation
 import TokeniCore
 
@@ -10,6 +11,7 @@ final class CompanionAssetCatalog {
     private let assetDirectories: [CompanionSpeciesID: URL]
     private let sheetCache = NSCache<NSString, ImageBox>()
     private let frameCache = NSCache<NSString, ImageBox>()
+    private var memoryPressureSource: DispatchSourceMemoryPressure?
 
     private init() {
         var loadedManifests: [CompanionSpeciesID: CompanionSpriteManifest] = [:]
@@ -28,6 +30,21 @@ final class CompanionAssetCatalog {
         self.sheetCache.countLimit = 12
         self.frameCache.totalCostLimit = 12 * 1_024 * 1_024
         self.frameCache.countLimit = 768
+        let pressureSource = DispatchSource.makeMemoryPressureSource(
+            eventMask: [.warning, .critical],
+            queue: .main)
+        pressureSource.setEventHandler { [weak self] in
+            MainActor.assumeIsolated {
+                self?.removeCachedImages()
+            }
+        }
+        pressureSource.resume()
+        self.memoryPressureSource = pressureSource
+    }
+
+    func removeCachedImages() {
+        self.frameCache.removeAllObjects()
+        self.sheetCache.removeAllObjects()
     }
 
     func animation(

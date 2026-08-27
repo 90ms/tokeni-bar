@@ -24,10 +24,7 @@ enum LocalFiles {
 
         var latest: Date?
         for case let url as URL in enumerator where predicate(url) {
-            guard let values = try? url.resourceValues(
-                forKeys: [.contentModificationDateKey, .isRegularFileKey]),
-                values.isRegularFile == true,
-                let modifiedAt = values.contentModificationDate,
+            guard let modifiedAt = self.regularFileModificationDate(for: url),
                 modifiedAt >= cutoff
             else { continue }
             if latest.map({ modifiedAt > $0 }) != false {
@@ -55,9 +52,7 @@ enum LocalFiles {
         for case let url as URL in enumerator {
             guard fileName == nil || url.lastPathComponent == fileName else { continue }
             guard fileExtension == nil || url.pathExtension == fileExtension else { continue }
-            guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey]),
-                  values.isRegularFile == true,
-                  let modifiedAt = values.contentModificationDate
+            guard let modifiedAt = self.regularFileModificationDate(for: url)
             else { continue }
             guard modifiedAfter == nil || modifiedAt >= modifiedAfter! else { continue }
             candidates.append((url, modifiedAt))
@@ -72,6 +67,22 @@ enum LocalFiles {
             .sorted { $0.modifiedAt > $1.modifiedAt }
             .prefix(limit)
             .map(\.url)
+    }
+
+    private static func regularFileModificationDate(for url: URL) -> Date? {
+#if canImport(ObjectiveC)
+        return autoreleasepool {
+            let values = try? url.resourceValues(
+                forKeys: [.contentModificationDateKey, .isRegularFileKey])
+            guard values?.isRegularFile == true else { return nil }
+            return values?.contentModificationDate
+        }
+#else
+        let values = try? url.resourceValues(
+            forKeys: [.contentModificationDateKey, .isRegularFileKey])
+        guard values?.isRegularFile == true else { return nil }
+        return values?.contentModificationDate
+#endif
     }
 
     static func signatures(for files: [URL]) -> [LocalFileSignature] {

@@ -10,6 +10,7 @@ public struct GeminiUsageProvider: UsageProviding, UsageActivityProviding {
         capabilities: .init(supportsTokenUsage: true))
 
     private let temporaryDirectory: URL
+    private let usageCache = GeminiUsageCache()
 
     public init(homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) {
         self.init(
@@ -23,8 +24,10 @@ public struct GeminiUsageProvider: UsageProviding, UsageActivityProviding {
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
-        for file in self.sessionFiles() {
-            guard let usage = GeminiSessionParser.latestUsage(in: file) else { continue }
+        let files = self.sessionFiles()
+        if let cached = await self.usageCache.latestUsage(files: files) {
+            let file = cached.file
+            let usage = cached.usage
             let detail = usage.tokenUsage.modelID.map {
                 "Latest local Gemini CLI session · \($0)"
             } ?? "Latest local Gemini CLI session"
@@ -73,9 +76,36 @@ public struct GeminiUsageProvider: UsageProviding, UsageActivityProviding {
     }
 }
 
-struct GeminiParsedUsage {
+struct GeminiParsedUsage: Sendable {
     let timestamp: Date?
     let tokenUsage: TokenUsage
+}
+
+struct GeminiCachedUsage: Sendable {
+    let file: URL
+    let usage: GeminiParsedUsage
+}
+
+actor GeminiUsageCache {
+    private var signatures: [LocalFileSignature]?
+    private var result: GeminiCachedUsage?
+    private var hasResult = false
+
+    func latestUsage(files: [URL]) -> GeminiCachedUsage? {
+        let nextSignatures = LocalFiles.signatures(for: files)
+        if self.signatures == nextSignatures, self.hasResult {
+            return self.result
+        }
+        let result = files.lazy.compactMap { file in
+            GeminiSessionParser.latestUsage(in: file).map {
+                GeminiCachedUsage(file: file, usage: $0)
+            }
+        }.first
+        self.signatures = nextSignatures
+        self.result = result
+        self.hasResult = true
+        return result
+    }
 }
 
 enum GeminiSessionParser {
