@@ -188,8 +188,68 @@ final class CompanionAssetCatalog {
                 width: width,
                 height: height,
                 standardOpaquePixels: standardOpaquePixels)
+            Self.drawIntrinsicMutationMark(
+                for: mutatedSpeciesID,
+                in: context,
+                width: width,
+                height: height,
+                opaqueBounds: opaqueBounds,
+                standardOpaquePixels: standardOpaquePixels,
+                palette: palette)
         }
         return context.makeImage()
+    }
+
+    /// Adds a tiny marking directly onto the original body. It uses an
+    /// existing sprite-palette accent and only recolors pixels that belonged
+    /// to the Standard frame, so the fallback trait can never float nearby.
+    private static func drawIntrinsicMutationMark(
+        for speciesID: CompanionSpeciesID,
+        in context: CGContext,
+        width: Int,
+        height: Int,
+        opaqueBounds: CGRect,
+        standardOpaquePixels: [Bool],
+        palette: [String])
+    {
+        guard standardOpaquePixels.count == width * height,
+              let accent = Self.color(from: palette.last)
+        else { return }
+        let normalizedTarget: (x: CGFloat, y: CGFloat) = switch speciesID {
+        case .bytebot: (0.5, 0.36)
+        case .cachecat: (0.68, 0.48)
+        case .kernelcrab: (0.32, 0.5)
+        case .loophare: (0.5, 0.3)
+        case .nullslime: (0.64, 0.42)
+        case .patchpanda: (0.5, 0.58)
+        case .promptpup: (0.36, 0.34)
+        case .queryowl: (0.5, 0.38)
+        case .relayray: (0.5, 0.52)
+        case .stackfox: (0.66, 0.56)
+        }
+        let targetX = opaqueBounds.minX
+            + opaqueBounds.width * normalizedTarget.x
+        let targetY = opaqueBounds.minY
+            + opaqueBounds.height * normalizedTarget.y
+        let candidates = (0..<(width * height))
+            .filter { standardOpaquePixels[$0] }
+            .sorted { lhs, rhs in
+                let lhsX = CGFloat(lhs % width)
+                let lhsY = CGFloat(lhs / width)
+                let rhsX = CGFloat(rhs % width)
+                let rhsY = CGFloat(rhs / width)
+                return hypot(lhsX - targetX, lhsY - targetY)
+                    < hypot(rhsX - targetX, rhsY - targetY)
+            }
+            .prefix(2)
+        context.setFillColor(accent)
+        for index in candidates {
+            context.fill(CGRect(
+                x: CGFloat(index % width),
+                y: CGFloat(index / width),
+                width: 1,
+                height: 1))
+        }
     }
 
     private static func opaquePixelMask(
