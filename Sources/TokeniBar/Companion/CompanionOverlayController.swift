@@ -21,7 +21,6 @@ final class CompanionOverlayController: NSObject, ObservableObject {
     }
 
     deinit {
-        self.mouseRoutingTimer?.invalidate()
         NotificationCenter.default.removeObserver(self)
     }
 
