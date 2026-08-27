@@ -174,8 +174,9 @@ struct ByteBotTransitionView: View {
 
             ForEach(0..<8, id: \.self) { index in
                 let angle = Double(index) * .pi / 4
-                Image(systemName: index.isMultiple(of: 2) ? "sparkle" : "star.fill")
-                    .font(.system(size: max(self.dimension * 0.12, 7)))
+                CompanionRasterSymbol(
+                    name: index.isMultiple(of: 2) ? "sparkle" : "star.fill",
+                    size: max(self.dimension * 0.12, 7))
                     .foregroundStyle(color)
                     .offset(
                         x: self.expanded
@@ -202,8 +203,9 @@ struct ByteBotTransitionView: View {
 
             ForEach(0..<6, id: \.self) { index in
                 let angle = Double(index) * .pi / 3
-                Image(systemName: "sparkle")
-                    .font(.system(size: max(self.dimension * 0.12, 7)))
+                CompanionRasterSymbol(
+                    name: "sparkle",
+                    size: max(self.dimension * 0.12, 7))
                     .foregroundStyle(
                         index.isMultiple(of: 2) ? Color.mint : Color.yellow)
                     .offset(
