@@ -177,17 +177,6 @@ final class CompanionAssetCatalog {
                width: width,
                height: height)
         {
-            Self.drawMutationFeature(
-                for: mutatedSpeciesID,
-                in: context,
-                canvasSize: CGSize(width: CGFloat(width), height: CGFloat(height)),
-                opaqueBounds: opaqueBounds,
-                palette: palette)
-            Self.removeDetachedMutationPixels(
-                from: context,
-                width: width,
-                height: height,
-                standardOpaquePixels: standardOpaquePixels)
             Self.drawIntrinsicMutationMark(
                 for: mutatedSpeciesID,
                 in: context,
