@@ -1101,26 +1101,15 @@ struct CompanionCollectionView: View {
                    let definition = CompanionBenefitRegistry.definition(
                        for: generation.speciesID)
                 {
-                    let displayDimension = generation.mutationID.map { _ in
-                        CompanionMutationDecoration.displayDimension(for: 38)
-                    } ?? 48
-                    ZStack {
-                        if let mutationID = generation.mutationID {
-                            CompanionMutationDecoration(
-                                mutationID: mutationID,
-                                dimension: 38,
-                                animationsEnabled: false,
-                                motionIntensity: 0)
-                        }
-                        ByteBotSpriteView(
-                            speciesID: generation.speciesID,
-                            stage: generation.stage,
-                            rarity: generation.finalRarity,
-                            variantID: generation.variantID,
-                            behavior: .idle,
-                            dimension: 38,
-                            animationsEnabled: false)
-                    }
+                    let displayDimension: CGFloat = 48
+                    ByteBotSpriteView(
+                        speciesID: generation.speciesID,
+                        stage: generation.stage,
+                        rarity: generation.finalRarity,
+                        variantID: generation.variantID,
+                        behavior: .idle,
+                        dimension: 38,
+                        animationsEnabled: false)
                     .frame(
                         width: displayDimension,
                         height: displayDimension)
@@ -2055,16 +2044,15 @@ struct CompanionCollectionView: View {
                     }
                     HStack(spacing: 3) {
                         if discovered {
-                            CompanionMutationDecoration(
-                                mutationID: mutationID,
+                            ByteBotSpriteView(
+                                speciesID: speciesID,
+                                stage: .hatchling,
+                                rarity: .normal,
+                                variantID: .mutated,
+                                behavior: .idle,
                                 dimension: 22,
-                                animationsEnabled: false,
-                                motionIntensity: 0)
-                                .frame(
-                                    width: CompanionMutationDecoration
-                                        .displayDimension(for: 22),
-                                    height: CompanionMutationDecoration
-                                        .displayDimension(for: 22))
+                                animationsEnabled: false)
+                                .frame(width: 25, height: 25)
                         } else {
                             Image(systemName: "lock.fill")
                                 .font(.caption2)
@@ -2526,32 +2514,21 @@ struct CompanionCollectionView: View {
         let variantID = generation.variantID
             ?? CompanionVariantRegistry.migrated(
                 from: generation.finalRarity)
-        let displayDimension = generation.mutationID.map { _ in
-            CompanionMutationDecoration.displayDimension(for: 52)
-        } ?? 64
+        let displayDimension: CGFloat = 64
         let level = CompanionLevelCurve.standard.level(
             forXP: generation.growthXP)
         let isMaximumLevel = level
             == CompanionLevelCurve.standard.maximumLevel
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                ZStack {
-                    if let mutationID = generation.mutationID {
-                        CompanionMutationDecoration(
-                            mutationID: mutationID,
-                            dimension: 52,
-                            animationsEnabled: false,
-                            motionIntensity: 0)
-                    }
-                    ByteBotSpriteView(
-                        speciesID: generation.speciesID,
-                        stage: generation.stage,
-                        rarity: generation.finalRarity,
-                        variantID: generation.variantID,
-                        behavior: .idle,
-                        dimension: 52,
-                        animationsEnabled: false)
-                }
+                ByteBotSpriteView(
+                    speciesID: generation.speciesID,
+                    stage: generation.stage,
+                    rarity: generation.finalRarity,
+                    variantID: generation.variantID,
+                    behavior: .idle,
+                    dimension: 52,
+                    animationsEnabled: false)
                 .frame(
                     width: displayDimension,
                     height: displayDimension)
@@ -2737,29 +2714,18 @@ struct CompanionCollectionView: View {
                 from: generation.finalRarity)
         let isShowcased = self.store.companionState.showcasedGenerationID
             == generation.generationID
-        let displayDimension = generation.mutationID == nil
-            ? 136
-            : CompanionMutationDecoration.displayDimension(for: 112)
+        let displayDimension: CGFloat = 136
 
         return VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 18) {
-                ZStack {
-                    if let mutationID = generation.mutationID {
-                        CompanionMutationDecoration(
-                            mutationID: mutationID,
-                            dimension: 112,
-                            animationsEnabled: false,
-                            motionIntensity: 0)
-                    }
-                    ByteBotSpriteView(
-                        speciesID: generation.speciesID,
-                        stage: generation.stage,
-                        rarity: generation.finalRarity,
-                        variantID: generation.variantID,
-                        behavior: .idle,
-                        dimension: 112,
-                        animationsEnabled: false)
-                }
+                ByteBotSpriteView(
+                    speciesID: generation.speciesID,
+                    stage: generation.stage,
+                    rarity: generation.finalRarity,
+                    variantID: generation.variantID,
+                    behavior: .idle,
+                    dimension: 112,
+                    animationsEnabled: false)
                 .frame(
                     width: displayDimension,
                     height: displayDimension)

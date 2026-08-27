@@ -43,6 +43,13 @@ struct CompanionMutationFrameTests {
 
                         #expect(changedPixelCount > 0)
                         #expect(changedPixelCount <= max(standardPixelCount / 5, 12))
+                        #expect(self.alphaBytes(in: mutatedBytes)
+                            == self.alphaBytes(in: standardBytes))
+                        #expect(self.allIntroducedPixelsAttachToStandard(
+                            standard: standardBytes,
+                            mutated: mutatedBytes,
+                            width: standard.width,
+                            height: standard.height))
                     }
                 }
             }
@@ -50,9 +57,23 @@ struct CompanionMutationFrameTests {
     }
 
     private func rgbaBytes(of image: CGImage) throws -> Data {
-        let provider = try #require(image.dataProvider)
-        let data = try #require(provider.data)
-        return data as Data
+        let bytesPerRow = image.width * 4
+        let context = try #require(CGContext(
+            data: nil,
+            width: image.width,
+            height: image.height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue
+                | CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.interpolationQuality = .none
+        context.setShouldAntialias(false)
+        context.draw(
+            image,
+            in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        let bytes = try #require(context.data)
+        return Data(bytes: bytes, count: bytesPerRow * image.height)
     }
 
     private func changedPixelCount(
@@ -77,5 +98,53 @@ struct CompanionMutationFrameTests {
                 count += 1
             }
         }
+    }
+
+    private func alphaBytes(in bytes: Data) -> [UInt8] {
+        stride(from: 3, to: bytes.count, by: 4).map { bytes[$0] }
+    }
+
+    private func allIntroducedPixelsAttachToStandard(
+        standard: Data,
+        mutated: Data,
+        width: Int,
+        height: Int) -> Bool
+    {
+        guard standard.count == mutated.count,
+              standard.count >= width * height * 4
+        else { return false }
+        let standardOpaque = (0..<(width * height)).map {
+            standard[$0 * 4 + 3] > 0
+        }
+        let introduced = (0..<(width * height)).map {
+            !standardOpaque[$0] && mutated[$0 * 4 + 3] > 0
+        }
+        var visited = Array(repeating: false, count: width * height)
+
+        for start in 0..<(width * height) where introduced[start] && !visited[start] {
+            var stack = [start]
+            var touchesStandard = false
+            visited[start] = true
+            while let index = stack.popLast() {
+                let x = index % width
+                let y = index / width
+                let neighbors = [
+                    x > 0 ? index - 1 : -1,
+                    x + 1 < width ? index + 1 : -1,
+                    y > 0 ? index - width : -1,
+                    y + 1 < height ? index + width : -1,
+                ]
+                for neighbor in neighbors where neighbor >= 0 {
+                    if standardOpaque[neighbor] {
+                        touchesStandard = true
+                    } else if introduced[neighbor], !visited[neighbor] {
+                        visited[neighbor] = true
+                        stack.append(neighbor)
+                    }
+                }
+            }
+            if !touchesStandard { return false }
+        }
+        return true
     }
 }

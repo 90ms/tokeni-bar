@@ -167,20 +167,95 @@ final class CompanionAssetCatalog {
         context.draw(
             image,
             in: CGRect(x: 0, y: 0, width: width, height: height))
+        let standardOpaquePixels = Self.opaquePixelMask(
+            in: context,
+            width: width,
+            height: height)
         if let mutatedSpeciesID,
            let opaqueBounds = Self.opaqueBounds(
                in: context,
                width: width,
                height: height)
         {
-            Self.drawMutationFeature(
+            Self.drawIntrinsicMutationMark(
                 for: mutatedSpeciesID,
                 in: context,
-                canvasSize: CGSize(width: CGFloat(width), height: CGFloat(height)),
+                width: width,
+                height: height,
                 opaqueBounds: opaqueBounds,
+                standardOpaquePixels: standardOpaquePixels,
                 palette: palette)
         }
         return context.makeImage()
+    }
+
+    /// Adds a tiny marking directly onto the original body. It uses an
+    /// existing sprite-palette accent and only recolors pixels that belonged
+    /// to the Standard frame, so the fallback trait can never float nearby.
+    private static func drawIntrinsicMutationMark(
+        for speciesID: CompanionSpeciesID,
+        in context: CGContext,
+        width: Int,
+        height: Int,
+        opaqueBounds: CGRect,
+        standardOpaquePixels: [Bool],
+        palette: [String])
+    {
+        guard standardOpaquePixels.count == width * height,
+              let accent = Self.rgb(from: palette.last),
+              let data = context.data
+        else { return }
+        let bytes = data.assumingMemoryBound(to: UInt8.self)
+        let normalizedTarget: (x: CGFloat, y: CGFloat) = switch speciesID {
+        case .bytebot: (0.5, 0.36)
+        case .cachecat: (0.68, 0.48)
+        case .kernelcrab: (0.32, 0.5)
+        case .loophare: (0.5, 0.3)
+        case .nullslime: (0.64, 0.42)
+        case .patchpanda: (0.5, 0.58)
+        case .promptpup: (0.36, 0.34)
+        case .queryowl: (0.5, 0.38)
+        case .relayray: (0.5, 0.52)
+        case .stackfox: (0.66, 0.56)
+        }
+        let targetX = opaqueBounds.minX
+            + opaqueBounds.width * normalizedTarget.x
+        let targetY = opaqueBounds.minY
+            + opaqueBounds.height * normalizedTarget.y
+        let candidates = (0..<(width * height))
+            .filter { standardOpaquePixels[$0] }
+            .sorted { lhs, rhs in
+                let lhsX = CGFloat(lhs % width)
+                let lhsY = CGFloat(lhs / width)
+                let rhsX = CGFloat(rhs % width)
+                let rhsY = CGFloat(rhs / width)
+                return hypot(lhsX - targetX, lhsY - targetY)
+                    < hypot(rhsX - targetX, rhsY - targetY)
+            }
+            .prefix(2)
+        for index in candidates {
+            let x = index % width
+            let y = index / width
+            let offset = y * context.bytesPerRow + x * 4
+            let alpha = UInt16(bytes[offset + 3])
+            bytes[offset] = UInt8(UInt16(accent.red) * alpha / 255)
+            bytes[offset + 1] = UInt8(UInt16(accent.green) * alpha / 255)
+            bytes[offset + 2] = UInt8(UInt16(accent.blue) * alpha / 255)
+        }
+    }
+
+    private static func opaquePixelMask(
+        in context: CGContext,
+        width: Int,
+        height: Int) -> [Bool]
+    {
+        guard let data = context.data else { return [] }
+        let bytes = data.assumingMemoryBound(to: UInt8.self)
+        return (0..<(width * height)).map { index in
+            let x = index % width
+            let y = index / width
+            return bytes[y * context.bytesPerRow + x * 4 + 3] > 0
+        }
     }
 
     /// Finds the pet body in the detached RGBA frame. The largest connected
@@ -247,120 +322,16 @@ final class CompanionAssetCatalog {
             height: CGFloat(max(bestBounds.maxY - bestBounds.minY + 1, 1)))
     }
 
-    /// Derives the intrinsic Mutation resource from the Standard frame. Keep
-    /// these traits small and use the sprite's body colors: a Mutation should
-    /// read as a close biological variation, not as an attached decoration.
-    private static func drawMutationFeature(
-        for speciesID: CompanionSpeciesID,
-        in context: CGContext,
-        canvasSize: CGSize,
-        opaqueBounds: CGRect,
-        palette: [String])
-    {
-        let pixel = max(floor(min(canvasSize.width, canvasSize.height) / 32), 1)
-        let outline = Self.color(from: palette.first)
-            ?? CGColor(red: 0.03, green: 0.08, blue: 0.15, alpha: 1)
-        let body = Self.color(from: palette.dropFirst().first)
-            ?? CGColor(red: 0.12, green: 0.35, blue: 0.48, alpha: 1)
-
-        func snapped(_ value: CGFloat) -> CGFloat {
-            floor(value / pixel) * pixel
-        }
-        func block(
-            x: CGFloat,
-            y: CGFloat,
-            width: CGFloat,
-            height: CGFloat)
-        {
-            let requested = CGRect(
-                x: snapped(x),
-                y: snapped(y),
-                width: min(max(snapped(width), pixel), canvasSize.width),
-                height: min(max(snapped(height), pixel), canvasSize.height))
-            let canvas = CGRect(origin: .zero, size: canvasSize)
-            let frame = CGRect(
-                x: min(max(requested.minX, canvas.minX), canvas.maxX - requested.width),
-                y: min(max(requested.minY, canvas.minY), canvas.maxY - requested.height),
-                width: requested.width,
-                height: requested.height)
-            context.setFillColor(outline)
-            context.fill(frame)
-            let inset = frame.insetBy(dx: pixel, dy: pixel)
-            if inset.width > 0, inset.height > 0 {
-                context.setFillColor(body)
-                context.fill(inset)
-            }
-        }
-        context.saveGState()
-        defer { context.restoreGState() }
-        context.setShouldAntialias(false)
-
-        let left = opaqueBounds.minX
-        let right = opaqueBounds.maxX
-        let bottom = opaqueBounds.minY
-        let top = opaqueBounds.maxY
-        let centerX = opaqueBounds.midX
-        let centerY = opaqueBounds.midY
-
-        switch speciesID {
-        case .bytebot:
-            // A short fork at the tip of the existing antenna.
-            block(x: centerX, y: top, width: pixel, height: pixel * 3)
-            block(x: centerX - pixel * 2, y: top + pixel * 2, width: pixel * 2, height: pixel)
-            block(x: centerX + pixel, y: top + pixel * 2, width: pixel * 2, height: pixel)
-        case .cachecat:
-            // A compact split at the existing tail side.
-            block(x: right, y: centerY, width: pixel * 3, height: pixel)
-            block(x: right + pixel * 2, y: centerY - pixel * 2, width: pixel, height: pixel * 2)
-            block(x: right + pixel * 2, y: centerY + pixel, width: pixel, height: pixel * 2)
-        case .kernelcrab:
-            // One claw is only slightly broader than its counterpart.
-            block(x: left - pixel * 3, y: centerY - pixel * 2, width: pixel * 4, height: pixel * 4)
-            block(x: left - pixel * 4, y: centerY + pixel, width: pixel * 2, height: pixel * 2)
-        case .loophare:
-            // A small central ear loop echoes the original paired ears.
-            block(x: centerX - pixel, y: top, width: pixel * 3, height: pixel * 4)
-            context.clear(CGRect(x: snapped(centerX), y: snapped(top + pixel), width: pixel, height: pixel * 2))
-        case .nullslime:
-            // A small bud grows directly from the slime body.
-            block(x: right - pixel, y: top - pixel, width: pixel * 3, height: pixel)
-            block(x: right + pixel, y: top, width: pixel * 3, height: pixel * 3)
-        case .patchpanda:
-            // Tiny stepped tufts alter the round ears without covering them.
-            block(x: left, y: top, width: pixel * 2, height: pixel * 2)
-            block(x: right - pixel, y: top, width: pixel * 2, height: pixel * 2)
-            block(x: left - pixel, y: top + pixel, width: pixel, height: pixel)
-            block(x: right + pixel, y: top + pixel, width: pixel, height: pixel)
-        case .promptpup:
-            // One ear has a short folded tip.
-            block(x: left - pixel * 2, y: top - pixel, width: pixel * 3, height: pixel * 2)
-            block(x: left - pixel * 3, y: top - pixel * 2, width: pixel * 2, height: pixel * 2)
-        case .queryowl:
-            // Subtle paired brow tufts follow the existing head contour.
-            block(x: left + pixel, y: top, width: pixel * 2, height: pixel * 2)
-            block(x: right - pixel * 2, y: top, width: pixel * 2, height: pixel * 2)
-        case .relayray:
-            // Small paired points extend the original fins.
-            block(x: left - pixel * 2, y: centerY, width: pixel * 3, height: pixel * 2)
-            block(x: right, y: centerY, width: pixel * 3, height: pixel * 2)
-        case .stackfox:
-            // A compact branch at the tail base suggests a second tail.
-            block(x: right - pixel, y: bottom + pixel * 2, width: pixel * 3, height: pixel * 2)
-            block(x: right + pixel, y: bottom + pixel * 3, width: pixel * 3, height: pixel * 3)
-        }
-    }
-
-    private static func color(from hex: String?) -> CGColor? {
+    private static func rgb(from hex: String?) -> (red: UInt8, green: UInt8, blue: UInt8)? {
         guard var hex else { return nil }
         if hex.hasPrefix("#") { hex.removeFirst() }
         guard hex.count == 6, let value = UInt32(hex, radix: 16) else {
             return nil
         }
-        return CGColor(
-            red: CGFloat((value >> 16) & 0xFF) / 255,
-            green: CGFloat((value >> 8) & 0xFF) / 255,
-            blue: CGFloat(value & 0xFF) / 255,
-            alpha: 1)
+        return (
+            UInt8((value >> 16) & 0xFF),
+            UInt8((value >> 8) & 0xFF),
+            UInt8(value & 0xFF))
     }
 
     private func manifest(

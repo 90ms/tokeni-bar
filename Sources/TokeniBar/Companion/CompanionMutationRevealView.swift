@@ -22,23 +22,15 @@ struct CompanionMutationRevealView: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
 
-            ZStack {
-                CompanionMutationDecoration(
-                    mutationID: self.reveal.mutationID,
-                    dimension: 150,
-                    animationsEnabled: self.animationsEnabled,
-                    motionIntensity: 1)
-                ByteBotSpriteView(
-                    speciesID: self.reveal.speciesID,
-                    stage: .hatchling,
-                    rarity: .normal,
-                    behavior: .celebrate,
-                    dimension: 150,
-                    animationsEnabled: self.animationsEnabled)
-            }
-            .frame(
-                width: CompanionMutationDecoration.displayDimension(for: 150),
-                height: CompanionMutationDecoration.displayDimension(for: 150))
+            ByteBotSpriteView(
+                speciesID: self.reveal.speciesID,
+                stage: .hatchling,
+                rarity: .normal,
+                variantID: .mutated,
+                behavior: .celebrate,
+                dimension: 150,
+                animationsEnabled: self.animationsEnabled)
+                .frame(width: 150, height: 150)
 
             Text(AppLocalization.string(
                 "companion.species.\(self.reveal.speciesID.rawValue).name"))
