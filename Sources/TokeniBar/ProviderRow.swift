@@ -100,6 +100,8 @@ struct ProviderRow: View {
                 HStack(spacing: 4) {
                     Image(systemName: "clock.arrow.circlepath")
                     Text(AppLocalization.string("usage.resets"))
+                    Text(reset, format: .dateTime.hour().minute())
+                    Text("·")
                     Text(reset, style: .relative)
                 }
                 .font(.caption2)

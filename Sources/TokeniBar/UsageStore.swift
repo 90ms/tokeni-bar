@@ -1700,11 +1700,6 @@ final class UsageStore: ObservableObject {
 
     var companionLevel: Int { self.companionState.level }
 
-    var companionXPIntoLevel: Int {
-        CompanionLevelCurve.standard.xpIntoLevel(
-            forXP: self.companionState.growthXP)
-    }
-
     var companionNextLevelXP: Int {
         CompanionLevelCurve.standard.xpToNextLevel(
             from: max(self.companionState.level, 1))
@@ -1824,8 +1819,25 @@ final class UsageStore: ObservableObject {
     }
 
     var companionStageProgress: Double {
-        CompanionLevelCurve.standard.progress(
-            forXP: self.companionState.growthXP)
+        self.companionGrowthProgressPresentation.progress
+    }
+
+    var companionDisplayedGrowthEnergy: Int {
+        self.companionGrowthProgressPresentation.displayedEnergy
+    }
+
+    var companionDisplayedGrowthEnergyTarget: Int {
+        CompanionGrowthProgressPresentation.targetEnergy
+    }
+
+    private var companionGrowthProgressPresentation:
+        CompanionGrowthProgressPresentation
+    {
+        CompanionGrowthProgressPresentation(
+            growthXP: self.companionState.growthXP,
+            remainderTokens: self.tokenGrowthLedgerState
+                .conversionRemainderTokens,
+            includesTokenRemainder: self.activeCompanionIsGrowthTarget)
     }
 
     var companionPrismaticPityHatches: Int {
@@ -1952,10 +1964,6 @@ final class UsageStore: ObservableObject {
         self.companionEnabled
             && self.companionOverlayEnabled
             && !self.companionDataUnavailable
-    }
-
-    var companionTodayEnergy: Int {
-        self.companionState.growthEarnedToday
     }
 
     var companionTodayTokens: Int64 {

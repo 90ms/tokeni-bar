@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MenuPopoverView: View {
     @ObservedObject var store: UsageStore
+    @ObservedObject var caffeineController: CaffeineController
     @Environment(\.openSettings) private var openSettings
     @Environment(\.openWindow) private var openWindow
 
@@ -156,6 +157,28 @@ struct MenuPopoverView: View {
             .buttonStyle(.plain)
 
             Spacer()
+
+            Button {
+                self.caffeineController.toggle()
+            } label: {
+                Image(systemName: self.caffeineController.isEnabled
+                    ? "cup.and.saucer.fill"
+                    : "cup.and.saucer")
+                    .foregroundStyle(
+                        self.caffeineController.isEnabled
+                            ? Color.orange
+                            : Color.primary)
+            }
+            .buttonStyle(.borderless)
+            .tokeniIconButtonTarget()
+            .help(AppLocalization.string(
+                self.caffeineController.isEnabled
+                    ? "caffeine.disable"
+                    : "caffeine.enable"))
+            .accessibilityLabel(AppLocalization.string(
+                self.caffeineController.isEnabled
+                    ? "caffeine.disable"
+                    : "caffeine.enable"))
 
             Button {
                 self.openSettings()

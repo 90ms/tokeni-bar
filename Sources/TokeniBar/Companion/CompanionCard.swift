@@ -4,7 +4,7 @@ import TokeniCore
 
 struct CompanionCard: View {
     @ObservedObject var store: UsageStore
-    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
     var compact = false
 
     var body: some View {
@@ -90,7 +90,7 @@ struct CompanionCard: View {
                 Spacer(minLength: 4)
 
                 Button {
-                    self.openCompanionCollection()
+                    self.openCompanionSettings()
                 } label: {
                     Image(systemName: "square.grid.3x3.fill")
                 }
@@ -149,15 +149,16 @@ struct CompanionCard: View {
                                 "companion.level.maximum")
                             : AppLocalization.format(
                                 "companion.level.progress",
-                                self.store.companionXPIntoLevel,
-                                self.store.companionNextLevelXP))
+                                self.store.companionDisplayedGrowthEnergy,
+                                self.store.companionDisplayedGrowthEnergyTarget))
                     }
 
                     Spacer()
 
                     Text(AppLocalization.format(
-                        "companion.today.short",
-                        self.store.companionTodayEnergy))
+                        "companion.today.tokens.short",
+                        self.store.companionTodayTokens.formatted(
+                            .number.notation(.compactName))))
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -204,8 +205,8 @@ struct CompanionCard: View {
                                 "companion.progress.accessibility.label"))
                             .accessibilityValue(AppLocalization.format(
                                 "companion.progress.accessibility.value",
-                                self.store.companionXPIntoLevel,
-                                self.store.companionNextLevelXP))
+                                self.store.companionDisplayedGrowthEnergy,
+                                self.store.companionDisplayedGrowthEnergyTarget))
                         if let evolutionLevel = self.store
                             .companionNextEvolutionLevel
                         {
@@ -316,7 +317,7 @@ struct CompanionCard: View {
                 .disabled(!self.store.canPerformCompanionAction)
             case .adult:
                 Button {
-                    self.openCompanionCollection()
+                    self.openCompanionSettings()
                 } label: {
                     Label(
                         AppLocalization.string("companion.collection.open"),
@@ -337,11 +338,14 @@ struct CompanionCard: View {
             .background(.quaternary, in: Capsule())
     }
 
-    private func openCompanionCollection() {
-        self.openWindow(id: "companion-collection")
+    private func openCompanionSettings() {
+        self.openSettings()
         Task { @MainActor in
             await Task.yield()
             NSApplication.shared.activate(ignoringOtherApps: true)
+            NotificationCenter.default.post(
+                name: .openCompanionSettings,
+                object: nil)
         }
     }
 

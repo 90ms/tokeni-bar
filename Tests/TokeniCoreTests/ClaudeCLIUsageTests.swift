@@ -297,6 +297,43 @@ struct ClaudeCLIUsageTests {
     }
 
     @Test
+    func parsesDecoratedWindowsAndRelativeResetCountdowns() throws {
+        let fixture = try #require(Bundle.module.url(
+            forResource: "claude-cli-usage-relative-reset",
+            withExtension: "json",
+            subdirectory: "Fixtures"))
+        let data = try Data(contentsOf: fixture)
+        let timeZone = try #require(TimeZone(identifier: "Asia/Seoul"))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let now = try #require(calendar.date(from: DateComponents(
+            timeZone: timeZone,
+            year: 2026,
+            month: 8,
+            day: 28,
+            hour: 12)))
+
+        let response = try ClaudeCLIUsageParser.parse(
+            data,
+            now: now,
+            timeZone: timeZone)
+        let session = try #require(response.quotaWindows.first)
+        let weekly = try #require(response.quotaWindows.dropFirst().first)
+        let expectedSessionReset = try #require(calendar.date(
+            byAdding: DateComponents(hour: 3, minute: 45),
+            to: now))
+        let expectedWeeklyReset = try #require(calendar.date(from: DateComponents(
+            timeZone: timeZone,
+            year: 2026,
+            month: 9,
+            day: 1,
+            hour: 0)))
+
+        #expect(session.resetsAt == expectedSessionReset)
+        #expect(weekly.resetsAt == expectedWeeklyReset)
+    }
+
+    @Test
     func backsOffRepeatedCLIFailuresUntilTheRetryWindowExpires() async {
         let cache = ClaudeCLIUsageCache()
         let now = Date(timeIntervalSince1970: 2_000_000_000)

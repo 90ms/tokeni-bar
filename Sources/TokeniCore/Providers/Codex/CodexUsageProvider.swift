@@ -66,10 +66,7 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
             let accountTokenUsageResult = accountTokenUsageFetch.result
             let accountTokenUsage = self.accountTokenUsage(from: accountTokenUsageResult)
             let growthObservation = self.growthObservation(
-                todayUsage: todayUsage,
-                accountUsage: accountTokenUsage,
-                accountObservedAt: accountTokenUsageResult?.fetchedAt,
-                localUsage: latestLocalUsage)
+                todayUsage: todayUsage)
             let accountUsage = result.response
             let plan = accountUsage.planType?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -151,10 +148,7 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
         let errorMessage = (accountError as? LocalizedError)?.errorDescription
         let accountTokenUsage = self.accountTokenUsage(from: accountTokenUsageResult)
         let growthObservation = self.growthObservation(
-            todayUsage: todayUsage,
-            accountUsage: accountTokenUsage,
-            accountObservedAt: accountTokenUsageResult?.fetchedAt,
-            localUsage: latestLocalUsage)
+            todayUsage: todayUsage)
         if latestLocalUsage != nil || todayUsage != nil || accountTokenUsage != nil {
             return .init(
                 descriptor: self.descriptor,
@@ -235,38 +229,17 @@ public struct CodexUsageProvider: UsageProviding, UsageActivityProviding,
             lifetimeTokens: lifetimeTokens)
     }
 
-    func growthObservation(
-        todayUsage: CodexTodayUsage? = nil,
-        accountUsage: AccountTokenUsageSummary?,
-        accountObservedAt: Date?,
-        localUsage: CodexParsedUsage?) -> GrowthUsageObservation?
+    func growthObservation(todayUsage: CodexTodayUsage?)
+        -> GrowthUsageObservation?
     {
-        if let todayUsage {
-            return .daily(
-                providerID: .codex,
-                dateKey: GrowthLocalDate.key(
-                    for: todayUsage.observedAt,
-                    calendar: self.calendar),
-                totalTokens: todayUsage.tokenUsage.totalTokens,
-                observedAt: todayUsage.observedAt)
-        }
-        if let accountUsage,
-           let latestBucketDate = accountUsage.latestBucketDate,
-           let latestDailyTokens = accountUsage.latestDailyTokens
-        {
-            return .daily(
-                providerID: .codex,
-                dateKey: latestBucketDate,
-                totalTokens: latestDailyTokens,
-                observedAt: accountObservedAt ?? .now)
-        }
-        guard let localUsage else { return nil }
-        return GrowthUsageObservation(
+        guard let todayUsage else { return nil }
+        return .daily(
             providerID: .codex,
-            scope: .session,
-            scopeID: localUsage.sessionID,
-            totalTokens: localUsage.tokenUsage.totalTokens,
-            observedAt: localUsage.timestamp ?? .now)
+            dateKey: GrowthLocalDate.key(
+                for: todayUsage.observedAt,
+                calendar: self.calendar),
+            totalTokens: todayUsage.tokenUsage.totalTokens,
+            observedAt: todayUsage.observedAt)
     }
 }
 

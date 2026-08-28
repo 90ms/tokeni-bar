@@ -32,6 +32,11 @@ target. Only when every owned pet is level 100 does the current target convert
 every 100,000 verified tokens into 10 Star Shards. Progress toward the next
 conversion is preserved per pet, and booster multipliers do not apply.
 
+Visible next-level progress maps each level's actual XP interval to 0–100
+Growth Energy. For example, one XP appears as 25 Growth Energy when that level
+requires four XP. Verified remainder below one XP advances only the growth
+target's bar; internal XP and level rules do not change.
+
 The displayed companion and growth target can be selected independently, but
 automatic rotation takes priority while an unfinished owned pet remains.
 At level 100, the on-screen form can be switched among Hatchling, Junior, and
@@ -107,7 +112,7 @@ idle, working, waiting, warning, celebrate, and sleep animations. Mutation-only
 and level-100 speech actions remain in collection details. The menu popover has
 no separate max-level talk button.
 
-In Settings, the **Pets** screen combines the current companion, growth status,
+Without a separate manager window, **Settings → Tokeni → Pets** combines the current companion, growth status,
 Collection, and Owned sections. Collection shows every species in separate
 Generation 1 and Generation 2 sections without a search or generation filter.
 Owned can still be narrowed with **View by pet**.
