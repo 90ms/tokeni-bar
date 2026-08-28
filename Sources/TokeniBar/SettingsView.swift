@@ -13,9 +13,11 @@ private enum SettingsTab: Hashable {
 
 struct SettingsView: View {
     @ObservedObject var store: UsageStore
+    @ObservedObject var caffeineController: CaffeineController
     @Environment(\.openWindow) private var openWindow
     @State private var selectedTab = SettingsTab.general
     @State private var showsNotificationDiagnostics = false
+    @State private var showsCompanionPreferences = false
 
     var body: some View {
         TabView(selection: self.$selectedTab) {
@@ -59,111 +61,153 @@ struct SettingsView: View {
                         systemImage: "hand.raised")
                 }
         }
-        .frame(width: 560, height: 520)
+        .frame(width: 680, height: 700)
         .padding()
         .onReceive(NotificationCenter.default.publisher(
             for: .openNotificationSettings))
         { _ in
             self.selectedTab = .notifications
         }
+        .onReceive(NotificationCenter.default.publisher(
+            for: .openCompanionSettings))
+        { _ in
+            self.selectedTab = .companion
+            self.showsCompanionPreferences = false
+        }
     }
 
     private var companionTab: some View {
-        Form {
-            Section(AppLocalization.string("settings.companion.title")) {
-                Toggle(isOn: Binding(
-                    get: { self.store.companionEnabled },
-                    set: { self.store.setCompanionEnabled($0) }))
-                {
-                    Text(AppLocalization.string("settings.companion.enabled"))
-                }
-
-                if self.store.companionEnabled {
-                    Picker(
-                        AppLocalization.string(
-                            "settings.companion.animationIntensity"),
-                        selection: Binding(
-                            get: {
-                                self.store.companionAnimationIntensity
-                            },
-                            set: {
-                                self.store.setCompanionAnimationIntensity($0)
-                            }))
-                    {
-                        ForEach(CompanionAnimationIntensity.allCases) {
-                            intensity in
-                            Text(intensity.localizedName)
-                                .tag(intensity)
-                        }
-                    }
-                    Text(AppLocalization.string("settings.companion.motion"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Toggle(isOn: Binding(
-                        get: { self.store.companionOverlayEnabled },
-                        set: { self.store.setCompanionOverlayEnabled($0) }))
-                    {
-                        Text(AppLocalization.string("settings.companion.overlay"))
-                    }
-                    Text(AppLocalization.string("settings.companion.overlay.description"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    if self.store.companionOverlayEnabled {
-                        Picker(
-                            AppLocalization.string("settings.companion.overlay.size"),
-                            selection: Binding(
-                                get: { self.store.companionOverlaySize },
-                                set: { self.store.setCompanionOverlaySize($0) }))
+        VStack(spacing: 0) {
+            DisclosureGroup(
+                AppLocalization.string("settings.companion.preferences"),
+                isExpanded: self.$showsCompanionPreferences)
+            {
+                Form {
+                    Section(AppLocalization.string("settings.companion.title")) {
+                        Toggle(isOn: Binding(
+                            get: { self.store.companionEnabled },
+                            set: { self.store.setCompanionEnabled($0) }))
                         {
-                            ForEach(CompanionOverlaySize.allCases) { size in
-                                Text(size.localizedName).tag(size)
+                            Text(AppLocalization.string(
+                                "settings.companion.enabled"))
+                        }
+
+                        if self.store.companionEnabled {
+                            Picker(
+                                AppLocalization.string(
+                                    "settings.companion.animationIntensity"),
+                                selection: Binding(
+                                    get: {
+                                        self.store.companionAnimationIntensity
+                                    },
+                                    set: {
+                                        self.store
+                                            .setCompanionAnimationIntensity($0)
+                                    }))
+                            {
+                                ForEach(CompanionAnimationIntensity.allCases) {
+                                    intensity in
+                                    Text(intensity.localizedName)
+                                        .tag(intensity)
+                                }
+                            }
+                            Text(AppLocalization.string(
+                                "settings.companion.motion"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Toggle(isOn: Binding(
+                                get: { self.store.companionOverlayEnabled },
+                                set: {
+                                    self.store.setCompanionOverlayEnabled($0)
+                                }))
+                            {
+                                Text(AppLocalization.string(
+                                    "settings.companion.overlay"))
+                            }
+                            Text(AppLocalization.string(
+                                "settings.companion.overlay.description"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            if self.store.companionOverlayEnabled {
+                                Picker(
+                                    AppLocalization.string(
+                                        "settings.companion.overlay.size"),
+                                    selection: Binding(
+                                        get: {
+                                            self.store.companionOverlaySize
+                                        },
+                                        set: {
+                                            self.store
+                                                .setCompanionOverlaySize($0)
+                                        }))
+                                {
+                                    ForEach(CompanionOverlaySize.allCases) {
+                                        size in
+                                        Text(size.localizedName).tag(size)
+                                    }
+                                }
+
+                                Toggle(isOn: Binding(
+                                    get: {
+                                        self.store
+                                            .companionOverlayPositionLocked
+                                    },
+                                    set: {
+                                        self.store
+                                            .setCompanionOverlayPositionLocked($0)
+                                    }))
+                                {
+                                    Text(AppLocalization.string(
+                                        "settings.companion.overlay.positionLocked"))
+                                }
+
+                                Toggle(isOn: Binding(
+                                    get: {
+                                        self.store
+                                            .companionOverlayClickThroughEnabled
+                                    },
+                                    set: {
+                                        self.store
+                                            .setCompanionOverlayClickThroughEnabled($0)
+                                    }))
+                                {
+                                    Text(AppLocalization.string(
+                                        "settings.companion.overlay.clickThrough"))
+                                }
+                                Text(AppLocalization.string(
+                                    "settings.companion.overlay.clickThrough.description"))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                Button(AppLocalization.string(
+                                    "settings.companion.overlay.resetPosition"))
+                                {
+                                    self.store.resetCompanionOverlayPosition()
+                                }
                             }
                         }
-
-                        Toggle(isOn: Binding(
-                            get: { self.store.companionOverlayPositionLocked },
-                            set: { self.store.setCompanionOverlayPositionLocked($0) }))
-                        {
-                            Text(AppLocalization.string(
-                                "settings.companion.overlay.positionLocked"))
-                        }
-
-                        Toggle(isOn: Binding(
-                            get: {
-                                self.store.companionOverlayClickThroughEnabled
-                            },
-                            set: {
-                                self.store.setCompanionOverlayClickThroughEnabled($0)
-                            }))
-                        {
-                            Text(AppLocalization.string(
-                                "settings.companion.overlay.clickThrough"))
-                        }
-                        Text(AppLocalization.string(
-                            "settings.companion.overlay.clickThrough.description"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Button(AppLocalization.string(
-                            "settings.companion.overlay.resetPosition"))
-                        {
-                            self.store.resetCompanionOverlayPosition()
-                        }
-                    }
-
-                    Button(AppLocalization.string("companion.collection.open")) {
-                        self.openWindow(id: "companion-collection")
-                        Task { @MainActor in
-                            await Task.yield()
-                            NSApplication.shared.activate(ignoringOtherApps: true)
-                        }
                     }
                 }
+                .formStyle(.grouped)
+                .frame(height: 300)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+
+            if self.store.companionEnabled {
+                Divider()
+                CompanionCollectionView(store: self.store)
+            } else {
+                ContentUnavailableView(
+                    AppLocalization.string("settings.companion.disabled.title"),
+                    systemImage: "pawprint",
+                    description: Text(AppLocalization.string(
+                        "settings.companion.disabled.description")))
+                    .frame(maxHeight: .infinity)
             }
         }
-        .formStyle(.grouped)
     }
 
     private var generalTab: some View {
@@ -284,6 +328,34 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            Section(AppLocalization.string("settings.caffeine.title")) {
+                Toggle(isOn: Binding(
+                    get: { self.caffeineController.isEnabled },
+                    set: { self.caffeineController.setEnabled($0) }))
+                {
+                    Text(AppLocalization.string("settings.caffeine.enabled"))
+                }
+                Text(AppLocalization.string("settings.caffeine.description"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle(isOn: Binding(
+                    get: {
+                        self.caffeineController.preventsDisplaySleep
+                    },
+                    set: {
+                        self.caffeineController.setPreventsDisplaySleep($0)
+                    }))
+                {
+                    Text(AppLocalization.string(
+                        "settings.caffeine.preventDisplaySleep"))
+                }
+                Text(AppLocalization.string(
+                    "settings.caffeine.preventDisplaySleep.description"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section(AppLocalization.string("settings.updates.title")) {

@@ -204,7 +204,9 @@ enum ClaudeCLIUsageParser {
 
     private static func windowDescriptor(in line: String) -> WindowDescriptor?
     {
-        let normalized = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = line.trimmingCharacters(
+            in: .whitespacesAndNewlines.union(
+                CharacterSet(charactersIn: "#*-•>`")))
         let lowercased = normalized.lowercased()
 
         if lowercased.hasPrefix("current session") {
@@ -273,6 +275,10 @@ enum ClaudeCLIUsageParser {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = resetTimeZone
 
+        if let interval = self.relativeResetInterval(from: normalized) {
+            return now.addingTimeInterval(interval)
+        }
+
         let dateFormats = [
             "yyyy MMM d, h:mma",
             "yyyy MMM d, ha",
@@ -290,6 +296,18 @@ enum ClaudeCLIUsageParser {
             "MMM d ha",
             "MMM d h:mm a",
             "MMM d h a",
+            "MMM d, yyyy, h:mma",
+            "MMM d, yyyy, ha",
+            "MMM d, yyyy, h:mm a",
+            "MMM d, yyyy, h a",
+            "MMM d, yyyy h:mma",
+            "MMM d, yyyy ha",
+            "MMM d, yyyy h:mm a",
+            "MMM d, yyyy h a",
+            "MMM d yyyy h:mma",
+            "MMM d yyyy ha",
+            "MMM d yyyy h:mm a",
+            "MMM d yyyy h a",
         ]
         if let date = self.date(
             from: normalized,
@@ -343,9 +361,34 @@ enum ClaudeCLIUsageParser {
         text
             .replacingOccurrences(of: "\u{00A0}", with: " ")
             .replacingOccurrences(of: "\u{202F}", with: " ")
+            .replacingOccurrences(of: " at ", with: " ", options: .caseInsensitive)
             .replacingOccurrences(of: "am", with: "AM", options: .caseInsensitive)
             .replacingOccurrences(of: "pm", with: "PM", options: .caseInsensitive)
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func relativeResetInterval(from text: String) -> TimeInterval? {
+        let lowercased = text.lowercased()
+        guard lowercased.hasPrefix("in ") else { return nil }
+
+        let pattern = #"([0-9]+(?:\.[0-9]+)?)\s*(hours?|hrs?|h|minutes?|mins?|m)\b"#
+        guard let expression = try? NSRegularExpression(pattern: pattern) else {
+            return nil
+        }
+        let range = NSRange(lowercased.startIndex..., in: lowercased)
+        let matches = expression.matches(in: lowercased, range: range)
+        guard !matches.isEmpty else { return nil }
+
+        var interval: TimeInterval = 0
+        for match in matches {
+            guard let valueRange = Range(match.range(at: 1), in: lowercased),
+                  let unitRange = Range(match.range(at: 2), in: lowercased),
+                  let value = Double(lowercased[valueRange])
+            else { return nil }
+            let unit = lowercased[unitRange]
+            interval += value * (unit.hasPrefix("h") ? 60 * 60 : 60)
+        }
+        return interval > 0 ? interval : nil
     }
 
     private static func date(

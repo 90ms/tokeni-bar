@@ -4,16 +4,19 @@
 
 ## Menu popover
 
-Each provider card shows its primary quota, remaining percentage, and reset
-time by default. Expand **Show details** for additional quota windows, token
+Each provider card shows its primary quota, remaining percentage, and both the
+local clock time and time remaining for a verified reset by default. Expand
+**Show details** for additional quota windows, token
 totals, API-equivalent reference costs, data source, and update time. The
 header and footer actions stay fixed while the center scrolls when many
 providers or expanded details need more room.
 The pet status card comes first, followed by provider usage cards. Compact
 mode keeps the same path to expanded provider details.
 
-**Usage History** in the footer opens the 30-day local aggregate window
-directly; settings and quit remain available as right-side icon actions.
+**Usage History** in the footer opens the 30-day local aggregate window directly.
+The coffee button prevents idle system sleep for the current app session; settings
+and quit remain available beside it. Selected-provider menu-bar mode saves space by
+showing only the provider brand icon and remaining percentage.
 
 ## Tokeni token-growth accounting
 
@@ -25,6 +28,11 @@ Verified increases across providers are combined after preventing replayed
 counters from paying twice. Every 600,000 tokens grant one Growth XP.
 Unconverted remainder tokens carry across dates, and refreshing the same
 cumulative value never pays twice.
+
+The current level's UI maps its internal XP interval to **0–100 Growth Energy**.
+For the growth target, verified token remainder awaiting conversion contributes
+fractional progress without changing stored XP or the level curve. The Today
+summary shows verified tokens instead of a small raw-XP number.
 
 When a booster is active, its 2x, 3x, or 5x multiplier applies to the base
 Growth XP produced by the ledger. The award creation time determines
@@ -128,9 +136,10 @@ without waiting for the account service. The account detail still shows:
 - **Lifetime**: the account-service lifetime total
 
 When a local Today total exists while the account bucket is still delayed, the
-popover says **Local usage today · account total pending**. The local daily
-observation drives growth immediately; delayed account totals remain visible
-for historical account context and are not added a second time.
+popover says **Local usage today · account total pending**. Each turn reported by
+the latest Codex log is added to the local daily observation and drives growth
+immediately. Delayed prior-day and account totals remain visible only for historical
+account context and never create growth energy.
 
 Negative, future-dated, and otherwise invalid values are discarded. If there
 is no valid daily bucket, the app leaves it unavailable instead of inventing a
@@ -166,10 +175,11 @@ non-interactive `/usage` command. Tokeni Bar never reads Claude Code's
 credential files or Keychain item, and never copies or separately persists a
 token.
 
-When the CLI reports a reset as a full date, a time-only value, or a weekday
-and time, Tokeni Bar converts it to the verified reset instant and shows the
-time remaining from now under the five-hour quota. If the CLI omits the reset
-time, Tokeni Bar leaves it unavailable instead of estimating.
+When the CLI reports a reset as a full date, a time-only value, a weekday and
+time, or a relative countdown, Tokeni Bar converts it to the verified reset
+instant and shows both local clock time and time remaining under the five-hour
+quota. If the CLI omits the reset time, Tokeni Bar leaves it unavailable instead
+of estimating.
 
 - App startup and automatic refreshes reuse the CLI's existing sign-in without
   opening a password or login prompt.

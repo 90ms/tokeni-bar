@@ -45,12 +45,13 @@ brew install --formula tokeni-bar
 
 | Area | Information |
 |---|---|
-| Menu bar | Native monochrome status icon, lowest quota, selected provider, monthly cost or pet status, and a growth-ready badge |
+| Menu bar | Native monochrome status icon, lowest quota, compact selected-provider icon and remaining percentage, monthly cost or pet status, and a growth-ready badge |
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
 | Tokeni pets | Level 100 cap, evolution appearances, a separate growth target, names, personalities, memories, behavior, and an optional desktop overlay |
 | Pet manager, eggs, and rewards | Collection details and owned roster, duplicate XP, Mutation variants, action previews, Starter Egg and Star Shard shop, level rewards, boosters, and cosmetics |
+| Caffeine | Quickly prevent idle Mac sleep from the popover and optionally keep the display awake too |
 
 Values that cannot be verified remain **unavailable** or **stale**. Quota
 percentages always mean **percent left**, and costs are API-equivalent
@@ -63,6 +64,9 @@ references—not subscription bills.
 Every 600,000 verified cumulative tokens grant one Growth XP. A remainder below
 600,000 carries across dates. Active time may change animation, but never creates
 XP.
+The next-level display always maps the current internal XP interval to **0–100
+Growth Energy**. For the growth target, verified token remainder below one XP
+also advances the bar without changing stored growth or level balance.
 
 ```text
 cumulative XP at level L = round(500 × ((L - 1) / 99) ^ 1.7)
@@ -117,9 +121,9 @@ owned-pet roster; select one pet at a time to receive Growth XP and switch at an
 time. Inactive pets can be sent to a new home for Star Shards. Their level does
 not increase resale value, and collection discoveries remain recorded.
 
-### 3. Manage the collection and owned pets
+### 3. Manage the collection and owned pets in Settings
 
-One **Pets** screen now combines the current companion, growth status, Collection,
+Without a separate pet-manager window, **Settings → Tokeni → Pets** combines the current companion, growth status, Collection,
 and Owned sections. Collection records discovered species, appearances, lifecycle
 forms, and Mutation variants; Owned lists each hatched pet with its level, name,
 personality, memories, switching, showcasing, and resale actions. In Owned, choose a
@@ -198,7 +202,9 @@ balance records.
 ## Menu bar and on-screen pet
 
 Every menu-bar display mode uses a native monochrome status icon. A red badge
-appears when an egg can be opened or a level 30 or 70 evolution is ready.
+appears when an egg can be opened or a level 30 or 70 evolution is ready. Selected
+provider mode shows only the provider brand icon and remaining percentage; the full
+name and status remain available to Help and VoiceOver.
 
 The menu popover keeps its header and history, settings, and quit actions
 fixed while the center content scrolls. The pet status card appears first,
@@ -206,6 +212,11 @@ followed by usage. Growable and max-level owned pets are separated by ordering,
 badges, and color. Each provider card leads with its primary quota and reset time;
 expand **Show details** for additional quotas, tokens, reference costs, and
 source information, including in compact mode.
+
+The coffee button in the popover footer prevents idle system sleep for the current
+app session. Under **Settings → General → Caffeine**, choose whether the display
+should stay awake as well. Caffeine starts off after relaunch to avoid unexpected
+battery use.
 
 Enable **Settings → Tokeni → Show pet on screen** to keep a transparent pet
 panel above other apps.
@@ -224,7 +235,7 @@ panel above other apps.
 
 | Provider | Account quota | Token and cost display | Pet growth source |
 |---|---|---|---|
-| Codex | Weekly and model-scoped limits; reset credits | Today's local tokens and reference cost; account daily, month, and lifetime totals | Verified local total for today |
+| Codex | Weekly and model-scoped limits; reset credits | Today's local tokens and reference cost; account daily, month, and lifetime totals | Verified local increments from each turn today |
 | Claude Code | 5-hour, weekly, and model-scoped limits | Local daily tokens; cache-aware reference cost | Confirmed daily total |
 | GitHub Copilot | Not available | Today's tokens from OTel or completed local CLI sessions | Confirmed daily total |
 | Cline | Not available | Today's tokens and recorded cost from local VS Code-family tasks | Confirmed daily total |

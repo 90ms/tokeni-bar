@@ -1570,12 +1570,12 @@ struct CompanionCollectionView: View {
                                 "companion.progress.accessibility.label"))
                             .accessibilityValue(AppLocalization.format(
                                 "companion.progress.accessibility.value",
-                                self.store.companionXPIntoLevel,
-                                self.store.companionNextLevelXP))
+                                self.store.companionDisplayedGrowthEnergy,
+                                self.store.companionDisplayedGrowthEnergyTarget))
                         Text(AppLocalization.format(
                             "companion.level.progress",
-                            self.store.companionXPIntoLevel,
-                            self.store.companionNextLevelXP))
+                            self.store.companionDisplayedGrowthEnergy,
+                            self.store.companionDisplayedGrowthEnergyTarget))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

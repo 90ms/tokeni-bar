@@ -1,14 +1,18 @@
 import AppKit
+import TokeniCore
 import SwiftUI
 
 @main
 struct TokeniBarApp: App {
     @StateObject private var store = UsageStore()
     @StateObject private var companionOverlayController = CompanionOverlayController()
+    @StateObject private var caffeineController = CaffeineController()
 
     var body: some Scene {
         MenuBarExtra {
-            MenuPopoverView(store: self.store)
+            MenuPopoverView(
+                store: self.store,
+                caffeineController: self.caffeineController)
         } label: {
             self.menuBarLabel
                 .onAppear {
@@ -46,7 +50,9 @@ struct TokeniBarApp: App {
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView(store: self.store)
+            SettingsView(
+                store: self.store,
+                caffeineController: self.caffeineController)
                 .background(WindowFocusView())
         }
 
@@ -59,12 +65,6 @@ struct TokeniBarApp: App {
             DiagnosticsView(store: self.store)
         }
         .defaultSize(width: 680, height: 480)
-
-        Window(AppLocalization.string("companion.collection.window"), id: "companion-collection") {
-            CompanionCollectionView(store: self.store)
-                .background(WindowFocusView())
-        }
-        .defaultSize(width: 620, height: 720)
     }
 
     @ViewBuilder
@@ -101,20 +101,39 @@ struct TokeniBarApp: App {
             }
         case .selectedProvider:
             let remaining = self.store.selectedMenuBarProviderRemainingPercent
-            MenuBarStatusIcon(
-                systemName: self.menuBarIcon(for: remaining),
-                isActive: self.store.activityAnimationsEnabled
-                    && self.store.isActive(self.store.selectedMenuBarProviderID),
-                animationPulse: self.store.activityAnimationPulse,
-                showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
-            if let provider = self.store.selectedMenuBarProvider, let remaining {
-                Text(AppLocalization.format(
-                    "app.menuProviderRemaining",
-                    provider.shortName,
-                    Int(remaining.rounded())))
-            } else if let provider = self.store.selectedMenuBarProvider {
-                Text(AppLocalization.format("app.menuProviderUnavailable", provider.shortName))
+            if let provider = self.store.selectedMenuBarProvider {
+                HStack(spacing: 3) {
+                    MenuBarStatusIcon(
+                        systemName: self.menuBarIcon(for: remaining),
+                        provider: provider,
+                        isActive: self.store.activityAnimationsEnabled
+                            && self.store.isActive(
+                                self.store.selectedMenuBarProviderID),
+                        animationPulse: self.store.activityAnimationPulse,
+                        showsCompanionBadge: self.store
+                            .hasReadyCompanionGrowthAction)
+                    if let remaining {
+                        Text(AppLocalization.format(
+                            "app.menuProviderPercent",
+                            Int(remaining.rounded())))
+                    } else {
+                        Text(AppLocalization.string(
+                            "app.menuProviderPercentUnavailable"))
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(self.selectedProviderAccessibilityLabel(
+                    provider: provider,
+                    remaining: remaining))
+                .help(self.selectedProviderAccessibilityLabel(
+                    provider: provider,
+                    remaining: remaining))
             } else {
+                MenuBarStatusIcon(
+                    systemName: "chart.bar.xaxis",
+                    isActive: false,
+                    animationPulse: self.store.activityAnimationPulse,
+                    showsCompanionBadge: self.store.hasReadyCompanionGrowthAction)
                 Text(AppLocalization.string("app.menuName"))
             }
         case .tokeni:
@@ -140,6 +159,21 @@ struct TokeniBarApp: App {
     private func menuBarIcon(for remaining: Double?) -> String {
         guard let remaining else { return "chart.bar.xaxis" }
         return remaining < 10 ? "exclamationmark.triangle.fill" : "chart.bar.xaxis"
+    }
+
+    private func selectedProviderAccessibilityLabel(
+        provider: ProviderDescriptor,
+        remaining: Double?) -> String
+    {
+        guard let remaining else {
+            return AppLocalization.format(
+                "app.menuProviderUnavailable",
+                provider.shortName)
+        }
+        return AppLocalization.format(
+            "app.menuProviderRemaining",
+            provider.shortName,
+            Int(remaining.rounded()))
     }
 }
 
@@ -167,6 +201,7 @@ private final class WindowFocusNSView: NSView {
 private struct MenuBarStatusIcon: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let systemName: String
+    var provider: ProviderDescriptor? = nil
     let isActive: Bool
     let animationPulse: Int
     let showsCompanionBadge: Bool
@@ -174,11 +209,22 @@ private struct MenuBarStatusIcon: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Group {
-                if self.isActive, !self.reduceMotion {
+                if let provider = self.provider {
+                    ProviderIcon(descriptor: provider)
+                        .symbolEffect(
+                            .pulse,
+                            value: self.isActive && !self.reduceMotion
+                                ? self.animationPulse
+                                : 0)
+                } else if self.isActive, !self.reduceMotion {
                     Image(systemName: "waveform")
                         .symbolEffect(.pulse, value: self.animationPulse)
                 } else {
-                    Image(systemName: self.isActive ? "waveform" : self.systemName)
+                    if self.isActive {
+                        Image(systemName: "waveform")
+                    } else {
+                        Image(systemName: self.systemName)
+                    }
                 }
             }
             .frame(width: 15, height: 15)

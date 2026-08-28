@@ -36,18 +36,21 @@ Canonical repository: https://github.com/90ms/tokeni-bar
 
 - Growth is provider-neutral and derives only from verified cumulative token
   observations. Active minutes affect presentation, never growth.
-- One action energy is awarded per 50,000 verified tokens. Sub-threshold
-  remainders and unspent energy carry forward.
+- One Growth XP is awarded per 600,000 verified tokens. Sub-threshold token
+  remainder carries across dates, while next-level UI normalizes each internal
+  XP interval to 0–100 Growth Energy.
+- The initial maximum is level 100 at 500 cumulative XP. Evolution is manual at
+  levels 30 and 70 and does not spend XP.
 - The menu popover always shows the companion card; it is not collapsible.
-- Bond levels 2 through 5 grant one-time, per-generation rewards: a 2x
-  30-minute booster, a 3x 20-minute booster, Firefly Aura, and a 5x 10-minute
-  booster plus Orbit Aura.
-- A timed booster multiplies only newly awarded base action energy. Only one
-  booster can be active.
-- Cosmetic slots are Aura, Background, and Body Color. There is no Head slot.
-- Refund, asset-reset, and companion migration-reserve features are not part of
-  the current product. Legacy Azure and Legacy Violet are names of current
-  body-color assets.
+- Companion management, collection, eggs, rewards, and cosmetics are combined
+  under Settings → Tokeni instead of opening a separate manager window.
+- Levels 5, 10, 20, and 25 grant one-time boosters or cosmetics. Later level
+  milestones grant Star Shards, and one timed booster can multiply only newly
+  verified base Growth XP.
+- Cosmetic slots are Aura, Background, Palette, Ground, Sidekick, Frame, and
+  Scene. Legacy Body Color and Ground selections migrate to current items.
+- The macOS menu popover has a session-only Caffeine toggle for preventing idle
+  system sleep; display-sleep prevention is an optional persisted preference.
 - Companion state never contains provider names, token totals, prompts,
   responses, or credentials.
 

@@ -118,7 +118,8 @@ enum CodexTodayLogParser {
             }
             guard event.type == "event_msg",
                   event.payload?.type == "token_count",
-                  let current = event.payload?.info?.totalTokenUsage
+                  let info = event.payload?.info,
+                  let current = info.totalTokenUsage
             else { return }
 
             defer { previousUsage = current }
@@ -127,7 +128,22 @@ enum CodexTodayLogParser {
             observedAt = max(observedAt, timestamp)
 
             let delta: TokenBreakdown
-            if let previousUsage {
+            if let lastUsage = info.lastTokenUsage,
+               lastUsage.totalTokens > 0,
+               current.isAtLeast(lastUsage)
+            {
+                if let previousUsage,
+                   current.hasSameCounters(as: previousUsage)
+                {
+                    return
+                }
+                if let previousUsage,
+                   !current.isAtLeast(previousUsage)
+                {
+                    return
+                }
+                delta = lastUsage
+            } else if let previousUsage {
                 guard current.isAtLeast(previousUsage) else { return }
                 delta = current.subtracting(previousUsage)
             } else if !sawEventBeforeStart {
@@ -205,9 +221,11 @@ enum CodexTodayLogParser {
         }
 
         struct Info: Decodable {
+            let lastTokenUsage: TokenBreakdown?
             let totalTokenUsage: TokenBreakdown?
 
             enum CodingKeys: String, CodingKey {
+                case lastTokenUsage = "last_token_usage"
                 case totalTokenUsage = "total_token_usage"
             }
         }
@@ -234,6 +252,14 @@ enum CodexTodayLogParser {
                 && self.outputTokens >= other.outputTokens
                 && self.reasoningOutputTokens >= other.reasoningOutputTokens
                 && self.totalTokens >= other.totalTokens
+        }
+
+        func hasSameCounters(as other: Self) -> Bool {
+            self.inputTokens == other.inputTokens
+                && self.cachedInputTokens == other.cachedInputTokens
+                && self.outputTokens == other.outputTokens
+                && self.reasoningOutputTokens == other.reasoningOutputTokens
+                && self.totalTokens == other.totalTokens
         }
 
         func subtracting(_ other: Self) -> Self {

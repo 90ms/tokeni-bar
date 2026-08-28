@@ -39,6 +39,24 @@ struct DailyProviderParserTests {
         #expect(combined.sessionCount == direct.sessionCount)
     }
 
+    @Test("Codex counts the first live turn after midnight")
+    func codexLiveTurnUsage() throws {
+        let file = try self.fixture(
+            "codex-today-live",
+            fileExtension: "jsonl")
+        let start = try #require(TimestampParser.parse(
+            "2026-08-28T00:00:00Z"))
+        let aggregate = try #require(
+            CodexTodayLogParser.aggregate(files: [file], since: start))
+
+        #expect(aggregate.tokenUsage.inputTokens == 210)
+        #expect(aggregate.tokenUsage.cachedInputTokens == 70)
+        #expect(aggregate.tokenUsage.outputTokens == 100)
+        #expect(aggregate.tokenUsage.reasoningTokens == 30)
+        #expect(aggregate.tokenUsage.totalTokens == 400)
+        #expect(aggregate.sessionCount == 1)
+    }
+
     @Test("Grok Build counts complete turns once and trusts complete recorded cost")
     func grokToday() throws {
         let file = try self.fixture("grok-updates", fileExtension: "jsonl")
