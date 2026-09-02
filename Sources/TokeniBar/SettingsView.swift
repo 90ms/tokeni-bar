@@ -17,7 +17,6 @@ struct SettingsView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var selectedTab = SettingsTab.general
     @State private var showsNotificationDiagnostics = false
-    @State private var showsCompanionPreferences = false
 
     var body: some View {
         TabView(selection: self.$selectedTab) {
@@ -68,22 +67,11 @@ struct SettingsView: View {
         { _ in
             self.selectedTab = .notifications
         }
-        .onReceive(NotificationCenter.default.publisher(
-            for: .openCompanionSettings))
-        { _ in
-            self.selectedTab = .companion
-            self.showsCompanionPreferences = false
-        }
     }
 
     private var companionTab: some View {
-        VStack(spacing: 0) {
-            DisclosureGroup(
-                AppLocalization.string("settings.companion.preferences"),
-                isExpanded: self.$showsCompanionPreferences)
-            {
-                Form {
-                    Section(AppLocalization.string("settings.companion.title")) {
+        Form {
+            Section(AppLocalization.string("settings.companion.title")) {
                         Toggle(isOn: Binding(
                             get: { self.store.companionEnabled },
                             set: { self.store.setCompanionEnabled($0) }))
@@ -188,26 +176,9 @@ struct SettingsView: View {
                                 }
                             }
                         }
-                    }
-                }
-                .formStyle(.grouped)
-                .frame(height: 300)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-
-            if self.store.companionEnabled {
-                Divider()
-                CompanionCollectionView(store: self.store)
-            } else {
-                ContentUnavailableView(
-                    AppLocalization.string("settings.companion.disabled.title"),
-                    systemImage: "pawprint",
-                    description: Text(AppLocalization.string(
-                        "settings.companion.disabled.description")))
-                    .frame(maxHeight: .infinity)
             }
         }
+        .formStyle(.grouped)
     }
 
     private var generalTab: some View {

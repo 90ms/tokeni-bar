@@ -18,7 +18,9 @@ PR을 검증하고 병합해야 Formula와 Cask 배포가 완료됩니다.
 swift test
 swift build
 Scripts/validate_companion_assets.sh
+Scripts/validate_localizations.sh
 Tests/Scripts/ReleaseNotesTests.sh
+Tests/Scripts/GitHubWorkflowTests.sh
 git diff --check
 ```
 
@@ -29,9 +31,15 @@ git diff --check
 ## 2. PR과 main 검증
 
 1. 기능 브랜치에 의도한 파일만 커밋하고 푸시합니다.
-2. PR CI의 Swift 테스트, 릴리스 노트, 앱 빌드와 번들 검증이 모두 성공한 뒤
-   병합합니다.
-3. 병합 커밋에서 새로 시작된 `main` CI가 성공할 때까지 태그를 만들지 않습니다.
+2. PR의 `macOS required gate`와 `Windows required gate`가 모두 성공한 뒤
+   병합합니다. 변경 범위에 해당하는 플랫폼 작업이 생략되더라도 두 게이트 이름은
+   항상 표시되며, 저장소 계약 검사는 릴리스 조각·워크플로·영한 번역 키와 포맷을
+   검사합니다.
+3. macOS 대상 변경에서는 Swift 테스트, release 빌드, 앱 패키징, 번들 메타데이터와
+   패키징된 실행 파일 스모크 테스트가 모두 성공했는지 확인합니다. Windows 대상
+   변경에서는 Swift 테스트, native 상태 머신, portable 패키징, 자산 검사와 압축 해제
+   실행 스모크 테스트를 확인합니다.
+4. 병합 커밋에서 새로 시작된 `main` CI가 성공할 때까지 태그를 만들지 않습니다.
 
 ## 3. 릴리스 노트와 태그
 
@@ -64,6 +72,7 @@ git push origin v<version>
 - 게시 전에 Windows portable ZIP 빌드 및 검증
 - 태그 버전 확인 및 구조화된 한영 릴리스 노트 렌더링
 - macOS 앱 빌드와 ad-hoc 서명
+- 사용자 데이터에 접근하지 않는 패키징된 macOS 실행 파일 스모크 테스트
 - macOS와 Windows ZIP 및 각 SHA-256 생성
 - 두 archive의 GitHub 빌드 증명 생성
 - 검증된 `--notes-file`로 정식 GitHub Release 게시

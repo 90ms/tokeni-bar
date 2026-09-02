@@ -1,0 +1,2 @@
+Tests/TokeniCoreTests/Fixtures/*.base64 text eol=lf
+Tests/TokeniCoreTests/Fixtures/*.json text eol=lf

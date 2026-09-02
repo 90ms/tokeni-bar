@@ -1,11 +1,10 @@
-import AppKit
 import SwiftUI
 import TokeniCore
 
 struct CompanionCard: View {
     @ObservedObject var store: UsageStore
-    @Environment(\.openSettings) private var openSettings
     var compact = false
+    let openCollection: () -> Void
 
     var body: some View {
         if self.store.companionDataUnavailable {
@@ -39,7 +38,8 @@ struct CompanionCard: View {
             }
             HStack(alignment: .top, spacing: 10) {
                 ByteBotTransitionView(
-                        speciesID: self.store.displayedCompanionSpeciesID,
+                        speciesID: self.store
+                            .displayedCompanionAppearanceSpeciesID,
                         stage: self.store.displayedCompanionStage,
                         rarity: self.store.displayedCompanionRarity,
                         variantID: self.store.displayedCompanionVariantID,
@@ -90,7 +90,7 @@ struct CompanionCard: View {
                 Spacer(minLength: 4)
 
                 Button {
-                    self.openCompanionSettings()
+                    self.openCollection()
                 } label: {
                     Image(systemName: "square.grid.3x3.fill")
                 }
@@ -283,7 +283,7 @@ struct CompanionCard: View {
     private var primaryActionButton: some View {
         if self.store.isShowingArchivedCompanion {
             Button {
-                self.store.showcaseArchivedCompanion(nil)
+                self.store.selectPrimaryCompanion(nil)
             } label: {
                 Label(
                     AppLocalization.string("companion.archive.showCurrent"),
@@ -317,7 +317,7 @@ struct CompanionCard: View {
                 .disabled(!self.store.canPerformCompanionAction)
             case .adult:
                 Button {
-                    self.openCompanionSettings()
+                    self.openCollection()
                 } label: {
                     Label(
                         AppLocalization.string("companion.collection.open"),
@@ -336,17 +336,6 @@ struct CompanionCard: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(.quaternary, in: Capsule())
-    }
-
-    private func openCompanionSettings() {
-        self.openSettings()
-        Task { @MainActor in
-            await Task.yield()
-            NSApplication.shared.activate(ignoringOtherApps: true)
-            NotificationCenter.default.post(
-                name: .openCompanionSettings,
-                object: nil)
-        }
     }
 
     private var companionName: String {

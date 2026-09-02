@@ -5,7 +5,9 @@ import TokeniCore
 
 struct ByteBotSpriteView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @State private var lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+    @State private var isVisible = false
     let speciesID: CompanionSpeciesID?
     let stage: CompanionGameStage
     let rarity: CompanionRarity
@@ -19,9 +21,12 @@ struct ByteBotSpriteView: View {
         let animation = catalog.animation(
             for: self.speciesID,
             behavior: self.behavior)
-        let shouldAnimate = self.animationsEnabled
-            && !self.reduceMotion
-            && !self.lowPowerModeEnabled
+        let shouldAnimate = CompanionAnimationPolicy.shouldAnimate(
+            animationsEnabled: self.animationsEnabled,
+            reduceMotion: self.reduceMotion,
+            lowPowerModeEnabled: self.lowPowerModeEnabled,
+            isVisible: self.isVisible,
+            sceneIsActive: self.scenePhase == .active)
         TimelineView(.animation(
             minimumInterval: self.minimumInterval(for: animation),
             paused: !shouldAnimate))
@@ -42,6 +47,7 @@ struct ByteBotSpriteView: View {
                 Image(decorative: frame, scale: 1, orientation: .up)
                     .resizable()
                     .interpolation(.none)
+                    .scaledToFit()
                     .frame(width: self.dimension, height: self.dimension)
             } else {
                 Image(systemName: "cpu")
@@ -54,6 +60,8 @@ struct ByteBotSpriteView: View {
         }
         .frame(width: self.dimension, height: self.dimension)
         .accessibilityLabel(self.accessibilityName)
+        .onAppear { self.isVisible = true }
+        .onDisappear { self.isVisible = false }
         .onReceive(NotificationCenter.default.publisher(
             for: .NSProcessInfoPowerStateDidChange))
         { _ in
@@ -65,12 +73,11 @@ struct ByteBotSpriteView: View {
         guard let speciesID else {
             return AppLocalization.string("companion.species.mystery.name")
         }
-        return AppLocalization.string(
-            "companion.species.\(speciesID.rawValue).name")
+        return CompanionAssetCatalog.shared.displayName(for: speciesID)
     }
 
     private func minimumInterval(
-        for animation: CompanionSpriteManifest.Animation?) -> TimeInterval
+        for animation: CompanionRenderAnimation?) -> TimeInterval
     {
         guard let framesPerSecond = animation?.framesPerSecond,
               framesPerSecond > 0
@@ -82,7 +89,7 @@ struct ByteBotSpriteView: View {
 
     private func frameIndex(
         at date: Date,
-        animation: CompanionSpriteManifest.Animation?,
+        animation: CompanionRenderAnimation?,
         shouldAnimate: Bool) -> Int
     {
         guard shouldAnimate,

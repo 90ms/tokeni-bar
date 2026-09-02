@@ -4,19 +4,16 @@
 
 ## Menu popover
 
-Each provider card shows its primary quota, remaining percentage, and both the
-local clock time and time remaining for a verified reset by default. Expand
-**Show details** for additional quota windows, token
-totals, API-equivalent reference costs, data source, and update time. The
-header and footer actions stay fixed while the center scrolls when many
-providers or expanded details need more room.
-The pet status card comes first, followed by provider usage cards. Compact
-mode keeps the same path to expanded provider details.
+The popover briefly summarizes the primary pet's level and stage plus overall
+usage status. Selecting the pet summary opens **Pets** in the standalone Tokeni
+window; selecting usage opens **Usage**, which owns provider cards and 30-day
+local history. Detailed quotas, token totals, API-equivalent reference costs,
+data source, and update time appear only on the Usage screen.
 
-**Usage History** in the footer opens the 30-day local aggregate window directly.
-The coffee button prevents idle system sleep for the current app session; settings
-and quit remain available beside it. Selected-provider menu-bar mode saves space by
-showing only the provider brand icon and remaining percentage.
+Refresh remains in the header, while Open Tokeni, caffeine, settings, and quit
+stay available in the footer. The coffee button prevents idle system sleep for
+the current app session. Selected-provider menu-bar mode saves space by showing
+only the provider brand icon and remaining percentage.
 
 ## Tokeni token-growth accounting
 

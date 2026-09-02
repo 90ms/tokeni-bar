@@ -37,7 +37,7 @@ Growth Energy. For example, one XP appears as 25 Growth Energy when that level
 requires four XP. Verified remainder below one XP advances only the growth
 target's bar; internal XP and level rules do not change.
 
-The displayed companion and growth target can be selected independently, but
+The primary pet and growth target can be selected independently, but
 automatic rotation takes priority while an unfinished owned pet remains.
 At level 100, the on-screen form can be switched among Hatchling, Junior, and
 Adult without changing growth or collection progress.
@@ -112,8 +112,9 @@ idle, working, waiting, warning, celebrate, and sleep animations. Mutation-only
 and level-100 speech actions remain in collection details. The menu popover has
 no separate max-level talk button.
 
-Without a separate manager window, **Settings → Tokeni → Pets** combines the current companion, growth status,
-Collection, and Owned sections. Collection shows every species in separate
+**Open Tokeni → Pets** combines the current companion, growth status,
+Collection, and Owned sections. **Settings → Tokeni** contains only pet-display
+and on-screen-pet preferences. Collection shows every species in separate
 Generation 1 and Generation 2 sections without a search or generation filter.
 Owned can still be narrowed with **View by pet**.
 

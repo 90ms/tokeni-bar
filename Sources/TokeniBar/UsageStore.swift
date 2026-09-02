@@ -112,6 +112,8 @@ final class UsageStore: ObservableObject {
     @Published private(set) var companionInteractionPulse: Int
     @Published private(set) var companionGrowthPulse: Int
     @Published private(set) var companionState: CompanionGameState
+    @Published private(set) var companionExternalAppearanceSpeciesID:
+        CompanionSpeciesID?
     @Published private(set) var companionReveal: CompanionHatchReveal?
     @Published private(set) var companionHatchBatchReveal:
         CompanionHatchBatchReveal? = nil
@@ -212,6 +214,8 @@ final class UsageStore: ObservableObject {
         "companionOverlayPositionLocked"
     private static let companionOverlayClickThroughEnabledKey =
         "companionOverlayClickThroughEnabled"
+    private static let companionExternalAppearanceSpeciesIDKey =
+        "companionExternalAppearanceSpeciesID"
 
     init(providers: [any UsageProviding] = ProviderRegistry.defaultProviders()) {
         let knownIDs = Set(providers.map { $0.descriptor.id })
@@ -381,6 +385,20 @@ final class UsageStore: ObservableObject {
         self.companionInteractionPulse = 0
         self.companionGrowthPulse = 0
         self.companionState = CompanionGameState()
+        let installedAppearanceIDs = Set(
+            InstalledCompanionAssetPackStore().installedPacks()
+                .map(\.metadata.speciesID))
+        if let storedAppearanceID = settings.string(
+            forKey: Self.companionExternalAppearanceSpeciesIDKey)
+            .map(CompanionSpeciesID.init(rawValue:)),
+            installedAppearanceIDs.contains(storedAppearanceID)
+        {
+            self.companionExternalAppearanceSpeciesID = storedAppearanceID
+        } else {
+            self.companionExternalAppearanceSpeciesID = nil
+            settings.removeValue(
+                forKey: Self.companionExternalAppearanceSpeciesIDKey)
+        }
         self.companionReveal = nil
         self.companionCelebration = nil
         self.companionMutationReveal = nil
@@ -824,6 +842,22 @@ final class UsageStore: ObservableObject {
 
     func resetCompanionOverlayPosition() {
         self.companionOverlayPositionResetPulse &+= 1
+    }
+
+    func applyCompanionExternalAppearance(_ speciesID: CompanionSpeciesID) {
+        guard InstalledCompanionAssetPackStore().installedPacks().contains(
+            where: { $0.metadata.speciesID == speciesID })
+        else { return }
+        self.companionExternalAppearanceSpeciesID = speciesID
+        self.settings.set(
+            speciesID.rawValue,
+            forKey: Self.companionExternalAppearanceSpeciesIDKey)
+    }
+
+    func clearCompanionExternalAppearance() {
+        self.companionExternalAppearanceSpeciesID = nil
+        self.settings.removeValue(
+            forKey: Self.companionExternalAppearanceSpeciesIDKey)
     }
 
     func patCompanion() {
@@ -1391,11 +1425,12 @@ final class UsageStore: ObservableObject {
         self.saveCompanionState()
     }
 
-    func showcaseArchivedCompanion(_ generationID: UUID?) {
+    func selectPrimaryCompanion(_ generationID: UUID?) {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionState
-        guard (try? self.companionGameEngine.showcaseArchivedGeneration(
-            generationID,
+        let selectedID = generationID ?? state.generationID
+        guard (try? self.companionGameEngine.selectPrimaryCompanion(
+            selectedID,
             in: &state)) != nil
         else { return }
         self.companionState = state
@@ -1617,6 +1652,14 @@ final class UsageStore: ObservableObject {
         self.showcasedCompanion?.speciesID ?? self.companionState.speciesID
     }
 
+    var displayedCompanionAppearanceSpeciesID: CompanionSpeciesID? {
+        if self.showcasedCompanion != nil {
+            return self.displayedCompanionSpeciesID
+        }
+        return self.companionExternalAppearanceSpeciesID
+            ?? self.displayedCompanionSpeciesID
+    }
+
     var displayedCompanionStage: CompanionGameStage {
         let naturalStage = self.showcasedCompanion?.stage ?? self.companionStage
         let generationID = self.showcasedCompanion?.generationID
@@ -1661,7 +1704,7 @@ final class UsageStore: ObservableObject {
     }
 
     var companionMutationReadySpecies: [CompanionSpeciesID] {
-        CompanionSpeciesID.allCases.filter {
+        CompanionSpeciesRegistry.gameSpeciesIDs.filter {
             self.companionMutationSources(for: $0).count
                 >= CompanionMutationRegistry.synthesisSourceCount
         }

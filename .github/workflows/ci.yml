@@ -14,6 +14,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  repository-checks:
+    name: Validate repository contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Validate release-note fragments
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          ./Scripts/validate_release_notes.sh all
+          ./Scripts/validate_release_notes.sh changed "$BASE_SHA" "$HEAD_SHA"
+      - name: Validate workflow contracts
+        run: ./Tests/Scripts/GitHubWorkflowTests.sh
+      - name: Validate bilingual localization catalogs
+        run: ./Tests/Scripts/LocalizationCatalogTests.sh
+
   detect-scope:
     name: Detect macOS CI scope
     runs-on: ubuntu-latest
@@ -72,7 +92,7 @@ jobs:
                 fi
                 echo "Package.swift changes are limited to the Windows conditional block."
                 ;;
-              Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniBar/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/Scripts/*|Scripts/test.sh|Scripts/package_app.sh|Scripts/validate_companion_assets.sh|packaging/Info.plist|packaging/AppIcon.png|.github/workflows/ci.yml|.github/workflows/release.yml)
+              .gitattributes|Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniBar/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/Scripts/*|Scripts/test.sh|Scripts/package_app.sh|Scripts/smoke_macos_package.sh|Scripts/validate_companion_assets.sh|Scripts/validate_localizations.sh|packaging/Info.plist|packaging/AppIcon.png|.github/workflows/ci.yml|.github/workflows/release.yml)
                 run_macos=true
                 break
                 ;;
@@ -137,3 +157,27 @@ jobs:
           test "$(defaults read "$app/Contents/Info" CFBundleIconFile)" = "AppIcon"
           test "$(defaults read "$app/Contents/Info" CFBundleShortVersionString)" = "0.0.0"
           test "$(defaults read "$app/Contents/Info" CFBundleVersion)" = "$GITHUB_RUN_NUMBER"
+      - name: Smoke-test packaged macOS app
+        run: ./Scripts/smoke_macos_package.sh "$RUNNER_TEMP/agents-status-package/Tokeni Bar.app"
+
+  macos-gate:
+    name: macOS required gate
+    if: always()
+    needs:
+      - repository-checks
+      - detect-scope
+      - build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require repository and applicable macOS checks
+        shell: bash
+        env:
+          REPOSITORY_RESULT: ${{ needs.repository-checks.result }}
+          RUN_MACOS: ${{ needs.detect-scope.outputs.run-macos }}
+          MACOS_RESULT: ${{ needs.build-and-test.result }}
+        run: |
+          set -euo pipefail
+          test "$REPOSITORY_RESULT" = "success"
+          if [[ "$RUN_MACOS" == "true" ]]; then
+            test "$MACOS_RESULT" = "success"
+          fi

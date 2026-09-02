@@ -7,25 +7,20 @@ import TokeniCore
 final class CompanionAssetCatalog {
     static let shared = CompanionAssetCatalog()
 
-    private let manifests: [CompanionSpeciesID: CompanionSpriteManifest]
-    private let assetDirectories: [CompanionSpeciesID: URL]
+    private var assets: [CompanionSpeciesID: RenderAsset]
+    private var assetDirectories: [CompanionSpeciesID: URL]
     private let sheetCache = NSCache<NSString, ImageBox>()
     private let frameCache = NSCache<NSString, ImageBox>()
     private var memoryPressureSource: DispatchSourceMemoryPressure?
 
-    private init() {
-        var loadedManifests: [CompanionSpeciesID: CompanionSpriteManifest] = [:]
-        var loadedDirectories: [CompanionSpeciesID: URL] = [:]
-        for speciesID in CompanionSpeciesID.allCases {
-            guard let assetDirectory = Self.assetDirectory(for: speciesID),
-                  let manifest = Self.loadManifest(from: assetDirectory)
-            else { continue }
+    private convenience init() {
+        self.init(assetSources: Self.defaultAssetSources())
+    }
 
-            loadedManifests[speciesID] = manifest
-            loadedDirectories[speciesID] = assetDirectory
-        }
-        self.manifests = loadedManifests
-        self.assetDirectories = loadedDirectories
+    init(assetSources: [CompanionAssetSource]) {
+        let loaded = Self.loadAssets(from: assetSources)
+        self.assets = loaded.assets
+        self.assetDirectories = loaded.directories
         self.sheetCache.totalCostLimit = 8 * 1_024 * 1_024
         self.sheetCache.countLimit = 12
         self.frameCache.totalCostLimit = 12 * 1_024 * 1_024
@@ -47,11 +42,26 @@ final class CompanionAssetCatalog {
         self.sheetCache.removeAllObjects()
     }
 
+    func reloadInstalledAssets() {
+        let reloaded = Self.loadAssets(from: Self.defaultAssetSources())
+        self.assets = reloaded.assets
+        self.assetDirectories = reloaded.directories
+        self.removeCachedImages()
+    }
+
+    func displayName(for speciesID: CompanionSpeciesID) -> String {
+        if let asset = self.assets[speciesID], asset.isExternal {
+            return asset.displayName
+        }
+        return AppLocalization.string(
+            "companion.species.\(speciesID.rawValue).name")
+    }
+
     func animation(
         for speciesID: CompanionSpeciesID?,
-        behavior: CompanionBehavior) -> CompanionSpriteManifest.Animation?
+        behavior: CompanionBehavior) -> CompanionRenderAnimation?
     {
-        self.manifest(for: speciesID)?.animation(for: behavior)
+        self.asset(for: speciesID)?.animation(for: behavior)
     }
 
     func frame(
@@ -62,15 +72,20 @@ final class CompanionAssetCatalog {
         behavior: CompanionBehavior,
         index: Int) -> CGImage?
     {
-        let speciesID = stage == .egg
-            ? CompanionSpeciesID.bytebot
-            : requestedSpeciesID ?? .bytebot
-        guard let manifest = self.manifests[speciesID],
-              let sheetName = manifest.sheetName(
+        let requestedSpeciesID = requestedSpeciesID ?? .bytebot
+        let speciesID = if stage == .egg,
+                           self.assets[requestedSpeciesID]?.isExternal != true
+        {
+            CompanionSpeciesID.bytebot
+        } else {
+            requestedSpeciesID
+        }
+        guard let asset = self.assets[speciesID],
+              let sheetName = asset.sheetName(
                   for: stage,
                   variantID: variantID,
                   fallbackRarity: rarity),
-              let animation = manifest.animation(for: behavior)
+              let animation = asset.animation(for: behavior)
         else {
             return nil
         }
@@ -91,8 +106,8 @@ final class CompanionAssetCatalog {
             fileName: sheetName)
         else { return nil }
 
-        let frameWidth = sheet.width / manifest.columns
-        let frameHeight = sheet.height / manifest.rows
+        let frameWidth = sheet.width / asset.columns
+        let frameHeight = sheet.height / asset.rows
         guard frameWidth > 0, frameHeight > 0 else { return nil }
         let x = column * frameWidth
         let y = animation.row * frameHeight
@@ -112,8 +127,9 @@ final class CompanionAssetCatalog {
                 of: cropped,
                 width: frameWidth,
                 height: frameHeight,
-                palette: manifest.palette,
-                mutatedSpeciesID: variantID == .mutated && stage != .egg
+                palette: asset.palette,
+                mutatedSpeciesID: asset.supportsMutation
+                    && variantID == .mutated && stage != .egg
                     ? speciesID
                     : nil)
         else { return nil }
@@ -217,6 +233,7 @@ final class CompanionAssetCatalog {
         case .queryowl: (0.5, 0.38)
         case .relayray: (0.5, 0.52)
         case .stackfox: (0.66, 0.56)
+        default: (0.5, 0.5)
         }
         let targetX = opaqueBounds.minX
             + opaqueBounds.width * normalizedTarget.x
@@ -334,13 +351,59 @@ final class CompanionAssetCatalog {
             UInt8(value & 0xFF))
     }
 
-    private func manifest(
-        for speciesID: CompanionSpeciesID?) -> CompanionSpriteManifest?
+    private func asset(
+        for speciesID: CompanionSpeciesID?) -> RenderAsset?
     {
-        self.manifests[speciesID ?? .bytebot]
+        self.assets[speciesID ?? .bytebot]
     }
 
-    private static func assetDirectory(for speciesID: CompanionSpeciesID) -> URL? {
+    private static func defaultAssetSources() -> [CompanionAssetSource] {
+        [
+            Self.bundledAssetSource(),
+            InstalledCompanionAssetPackStore().assetSource(),
+        ]
+    }
+
+    private static func loadAssets(
+        from sources: [CompanionAssetSource]
+    ) -> (
+        assets: [CompanionSpeciesID: RenderAsset],
+        directories: [CompanionSpeciesID: URL]
+    ) {
+        var assets: [CompanionSpeciesID: RenderAsset] = [:]
+        var directories: [CompanionSpeciesID: URL] = [:]
+        for location in CompanionAssetSourceRegistry(sources: sources).locations {
+            guard assets[location.speciesID] == nil,
+                  let asset = Self.loadAsset(from: location)
+            else { continue }
+            assets[location.speciesID] = asset
+            directories[location.speciesID] = location.directoryURL
+        }
+        return (assets, directories)
+    }
+
+    private static func bundledAssetSource() -> CompanionAssetSource {
+        let locations = CompanionSpeciesRegistry.gameDefinitions.compactMap {
+            definition -> CompanionAssetLocation? in
+            guard let directory = Self.bundledAssetDirectory(
+                for: definition.id)
+            else { return nil }
+            return CompanionAssetLocation(
+                sourceID: .tokeniBundle,
+                packID: definition.assetPackID,
+                speciesID: definition.id,
+                format: .tokeniNative,
+                directoryURL: directory)
+        }
+        return CompanionAssetSource(
+            id: .tokeniBundle,
+            kind: .bundled,
+            locations: locations)
+    }
+
+    private static func bundledAssetDirectory(
+        for speciesID: CompanionSpeciesID) -> URL?
+    {
         let relativeComponents = ["CompanionAssets", speciesID.rawValue]
         if let root = Bundle.main.resourceURL {
             let candidate = relativeComponents.reduce(root) {
@@ -380,6 +443,136 @@ final class CompanionAssetCatalog {
             return nil
         }
         return manifest
+    }
+
+    private static func loadAsset(
+        from location: CompanionAssetLocation
+    ) -> RenderAsset? {
+        switch location.format {
+        case .tokeniNative:
+            guard let manifest = Self.loadManifest(
+                from: location.directoryURL)
+            else { return nil }
+            return .native(manifest)
+        case .codexV1, .codexV2:
+            let metadataURL = location.directoryURL.appending(
+                path: InstalledCompanionAssetPack.metadataFileName)
+            guard let data = try? Data(
+                contentsOf: metadataURL,
+                options: [.mappedIfSafe])
+            else { return nil }
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            guard let metadata = try? decoder.decode(
+                InstalledCompanionAssetPack.self,
+                from: data),
+                metadata.packID == location.packID,
+                metadata.speciesID == location.speciesID,
+                metadata.format == location.format,
+                metadata.spritesheetFileName == "spritesheet.webp"
+                    || metadata.spritesheetFileName == "spritesheet.png",
+                FileManager.default.fileExists(atPath: location.directoryURL
+                    .appending(path: metadata.spritesheetFileName).path)
+            else { return nil }
+            return .codex(CodexRenderAsset(
+                displayName: metadata.displayName,
+                sheetName: metadata.spritesheetFileName,
+                rows: location.format == .codexV2 ? 11 : 9))
+        }
+    }
+}
+
+private enum RenderAsset {
+    case native(CompanionSpriteManifest)
+    case codex(CodexRenderAsset)
+
+    var displayName: String {
+        switch self {
+        case let .native(manifest): manifest.displayName
+        case let .codex(asset): asset.displayName
+        }
+    }
+
+    var columns: Int {
+        switch self {
+        case let .native(manifest): manifest.columns
+        case .codex: CodexPetPackValidator.atlasColumns
+        }
+    }
+
+    var rows: Int {
+        switch self {
+        case let .native(manifest): manifest.rows
+        case let .codex(asset): asset.rows
+        }
+    }
+
+    var palette: [String] {
+        switch self {
+        case let .native(manifest): manifest.palette
+        case .codex: []
+        }
+    }
+
+    var supportsMutation: Bool {
+        if case .native = self { return true }
+        return false
+    }
+
+    var isExternal: Bool {
+        if case .codex = self { return true }
+        return false
+    }
+
+    func sheetName(
+        for stage: CompanionGameStage,
+        variantID: CompanionVariantID,
+        fallbackRarity: CompanionRarity) -> String?
+    {
+        switch self {
+        case let .native(manifest):
+            manifest.sheetName(
+                for: stage,
+                variantID: variantID,
+                fallbackRarity: fallbackRarity)
+        case let .codex(asset): asset.sheetName
+        }
+    }
+
+    func animation(for behavior: CompanionBehavior) -> CompanionRenderAnimation? {
+        switch self {
+        case let .native(manifest): manifest.animation(for: behavior)
+        case let .codex(asset): asset.animation(for: behavior)
+        }
+    }
+}
+
+private struct CodexRenderAsset {
+    let displayName: String
+    let sheetName: String
+    let rows: Int
+
+    func animation(for behavior: CompanionBehavior) -> CompanionRenderAnimation {
+        switch behavior {
+        case .idle:
+            CompanionRenderAnimation(
+                row: 0, frameCount: 6, framesPerSecond: 2, loops: true)
+        case .working:
+            CompanionRenderAnimation(
+                row: 8, frameCount: 6, framesPerSecond: 6, loops: true)
+        case .waiting:
+            CompanionRenderAnimation(
+                row: 6, frameCount: 6, framesPerSecond: 3, loops: true)
+        case .warning:
+            CompanionRenderAnimation(
+                row: 5, frameCount: 8, framesPerSecond: 6, loops: true)
+        case .celebrate, .signature:
+            CompanionRenderAnimation(
+                row: 3, frameCount: 4, framesPerSecond: 5, loops: true)
+        case .sleep:
+            CompanionRenderAnimation(
+                row: 0, frameCount: 1, framesPerSecond: 0, loops: false)
+        }
     }
 }
 

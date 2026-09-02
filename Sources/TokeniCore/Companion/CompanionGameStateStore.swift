@@ -501,7 +501,7 @@ private struct LegacyCompanionGameStateV2: Decodable {
         return CompanionGameState(
             speciesID: self.stage == .egg
                 ? nil
-                : CompanionSpeciesID(rawValue: self.speciesID) ?? .bytebot,
+                : CompanionSpeciesID(rawValue: self.speciesID),
             generationID: self.generationID,
             generationNumber: self.generationNumber,
             stage: self.stage,
@@ -607,7 +607,7 @@ private struct LegacyCompanionGameStateV3: Decodable {
         return CompanionGameState(
             speciesID: self.stage == .egg
                 ? nil
-                : CompanionSpeciesID(rawValue: self.speciesID) ?? .bytebot,
+                : CompanionSpeciesID(rawValue: self.speciesID),
             generationID: self.generationID,
             generationNumber: self.generationNumber,
             stage: self.stage,

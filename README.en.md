@@ -13,9 +13,10 @@
   <img src="packaging/AppIcon.png" width="144" alt="Tokeni Bar pixel-art app icon" />
 </p>
 
-A macOS menu-bar app for tracking AI coding-agent **tokens and quotas** while
+A macOS companion app for tracking AI coding-agent **tokens and quotas** while
 discovering and raising ten pixel-pet species across two generations with real
-token usage.
+token usage. Manage pets and usage in the standalone Tokeni window, with status
+summaries and quick controls in the menu bar.
 
 ## Quick install
 
@@ -45,6 +46,7 @@ brew install --formula tokeni-bar
 
 | Area | Information |
 |---|---|
+| Tokeni Home | Primary pet, growth status, usage refresh, and quick caffeine control |
 | Menu bar | Native monochrome status icon, lowest quota, compact selected-provider icon and remaining percentage, monthly cost or pet status, and a growth-ready badge |
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
@@ -121,10 +123,12 @@ owned-pet roster; select one pet at a time to receive Growth XP and switch at an
 time. Inactive pets can be sent to a new home for Star Shards. Their level does
 not increase resale value, and collection discoveries remain recorded.
 
-### 3. Manage the collection and owned pets in Settings
+### 3. Manage the collection and owned pets in the Tokeni window
 
-Without a separate pet-manager window, **Settings → Tokeni → Pets** combines the current companion, growth status, Collection,
-and Owned sections. Collection records discovered species, appearances, lifecycle
+Choose **Open Tokeni** from the menu bar, then use **Pets** for the current
+companion, growth status, Collection, and Owned sections. Pet-display and
+on-screen-pet preferences remain only under macOS **Settings → Tokeni**.
+Collection records discovered species, appearances, lifecycle
 forms, and Mutation variants; Owned lists each hatched pet with its level, name,
 personality, memories, switching, showcasing, and resale actions. In Owned, choose a
 species from **View by pet** to show only that species.
@@ -206,12 +210,11 @@ appears when an egg can be opened or a level 30 or 70 evolution is ready. Select
 provider mode shows only the provider brand icon and remaining percentage; the full
 name and status remain available to Help and VoiceOver.
 
-The menu popover keeps its header and history, settings, and quit actions
-fixed while the center content scrolls. The pet status card appears first,
-followed by usage. Growable and max-level owned pets are separated by ordering,
-badges, and color. Each provider card leads with its primary quota and reset time;
-expand **Show details** for additional quotas, tokens, reference costs, and
-source information, including in compact mode.
+The menu popover provides short primary-pet and usage summaries plus refresh,
+caffeine, Open Tokeni, settings, and quit. Selecting the pet summary opens
+**Pets**; selecting usage opens **Usage**. Provider quota details, tokens,
+reference costs, and sources live only in Usage, while the collection, eggs,
+and roster live only in Pets.
 
 The coffee button in the popover footer prevents idle system sleep for the current
 app session. Under **Settings → General → Caffeine**, choose whether the display
@@ -251,7 +254,7 @@ undated values remain unavailable instead of becoming a guessed zero. See
 | Step | Action |
 |---:|---|
 | 1 | Run and sign in to each CLI you want to use |
-| 2 | Start Tokeni Bar and open its status icon in the menu bar |
+| 2 | Start Tokeni Bar and review Home in the standalone Tokeni window |
 | 3 | Choose providers and the menu-bar display under **Settings → General** |
 | 4 | For account quotas, choose **Providers → Connect**; the app reuses each CLI's existing sign-in |
 | 5 | Use an agent; the first growth activity checks in automatically, then grow the pet, try Star Shard cosmetics, and optionally enable the on-screen pet |
@@ -303,7 +306,7 @@ analytics or remote game server.
 
 | Symptom | What to check |
 |---|---|
-| No app window | Look for the Tokeni Bar app icon on the right side of the menu bar, not the Dock |
+| Tokeni window is missing | Open the Tokeni Bar icon on the right side of the menu bar and choose **Open Tokeni** |
 | Cannot move the on-screen pet | Turn off position lock and click-through under **Settings → Tokeni** |
 | Cannot find the on-screen pet | Choose **Settings → Tokeni → Reset pet position** |
 | Provider unavailable | Confirm the CLI is installed and signed in, then run it once |

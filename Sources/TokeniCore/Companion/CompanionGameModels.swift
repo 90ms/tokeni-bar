@@ -594,6 +594,71 @@ public struct CompanionGameRules: Hashable, Sendable {
     }
 }
 
+public enum CompanionDisplayRole: String, Codable, CaseIterable, Sendable {
+    case primary
+    case growthTarget
+    case showcase
+}
+
+/// A provider-neutral snapshot of the distinct jobs owned companions can have.
+/// Role IDs contain no usage observations, provider data, or token totals.
+public struct CompanionRoleSelection: Equatable, Sendable {
+    public let primaryGenerationID: UUID?
+    public let growthTargetGenerationID: UUID?
+    public let showcaseGenerationIDs: [UUID]
+
+    public init(
+        primaryGenerationID: UUID?,
+        growthTargetGenerationID: UUID?,
+        showcaseGenerationIDs: [UUID] = [])
+    {
+        self.primaryGenerationID = primaryGenerationID
+        self.growthTargetGenerationID = growthTargetGenerationID
+        self.showcaseGenerationIDs = Array(
+            Set(showcaseGenerationIDs)).sorted {
+                $0.uuidString < $1.uuidString
+            }
+    }
+}
+
+public struct CompanionRolePet: Equatable, Identifiable, Sendable {
+    public let generationID: UUID
+    public let speciesID: CompanionSpeciesID
+    public let stage: CompanionGameStage
+    public let rarity: CompanionRarity
+    public let variantID: CompanionVariantID
+    public let nickname: String?
+    public let growthXP: Int
+
+    public var id: UUID { self.generationID }
+
+    public var level: Int {
+        CompanionLevelCurve.standard.level(forXP: self.growthXP)
+    }
+
+    public var levelProgress: Double {
+        CompanionLevelCurve.standard.progress(forXP: self.growthXP)
+    }
+
+    public init(
+        generationID: UUID,
+        speciesID: CompanionSpeciesID,
+        stage: CompanionGameStage,
+        rarity: CompanionRarity,
+        variantID: CompanionVariantID,
+        nickname: String?,
+        growthXP: Int)
+    {
+        self.generationID = generationID
+        self.speciesID = speciesID
+        self.stage = stage
+        self.rarity = rarity
+        self.variantID = variantID
+        self.nickname = nickname
+        self.growthXP = CompanionLevelCurve.standard.clampedXP(growthXP)
+    }
+}
+
 public struct CompanionGameState: Codable, Hashable, Sendable {
     public static let currentSchemaVersion = 11
 
@@ -775,6 +840,47 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var resolvedGrowthTargetGenerationID: UUID? {
         guard self.stage != .egg else { return nil }
         return self.growthTargetGenerationID ?? self.generationID
+    }
+
+    public var roleSelection: CompanionRoleSelection {
+        return CompanionRoleSelection(
+            primaryGenerationID: self.showcasedGenerationID
+                ?? self.generationID,
+            growthTargetGenerationID: self.resolvedGrowthTargetGenerationID)
+    }
+
+    public var growthTargetPet: CompanionRolePet? {
+        guard let targetID = self.resolvedGrowthTargetGenerationID else {
+            return nil
+        }
+        if targetID == self.generationID {
+            guard let speciesID = self.speciesID,
+                  let rarity = self.rarity,
+                  let variantID = self.resolvedVariantID,
+                  self.stage != .egg
+            else { return nil }
+            return CompanionRolePet(
+                generationID: self.generationID,
+                speciesID: speciesID,
+                stage: self.stage,
+                rarity: rarity,
+                variantID: variantID,
+                nickname: self.nickname,
+                growthXP: self.growthXP)
+        }
+        guard let archived = self.collection.archivedGenerations.first(
+            where: { $0.generationID == targetID })
+        else { return nil }
+        return CompanionRolePet(
+            generationID: archived.generationID,
+            speciesID: archived.speciesID,
+            stage: archived.stage,
+            rarity: archived.finalRarity,
+            variantID: archived.variantID
+                ?? CompanionVariantRegistry.migrated(
+                    from: archived.finalRarity),
+            nickname: archived.nickname,
+            growthXP: archived.growthXP)
     }
 
     public var growthTargetLevel: Int {

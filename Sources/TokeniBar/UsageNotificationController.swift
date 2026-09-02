@@ -306,6 +306,4 @@ private struct PendingAlert {
 extension Notification.Name {
     static let openNotificationSettings =
         Notification.Name("openNotificationSettings")
-    static let openCompanionSettings =
-        Notification.Name("openCompanionSettings")
 }

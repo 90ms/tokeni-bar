@@ -51,10 +51,10 @@ public struct CompanionEggInstance: Codable, Hashable, Identifiable, Sendable {
     }
 
     public var availableSpecies: [CompanionSpeciesID] {
-        let species = CompanionSpeciesID.allCases.filter {
+        let species = CompanionSpeciesRegistry.gameSpeciesIDs.filter {
             $0.contentGeneration <= self.speciesPoolGeneration
         }
-        return species.isEmpty ? CompanionSpeciesID.allCases : species
+        return species.isEmpty ? CompanionSpeciesRegistry.gameSpeciesIDs : species
     }
 
     public static func starter(

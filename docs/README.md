@@ -6,6 +6,7 @@
 
 - [사용량 표시와 성장 집계](usage.ko.md) · [English](usage.md)
 - [Tokeni 펫 성장과 알 도감](bytebot.ko.md) · [English](bytebot.md)
+- [로컬 펫 팩 가져오기](COMPANION_PACKS.ko.md) · [English](COMPANION_PACKS.md)
 - [Homebrew 설치·업데이트·이전 안내](HOMEBREW.ko.md) · [English](HOMEBREW.md)
 - [릴리스 및 배포 절차](RELEASING.ko.md) · [English](RELEASING.md)
 
@@ -15,6 +16,7 @@
 
 ## 개발 계획
 
+- [독립 펫 앱 전환 계획](STANDALONE_PET_APP_PLAN.ko.md) · [English](STANDALONE_PET_APP_PLAN.md)
 - [Windows 포팅 계획](WINDOWS_PORTING_PLAN.ko.md) · [English](WINDOWS_PORTING_PLAN.md)
 - [Windows 멀티에이전트 개발 운영](WINDOWS_DEVELOPMENT_WORKFLOW.ko.md) · [English](WINDOWS_DEVELOPMENT_WORKFLOW.md)
 - [Windows 실기기 검증 runbook](WINDOWS_DEVICE_VALIDATION.ko.md) · [English](WINDOWS_DEVICE_VALIDATION.md)

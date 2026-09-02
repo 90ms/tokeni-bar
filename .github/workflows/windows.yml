@@ -39,7 +39,7 @@ jobs:
           run_windows=false
           while IFS= read -r path; do
             case "$path" in
-              Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Tests/TokeniWindowsNativeStateTests/*|packaging/windows/*|Scripts/acquire_windows_sqlite.ps1|Scripts/package_windows.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
+              .gitattributes|Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Tests/TokeniWindowsNativeStateTests/*|packaging/windows/*|Scripts/acquire_windows_sqlite.ps1|Scripts/package_windows.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
                 run_windows=true
                 break
                 ;;
@@ -210,3 +210,22 @@ jobs:
           name: tokeni-bar-windows-${{ github.sha }}
           path: ${{ runner.temp }}\TokeniWindowsPackage\*.zip*
           if-no-files-found: error
+
+  windows-gate:
+    name: Windows required gate
+    if: always()
+    needs:
+      - detect-scope
+      - build-test-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require applicable Windows checks
+        shell: bash
+        env:
+          RUN_WINDOWS: ${{ needs.detect-scope.outputs.run-windows }}
+          WINDOWS_RESULT: ${{ needs.build-test-package.result }}
+        run: |
+          set -euo pipefail
+          if [[ "$RUN_WINDOWS" == "true" ]]; then
+            test "$WINDOWS_RESULT" = "success"
+          fi
