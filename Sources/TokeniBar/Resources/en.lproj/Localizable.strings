@@ -574,6 +574,9 @@
 "companion.packs.notice" = "Notice";
 "companion.packs.format.v1" = "Codex Compatible V1 · external appearance";
 "companion.packs.format.v2" = "Codex Compatible V2 · external appearance";
+"companion.packs.appearance.apply" = "Use Appearance";
+"companion.packs.appearance.active" = "In use";
+"companion.packs.appearance.restore" = "Use original";
 "companion.packs.remove.title" = "Remove pet pack?";
 "companion.packs.remove.message" = "Remove “%@” from this Mac? Pet growth data is not deleted.";
 "companion.packs.remove.action" = "Remove";

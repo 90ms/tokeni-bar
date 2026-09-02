@@ -70,9 +70,14 @@ final class CompanionAssetCatalog {
         behavior: CompanionBehavior,
         index: Int) -> CGImage?
     {
-        let speciesID = stage == .egg
-            ? CompanionSpeciesID.bytebot
-            : requestedSpeciesID ?? .bytebot
+        let requestedSpeciesID = requestedSpeciesID ?? .bytebot
+        let speciesID = if stage == .egg,
+                           self.assets[requestedSpeciesID]?.isExternal != true
+        {
+            CompanionSpeciesID.bytebot
+        } else {
+            requestedSpeciesID
+        }
         guard let asset = self.assets[speciesID],
               let sheetName = asset.sheetName(
                   for: stage,
@@ -509,6 +514,11 @@ private enum RenderAsset {
 
     var supportsMutation: Bool {
         if case .native = self { return true }
+        return false
+    }
+
+    var isExternal: Bool {
+        if case .codex = self { return true }
         return false
     }
 

@@ -267,7 +267,7 @@ struct CompanionCollectionView: View {
             case .rewards:
                 self.rewardWallet
             case .packs:
-                CompanionPackManagementView()
+                CompanionPackManagementView(store: self.store)
             }
         }
     }
@@ -1365,7 +1365,7 @@ struct CompanionCollectionView: View {
             Text(title)
                 .font(.caption.weight(.semibold))
             ByteBotTransitionView(
-                speciesID: self.store.displayedCompanionSpeciesID,
+                speciesID: self.store.displayedCompanionAppearanceSpeciesID,
                 stage: self.store.displayedCompanionStage,
                 rarity: self.store.displayedCompanionRarity,
                 variantID: self.store.displayedCompanionVariantID,
@@ -1533,7 +1533,8 @@ struct CompanionCollectionView: View {
 
             HStack(spacing: 18) {
                 ByteBotTransitionView(
-                    speciesID: self.store.displayedCompanionSpeciesID,
+                    speciesID: self.store
+                        .displayedCompanionAppearanceSpeciesID,
                     stage: self.store.displayedCompanionStage,
                     rarity: self.store.displayedCompanionRarity,
                     variantID: self.store.displayedCompanionVariantID,

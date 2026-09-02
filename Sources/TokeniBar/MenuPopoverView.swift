@@ -143,7 +143,7 @@ struct MenuPopoverView: View {
         } label: {
             HStack(spacing: 10) {
                 ByteBotTransitionView(
-                    speciesID: self.store.displayedCompanionSpeciesID,
+                    speciesID: self.store.displayedCompanionAppearanceSpeciesID,
                     stage: self.store.displayedCompanionStage,
                     rarity: self.store.displayedCompanionRarity,
                     variantID: self.store.displayedCompanionVariantID,

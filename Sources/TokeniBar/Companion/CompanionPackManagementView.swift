@@ -72,14 +72,16 @@ private final class CompanionPackManager: ObservableObject {
         }
     }
 
-    func remove(_ installation: CodexPetPackInstallation) {
+    func remove(_ installation: CodexPetPackInstallation) -> Bool {
         do {
             try self.store.remove(packID: installation.metadata.packID)
             self.reload()
+            return true
         } catch {
             self.feedback = CompanionPackFeedback(
                 titleKey: "companion.packs.remove.failure.title",
                 messageKey: "companion.packs.remove.failure.message")
+            return false
         }
     }
 
@@ -111,6 +113,7 @@ private final class CompanionPackManager: ObservableObject {
 }
 
 struct CompanionPackManagementView: View {
+    @ObservedObject var store: UsageStore
     @StateObject private var manager = CompanionPackManager()
     @State private var showsFileImporter = false
     @State private var importRequest: CompanionPackImportRequest?
@@ -222,7 +225,12 @@ struct CompanionPackManagementView: View {
                     request.installation.metadata.displayName)),
                 primaryButton: .destructive(Text(AppLocalization.string(
                     "companion.packs.remove.action"))) {
-                        self.manager.remove(request.installation)
+                        if self.manager.remove(request.installation),
+                           self.store.companionExternalAppearanceSpeciesID
+                            == request.installation.metadata.speciesID
+                        {
+                            self.store.clearCompanionExternalAppearance()
+                        }
                     },
                 secondaryButton: .cancel())
         }
@@ -268,6 +276,29 @@ struct CompanionPackManagementView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                     Spacer()
+                    if self.store.companionExternalAppearanceSpeciesID
+                        == metadata.speciesID
+                    {
+                        Label(
+                            AppLocalization.string(
+                                "companion.packs.appearance.active"),
+                            systemImage: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                        Button(AppLocalization.string(
+                            "companion.packs.appearance.restore"))
+                        {
+                            self.store.clearCompanionExternalAppearance()
+                        }
+                    } else {
+                        Button(AppLocalization.string(
+                            "companion.packs.appearance.apply"))
+                        {
+                            self.store.applyCompanionExternalAppearance(
+                                metadata.speciesID)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                     Button(
                         AppLocalization.string("companion.packs.remove.action"),
                         role: .destructive)

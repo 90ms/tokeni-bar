@@ -99,6 +99,15 @@ struct CompanionAssetCatalogSourceTests {
             index: 7)
         #expect(frame?.width == CodexPetPackValidator.frameWidth)
         #expect(frame?.height == CodexPetPackValidator.frameHeight)
+        let eggFrame = catalog.frame(
+            speciesID: speciesID,
+            stage: .egg,
+            rarity: .normal,
+            variantID: .standard,
+            behavior: .idle,
+            index: 0)
+        #expect(eggFrame?.width == CodexPetPackValidator.frameWidth)
+        #expect(eggFrame?.height == CodexPetPackValidator.frameHeight)
     }
 
     private static func writeTransparentPNG(

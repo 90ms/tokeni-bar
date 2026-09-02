@@ -574,6 +574,9 @@
 "companion.packs.notice" = "고지문";
 "companion.packs.format.v1" = "Codex 호환 V1 · 외부 외형";
 "companion.packs.format.v2" = "Codex 호환 V2 · 외부 외형";
+"companion.packs.appearance.apply" = "외형 사용";
+"companion.packs.appearance.active" = "사용 중";
+"companion.packs.appearance.restore" = "원래 외형 사용";
 "companion.packs.remove.title" = "펫 팩을 삭제할까요?";
 "companion.packs.remove.message" = "이 Mac에서 ‘%@’ 팩을 삭제할까요? 펫 성장 데이터는 삭제하지 않습니다.";
 "companion.packs.remove.action" = "삭제";
