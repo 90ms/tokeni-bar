@@ -112,8 +112,9 @@ idle, working, waiting, warning, celebrate, and sleep animations. Mutation-only
 and level-100 speech actions remain in collection details. The menu popover has
 no separate max-level talk button.
 
-Without a separate manager window, **Settings → Tokeni → Pets** combines the current companion, growth status,
-Collection, and Owned sections. Collection shows every species in separate
+**Open Tokeni → Pets** combines the current companion, growth status,
+Collection, and Owned sections. **Settings → Tokeni** contains only pet-display
+and on-screen-pet preferences. Collection shows every species in separate
 Generation 1 and Generation 2 sections without a search or generation filter.
 Owned can still be narrowed with **View by pet**.
 

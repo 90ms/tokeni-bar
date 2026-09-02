@@ -6,6 +6,17 @@
 - Created: 2026-09-02
 - Status: in progress
 
+## Progress
+
+| Stage | Status | Result |
+| --- | --- | --- |
+| 0. Lock decisions | Complete | Added the bilingual plan and documentation index |
+| 1. Standalone shell | Implemented; macOS verification pending | Added Home, Pets, Usage, Settings link, and summary-focused menu bar |
+| 2–5 | Pending | Continue with the dynamic-content foundation |
+
+The current work environment has no Swift toolchain. Stage 1 remains open until
+`swift test` and `swift build` pass on a Swift-equipped macOS environment.
+
 This document defines the product structure, UX ownership, data boundaries, and
 staged commit plan for expanding Tokeni from a menu-bar-centered utility into a
 pet application with a standalone window.
@@ -32,7 +43,7 @@ The same setting or management action must not be repeated across surfaces.
 | Home | Primary pet, growth target, today's usage state, and the next useful action | Full collection editing and every provider setting |
 | Pets | Roster, growth target, primary pet, eggs, collection, cosmetics, and packs | Provider quota settings |
 | Usage | Provider status, cost, history, and data freshness | Pet-management actions |
-| Settings | Providers, display, notifications, caffeine, login item, and advanced options | Collection and roster management |
+| macOS Settings window | Providers, display, notifications, caffeine, login item, and advanced options | Collection and roster management |
 | Desktop pet | Primary-pet reactions and brief status | Persistent settings and economy actions |
 
 When an action leaves the menu bar, it links to its exact main-window destination.
@@ -53,7 +64,7 @@ Tokeni
 │   ├── Cosmetics
 │   └── Pet packs
 ├── Usage
-└── Settings
+└── Settings → open the macOS Settings window
 ```
 
 The first stage safely relocates current screens. Later stages split the long
@@ -172,7 +183,7 @@ Every user-visible change adds a unique bilingual `.changes` fragment.
 
 2. `feat: add standalone application shell`
    - Main `WindowGroup`, stable window ID, and startup lifecycle
-   - Home, Pets, Usage, and Settings sidebar
+   - Home, Pets, and Usage sidebar plus a macOS Settings-window link
    - Navigation-selection and presentation tests
 3. `refactor: focus menu bar on quick controls`
    - Limit the menu bar to summary, refresh, caffeine, open app, settings, and quit
