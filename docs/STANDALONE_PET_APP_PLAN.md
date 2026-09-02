@@ -11,11 +11,12 @@
 | Stage | Status | Result |
 | --- | --- | --- |
 | 0. Lock decisions | Complete | Added the bilingual plan and documentation index |
-| 1. Standalone shell | Implemented; macOS verification pending | Added Home, Pets, Usage, Settings link, and summary-focused menu bar |
+| 1. Standalone shell | Complete | Added Home, Pets, Usage, Settings link, summary-focused menu bar, and passed macOS CI |
 | 2–5 | Pending | Continue with the dynamic-content foundation |
 
-The current work environment has no Swift toolchain. Stage 1 remains open until
-`swift test` and `swift build` pass on a Swift-equipped macOS environment.
+Changes authored in Docker use GitHub Actions as the macOS gate. `swift test`,
+the release build, app packaging, and bundle metadata validation must pass
+before the next stage uses a commit as its baseline.
 
 This document defines the product structure, UX ownership, data boundaries, and
 staged commit plan for expanding Tokeni from a menu-bar-centered utility into a
