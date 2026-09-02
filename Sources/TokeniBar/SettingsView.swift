@@ -67,11 +67,6 @@ struct SettingsView: View {
         { _ in
             self.selectedTab = .notifications
         }
-        .onReceive(NotificationCenter.default.publisher(
-            for: .openCompanionSettings))
-        { _ in
-            self.selectedTab = .companion
-        }
     }
 
     private var companionTab: some View {

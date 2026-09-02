@@ -249,7 +249,7 @@
 "companion.behavior.short.warning" = "Low quota";
 "companion.behavior.short.celebrate" = "Happy";
 "companion.behavior.short.sleep" = "Sleeping";
-"companion.collection.open" = "Manage pets in Settings";
+"companion.collection.open" = "Manage pets";
 "companion.section.title" = "Pet screen";
 "companion.section.pets" = "Pets";
 "companion.section.eggs" = "Eggs";

@@ -1,12 +1,10 @@
-import AppKit
 import SwiftUI
 import TokeniCore
 
 struct CompanionCard: View {
     @ObservedObject var store: UsageStore
-    @Environment(\.openSettings) private var openSettings
     var compact = false
-    var openCollection: (() -> Void)? = nil
+    let openCollection: () -> Void
 
     var body: some View {
         if self.store.companionDataUnavailable {
@@ -92,7 +90,7 @@ struct CompanionCard: View {
                 Spacer(minLength: 4)
 
                 Button {
-                    self.openCompanionCollection()
+                    self.openCollection()
                 } label: {
                     Image(systemName: "square.grid.3x3.fill")
                 }
@@ -319,7 +317,7 @@ struct CompanionCard: View {
                 .disabled(!self.store.canPerformCompanionAction)
             case .adult:
                 Button {
-                    self.openCompanionCollection()
+                    self.openCollection()
                 } label: {
                     Label(
                         AppLocalization.string("companion.collection.open"),
@@ -338,21 +336,6 @@ struct CompanionCard: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(.quaternary, in: Capsule())
-    }
-
-    private func openCompanionCollection() {
-        if let openCollection = self.openCollection {
-            openCollection()
-            return
-        }
-        self.openSettings()
-        Task { @MainActor in
-            await Task.yield()
-            NSApplication.shared.activate(ignoringOtherApps: true)
-            NotificationCenter.default.post(
-                name: .openCompanionSettings,
-                object: nil)
-        }
     }
 
     private var companionName: String {

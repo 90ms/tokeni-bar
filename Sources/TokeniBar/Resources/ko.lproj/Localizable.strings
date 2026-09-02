@@ -249,7 +249,7 @@
 "companion.behavior.short.warning" = "쿼터 부족";
 "companion.behavior.short.celebrate" = "신남";
 "companion.behavior.short.sleep" = "자는 중";
-"companion.collection.open" = "설정에서 펫 관리";
+"companion.collection.open" = "펫 관리";
 "companion.section.title" = "펫 화면";
 "companion.section.pets" = "펫";
 "companion.section.eggs" = "알";
