@@ -269,11 +269,7 @@ public struct CodexPetPackInstaller: Sendable {
         let expected = Set([archive.manifestPath, archive.spritesheetPath])
         let contents = try FileManager.default.contentsOfDirectory(
             at: directoryURL,
-            includingPropertiesForKeys: [
-                .isRegularFileKey,
-                .isSymbolicLinkKey,
-                .fileSizeKey,
-            ],
+            includingPropertiesForKeys: nil,
             options: [])
         guard Set(contents.map(\.lastPathComponent)) == expected else {
             return false
@@ -281,17 +277,17 @@ public struct CodexPetPackInstaller: Sendable {
         let entriesByPath = Dictionary(
             uniqueKeysWithValues: archive.entries.map { ($0.path, $0) })
         return try contents.allSatisfy { url in
-            let values = try url.resourceValues(forKeys: [
-                .isRegularFileKey,
-                .isSymbolicLinkKey,
-                .fileSizeKey,
-            ])
-            guard values.isRegularFile == true,
-                  values.isSymbolicLink != true,
-                  let size = values.fileSize,
+            // URLResourceValues.isRegularFile is nil for ordinary files in
+            // swift-corelibs-foundation on Windows. FileManager attributes
+            // retain the same symlink rejection while working on every
+            // supported platform.
+            let attributes = try FileManager.default.attributesOfItem(
+                atPath: url.path)
+            guard attributes[.type] as? FileAttributeType == .typeRegular,
+                  let size = attributes[.size] as? NSNumber,
                   let expectedEntry = entriesByPath[url.lastPathComponent]
             else { return false }
-            return size == expectedEntry.uncompressedSize
+            return size.intValue == expectedEntry.uncompressedSize
         }
     }
 
