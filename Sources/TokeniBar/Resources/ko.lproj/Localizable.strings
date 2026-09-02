@@ -350,6 +350,13 @@
 "companion.archive.putAway" = "활동 펫을 대표로";
 "companion.archive.showCurrent" = "성장 중인 펫 보기";
 "companion.archive.status.together" = "대표 펫";
+"companion.archive.filter.search" = "펫 검색";
+"companion.archive.filter.role" = "역할";
+"companion.archive.filter.role.all" = "모든 역할";
+"companion.archive.filter.role.primary" = "대표 펫";
+"companion.archive.filter.role.growthTarget" = "성장 대상";
+"companion.archive.filter.role.growing" = "성장 중";
+"companion.archive.filter.role.maximum" = "성장 완료";
 "companion.archive.status.maximum" = "만렙";
 "companion.archive.status.growing" = "성장 가능";
 "companion.archive.details" = "동료 상세 보기";

@@ -350,6 +350,13 @@
 "companion.archive.putAway" = "Use Active Pet";
 "companion.archive.showCurrent" = "Show Growing Pet";
 "companion.archive.status.together" = "Primary";
+"companion.archive.filter.search" = "Search pets";
+"companion.archive.filter.role" = "Role";
+"companion.archive.filter.role.all" = "All roles";
+"companion.archive.filter.role.primary" = "Primary";
+"companion.archive.filter.role.growthTarget" = "Growth target";
+"companion.archive.filter.role.growing" = "Still growing";
+"companion.archive.filter.role.maximum" = "Fully grown";
 "companion.archive.status.maximum" = "Max level";
 "companion.archive.status.growing" = "Can grow";
 "companion.archive.details" = "View companion details";

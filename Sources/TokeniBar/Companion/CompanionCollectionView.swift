@@ -57,6 +57,16 @@ private enum CompanionCosmeticOwnershipFilter:
     var id: Self { self }
 }
 
+private enum CompanionRosterRoleFilter: String, CaseIterable, Identifiable {
+    case all
+    case primary
+    case growthTarget
+    case growing
+    case maximum
+
+    var id: Self { self }
+}
+
 private struct CompanionCollectionEntrySelection: Identifiable {
     let speciesID: CompanionSpeciesID
     let variantID: CompanionVariantID
@@ -69,6 +79,8 @@ struct CompanionCollectionView: View {
     @State private var selectedSection = CompanionCollectionSection.pets
     @State private var selectedSpeciesID = CompanionSpeciesID.bytebot
     @State private var selectedOwnedSpeciesID: CompanionSpeciesID?
+    @State private var rosterSearchText = ""
+    @State private var rosterRoleFilter = CompanionRosterRoleFilter.all
     @State private var showsGrowthBreakdown = false
     @State private var showsAdvancedBenefits = false
     @State private var showsIdentityDetails = false
@@ -2466,6 +2478,24 @@ struct CompanionCollectionView: View {
                     systemImage: "line.3.horizontal.decrease.circle")
                     .font(.caption.weight(.semibold))
                 Spacer()
+                TextField(
+                    AppLocalization.string(
+                        "companion.archive.filter.search"),
+                    text: self.$rosterSearchText)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 190)
+                Picker(
+                    AppLocalization.string(
+                        "companion.archive.filter.role"),
+                    selection: self.$rosterRoleFilter)
+                {
+                    ForEach(CompanionRosterRoleFilter.allCases) { role in
+                        Text(AppLocalization.string(
+                            "companion.archive.filter.role.\(role.rawValue)"))
+                            .tag(role)
+                    }
+                }
+                .pickerStyle(.menu)
                 Picker(
                     AppLocalization.string(
                         "companion.archive.filter.title"),
@@ -2495,10 +2525,45 @@ struct CompanionCollectionView: View {
 
     private var filteredArchivedGenerations: [CompletedCompanionGeneration] {
         self.store.companionState.collection.archivedGenerations.filter {
-            guard let selectedOwnedSpeciesID = self.selectedOwnedSpeciesID
-            else { return true }
-            return $0.speciesID == selectedOwnedSpeciesID
+            generation in
+            if let selectedOwnedSpeciesID = self.selectedOwnedSpeciesID,
+               generation.speciesID != selectedOwnedSpeciesID
+            {
+                return false
+            }
+            let isPrimary = self.store.companionState.showcasedGenerationID
+                == generation.generationID
+            let isGrowthTarget = self.store.companionState
+                .resolvedGrowthTargetGenerationID == generation.generationID
+            let isMaximum = CompanionLevelCurve.standard.level(
+                forXP: generation.growthXP)
+                == CompanionLevelCurve.standard.maximumLevel
+            switch self.rosterRoleFilter {
+            case .all: break
+            case .primary where !isPrimary: return false
+            case .growthTarget where !isGrowthTarget: return false
+            case .growing where isMaximum: return false
+            case .maximum where !isMaximum: return false
+            default: break
+            }
+            let query = self.rosterSearchText.trimmingCharacters(
+                in: .whitespacesAndNewlines)
+            guard !query.isEmpty else { return true }
+            let speciesName = AppLocalization.string(
+                "companion.species.\(generation.speciesID.rawValue).name")
+            return generation.nickname?.localizedCaseInsensitiveContains(
+                query) == true
+                || speciesName.localizedCaseInsensitiveContains(query)
         }.sorted { lhs, rhs in
+            let primaryID = self.store.companionState.showcasedGenerationID
+            if (lhs.generationID == primaryID) != (rhs.generationID == primaryID) {
+                return lhs.generationID == primaryID
+            }
+            let growthID = self.store.companionState
+                .resolvedGrowthTargetGenerationID
+            if (lhs.generationID == growthID) != (rhs.generationID == growthID) {
+                return lhs.generationID == growthID
+            }
             let lhsIsMaximum = CompanionLevelCurve.standard.level(
                 forXP: lhs.growthXP)
                 == CompanionLevelCurve.standard.maximumLevel
