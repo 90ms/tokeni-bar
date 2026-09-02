@@ -218,7 +218,7 @@ private struct FixtureArchiveExtractor: CompanionArchiveExtracting {
     let manifestData: Data
     var mutation: FixtureExtractionMutation = .none
 
-    func extract(archiveURL _: URL, to destinationURL: URL) async throws {
+    func extract(archiveURL: URL, to destinationURL: URL) async throws {
         let manifestURL = destinationURL.appending(path: "pet.json")
         switch self.mutation {
         case .none, .unexpectedFile:
@@ -238,12 +238,9 @@ private struct FixtureArchiveExtractor: CompanionArchiveExtracting {
                     with: "spritesheet.zzzz")
             try Data(mismatched.utf8).write(to: manifestURL)
         case .manifestSymbolicLink:
-            let targetURL = destinationURL.deletingLastPathComponent()
-                .appending(path: ".manifest-target-\(UUID().uuidString)")
-            try self.manifestData.write(to: targetURL)
             try FileManager.default.createSymbolicLink(
                 at: manifestURL,
-                withDestinationURL: targetURL)
+                withDestinationURL: archiveURL)
         }
         try Data("RIFF".utf8).write(
             to: destinationURL.appending(path: "spritesheet.webp"))
