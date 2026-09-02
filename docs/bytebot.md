@@ -37,7 +37,7 @@ Growth Energy. For example, one XP appears as 25 Growth Energy when that level
 requires four XP. Verified remainder below one XP advances only the growth
 target's bar; internal XP and level rules do not change.
 
-The displayed companion and growth target can be selected independently, but
+The primary pet and growth target can be selected independently, but
 automatic rotation takes priority while an unfinished owned pet remains.
 At level 100, the on-screen form can be switched among Hatchling, Junior, and
 Adult without changing growth or collection progress.

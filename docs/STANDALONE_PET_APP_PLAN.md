@@ -14,7 +14,8 @@
 | 1. Standalone shell | Complete | Added Home, Pets, Usage, Settings link, summary-focused menu bar, and passed macOS CI |
 | 2. Dynamic-content foundation | Complete | Added extensible species/pack IDs, game boundaries, bundled/local asset sources, and passed macOS CI |
 | 3. Codex-compatible import | Complete | Safe validation, installation, rendering, appearance selection, pack management, and macOS CI completed |
-| 4–5 | Pending | Continue with the multiple-pet home and release polish |
+| 4. Multiple-pet home | Complete | Verified primary/growth roles, Home growth-target summary, and roster search and filters in macOS CI |
+| 5. Finish | In progress | Consolidate settings, accessibility and power behavior, final docs, and verification |
 
 Changes authored in Docker use GitHub Actions as the macOS gate. `swift test`,
 the release build, app packaging, and bundle metadata validation must pass
@@ -29,6 +30,11 @@ Stage 3 connects local ZIP preflight and atomic installation, V1/V2 behavior
 rendering, provenance and license management, removal, and primary-pet appearance
 selection. The external appearance preference is stored separately from growth
 state and cannot change species, Growth XP, egg odds, or collection totals.
+
+Stage 4 preserves existing persisted fields and automatic growth rotation while
+formalizing primary-pet and growth-target roles. Home separately summarizes the
+actual XP recipient, and Pets owns name, species, and role filters alongside the
+existing destructive confirmations.
 
 This document defines the product structure, UX ownership, data boundaries, and
 staged commit plan for expanding Tokeni from a menu-bar-centered utility into a
