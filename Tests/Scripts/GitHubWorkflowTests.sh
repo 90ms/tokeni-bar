@@ -29,6 +29,8 @@ grep -q '\.gitattributes|Package.swift' "$ci"
 grep -q '^  windows-gate:' "$windows"
 grep -q 'name: Windows required gate' "$windows"
 grep -q 'if: always()' "$windows"
+grep -A2 '^on:' "$windows" | grep -q 'push:'
+grep -q 'branches: \[main\]' "$windows"
 grep -q '\.gitattributes|Package.swift' "$windows"
 
 grep -q 'attestations: write' "$release"
