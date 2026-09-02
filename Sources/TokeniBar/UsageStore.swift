@@ -1661,7 +1661,7 @@ final class UsageStore: ObservableObject {
     }
 
     var companionMutationReadySpecies: [CompanionSpeciesID] {
-        CompanionSpeciesID.allCases.filter {
+        CompanionSpeciesRegistry.gameSpeciesIDs.filter {
             self.companionMutationSources(for: $0).count
                 >= CompanionMutationRegistry.synthesisSourceCount
         }

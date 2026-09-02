@@ -16,7 +16,7 @@ final class CompanionAssetCatalog {
     private init() {
         var loadedManifests: [CompanionSpeciesID: CompanionSpriteManifest] = [:]
         var loadedDirectories: [CompanionSpeciesID: URL] = [:]
-        for speciesID in CompanionSpeciesID.allCases {
+        for speciesID in CompanionSpeciesRegistry.gameSpeciesIDs {
             guard let assetDirectory = Self.assetDirectory(for: speciesID),
                   let manifest = Self.loadManifest(from: assetDirectory)
             else { continue }

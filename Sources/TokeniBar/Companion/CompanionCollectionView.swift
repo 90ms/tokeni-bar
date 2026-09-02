@@ -242,9 +242,12 @@ struct CompanionCollectionView: View {
         .onAppear {
             if let current = self.store.companionState.speciesID {
                 self.selectedSpeciesID = current
-            } else if let discovered = CompanionSpeciesID.allCases.first(where: {
-                self.store.companionState.collection.discoveredSpeciesIDs.contains($0)
-            }) {
+            } else if let discovered = CompanionSpeciesRegistry.gameSpeciesIDs
+                .first(where: {
+                    self.store.companionState.collection.discoveredSpeciesIDs
+                        .contains($0)
+                })
+            {
                 self.selectedSpeciesID = discovered
             }
             self.nicknameDraft = self.store.companionState.nickname ?? ""
@@ -1789,17 +1792,17 @@ struct CompanionCollectionView: View {
                     Divider()
                     self.metric(
                         AppLocalization.string("companion.collection.species"),
-                        value: "\(self.store.companionState.collection.discoveredSpeciesIDs.count) / \(CompanionSpeciesID.allCases.count)")
+                        value: "\(self.store.companionState.collection.discoveredSpeciesIDs.count) / \(CompanionSpeciesRegistry.gameSpeciesIDs.count)")
                     Divider()
                     self.metric(
                         AppLocalization.string("companion.collection.mutations"),
-                        value: "\(self.mutatedSpeciesCount) / \(CompanionSpeciesID.allCases.count)")
+                        value: "\(self.mutatedSpeciesCount) / \(CompanionSpeciesRegistry.gameSpeciesIDs.count)")
                 }
                 Divider()
                 HStack {
                     self.metric(
                         AppLocalization.string("companion.collection.prismatic"),
-                        value: "\(self.prismaticSpeciesCount) / \(CompanionSpeciesID.allCases.count)")
+                        value: "\(self.prismaticSpeciesCount) / \(CompanionSpeciesRegistry.gameSpeciesIDs.count)")
                     Divider()
                     self.metric(
                         AppLocalization.string("companion.memories.title"),
@@ -1840,7 +1843,7 @@ struct CompanionCollectionView: View {
                 "companion.pity.prismatic"),
         ]
         if self.store.companionState.collection.discoveredSpeciesIDs.count
-            < CompanionSpeciesID.allCases.count
+            < CompanionSpeciesRegistry.gameSpeciesIDs.count
         {
             guarantees.append((
                 max(
@@ -2001,7 +2004,7 @@ struct CompanionCollectionView: View {
                     ],
                     spacing: 8)
                 {
-                    ForEach(CompanionSpeciesID.allCases, id: \.self) {
+                    ForEach(CompanionSpeciesRegistry.gameSpeciesIDs, id: \.self) {
                         speciesID in
                         self.mutationSpeciesCard(speciesID)
                     }
@@ -2163,12 +2166,12 @@ struct CompanionCollectionView: View {
     }
 
     private var registeredGenerations: [Int] {
-        Array(Set(CompanionSpeciesID.allCases.map(\.contentGeneration)))
+        Array(Set(CompanionSpeciesRegistry.gameSpeciesIDs.map(\.contentGeneration)))
             .sorted()
     }
 
     private func speciesIDs(inContentGeneration generation: Int) -> [CompanionSpeciesID] {
-        CompanionSpeciesID.allCases.filter {
+        CompanionSpeciesRegistry.gameSpeciesIDs.filter {
             $0.contentGeneration == generation
         }
     }
@@ -2373,7 +2376,7 @@ struct CompanionCollectionView: View {
     }
 
     private var prismaticSpeciesCount: Int {
-        CompanionSpeciesID.allCases.count { speciesID in
+        CompanionSpeciesRegistry.gameSpeciesIDs.count { speciesID in
             self.store.companionState.collection
                 .discoveredCollectibleVariantKeys
                 .contains("\(speciesID.rawValue).prismatic")
@@ -2381,7 +2384,7 @@ struct CompanionCollectionView: View {
     }
 
     private var mutatedSpeciesCount: Int {
-        CompanionSpeciesID.allCases.count { speciesID in
+        CompanionSpeciesRegistry.gameSpeciesIDs.count { speciesID in
             self.store.companionState.collection
                 .discoveredCollectibleVariantKeys
                 .contains("\(speciesID.rawValue).mutated")
@@ -2466,7 +2469,7 @@ struct CompanionCollectionView: View {
                     Text(AppLocalization.string(
                         "companion.archive.filter.all"))
                         .tag(CompanionSpeciesID?.none)
-                    ForEach(CompanionSpeciesID.allCases, id: \.self) {
+                    ForEach(CompanionSpeciesRegistry.gameSpeciesIDs, id: \.self) {
                         speciesID in
                         Text(AppLocalization.string(
                             "companion.species.\(speciesID.rawValue).name"))

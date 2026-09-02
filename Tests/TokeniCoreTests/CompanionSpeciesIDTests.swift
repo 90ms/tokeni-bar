@@ -47,5 +47,28 @@ struct CompanionSpeciesIDTests {
         #expect(
             CompanionSpeciesRegistry.definition(for: .queryowl)?
                 .contentGeneration == 2)
+        #expect(
+            CompanionSpeciesRegistry.definition(for: .bytebot)?
+                .assetPackID == .tokeniBundled)
+        #expect(
+            CompanionSpeciesRegistry.gameSpeciesIDs
+                == CompanionSpeciesID.allCases)
+    }
+
+    @Test("Appearance-only definitions cannot opt into game progression")
+    func appearanceOnlyDefinition() throws {
+        let packID = CompanionAssetPackID(rawValue: "community.nebula-pack")
+        let definition = CompanionSpeciesDefinition(
+            id: CompanionSpeciesID(rawValue: "community.nebula-pack.nebujelly"),
+            displayNameLocalizationKey: "Nebujelly",
+            assetPackID: packID,
+            gameEligibility: .appearanceOnly,
+            contentGeneration: nil)
+
+        #expect(definition.gameEligibility == .appearanceOnly)
+        #expect(definition.contentGeneration == nil)
+        #expect(String(
+            decoding: try JSONEncoder().encode(packID),
+            as: UTF8.self) == "\"community.nebula-pack\"")
     }
 }

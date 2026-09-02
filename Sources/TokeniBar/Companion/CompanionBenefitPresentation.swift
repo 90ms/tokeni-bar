@@ -46,8 +46,10 @@ enum CompanionBenefitPresentation {
     }
 
     static func speciesName(_ speciesID: CompanionSpeciesID) -> String {
-        AppLocalization.string(
-            "companion.species.\(speciesID.rawValue).name")
+        let key = CompanionSpeciesRegistry.definition(for: speciesID)?
+            .displayNameLocalizationKey
+            ?? "companion.species.\(speciesID.rawValue).name"
+        return AppLocalization.string(key)
     }
 
     static func rarityName(_ rarity: CompanionRarity) -> String {

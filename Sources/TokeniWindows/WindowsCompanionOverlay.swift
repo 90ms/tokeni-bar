@@ -61,7 +61,7 @@ public struct WindowsCompanionOverlayState: Equatable, Sendable {
         case .adult: stage = 3
         }
         let speciesIndex = state.speciesID.flatMap { speciesID in
-            CompanionSpeciesID.allCases.firstIndex(of: speciesID)
+            CompanionSpeciesRegistry.gameSpeciesIDs.firstIndex(of: speciesID)
         } ?? 0
         let rarityRank = state.resolvedVariantID.map {
             CompanionVariantRegistry.definition(for: $0).assetRarity.rank

@@ -38,7 +38,7 @@ public struct CompanionSpeciesID:
     /// Bundled species only. Imported pack species are supplied by their
     /// content source and never enter the default game pool implicitly.
     public static var allCases: [Self] {
-        CompanionSpeciesRegistry.speciesIDs
+        CompanionSpeciesRegistry.gameSpeciesIDs
     }
 
     /// The bundled asset release generation, or `nil` for an external ID that
@@ -57,19 +57,19 @@ public struct CompanionSpeciesID:
     }
 
     public static func species(inContentGeneration generation: Int) -> [Self] {
-        CompanionSpeciesRegistry.definitions.compactMap {
+        CompanionSpeciesRegistry.gameDefinitions.compactMap {
             $0.contentGeneration == generation ? $0.id : nil
         }
     }
 
     public static var latestContentGeneration: Int {
-        CompanionSpeciesRegistry.definitions
-            .map(\.contentGeneration)
+        CompanionSpeciesRegistry.gameDefinitions
+            .compactMap(\.contentGeneration)
             .max() ?? 1
     }
 
     public static var totalRegisteredFormCount: Int {
-        CompanionSpeciesRegistry.definitions.count
+        CompanionSpeciesRegistry.gameDefinitions.count
             * CompanionVariantRegistry.definitions.count
             * CompanionGameStage.allCases.filter { $0 != .egg }.count
     }
@@ -77,7 +77,7 @@ public struct CompanionSpeciesID:
     /// The player-facing collection target. Lifecycle sprites belong to a
     /// journey album and do not inflate the number of companions to discover.
     public static var totalCollectibleVariantCount: Int {
-        CompanionSpeciesRegistry.definitions.count
+        CompanionSpeciesRegistry.gameDefinitions.count
             * CompanionVariantRegistry.collectibleIDs.count
     }
 
@@ -90,12 +90,54 @@ public struct CompanionSpeciesID:
     }
 }
 
+public struct CompanionAssetPackID:
+    RawRepresentable, Codable, Hashable, Sendable
+{
+    public let rawValue: String
+
+    public init(rawValue: String) {
+        self.rawValue = rawValue
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.rawValue = try container.decode(String.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.rawValue)
+    }
+
+    public static let tokeniBundled = Self(rawValue: "tokeni.bundled")
+}
+
+public enum CompanionGameEligibility: String, Codable, Hashable, Sendable {
+    /// Reviewed Tokeni content that participates in growth, eggs, and
+    /// collection totals.
+    case game
+    /// Artwork that can be selected without changing game odds or progression.
+    case appearanceOnly
+}
+
 public struct CompanionSpeciesDefinition: Identifiable, Hashable, Sendable {
     public let id: CompanionSpeciesID
-    public let contentGeneration: Int
+    public let displayNameLocalizationKey: String
+    public let assetPackID: CompanionAssetPackID
+    public let gameEligibility: CompanionGameEligibility
+    public let contentGeneration: Int?
 
-    public init(id: CompanionSpeciesID, contentGeneration: Int) {
+    public init(
+        id: CompanionSpeciesID,
+        displayNameLocalizationKey: String,
+        assetPackID: CompanionAssetPackID,
+        gameEligibility: CompanionGameEligibility,
+        contentGeneration: Int?)
+    {
         self.id = id
+        self.displayNameLocalizationKey = displayNameLocalizationKey
+        self.assetPackID = assetPackID
+        self.gameEligibility = gameEligibility
         self.contentGeneration = contentGeneration
     }
 }
@@ -104,23 +146,40 @@ public struct CompanionSpeciesDefinition: Identifiable, Hashable, Sendable {
 /// a separate content source instead of mutating this deterministic game pool.
 public enum CompanionSpeciesRegistry {
     public static let definitions: [CompanionSpeciesDefinition] = [
-        CompanionSpeciesDefinition(id: .bytebot, contentGeneration: 1),
-        CompanionSpeciesDefinition(id: .cachecat, contentGeneration: 1),
-        CompanionSpeciesDefinition(id: .stackfox, contentGeneration: 1),
-        CompanionSpeciesDefinition(id: .promptpup, contentGeneration: 1),
-        CompanionSpeciesDefinition(id: .nullslime, contentGeneration: 1),
-        CompanionSpeciesDefinition(id: .queryowl, contentGeneration: 2),
-        CompanionSpeciesDefinition(id: .patchpanda, contentGeneration: 2),
-        CompanionSpeciesDefinition(id: .loophare, contentGeneration: 2),
-        CompanionSpeciesDefinition(id: .relayray, contentGeneration: 2),
-        CompanionSpeciesDefinition(id: .kernelcrab, contentGeneration: 2),
+        Self.bundled(.bytebot, generation: 1),
+        Self.bundled(.cachecat, generation: 1),
+        Self.bundled(.stackfox, generation: 1),
+        Self.bundled(.promptpup, generation: 1),
+        Self.bundled(.nullslime, generation: 1),
+        Self.bundled(.queryowl, generation: 2),
+        Self.bundled(.patchpanda, generation: 2),
+        Self.bundled(.loophare, generation: 2),
+        Self.bundled(.relayray, generation: 2),
+        Self.bundled(.kernelcrab, generation: 2),
     ]
 
     public static let speciesIDs = Self.definitions.map(\.id)
+    public static let gameDefinitions = Self.definitions.filter {
+        $0.gameEligibility == .game
+    }
+    public static let gameSpeciesIDs = Self.gameDefinitions.map(\.id)
 
     public static func definition(
         for speciesID: CompanionSpeciesID) -> CompanionSpeciesDefinition?
     {
         Self.definitions.first { $0.id == speciesID }
+    }
+
+    private static func bundled(
+        _ speciesID: CompanionSpeciesID,
+        generation: Int) -> CompanionSpeciesDefinition
+    {
+        CompanionSpeciesDefinition(
+            id: speciesID,
+            displayNameLocalizationKey:
+                "companion.species.\(speciesID.rawValue).name",
+            assetPackID: .tokeniBundled,
+            gameEligibility: .game,
+            contentGeneration: generation)
     }
 }
