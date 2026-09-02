@@ -335,11 +335,17 @@ public struct CodexPetPackInstaller: Sendable {
             let backupName = ".backup-\(UUID().uuidString)"
             let backupURL = self.installationRoot.appending(path: backupName)
             #if os(Windows)
-            try fileManager.moveItem(at: destinationURL, to: backupURL)
+            try Self.moveDirectoryOnWindows(
+                from: destinationURL,
+                to: backupURL)
             do {
-                try fileManager.moveItem(at: stagingURL, to: destinationURL)
+                try Self.moveDirectoryOnWindows(
+                    from: stagingURL,
+                    to: destinationURL)
             } catch {
-                try? fileManager.moveItem(at: backupURL, to: destinationURL)
+                try? Self.moveDirectoryOnWindows(
+                    from: backupURL,
+                    to: destinationURL)
                 throw error
             }
             #else
@@ -351,7 +357,49 @@ public struct CodexPetPackInstaller: Sendable {
             #endif
             try? fileManager.removeItem(at: backupURL)
         } else {
+            #if os(Windows)
+            try Self.moveDirectoryOnWindows(
+                from: stagingURL,
+                to: destinationURL)
+            #else
             try fileManager.moveItem(at: stagingURL, to: destinationURL)
+            #endif
         }
     }
+
+    #if os(Windows)
+    private static func moveDirectoryOnWindows(
+        from sourceURL: URL,
+        to destinationURL: URL) throws
+    {
+        for attempt in 0..<4 {
+            let moved = sourceURL.path.withCString(encodedAs: UTF16.self) {
+                sourcePath in
+                destinationURL.path.withCString(encodedAs: UTF16.self) {
+                    destinationPath in
+                    MoveFileExW(
+                        sourcePath,
+                        destinationPath,
+                        DWORD(MOVEFILE_WRITE_THROUGH))
+                }
+            }
+            if moved { return }
+
+            let code = GetLastError()
+            let canRetry = code == ERROR_SHARING_VIOLATION
+                || code == ERROR_LOCK_VIOLATION
+                || code == ERROR_ACCESS_DENIED
+            guard canRetry, attempt < 3 else {
+                throw CodexPetPackWindowsMoveError.failed(code: Int64(code))
+            }
+            Sleep(DWORD(25 * (attempt + 1)))
+        }
+    }
+    #endif
 }
+
+#if os(Windows)
+private enum CodexPetPackWindowsMoveError: Error {
+    case failed(code: Int64)
+}
+#endif
