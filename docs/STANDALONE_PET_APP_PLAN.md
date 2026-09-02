@@ -4,7 +4,7 @@
 
 - Plan version: 1.0
 - Created: 2026-09-02
-- Status: in progress
+- Status: implementation and automated verification complete (device release QA pending)
 
 ## Progress
 
@@ -15,7 +15,7 @@
 | 2. Dynamic-content foundation | Complete | Added extensible species/pack IDs, game boundaries, bundled/local asset sources, and passed macOS CI |
 | 3. Codex-compatible import | Complete | Safe validation, installation, rendering, appearance selection, pack management, and macOS CI completed |
 | 4. Multiple-pet home | Complete | Verified primary/growth roles, Home growth-target summary, and roster search and filters in macOS CI |
-| 5. Finish | In progress | Consolidate settings, accessibility and power behavior, final docs, and verification |
+| 5. Finish | Automated verification complete | Consolidated settings, accessibility and power behavior, aligned docs, and passed macOS and Windows CI |
 
 Changes authored in Docker use GitHub Actions as the macOS gate. `swift test`,
 the release build, app packaging, and bundle metadata validation must pass
@@ -35,6 +35,15 @@ Stage 4 preserves existing persisted fields and automatic growth rotation while
 formalizing primary-pet and growth-target roles. Home separately summarizes the
 actual XP recipient, and Pets owns name, species, and role filters alongside the
 existing destructive confirmations.
+
+Stage 5 gives Pets sole ownership of pet management and applies VoiceOver,
+Reduce Motion, Low Power Mode, and offscreen-animation policies. Because the
+Synology Docker environment has neither Swift nor macOS frameworks, GitHub
+Actions is the final automated baseline. macOS passed the full tests, release
+build, app packaging, and bundle metadata checks. Windows passed the full tests,
+native state machine, release build, portable packaging, asset validation, and
+unpacked-package smoke test. Visual and input checks on real macOS hardware
+remain a manual pre-release gate.
 
 This document defines the product structure, UX ownership, data boundaries, and
 staged commit plan for expanding Tokeni from a menu-bar-centered utility into a
@@ -275,5 +284,8 @@ A stage is complete only when all conditions hold:
 - Growth invariants and privacy boundaries remain intact.
 - The same management function is not duplicated in the menu bar and main window.
 
-Before release, manually verify clean install, upgrade, corrupt external packs,
-external-pack removal, offline startup, and every-provider-unavailable states.
+The 2026-09-02 automated baseline completed `swift test`, release builds, macOS
+app-bundle validation, and the Windows portable-package smoke test. Before
+release, manually verify clean install, upgrade, keyboard and VoiceOver use,
+Reduce Motion, corrupt external packs, external-pack removal, offline startup,
+and every-provider-unavailable states on real macOS hardware.
