@@ -287,9 +287,12 @@ public struct CodexPetPackInstaller: Sendable {
                 isDirectory: &isDirectory)
             let symbolicLinkDestination = try? FileManager.default
                 .destinationOfSymbolicLink(atPath: url.path)
+            // Windows returns an empty destination for a regular file instead
+            // of throwing as Darwin does.
+            let isSymbolicLink = symbolicLinkDestination?.isEmpty == false
             guard exists,
                   !isDirectory.boolValue,
-                  symbolicLinkDestination == nil,
+                  !isSymbolicLink,
                   let size = try? Data(
                     contentsOf: url,
                     options: [.mappedIfSafe]).count,
