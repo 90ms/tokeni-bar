@@ -1,0 +1,7 @@
+{
+  "id": "orbit-otter",
+  "displayName": "Orbit Otter",
+  "description": "A sanitized V2 fixture pet.",
+  "spritesheetPath": "spritesheet.png",
+  "spriteVersionNumber": 2
+}
