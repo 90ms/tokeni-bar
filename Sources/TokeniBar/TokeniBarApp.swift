@@ -1,13 +1,26 @@
 import AppKit
+import Darwin
 import TokeniCore
 import SwiftUI
 
 @main
 struct TokeniBarApp: App {
-    @StateObject private var store = UsageStore()
-    @StateObject private var companionOverlayController = CompanionOverlayController()
-    @StateObject private var caffeineController = CaffeineController()
-    @StateObject private var mainNavigation = TokeniMainNavigation()
+    @StateObject private var store: UsageStore
+    @StateObject private var companionOverlayController: CompanionOverlayController
+    @StateObject private var caffeineController: CaffeineController
+    @StateObject private var mainNavigation: TokeniMainNavigation
+
+    init() {
+        if CommandLine.arguments.dropFirst().contains(PackagedApplicationSmokeTest.argument) {
+            Darwin.exit(PackagedApplicationSmokeTest.run())
+        }
+
+        self._store = StateObject(wrappedValue: UsageStore())
+        self._companionOverlayController = StateObject(
+            wrappedValue: CompanionOverlayController())
+        self._caffeineController = StateObject(wrappedValue: CaffeineController())
+        self._mainNavigation = StateObject(wrappedValue: TokeniMainNavigation())
+    }
 
     var body: some Scene {
         Window(AppLocalization.string("main.title"), id: "tokeni-main") {

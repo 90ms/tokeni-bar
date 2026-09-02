@@ -92,7 +92,7 @@ jobs:
                 fi
                 echo "Package.swift changes are limited to the Windows conditional block."
                 ;;
-              .gitattributes|Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniBar/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/Scripts/*|Scripts/test.sh|Scripts/package_app.sh|Scripts/validate_companion_assets.sh|Scripts/validate_localizations.sh|packaging/Info.plist|packaging/AppIcon.png|.github/workflows/ci.yml|.github/workflows/release.yml)
+              .gitattributes|Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniBar/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/Scripts/*|Scripts/test.sh|Scripts/package_app.sh|Scripts/smoke_macos_package.sh|Scripts/validate_companion_assets.sh|Scripts/validate_localizations.sh|packaging/Info.plist|packaging/AppIcon.png|.github/workflows/ci.yml|.github/workflows/release.yml)
                 run_macos=true
                 break
                 ;;
@@ -157,6 +157,8 @@ jobs:
           test "$(defaults read "$app/Contents/Info" CFBundleIconFile)" = "AppIcon"
           test "$(defaults read "$app/Contents/Info" CFBundleShortVersionString)" = "0.0.0"
           test "$(defaults read "$app/Contents/Info" CFBundleVersion)" = "$GITHUB_RUN_NUMBER"
+      - name: Smoke-test packaged macOS app
+        run: ./Scripts/smoke_macos_package.sh "$RUNNER_TEMP/agents-status-package/Tokeni Bar.app"
 
   macos-gate:
     name: macOS required gate

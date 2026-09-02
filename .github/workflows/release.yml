@@ -222,6 +222,9 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
         run: ./Scripts/package_app.sh
 
+      - name: Smoke-test packaged macOS app
+        run: ./Scripts/smoke_macos_package.sh "dist/Tokeni Bar.app"
+
       - name: Create release archive
         shell: bash
         env:
