@@ -15,6 +15,9 @@
 "main.home.caffeineOn" = "Caffeine is on";
 "main.home.caffeineOff" = "Caffeine is off";
 "main.home.caffeineDescription" = "Prevent idle system sleep while you need it.";
+"main.home.growthTarget" = "Growth target";
+"main.home.primaryAndGrowth" = "Primary · Growth";
+"main.home.manageGrowthTarget" = "Choose in Pets";
 "main.usage.title" = "Usage";
 "main.usage.subtitle" = "Review current limits and local history in one place.";
 "menu.summary.usage" = "View usage details";

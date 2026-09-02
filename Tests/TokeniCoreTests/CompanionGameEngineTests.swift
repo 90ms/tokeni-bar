@@ -392,6 +392,12 @@ struct CompanionGameEngineTests {
         #expect(state.roleSelection.growthTargetGenerationID
             == growthTarget.generationID)
         #expect(state.roleSelection.showcaseGenerationIDs.isEmpty)
+        #expect(state.growthTargetPet?.generationID
+            == growthTarget.generationID)
+        #expect(state.growthTargetPet?.speciesID == growthTarget.speciesID)
+        #expect(state.growthTargetPet?.level
+            == CompanionLevelCurve.standard.level(
+                forXP: growthTarget.growthXP))
 
         try engine.selectPrimaryCompanion(state.generationID, in: &state)
         #expect(state.showcasedGeneration == nil)

@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import TokeniCore
 
 enum TokeniMainDestination: String, CaseIterable, Hashable, Identifiable {
     case home
@@ -115,6 +116,9 @@ private struct TokeniHomeView: View {
                     CompanionCard(
                         store: self.store,
                         openCollection: { self.navigate(.pets) })
+                    if let growthTarget = self.store.companionState.growthTargetPet {
+                        self.growthTargetSummary(growthTarget)
+                    }
                 } else {
                     ContentUnavailableView(
                         AppLocalization.string(
@@ -201,6 +205,76 @@ private struct TokeniHomeView: View {
                 .font(.headline)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func growthTargetSummary(
+        _ target: CompanionRolePet
+    ) -> some View {
+        GroupBox {
+            HStack(alignment: .center, spacing: 14) {
+                ByteBotSpriteView(
+                    speciesID: target.speciesID,
+                    stage: target.stage,
+                    rarity: target.rarity,
+                    variantID: target.variantID,
+                    behavior: .idle,
+                    dimension: 56,
+                    animationsEnabled: false)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text(target.nickname ?? AppLocalization.string(
+                            "companion.species.\(target.speciesID.rawValue).name"))
+                            .font(.headline)
+                        if self.store.companionState.roleSelection
+                            .primaryGenerationID == target.generationID
+                        {
+                            Text(AppLocalization.string(
+                                "main.home.primaryAndGrowth"))
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    Color.accentColor.opacity(0.12),
+                                    in: Capsule())
+                        }
+                    }
+
+                    HStack {
+                        Text(AppLocalization.format(
+                            "companion.level.value",
+                            target.level))
+                        Text("·")
+                        Text(AppLocalization.string(
+                            "companion.stage.\(target.stage.rawValue)"))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                    ProgressView(value: target.levelProgress)
+                        .accessibilityLabel(AppLocalization.string(
+                            "main.home.growthTarget"))
+                        .accessibilityValue(AppLocalization.format(
+                            "companion.level.value",
+                            target.level))
+                }
+
+                Spacer()
+
+                Button(AppLocalization.string(
+                    "main.home.manageGrowthTarget"))
+                {
+                    self.navigate(.pets)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Label(
+                AppLocalization.string("main.home.growthTarget"),
+                systemImage: "scope")
+                .font(.headline)
+        }
     }
 
     private var caffeineSummary: some View {

@@ -15,6 +15,9 @@
 "main.home.caffeineOn" = "카페인이 켜져 있습니다";
 "main.home.caffeineOff" = "카페인이 꺼져 있습니다";
 "main.home.caffeineDescription" = "필요한 동안 Mac의 유휴 잠자기를 방지합니다.";
+"main.home.growthTarget" = "성장 대상";
+"main.home.primaryAndGrowth" = "대표 · 성장";
+"main.home.manageGrowthTarget" = "펫에서 선택";
 "main.usage.title" = "사용량";
 "main.usage.subtitle" = "현재 한도와 로컬 기록을 한곳에서 확인합니다.";
 "menu.summary.usage" = "사용량 자세히 보기";
