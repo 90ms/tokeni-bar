@@ -13,16 +13,22 @@ final class CompanionAssetCatalog {
     private let frameCache = NSCache<NSString, ImageBox>()
     private var memoryPressureSource: DispatchSourceMemoryPressure?
 
-    private init() {
+    private convenience init() {
+        self.init(assetSources: [Self.bundledAssetSource()])
+    }
+
+    init(assetSources: [CompanionAssetSource]) {
         var loadedManifests: [CompanionSpeciesID: CompanionSpriteManifest] = [:]
         var loadedDirectories: [CompanionSpeciesID: URL] = [:]
-        for speciesID in CompanionSpeciesRegistry.gameSpeciesIDs {
-            guard let assetDirectory = Self.assetDirectory(for: speciesID),
-                  let manifest = Self.loadManifest(from: assetDirectory)
+        let sourceRegistry = CompanionAssetSourceRegistry(sources: assetSources)
+        for location in sourceRegistry.locations {
+            guard location.format == .tokeniNative,
+                  loadedManifests[location.speciesID] == nil,
+                  let manifest = Self.loadManifest(from: location.directoryURL)
             else { continue }
 
-            loadedManifests[speciesID] = manifest
-            loadedDirectories[speciesID] = assetDirectory
+            loadedManifests[location.speciesID] = manifest
+            loadedDirectories[location.speciesID] = location.directoryURL
         }
         self.manifests = loadedManifests
         self.assetDirectories = loadedDirectories
@@ -341,7 +347,28 @@ final class CompanionAssetCatalog {
         self.manifests[speciesID ?? .bytebot]
     }
 
-    private static func assetDirectory(for speciesID: CompanionSpeciesID) -> URL? {
+    private static func bundledAssetSource() -> CompanionAssetSource {
+        let locations = CompanionSpeciesRegistry.gameDefinitions.compactMap {
+            definition -> CompanionAssetLocation? in
+            guard let directory = Self.bundledAssetDirectory(
+                for: definition.id)
+            else { return nil }
+            return CompanionAssetLocation(
+                sourceID: .tokeniBundle,
+                packID: definition.assetPackID,
+                speciesID: definition.id,
+                format: .tokeniNative,
+                directoryURL: directory)
+        }
+        return CompanionAssetSource(
+            id: .tokeniBundle,
+            kind: .bundled,
+            locations: locations)
+    }
+
+    private static func bundledAssetDirectory(
+        for speciesID: CompanionSpeciesID) -> URL?
+    {
         let relativeComponents = ["CompanionAssets", speciesID.rawValue]
         if let root = Bundle.main.resourceURL {
             let candidate = relativeComponents.reduce(root) {
