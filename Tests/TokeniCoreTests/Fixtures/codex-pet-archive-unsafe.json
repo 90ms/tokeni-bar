@@ -1,0 +1,29 @@
+[
+  {
+    "path": "../pet.json",
+    "compressedSize": 20,
+    "uncompressedSize": 20,
+    "compressionMethod": 8,
+    "isDirectory": false,
+    "isSymbolicLink": false,
+    "isEncrypted": false
+  },
+  {
+    "path": "spritesheet.webp",
+    "compressedSize": 100,
+    "uncompressedSize": 200,
+    "compressionMethod": 8,
+    "isDirectory": false,
+    "isSymbolicLink": true,
+    "isEncrypted": false
+  },
+  {
+    "path": "secret.bin",
+    "compressedSize": 10,
+    "uncompressedSize": 10,
+    "compressionMethod": 99,
+    "isDirectory": false,
+    "isSymbolicLink": false,
+    "isEncrypted": true
+  }
+]
