@@ -42,6 +42,7 @@ struct ByteBotSpriteView: View {
                 Image(decorative: frame, scale: 1, orientation: .up)
                     .resizable()
                     .interpolation(.none)
+                    .scaledToFit()
                     .frame(width: self.dimension, height: self.dimension)
             } else {
                 Image(systemName: "cpu")
@@ -65,12 +66,11 @@ struct ByteBotSpriteView: View {
         guard let speciesID else {
             return AppLocalization.string("companion.species.mystery.name")
         }
-        return AppLocalization.string(
-            "companion.species.\(speciesID.rawValue).name")
+        return CompanionAssetCatalog.shared.displayName(for: speciesID)
     }
 
     private func minimumInterval(
-        for animation: CompanionSpriteManifest.Animation?) -> TimeInterval
+        for animation: CompanionRenderAnimation?) -> TimeInterval
     {
         guard let framesPerSecond = animation?.framesPerSecond,
               framesPerSecond > 0
@@ -82,7 +82,7 @@ struct ByteBotSpriteView: View {
 
     private func frameIndex(
         at date: Date,
-        animation: CompanionSpriteManifest.Animation?,
+        animation: CompanionRenderAnimation?,
         shouldAnimate: Bool) -> Int
     {
         guard shouldAnimate,
