@@ -5,6 +5,7 @@ private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
     case pets
     case eggs
     case rewards
+    case packs
 
     var id: Self { self }
 
@@ -13,6 +14,7 @@ private enum CompanionCollectionSection: String, CaseIterable, Identifiable {
         case .pets: "pawprint.fill"
         case .eggs: "shippingbox.fill"
         case .rewards: "star.fill"
+        case .packs: "shippingbox.and.arrow.backward.fill"
         }
     }
 }
@@ -264,6 +266,8 @@ struct CompanionCollectionView: View {
                 self.eggVault
             case .rewards:
                 self.rewardWallet
+            case .packs:
+                CompanionPackManagementView()
             }
         }
     }
