@@ -106,6 +106,69 @@ struct CodexPetPackInstallerTests {
         #expect(provenance.notice == "Local use only")
     }
 
+    @Test("Unexpected extracted files fail closed and clean staging")
+    func rejectsUnexpectedExtractedFiles() async throws {
+        try await self.expectUnsafeExtraction(
+            .unexpectedFile,
+            issue: .unexpectedFilenames)
+    }
+
+    @Test("Extracted directories fail closed and clean staging")
+    func rejectsExtractedDirectories() async throws {
+        try await self.expectUnsafeExtraction(
+            .manifestDirectory,
+            issue: .directory)
+    }
+
+    @Test("Extracted byte mismatches fail closed and clean staging")
+    func rejectsExtractedSizeMismatch() async throws {
+        try await self.expectUnsafeExtraction(
+            .manifestSizeMismatch,
+            issue: .sizeMismatch)
+    }
+
+    @Test("Manifest asset mismatches fail closed and clean staging")
+    func rejectsManifestAssetMismatch() async throws {
+        try await self.expectUnsafeExtraction(
+            .manifestAssetMismatch,
+            issue: .manifestAssetMismatch)
+    }
+
+    #if !os(Windows)
+    @Test("Extracted symbolic links fail closed and clean staging")
+    func rejectsExtractedSymbolicLinks() async throws {
+        try await self.expectUnsafeExtraction(
+            .manifestSymbolicLink,
+            issue: .linkOrReparsePoint)
+    }
+    #endif
+
+    private func expectUnsafeExtraction(
+        _ mutation: FixtureExtractionMutation,
+        issue: CodexPetPackExtractedContentsIssue) async throws
+    {
+        let environment = try self.environment()
+        defer { try? FileManager.default.removeItem(at: environment.root) }
+        let installer = CodexPetPackInstaller(
+            installationRoot: environment.installationRoot,
+            extractor: FixtureArchiveExtractor(
+                manifestData: environment.manifestData,
+                mutation: mutation),
+            atlasInspector: FixedAtlasInspector(
+                size: CompanionAtlasPixelSize(width: 1_536, height: 1_872)))
+
+        await #expect(throws:
+            CodexPetPackInstallationError.unsafeExtractedContents(issue)
+        ) {
+            try await installer.install(archiveURL: environment.archiveURL)
+        }
+
+        let remaining = try FileManager.default.contentsOfDirectory(
+            at: environment.installationRoot,
+            includingPropertiesForKeys: nil)
+        #expect(remaining.isEmpty)
+    }
+
     private func environment() throws -> InstallerTestEnvironment {
         let root = FileManager.default.temporaryDirectory.appending(
             path: "tokeni-pack-installer-\(UUID().uuidString)",
@@ -153,13 +216,50 @@ private struct InstallerTestEnvironment {
 
 private struct FixtureArchiveExtractor: CompanionArchiveExtracting {
     let manifestData: Data
+    var mutation: FixtureExtractionMutation = .none
 
     func extract(archiveURL _: URL, to destinationURL: URL) async throws {
-        try self.manifestData.write(
-            to: destinationURL.appending(path: "pet.json"))
+        let manifestURL = destinationURL.appending(path: "pet.json")
+        switch self.mutation {
+        case .none, .unexpectedFile:
+            try self.manifestData.write(to: manifestURL)
+        case .manifestDirectory:
+            try FileManager.default.createDirectory(
+                at: manifestURL,
+                withIntermediateDirectories: false)
+        case .manifestSizeMismatch:
+            var oversizedManifest = self.manifestData
+            oversizedManifest.append(UInt8(ascii: "\n"))
+            try oversizedManifest.write(to: manifestURL)
+        case .manifestAssetMismatch:
+            let mismatched = String(decoding: self.manifestData, as: UTF8.self)
+                .replacingOccurrences(
+                    of: "spritesheet.webp",
+                    with: "spritesheet.zzzz")
+            try Data(mismatched.utf8).write(to: manifestURL)
+        case .manifestSymbolicLink:
+            let targetURL = destinationURL.deletingLastPathComponent()
+                .appending(path: ".manifest-target-\(UUID().uuidString)")
+            try self.manifestData.write(to: targetURL)
+            try FileManager.default.createSymbolicLink(
+                at: manifestURL,
+                withDestinationURL: targetURL)
+        }
         try Data("RIFF".utf8).write(
             to: destinationURL.appending(path: "spritesheet.webp"))
+        if self.mutation == .unexpectedFile {
+            try Data().write(to: destinationURL.appending(path: "extra.bin"))
+        }
     }
+}
+
+private enum FixtureExtractionMutation: Equatable, Sendable {
+    case none
+    case unexpectedFile
+    case manifestDirectory
+    case manifestSizeMismatch
+    case manifestAssetMismatch
+    case manifestSymbolicLink
 }
 
 private struct FixedAtlasInspector: CompanionAtlasInspecting {
