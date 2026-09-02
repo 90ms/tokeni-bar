@@ -217,6 +217,7 @@ final class CompanionAssetCatalog {
         case .queryowl: (0.5, 0.38)
         case .relayray: (0.5, 0.52)
         case .stackfox: (0.66, 0.56)
+        default: (0.5, 0.5)
         }
         let targetX = opaqueBounds.minX
             + opaqueBounds.width * normalizedTarget.x
