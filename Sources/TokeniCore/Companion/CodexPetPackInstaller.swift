@@ -1,5 +1,9 @@
 import Foundation
 
+#if os(Windows)
+import WinSDK
+#endif
+
 public struct CompanionAtlasPixelSize: Equatable, Sendable {
     public let width: Int
     public let height: Int
@@ -285,14 +289,9 @@ public struct CodexPetPackInstaller: Sendable {
             let exists = FileManager.default.fileExists(
                 atPath: url.path,
                 isDirectory: &isDirectory)
-            let symbolicLinkDestination = try? FileManager.default
-                .destinationOfSymbolicLink(atPath: url.path)
-            // Windows returns an empty destination for a regular file instead
-            // of throwing as Darwin does.
-            let isSymbolicLink = symbolicLinkDestination?.isEmpty == false
             guard exists,
                   !isDirectory.boolValue,
-                  !isSymbolicLink,
+                  !Self.isSymbolicLinkOrReparsePoint(at: url),
                   let size = try? Data(
                     contentsOf: url,
                     options: [.mappedIfSafe]).count,
@@ -300,6 +299,19 @@ public struct CodexPetPackInstaller: Sendable {
             else { return false }
             return size == expectedEntry.uncompressedSize
         }
+    }
+
+    private static func isSymbolicLinkOrReparsePoint(at url: URL) -> Bool {
+        #if os(Windows)
+        let attributes = url.path.withCString(encodedAs: UTF16.self) {
+            GetFileAttributesW($0)
+        }
+        guard attributes != DWORD(INVALID_FILE_ATTRIBUTES) else { return true }
+        return attributes & DWORD(FILE_ATTRIBUTE_REPARSE_POINT) != 0
+        #else
+        return (try? FileManager.default.destinationOfSymbolicLink(
+            atPath: url.path)) != nil
+        #endif
     }
 
     private func publish(stagingURL: URL, destinationURL: URL) throws {
