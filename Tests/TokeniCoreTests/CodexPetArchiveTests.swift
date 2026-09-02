@@ -82,6 +82,8 @@ struct CodexPetArchiveTests {
                 maximumBytes: CodexPetArchiveValidator.maximumExpandedBytes)))
             #expect(error.issues.contains(.suspiciousCompressionRatio(
                 "spritesheet.webp")))
+        } catch {
+            Issue.record("Unexpected archive validation error: \(error)")
         }
     }
 
