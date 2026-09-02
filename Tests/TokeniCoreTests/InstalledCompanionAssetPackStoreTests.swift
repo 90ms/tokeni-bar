@@ -32,7 +32,8 @@ struct InstalledCompanionAssetPackStoreTests {
 
         #expect(packs.count == 1)
         #expect(packs[0].metadata.packID.rawValue == "codex.nebujelly")
-        #expect(packs[0].directoryURL == valid)
+        #expect(packs[0].directoryURL.resolvingSymlinksInPath()
+            == valid.resolvingSymlinksInPath())
         #expect(store.assetSource().locations == [packs[0].assetLocation])
     }
 
