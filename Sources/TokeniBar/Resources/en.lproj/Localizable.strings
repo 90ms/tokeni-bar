@@ -17,6 +17,10 @@
 "main.home.caffeineDescription" = "Prevent idle system sleep while you need it.";
 "main.usage.title" = "Usage";
 "main.usage.subtitle" = "Review current limits and local history in one place.";
+"menu.summary.usage" = "View usage details";
+"menu.summary.providerCount" = "%d provider summaries";
+"menu.summary.remaining" = "Lowest %d%%";
+"menu.summary.companion" = "Level %d · %@";
 "app.menuName" = "Tokeni";
 "app.menuRemaining" = "Tokeni %d%%";
 "app.menuMonthlyCost" = "Month %@";

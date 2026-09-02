@@ -6,6 +6,7 @@ struct CompanionCard: View {
     @ObservedObject var store: UsageStore
     @Environment(\.openSettings) private var openSettings
     var compact = false
+    var openCollection: (() -> Void)? = nil
 
     var body: some View {
         if self.store.companionDataUnavailable {
@@ -90,7 +91,7 @@ struct CompanionCard: View {
                 Spacer(minLength: 4)
 
                 Button {
-                    self.openCompanionSettings()
+                    self.openCompanionCollection()
                 } label: {
                     Image(systemName: "square.grid.3x3.fill")
                 }
@@ -317,7 +318,7 @@ struct CompanionCard: View {
                 .disabled(!self.store.canPerformCompanionAction)
             case .adult:
                 Button {
-                    self.openCompanionSettings()
+                    self.openCompanionCollection()
                 } label: {
                     Label(
                         AppLocalization.string("companion.collection.open"),
@@ -338,7 +339,11 @@ struct CompanionCard: View {
             .background(.quaternary, in: Capsule())
     }
 
-    private func openCompanionSettings() {
+    private func openCompanionCollection() {
+        if let openCollection = self.openCollection {
+            openCollection()
+            return
+        }
         self.openSettings()
         Task { @MainActor in
             await Task.yield()

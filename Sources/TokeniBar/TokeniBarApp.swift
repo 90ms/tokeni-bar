@@ -7,12 +7,14 @@ struct TokeniBarApp: App {
     @StateObject private var store = UsageStore()
     @StateObject private var companionOverlayController = CompanionOverlayController()
     @StateObject private var caffeineController = CaffeineController()
+    @StateObject private var mainNavigation = TokeniMainNavigation()
 
     var body: some Scene {
         Window(AppLocalization.string("main.title"), id: "tokeni-main") {
             TokeniMainView(
                 store: self.store,
-                caffeineController: self.caffeineController)
+                caffeineController: self.caffeineController,
+                navigation: self.mainNavigation)
         }
         .defaultSize(width: 1_080, height: 760)
         .windowResizability(.contentMinSize)
@@ -20,7 +22,8 @@ struct TokeniBarApp: App {
         MenuBarExtra {
             MenuPopoverView(
                 store: self.store,
-                caffeineController: self.caffeineController)
+                caffeineController: self.caffeineController,
+                mainNavigation: self.mainNavigation)
         } label: {
             self.menuBarLabel
                 .onAppear {

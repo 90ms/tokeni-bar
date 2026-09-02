@@ -5,7 +5,6 @@ enum TokeniMainDestination: String, CaseIterable, Hashable, Identifiable {
     case home
     case pets
     case usage
-    case settings
 
     var id: Self { self }
 
@@ -18,24 +17,51 @@ enum TokeniMainDestination: String, CaseIterable, Hashable, Identifiable {
         case .home: "house.fill"
         case .pets: "pawprint.fill"
         case .usage: "chart.xyaxis.line"
-        case .settings: "gearshape.fill"
         }
+    }
+}
+
+@MainActor
+final class TokeniMainNavigation: ObservableObject {
+    @Published var selection: TokeniMainDestination?
+
+    init(selection: TokeniMainDestination = .home) {
+        self.selection = selection
+    }
+
+    var destination: TokeniMainDestination {
+        self.selection ?? .home
+    }
+
+    func select(_ destination: TokeniMainDestination) {
+        self.selection = destination
     }
 }
 
 struct TokeniMainView: View {
     @ObservedObject var store: UsageStore
     @ObservedObject var caffeineController: CaffeineController
-    @State private var selection = TokeniMainDestination.home
+    @ObservedObject var navigation: TokeniMainNavigation
 
     var body: some View {
         NavigationSplitView {
-            List(TokeniMainDestination.allCases, selection: self.$selection) {
-                destination in
-                Label(
-                    AppLocalization.string(destination.localizationKey),
-                    systemImage: destination.systemImage)
-                    .tag(destination)
+            List(selection: self.$navigation.selection) {
+                Section {
+                    ForEach(TokeniMainDestination.allCases) { destination in
+                        Label(
+                            AppLocalization.string(destination.localizationKey),
+                            systemImage: destination.systemImage)
+                            .tag(destination)
+                    }
+                }
+
+                Section {
+                    SettingsLink {
+                        Label(
+                            AppLocalization.string("main.navigation.settings"),
+                            systemImage: "gearshape.fill")
+                    }
+                }
             }
             .navigationTitle(AppLocalization.string("main.title"))
             .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 240)
@@ -52,12 +78,12 @@ struct TokeniMainView: View {
 
     @ViewBuilder
     private var detail: some View {
-        switch self.selection {
+        switch self.navigation.destination {
         case .home:
             TokeniHomeView(
                 store: self.store,
                 caffeineController: self.caffeineController,
-                selection: self.$selection)
+                navigate: { self.navigation.select($0) })
         case .pets:
             CompanionCollectionView(store: self.store)
                 .navigationTitle(AppLocalization.string(
@@ -66,12 +92,6 @@ struct TokeniMainView: View {
             TokeniUsageView(store: self.store)
                 .navigationTitle(AppLocalization.string(
                     TokeniMainDestination.usage.localizationKey))
-        case .settings:
-            SettingsView(
-                store: self.store,
-                caffeineController: self.caffeineController)
-                .navigationTitle(AppLocalization.string(
-                    TokeniMainDestination.settings.localizationKey))
         }
     }
 }
@@ -79,7 +99,7 @@ struct TokeniMainView: View {
 private struct TokeniHomeView: View {
     @ObservedObject var store: UsageStore
     @ObservedObject var caffeineController: CaffeineController
-    @Binding var selection: TokeniMainDestination
+    let navigate: (TokeniMainDestination) -> Void
 
     var body: some View {
         ScrollView {
@@ -92,7 +112,9 @@ private struct TokeniHomeView: View {
                 }
 
                 if self.store.companionEnabled {
-                    CompanionCard(store: self.store)
+                    CompanionCard(
+                        store: self.store,
+                        openCollection: { self.navigate(.pets) })
                 } else {
                     ContentUnavailableView(
                         AppLocalization.string(
@@ -109,7 +131,7 @@ private struct TokeniHomeView: View {
 
                 HStack(spacing: 12) {
                     Button {
-                        self.selection = .pets
+                        self.navigate(.pets)
                     } label: {
                         Label(
                             AppLocalization.string("main.home.openPets"),
@@ -118,7 +140,7 @@ private struct TokeniHomeView: View {
                     .buttonStyle(.borderedProminent)
 
                     Button {
-                        self.selection = .usage
+                        self.navigate(.usage)
                     } label: {
                         Label(
                             AppLocalization.string("main.home.openUsage"),
