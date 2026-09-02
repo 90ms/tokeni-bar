@@ -13,7 +13,7 @@
 | 0. Lock decisions | Complete | Added the bilingual plan and documentation index |
 | 1. Standalone shell | Complete | Added Home, Pets, Usage, Settings link, summary-focused menu bar, and passed macOS CI |
 | 2. Dynamic-content foundation | Complete | Added extensible species/pack IDs, game boundaries, bundled/local asset sources, and passed macOS CI |
-| 3. Codex-compatible import | In progress | Start with the pure V1/V2 local-pack validator |
+| 3. Codex-compatible import | Complete | Safe validation, installation, rendering, appearance selection, pack management, and macOS CI completed |
 | 4–5 | Pending | Continue with the multiple-pet home and release polish |
 
 Changes authored in Docker use GitHub Actions as the macOS gate. `swift test`,
@@ -24,6 +24,11 @@ Stage 2 preserves the existing single-string persistence format while allowing
 external species IDs to round-trip losslessly. Imported appearances cannot
 implicitly enter hatch odds, growth, or collection totals. The asset catalog
 now distinguishes bundled/local sources and Tokeni Native/Codex V1/V2 formats.
+
+Stage 3 connects local ZIP preflight and atomic installation, V1/V2 behavior
+rendering, provenance and license management, removal, and primary-pet appearance
+selection. The external appearance preference is stored separately from growth
+state and cannot change species, Growth XP, egg odds, or collection totals.
 
 This document defines the product structure, UX ownership, data boundaries, and
 staged commit plan for expanding Tokeni from a menu-bar-centered utility into a
@@ -132,7 +137,8 @@ requires the Tokeni Native contract and review.
 - The first release imports only a local `.codex-pet.zip` selected by the user.
 - Core growth and startup never depend on an unstable remote gallery API.
 - File count, compressed and expanded size, path traversal, and symlinks are checked before extraction.
-- Executables and scripts are rejected; only `pet.json` and `spritesheet.webp` are accepted.
+- Executables and scripts are rejected; only `pet.json` and one
+  `spritesheet.webp` or `spritesheet.png` are accepted.
 - V1 `1536×1872`, V2 `1536×2288`, and manifest-version agreement are validated.
 - Invalid packs are not installed and produce actionable validation errors.
 - Installation validates in an Application Support staging directory before atomic replacement.

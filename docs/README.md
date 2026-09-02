@@ -6,6 +6,7 @@
 
 - [사용량 표시와 성장 집계](usage.ko.md) · [English](usage.md)
 - [Tokeni 펫 성장과 알 도감](bytebot.ko.md) · [English](bytebot.md)
+- [로컬 펫 팩 가져오기](COMPANION_PACKS.ko.md) · [English](COMPANION_PACKS.md)
 - [Homebrew 설치·업데이트·이전 안내](HOMEBREW.ko.md) · [English](HOMEBREW.md)
 - [릴리스 및 배포 절차](RELEASING.ko.md) · [English](RELEASING.md)
 
