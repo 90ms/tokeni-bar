@@ -333,12 +333,22 @@ public struct CodexPetPackInstaller: Sendable {
         let fileManager = FileManager.default
         if fileManager.fileExists(atPath: destinationURL.path) {
             let backupName = ".backup-\(UUID().uuidString)"
+            let backupURL = self.installationRoot.appending(path: backupName)
+            #if os(Windows)
+            try fileManager.moveItem(at: destinationURL, to: backupURL)
+            do {
+                try fileManager.moveItem(at: stagingURL, to: destinationURL)
+            } catch {
+                try? fileManager.moveItem(at: backupURL, to: destinationURL)
+                throw error
+            }
+            #else
             _ = try fileManager.replaceItemAt(
                 destinationURL,
                 withItemAt: stagingURL,
                 backupItemName: backupName,
                 options: [])
-            let backupURL = self.installationRoot.appending(path: backupName)
+            #endif
             try? fileManager.removeItem(at: backupURL)
         } else {
             try fileManager.moveItem(at: stagingURL, to: destinationURL)
