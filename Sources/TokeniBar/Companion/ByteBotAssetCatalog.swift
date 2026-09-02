@@ -50,9 +50,11 @@ final class CompanionAssetCatalog {
     }
 
     func displayName(for speciesID: CompanionSpeciesID) -> String {
-        self.assets[speciesID]?.displayName
-            ?? AppLocalization.string(
-                "companion.species.\(speciesID.rawValue).name")
+        if let asset = self.assets[speciesID], asset.isExternal {
+            return asset.displayName
+        }
+        return AppLocalization.string(
+            "companion.species.\(speciesID.rawValue).name")
     }
 
     func animation(

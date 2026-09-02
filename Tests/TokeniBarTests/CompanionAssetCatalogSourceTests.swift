@@ -32,6 +32,8 @@ struct CompanionAssetCatalogSourceTests {
             variantID: .standard,
             behavior: .idle,
             index: 0)?.width == nil)
+        #expect(CompanionAssetCatalog.shared.displayName(for: .bytebot)
+            == AppLocalization.string("companion.species.bytebot.name"))
     }
 
     @Test("Codex v2 packs map behavior rows and retain rectangular frames")
