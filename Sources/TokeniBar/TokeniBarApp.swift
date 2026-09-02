@@ -9,6 +9,14 @@ struct TokeniBarApp: App {
     @StateObject private var caffeineController = CaffeineController()
 
     var body: some Scene {
+        Window(AppLocalization.string("main.title"), id: "tokeni-main") {
+            TokeniMainView(
+                store: self.store,
+                caffeineController: self.caffeineController)
+        }
+        .defaultSize(width: 1_080, height: 760)
+        .windowResizability(.contentMinSize)
+
         MenuBarExtra {
             MenuPopoverView(
                 store: self.store,

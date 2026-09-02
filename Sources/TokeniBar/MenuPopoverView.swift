@@ -147,6 +147,18 @@ struct MenuPopoverView: View {
     private var footer: some View {
         HStack(spacing: 10) {
             Button {
+                self.openWindow(id: "tokeni-main")
+                self.activateApplication()
+            } label: {
+                Label(
+                    AppLocalization.string("main.open"),
+                    systemImage: "macwindow")
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            Button {
                 self.openWindow(id: "usage-history")
                 self.activateApplication()
             } label: {
@@ -155,8 +167,6 @@ struct MenuPopoverView: View {
                     systemImage: "chart.xyaxis.line")
             }
             .buttonStyle(.plain)
-
-            Spacer()
 
             Button {
                 self.caffeineController.toggle()
