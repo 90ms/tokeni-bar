@@ -12,11 +12,18 @@
 | --- | --- | --- |
 | 0. Lock decisions | Complete | Added the bilingual plan and documentation index |
 | 1. Standalone shell | Complete | Added Home, Pets, Usage, Settings link, summary-focused menu bar, and passed macOS CI |
-| 2–5 | Pending | Continue with the dynamic-content foundation |
+| 2. Dynamic-content foundation | Complete | Added extensible species/pack IDs, game boundaries, bundled/local asset sources, and passed macOS CI |
+| 3. Codex-compatible import | In progress | Start with the pure V1/V2 local-pack validator |
+| 4–5 | Pending | Continue with the multiple-pet home and release polish |
 
 Changes authored in Docker use GitHub Actions as the macOS gate. `swift test`,
 the release build, app packaging, and bundle metadata validation must pass
 before the next stage uses a commit as its baseline.
+
+Stage 2 preserves the existing single-string persistence format while allowing
+external species IDs to round-trip losslessly. Imported appearances cannot
+implicitly enter hatch odds, growth, or collection totals. The asset catalog
+now distinguishes bundled/local sources and Tokeni Native/Codex V1/V2 formats.
 
 This document defines the product structure, UX ownership, data boundaries, and
 staged commit plan for expanding Tokeni from a menu-bar-centered utility into a
