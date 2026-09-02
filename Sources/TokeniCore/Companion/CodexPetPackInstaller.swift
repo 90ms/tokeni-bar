@@ -116,11 +116,21 @@ public enum CodexPetPackInstallationError: Error, Equatable, Sendable {
     case archiveInspection(ZIPArchiveInspectionError)
     case archiveValidation(CodexPetArchiveValidationError)
     case extractionFailed
-    case unsafeExtractedContents
+    case unsafeExtractedContents(CodexPetPackExtractedContentsIssue)
     case manifestUnavailable
     case atlasUnreadable
     case packValidation(CodexPetPackValidationError)
     case publishingFailed
+}
+
+public enum CodexPetPackExtractedContentsIssue: Equatable, Sendable {
+    case unexpectedFilenames
+    case fileUnavailable
+    case directory
+    case linkOrReparsePoint
+    case unreadableFile
+    case sizeMismatch
+    case manifestAssetMismatch
 }
 
 public struct CodexPetPackInstaller: Sendable {
@@ -193,11 +203,11 @@ public struct CodexPetPackInstaller: Sendable {
             throw CodexPetPackInstallationError.extractionFailed
         }
 
-        guard try self.hasExpectedExtractedContents(
+        if let issue = try self.extractedContentsIssue(
             archive: archive,
             at: stagingURL)
-        else {
-            throw CodexPetPackInstallationError.unsafeExtractedContents
+        {
+            throw CodexPetPackInstallationError.unsafeExtractedContents(issue)
         }
         let manifestURL = stagingURL.appending(path: archive.manifestPath)
         guard let manifestData = try? Data(
@@ -209,7 +219,8 @@ public struct CodexPetPackInstaller: Sendable {
             CodexPetManifest.self,
             from: manifestData)
         guard decodedManifest?.spritesheetPath == archive.spritesheetPath else {
-            throw CodexPetPackInstallationError.unsafeExtractedContents
+            throw CodexPetPackInstallationError.unsafeExtractedContents(
+                .manifestAssetMismatch)
         }
         let spritesheetURL = stagingURL.appending(path: archive.spritesheetPath)
         let pixelSize: CompanionAtlasPixelSize
@@ -266,9 +277,9 @@ public struct CodexPetPackInstaller: Sendable {
             directoryURL: destinationURL)
     }
 
-    private func hasExpectedExtractedContents(
+    private func extractedContentsIssue(
         archive: ValidatedCodexPetArchive,
-        at directoryURL: URL) throws -> Bool
+        at directoryURL: URL) throws -> CodexPetPackExtractedContentsIssue?
     {
         let expected = Set([archive.manifestPath, archive.spritesheetPath])
         let contents = try FileManager.default.contentsOfDirectory(
@@ -276,11 +287,11 @@ public struct CodexPetPackInstaller: Sendable {
             includingPropertiesForKeys: nil,
             options: [])
         guard Set(contents.map(\.lastPathComponent)) == expected else {
-            return false
+            return .unexpectedFilenames
         }
         let entriesByPath = Dictionary(
             uniqueKeysWithValues: archive.entries.map { ($0.path, $0) })
-        return try contents.allSatisfy { url in
+        for url in contents {
             // swift-corelibs-foundation on Windows can omit both the URL
             // resource-value and FileManager attribute used to label an
             // ordinary file. Check the properties that are consistently
@@ -289,16 +300,20 @@ public struct CodexPetPackInstaller: Sendable {
             let exists = FileManager.default.fileExists(
                 atPath: url.path,
                 isDirectory: &isDirectory)
-            guard exists,
-                  !isDirectory.boolValue,
-                  !Self.isSymbolicLinkOrReparsePoint(at: url),
-                  let size = try? Data(
-                    contentsOf: url,
-                    options: [.mappedIfSafe]).count,
-                  let expectedEntry = entriesByPath[url.lastPathComponent]
-            else { return false }
-            return size == expectedEntry.uncompressedSize
+            guard exists else { return .fileUnavailable }
+            guard !isDirectory.boolValue else { return .directory }
+            guard !Self.isSymbolicLinkOrReparsePoint(at: url) else {
+                return .linkOrReparsePoint
+            }
+            guard let size = try? Data(
+                contentsOf: url,
+                options: [.mappedIfSafe]).count
+            else { return .unreadableFile }
+            guard let expectedEntry = entriesByPath[url.lastPathComponent],
+                  size == expectedEntry.uncompressedSize
+            else { return .sizeMismatch }
         }
+        return nil
     }
 
     private static func isSymbolicLinkOrReparsePoint(at url: URL) -> Bool {
