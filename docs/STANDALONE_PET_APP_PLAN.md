@@ -18,8 +18,10 @@
 | 5. Finish | Automated verification complete | Consolidated settings, accessibility and power behavior, aligned docs, and passed macOS and Windows CI |
 
 Changes authored in Docker use GitHub Actions as the macOS gate. `swift test`,
-the release build, app packaging, and bundle metadata validation must pass
-before the next stage uses a commit as its baseline.
+the release build, app packaging, bundle metadata validation, and a packaged
+executable smoke test must pass before the next stage uses a commit as its
+baseline. A Linux repository-contract job quickly checks release fragments,
+workflows, and Korean/English localization key and format parity.
 
 Stage 2 preserves the existing single-string persistence format while allowing
 external species IDs to round-trip losslessly. Imported appearances cannot
@@ -40,9 +42,12 @@ Stage 5 gives Pets sole ownership of pet management and applies VoiceOver,
 Reduce Motion, Low Power Mode, and offscreen-animation policies. Because the
 Synology Docker environment has neither Swift nor macOS frameworks, GitHub
 Actions is the final automated baseline. macOS passed the full tests, release
-build, app packaging, and bundle metadata checks. Windows passed the full tests,
+build, app packaging, bundle metadata checks, and a packaged-executable smoke
+test that does not access user data. Windows passed the full tests,
 native state machine, release build, portable packaging, asset validation, and
-unpacked-package smoke test. Visual and input checks on real macOS hardware
+unpacked-package smoke test. External-pack regressions cover successful install,
+unexpected files and directories, size and manifest-asset mismatches, symbolic
+link rejection, and staging cleanup. Visual and input checks on real macOS hardware
 remain a manual pre-release gate.
 
 This document defines the product structure, UX ownership, data boundaries, and
@@ -284,8 +289,10 @@ A stage is complete only when all conditions hold:
 - Growth invariants and privacy boundaries remain intact.
 - The same management function is not duplicated in the menu bar and main window.
 
-The 2026-09-02 automated baseline completed `swift test`, release builds, macOS
-app-bundle validation, and the Windows portable-package smoke test. Before
+The 2026-09-02 automated baseline completed `swift test`, release builds,
+localization contracts, external-pack failure and recovery paths, a packaged
+macOS executable smoke test, and the Windows portable-package smoke test. PRs
+use `macOS required gate` and `Windows required gate` as stable required checks. Before
 release, manually verify clean install, upgrade, keyboard and VoiceOver use,
 Reduce Motion, corrupt external packs, external-pack removal, offline startup,
 and every-provider-unavailable states on real macOS hardware.

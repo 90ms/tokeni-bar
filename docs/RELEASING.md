@@ -19,7 +19,9 @@ and merged for both the Formula and Cask.
 swift test
 swift build
 Scripts/validate_companion_assets.sh
+Scripts/validate_localizations.sh
 Tests/Scripts/ReleaseNotesTests.sh
+Tests/Scripts/GitHubWorkflowTests.sh
 git diff --check
 ```
 
@@ -30,9 +32,15 @@ macOS CI performs and passes the equivalent checks.
 ## 2. Validate the PR and main
 
 1. Commit and push only the intended files on a feature branch.
-2. Merge only after the PR CI passes Swift tests, release-note validation, the
-   app build, and bundle validation.
-3. Wait for the new CI run on the merged `main` commit to pass before creating
+2. Merge only after both stable checks, `macOS required gate` and
+   `Windows required gate`, pass. Both names remain present when path filtering
+   skips an unaffected platform. Repository contracts validate release fragments,
+   workflows, and Korean/English localization key and format parity.
+3. For macOS-impacting changes, confirm Swift tests, the release build, app
+   packaging, bundle metadata, and the packaged-executable smoke test. For
+   Windows-impacting changes, confirm Swift tests, the native state machine,
+   portable packaging, asset validation, and the unpacked-executable smoke test.
+4. Wait for the new CI run on the merged `main` commit to pass before creating
    a tag.
 
 ## 3. Review release notes and create the tag
@@ -67,6 +75,7 @@ Confirm that every `Release` workflow step succeeds:
 - build and validate the portable Windows ZIP before publishing anything;
 - resolve the tag version and render structured bilingual notes;
 - build and ad-hoc sign the macOS application;
+- smoke-test the packaged macOS executable without accessing user data;
 - create macOS and Windows ZIPs and their SHA-256 files;
 - generate GitHub build attestations for both archives;
 - publish the release with the validated `--notes-file`;
