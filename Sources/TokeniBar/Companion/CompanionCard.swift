@@ -285,7 +285,7 @@ struct CompanionCard: View {
     private var primaryActionButton: some View {
         if self.store.isShowingArchivedCompanion {
             Button {
-                self.store.showcaseArchivedCompanion(nil)
+                self.store.selectPrimaryCompanion(nil)
             } label: {
                 Label(
                     AppLocalization.string("companion.archive.showCurrent"),

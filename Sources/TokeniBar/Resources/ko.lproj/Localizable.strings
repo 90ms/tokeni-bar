@@ -299,7 +299,7 @@
 "companion.egg.prismatic" = "프리즘 알";
 "companion.archive.activate" = "이 펫 키우기";
 "companion.archive.sellValue" = "새 주인에게 보내기 · 별조각 %d";
-"companion.header.together" = "동행 중인 펫";
+"companion.header.together" = "대표 펫";
 "companion.header.growing" = "육성 중인 펫";
 "companion.header.growingPet" = "현재 성장 펫";
 "companion.collection.title" = "펫 도감";
@@ -343,10 +343,10 @@
 "companion.archive.filter.emptyDescription" = "다른 펫을 선택하거나 모든 펫을 확인해 보세요.";
 "companion.archive.identity" = "레벨 %d · 추억 %d개";
 "companion.archive.record" = "%d번째 펫 · %@";
-"companion.archive.showcase" = "함께 지내기";
-"companion.archive.putAway" = "보관하기";
+"companion.archive.showcase" = "대표 펫으로";
+"companion.archive.putAway" = "활동 펫을 대표로";
 "companion.archive.showCurrent" = "성장 중인 펫 보기";
-"companion.archive.status.together" = "동행 중";
+"companion.archive.status.together" = "대표 펫";
 "companion.archive.status.maximum" = "만렙";
 "companion.archive.status.growing" = "성장 가능";
 "companion.archive.details" = "동료 상세 보기";

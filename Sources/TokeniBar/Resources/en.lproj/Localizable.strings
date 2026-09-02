@@ -299,7 +299,7 @@
 "companion.egg.prismatic" = "Prismatic Egg";
 "companion.archive.activate" = "Grow This Pet";
 "companion.archive.sellValue" = "Send to a New Home · %d shards";
-"companion.header.together" = "Current Companion";
+"companion.header.together" = "Primary pet";
 "companion.header.growing" = "Growing Pet";
 "companion.header.growingPet" = "Current Growth Pet";
 "companion.collection.title" = "Pet collection";
@@ -343,10 +343,10 @@
 "companion.archive.filter.emptyDescription" = "Choose another pet or view all pets.";
 "companion.archive.identity" = "Level %d · %d memories";
 "companion.archive.record" = "Pet %d · %@";
-"companion.archive.showcase" = "Stay Together";
-"companion.archive.putAway" = "Put Away";
+"companion.archive.showcase" = "Set as Primary";
+"companion.archive.putAway" = "Use Active Pet";
 "companion.archive.showCurrent" = "Show Growing Pet";
-"companion.archive.status.together" = "Together";
+"companion.archive.status.together" = "Primary";
 "companion.archive.status.maximum" = "Max level";
 "companion.archive.status.growing" = "Can grow";
 "companion.archive.details" = "View companion details";

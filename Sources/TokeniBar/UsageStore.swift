@@ -1425,11 +1425,12 @@ final class UsageStore: ObservableObject {
         self.saveCompanionState()
     }
 
-    func showcaseArchivedCompanion(_ generationID: UUID?) {
+    func selectPrimaryCompanion(_ generationID: UUID?) {
         guard self.companionEnabled, self.companionStateLoaded else { return }
         var state = self.companionState
-        guard (try? self.companionGameEngine.showcaseArchivedGeneration(
-            generationID,
+        let selectedID = generationID ?? state.generationID
+        guard (try? self.companionGameEngine.selectPrimaryCompanion(
+            selectedID,
             in: &state)) != nil
         else { return }
         self.companionState = state

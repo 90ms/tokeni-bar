@@ -372,20 +372,34 @@ public struct CompanionGameEngine: Sendable {
         ]
     }
 
+    public func selectPrimaryCompanion(
+        _ generationID: UUID,
+        at now: Date = .now,
+        in state: inout CompanionGameState) throws
+    {
+        if generationID == state.generationID {
+            state.showcasedGenerationID = nil
+        } else if state.collection.archivedGenerations.contains(where: {
+               $0.generationID == generationID
+           })
+        {
+            state.showcasedGenerationID = generationID
+        } else {
+            throw CompanionGameError.archivedGenerationNotFound
+        }
+        state.updatedAt = now
+    }
+
+    @available(*, deprecated, message: "Use selectPrimaryCompanion(_:at:in:).")
     public func showcaseArchivedGeneration(
         _ generationID: UUID?,
         at now: Date = .now,
         in state: inout CompanionGameState) throws
     {
-        if let generationID,
-           !state.collection.archivedGenerations.contains(where: {
-               $0.generationID == generationID
-           })
-        {
-            throw CompanionGameError.archivedGenerationNotFound
-        }
-        state.showcasedGenerationID = generationID
-        state.updatedAt = now
+        try self.selectPrimaryCompanion(
+            generationID ?? state.generationID,
+            at: now,
+            in: &state)
     }
 
     @discardableResult

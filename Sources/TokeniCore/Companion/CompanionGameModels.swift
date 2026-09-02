@@ -594,6 +594,33 @@ public struct CompanionGameRules: Hashable, Sendable {
     }
 }
 
+public enum CompanionDisplayRole: String, Codable, CaseIterable, Sendable {
+    case primary
+    case growthTarget
+    case showcase
+}
+
+/// A provider-neutral snapshot of the distinct jobs owned companions can have.
+/// Role IDs contain no usage observations, provider data, or token totals.
+public struct CompanionRoleSelection: Equatable, Sendable {
+    public let primaryGenerationID: UUID?
+    public let growthTargetGenerationID: UUID?
+    public let showcaseGenerationIDs: [UUID]
+
+    public init(
+        primaryGenerationID: UUID?,
+        growthTargetGenerationID: UUID?,
+        showcaseGenerationIDs: [UUID] = [])
+    {
+        self.primaryGenerationID = primaryGenerationID
+        self.growthTargetGenerationID = growthTargetGenerationID
+        self.showcaseGenerationIDs = Array(
+            Set(showcaseGenerationIDs)).sorted {
+                $0.uuidString < $1.uuidString
+            }
+    }
+}
+
 public struct CompanionGameState: Codable, Hashable, Sendable {
     public static let currentSchemaVersion = 11
 
@@ -775,6 +802,13 @@ public struct CompanionGameState: Codable, Hashable, Sendable {
     public var resolvedGrowthTargetGenerationID: UUID? {
         guard self.stage != .egg else { return nil }
         return self.growthTargetGenerationID ?? self.generationID
+    }
+
+    public var roleSelection: CompanionRoleSelection {
+        return CompanionRoleSelection(
+            primaryGenerationID: self.showcasedGenerationID
+                ?? self.generationID,
+            growthTargetGenerationID: self.resolvedGrowthTargetGenerationID)
     }
 
     public var growthTargetLevel: Int {

@@ -2677,7 +2677,7 @@ struct CompanionCollectionView: View {
                 .help(AppLocalization.string("companion.archive.activate"))
 
                 Button {
-                    self.store.showcaseArchivedCompanion(
+                    self.store.selectPrimaryCompanion(
                         isShowcased ? nil : generation.generationID)
                 } label: {
                     Label(
@@ -2862,7 +2862,7 @@ struct CompanionCollectionView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 Button {
-                    self.store.showcaseArchivedCompanion(
+                    self.store.selectPrimaryCompanion(
                         isShowcased ? nil : generation.generationID)
                     self.selectedArchivedGeneration = nil
                 } label: {

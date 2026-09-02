@@ -356,7 +356,7 @@ struct CompanionGameEngineTests {
         })
     }
 
-    @Test("Completed pets remain archived and can be showcased")
+    @Test("Primary and growth roles remain independent for archived pets")
     func archivedCompanions() throws {
         let engine = CompanionGameEngine(calendar: self.calendar)
         let dateKey = GrowthLocalDate.key(for: .now, calendar: self.calendar)
@@ -379,14 +379,25 @@ struct CompanionGameEngineTests {
         }
 
         #expect(state.collection.archivedGenerations.count == 25)
+        state.speciesID = .bytebot
+        state.stage = .adult
+        state.rarity = .normal
         let first = try #require(state.collection.archivedGenerations.first)
-        try engine.showcaseArchivedGeneration(first.generationID, in: &state)
+        let growthTarget = try #require(
+            state.collection.archivedGenerations.dropFirst().first)
+        try engine.selectGrowthTarget(growthTarget.generationID, in: &state)
+        try engine.selectPrimaryCompanion(first.generationID, in: &state)
         #expect(state.showcasedGeneration == first)
+        #expect(state.roleSelection.primaryGenerationID == first.generationID)
+        #expect(state.roleSelection.growthTargetGenerationID
+            == growthTarget.generationID)
+        #expect(state.roleSelection.showcaseGenerationIDs.isEmpty)
 
-        try engine.showcaseArchivedGeneration(nil, in: &state)
+        try engine.selectPrimaryCompanion(state.generationID, in: &state)
         #expect(state.showcasedGeneration == nil)
+        #expect(state.roleSelection.primaryGenerationID == state.generationID)
         #expect(throws: CompanionGameError.archivedGenerationNotFound) {
-            try engine.showcaseArchivedGeneration(UUID(), in: &state)
+            try engine.selectPrimaryCompanion(UUID(), in: &state)
         }
     }
 
