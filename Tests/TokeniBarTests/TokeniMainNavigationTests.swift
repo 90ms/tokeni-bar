@@ -23,5 +23,13 @@ struct TokeniMainNavigationTests {
 
         navigation.select(.usage)
         #expect(navigation.destination == .usage)
+
+        navigation.selectUsage(providerID: .antigravity)
+        #expect(navigation.destination == .usage)
+        #expect(navigation.focusedUsageProviderID == .antigravity)
+        #expect(navigation.usageFocusPulse == 1)
+
+        navigation.selectUsage(providerID: .antigravity)
+        #expect(navigation.usageFocusPulse == 2)
     }
 }

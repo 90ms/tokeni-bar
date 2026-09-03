@@ -125,7 +125,7 @@ struct MenuPopoverView: View {
             } else {
                 ForEach(self.store.snapshots) { snapshot in
                     Button {
-                        self.openMainWindow(destination: .usage)
+                        self.openUsage(providerID: snapshot.id)
                     } label: {
                         MenuProviderSummaryRow(
                             snapshot: snapshot,
@@ -305,27 +305,37 @@ struct MenuPopoverView: View {
         self.openWindow(id: "tokeni-main")
         self.activateApplication()
     }
+
+    private func openUsage(providerID: ProviderID) {
+        self.mainNavigation.selectUsage(providerID: providerID)
+        self.openWindow(id: "tokeni-main")
+        self.activateApplication()
+    }
 }
 
 private struct MenuProviderSummaryRow: View {
     let snapshot: ProviderSnapshot
     let isActive: Bool
 
-    private var representativeQuota: QuotaWindow? {
-        self.snapshot.quotaWindows.min {
-            if $0.remainingPercent != $1.remainingPercent {
-                return $0.remainingPercent < $1.remainingPercent
+    private var summaryQuotas: [QuotaWindow] {
+        var selected: [QuotaWindow] = []
+        for kind in [QuotaWindowKind.session, .weekly, .monthly, .context, .custom] {
+            if let quota = self.snapshot.quotaWindows
+                .filter({ $0.kind == kind })
+                .min(by: { $0.remainingPercent < $1.remainingPercent })
+            {
+                selected.append(quota)
             }
-            return ($0.resetsAt ?? .distantFuture) < ($1.resetsAt ?? .distantFuture)
         }
+        return Array(selected.prefix(2))
     }
 
     var body: some View {
-        HStack(spacing: 9) {
-            ProviderIcon(descriptor: self.snapshot.descriptor, dimension: 14)
-                .frame(width: 16)
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 9) {
+                ProviderIcon(descriptor: self.snapshot.descriptor, dimension: 14)
+                    .frame(width: 16)
 
-            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 5) {
                     Text(self.snapshot.descriptor.displayName)
                         .font(.callout.weight(.semibold))
@@ -337,23 +347,15 @@ private struct MenuProviderSummaryRow: View {
                                 "activity.active"))
                     }
                 }
-                self.detail
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
+                if self.summaryQuotas.isEmpty {
+                    self.availabilityIcon
+                }
             }
 
-            Spacer(minLength: 8)
-
-            if let quota = self.representativeQuota {
-                Text(AppLocalization.format(
-                    "menu.provider.remaining",
-                    Int(quota.remainingPercent.rounded())))
-                    .font(.callout.monospacedDigit().weight(.semibold))
-                    .foregroundStyle(self.quotaColor(quota.remainingPercent))
-            } else {
-                self.availabilityIcon
-            }
+            self.detail
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
@@ -366,22 +368,42 @@ private struct MenuProviderSummaryRow: View {
 
     @ViewBuilder
     private var detail: some View {
-        if let quota = self.representativeQuota {
-            HStack(spacing: 3) {
-                Text(quota.label)
-                if let reset = quota.resetsAt {
-                    Text("·")
-                    Text(AppLocalization.string("menu.provider.resets"))
-                    Text(reset, style: .relative)
+        if !self.summaryQuotas.isEmpty {
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(self.summaryQuotas) { quota in
+                    HStack(spacing: 3) {
+                        Text(quota.tokeniLocalizedLabel)
+                            .lineLimit(1)
+                        if let reset = quota.resetsAt {
+                            Text("·")
+                            Text(AppLocalization.string("menu.provider.resets"))
+                            Text(reset, style: .relative)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: 5)
+                        Text(AppLocalization.format(
+                            "menu.provider.remaining",
+                            Int(quota.remainingPercent.rounded())))
+                            .monospacedDigit()
+                            .fontWeight(.semibold)
+                            .foregroundStyle(self.quotaColor(
+                                quota.remainingPercent))
+                    }
                 }
             }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
         } else if let tokenUsage = self.snapshot.tokenUsage {
             Text(AppLocalization.format(
                 "menu.provider.tokens",
                 tokenUsage.totalTokens.formatted(.number.notation(.compactName))))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         } else {
             Text(AppLocalization.string(
                 "provider.status.\(self.snapshot.availability.rawValue)"))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
     }
 

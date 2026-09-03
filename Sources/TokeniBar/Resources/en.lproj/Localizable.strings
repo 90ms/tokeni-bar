@@ -18,6 +18,9 @@
 "main.home.growthTarget" = "Growth target";
 "main.home.primaryAndGrowth" = "Primary · Growth";
 "main.home.manageGrowthTarget" = "Choose in Pets";
+"main.home.growthReady" = "Growth action ready";
+"main.home.providerIssues" = "%d providers need attention";
+"main.home.monthlyCost" = "Estimated this month %@";
 "main.usage.title" = "Usage";
 "main.usage.subtitle" = "Review current limits and local history in one place.";
 "menu.summary.usage" = "View usage details";
@@ -46,6 +49,9 @@
 "empty.title" = "No providers enabled";
 "empty.description" = "Enable a provider in Settings.";
 "usage.percentLeft" = "% left";
+"usage.window.fiveHour" = "5-hour";
+"usage.window.weekly" = "Weekly";
+"usage.window.monthly" = "Monthly";
 "usage.tokens" = "tokens";
 "usage.apiCostEstimate" = "Usage cost reference";
 "usage.accountTokens.title" = "Account token activity";
@@ -95,6 +101,7 @@
 "settings.connections.state.authorizationRequired" = "CLI sign-in required";
 "settings.connections.state.sessionExpired" = "Session expired · sign in with the CLI again";
 "settings.connections.state.stale" = "Connection status unavailable";
+"settings.connections.state.disabled" = "Disabled";
 "settings.tab.general" = "General";
 "settings.tab.providers" = "Providers";
 "settings.tab.display" = "Display";

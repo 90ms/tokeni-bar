@@ -73,7 +73,7 @@ The same setting or management action must not be repeated across surfaces.
 | Surface | Owns | Does not contain |
 | --- | --- | --- |
 | Menu bar | Per-provider quota/reset summary, pet summary, refresh, caffeine, open main window, settings and quit | Collection, egg shop, detailed settings, long usage history |
-| Home | Compact growth target, today's usage freshness, and the next useful action | Full pet card, collection editing, caffeine settings, and provider settings |
+| Home | Lowest quota, provider issues, monthly estimate, and concise growth-target actions | Full pet card, collection editing, caffeine settings, and provider settings |
 | Pets | Roster, growth target, primary pet, eggs, collection, cosmetics, and packs | Provider quota settings |
 | Usage | Provider status, cost, history, and data freshness | Pet-management actions |
 | Settings destination | Providers, display, notifications, caffeine, login item, privacy, and embedded diagnostics | Collection and roster management |
