@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import TokeniCore
 
 struct MenuPopoverView: View {
     @ObservedObject var store: UsageStore
