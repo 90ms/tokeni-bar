@@ -5,8 +5,9 @@ import SwiftUI
 
 private enum SettingsTab: Hashable {
     case general
+    case providers
+    case display
     case notifications
-    case companion
     case usage
     case privacy
 }
@@ -14,7 +15,6 @@ private enum SettingsTab: Hashable {
 struct SettingsView: View {
     @ObservedObject var store: UsageStore
     @ObservedObject var caffeineController: CaffeineController
-    @Environment(\.openWindow) private var openWindow
     @State private var selectedTab = SettingsTab.general
     @State private var showsNotificationDiagnostics = false
 
@@ -28,20 +28,28 @@ struct SettingsView: View {
                         systemImage: "gearshape")
                 }
 
+            self.providersTab
+                .tag(SettingsTab.providers)
+                .tabItem {
+                    Label(
+                        AppLocalization.string("settings.tab.providers"),
+                        systemImage: "point.3.connected.trianglepath.dotted")
+                }
+
+            self.displayTab
+                .tag(SettingsTab.display)
+                .tabItem {
+                    Label(
+                        AppLocalization.string("settings.tab.display"),
+                        systemImage: "menubar.rectangle")
+                }
+
             self.notificationsTab
                 .tag(SettingsTab.notifications)
                 .tabItem {
                     Label(
                         AppLocalization.string("settings.tab.notifications"),
                         systemImage: "bell")
-                }
-
-            self.companionTab
-                .tag(SettingsTab.companion)
-                .tabItem {
-                    Label(
-                        AppLocalization.string("settings.tab.companion"),
-                        systemImage: "face.smiling")
                 }
 
             self.usageTab
@@ -60,8 +68,8 @@ struct SettingsView: View {
                         systemImage: "hand.raised")
                 }
         }
-        .frame(width: 680, height: 700)
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(20)
         .onReceive(NotificationCenter.default.publisher(
             for: .openNotificationSettings))
         { _ in
@@ -69,8 +77,10 @@ struct SettingsView: View {
         }
     }
 
-    private var companionTab: some View {
+    private var displayTab: some View {
         Form {
+            self.menuBarSettingsSection
+
             Section(AppLocalization.string("settings.companion.title")) {
                         Toggle(isOn: Binding(
                             get: { self.store.companionEnabled },
@@ -199,95 +209,7 @@ struct SettingsView: View {
                 }
             }
 
-            Section(AppLocalization.string("settings.providers")) {
-                ForEach(self.store.descriptors) { descriptor in
-                    self.providerSettingsRow(descriptor)
-                }
-                if !self.store.authorizationDescriptors.isEmpty {
-                    Text(AppLocalization.string("settings.connections.description"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Section(AppLocalization.string("settings.menuBar")) {
-                Picker(
-                    AppLocalization.string("settings.menuBar.display"),
-                    selection: Binding(
-                        get: { self.store.menuBarDisplayMode },
-                        set: { self.store.setMenuBarDisplayMode($0) }))
-                {
-                    ForEach(MenuBarDisplayMode.allCases) { mode in
-                        Text(mode.localizedName).tag(mode)
-                    }
-                }
-
-                if self.store.menuBarDisplayMode == .selectedProvider {
-                    Picker(
-                        AppLocalization.string("settings.menuBar.provider"),
-                        selection: Binding(
-                            get: { self.store.selectedMenuBarProviderID },
-                            set: { self.store.setSelectedMenuBarProviderID($0) }))
-                    {
-                        ForEach(self.store.descriptors) { descriptor in
-                            Label {
-                                Text(descriptor.displayName)
-                            } icon: {
-                                ProviderIcon(descriptor: descriptor)
-                            }
-                            .tag(descriptor.id)
-                        }
-                    }
-
-                    if self.store.selectedMenuBarProviderID == .claude {
-                        Picker(
-                            AppLocalization.string("settings.menuBar.claudeQuota"),
-                            selection: Binding(
-                                get: { self.store.claudeMenuBarQuota },
-                                set: { self.store.setClaudeMenuBarQuota($0) }))
-                        {
-                            ForEach(ClaudeMenuBarQuota.allCases) { quota in
-                                Text(quota.localizedName).tag(quota)
-                            }
-                        }
-                    }
-                }
-
-                Toggle(isOn: Binding(
-                    get: { self.store.compactModeEnabled },
-                    set: { self.store.setCompactModeEnabled($0) }))
-                {
-                    Text(AppLocalization.string("settings.menuBar.compact"))
-                }
-                Text(AppLocalization.string("settings.menuBar.compact.description"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Toggle(isOn: Binding(
-                    get: { self.store.activityAnimationsEnabled },
-                    set: { self.store.setActivityAnimationsEnabled($0) }))
-                {
-                    Text(AppLocalization.string("settings.activity.enabled"))
-                }
-                if self.store.activityAnimationsEnabled {
-                    Picker(
-                        AppLocalization.string("settings.activity.window"),
-                        selection: Binding(
-                            get: { self.store.activityWindowSeconds },
-                            set: { self.store.setActivityWindowSeconds($0) }))
-                    {
-                        ForEach([10, 15, 30], id: \.self) { seconds in
-                            Text(AppLocalization.format(
-                                "settings.activity.seconds",
-                                seconds))
-                                .tag(seconds)
-                        }
-                    }
-                    Text(AppLocalization.string("settings.activity.description"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
+            Section(AppLocalization.string("settings.general.startup")) {
                 Toggle(isOn: Binding(
                     get: { self.store.launchAtLoginEnabled },
                     set: { self.store.setLaunchAtLoginEnabled($0) }))
@@ -406,6 +328,101 @@ struct SettingsView: View {
         .formStyle(.grouped)
     }
 
+    private var providersTab: some View {
+        Form {
+            Section(AppLocalization.string("settings.providers")) {
+                ForEach(self.store.descriptors) { descriptor in
+                    self.providerSettingsRow(descriptor)
+                }
+                Text(AppLocalization.string("settings.connections.description"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var menuBarSettingsSection: some View {
+        Section(AppLocalization.string("settings.menuBar")) {
+            Picker(
+                AppLocalization.string("settings.menuBar.display"),
+                selection: Binding(
+                    get: { self.store.menuBarDisplayMode },
+                    set: { self.store.setMenuBarDisplayMode($0) }))
+            {
+                ForEach(MenuBarDisplayMode.allCases) { mode in
+                    Text(mode.localizedName).tag(mode)
+                }
+            }
+
+            if self.store.menuBarDisplayMode == .selectedProvider {
+                Picker(
+                    AppLocalization.string("settings.menuBar.provider"),
+                    selection: Binding(
+                        get: { self.store.selectedMenuBarProviderID },
+                        set: { self.store.setSelectedMenuBarProviderID($0) }))
+                {
+                    ForEach(self.store.descriptors) { descriptor in
+                        Label {
+                            Text(descriptor.displayName)
+                        } icon: {
+                            ProviderIcon(descriptor: descriptor)
+                        }
+                        .tag(descriptor.id)
+                    }
+                }
+
+                if self.store.selectedMenuBarProviderID == .claude {
+                    Picker(
+                        AppLocalization.string("settings.menuBar.claudeQuota"),
+                        selection: Binding(
+                            get: { self.store.claudeMenuBarQuota },
+                            set: { self.store.setClaudeMenuBarQuota($0) }))
+                    {
+                        ForEach(ClaudeMenuBarQuota.allCases) { quota in
+                            Text(quota.localizedName).tag(quota)
+                        }
+                    }
+                }
+            }
+
+            Toggle(isOn: Binding(
+                get: { self.store.compactModeEnabled },
+                set: { self.store.setCompactModeEnabled($0) }))
+            {
+                Text(AppLocalization.string("settings.menuBar.compact"))
+            }
+            Text(AppLocalization.string("settings.menuBar.compact.description"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Toggle(isOn: Binding(
+                get: { self.store.activityAnimationsEnabled },
+                set: { self.store.setActivityAnimationsEnabled($0) }))
+            {
+                Text(AppLocalization.string("settings.activity.enabled"))
+            }
+            if self.store.activityAnimationsEnabled {
+                Picker(
+                    AppLocalization.string("settings.activity.window"),
+                    selection: Binding(
+                        get: { self.store.activityWindowSeconds },
+                        set: { self.store.setActivityWindowSeconds($0) }))
+                {
+                    ForEach([10, 15, 30], id: \.self) { seconds in
+                        Text(AppLocalization.format(
+                            "settings.activity.seconds",
+                            seconds))
+                            .tag(seconds)
+                    }
+                }
+                Text(AppLocalization.string("settings.activity.description"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     private func providerSettingsRow(
         _ descriptor: ProviderDescriptor) -> some View
     {
@@ -445,22 +462,18 @@ struct SettingsView: View {
                 }
             }
 
-            if requiresAuthorization {
-                if let message =
-                    self.store.providerAuthorizationMessages[descriptor.id]
-                {
-                    TokeniStatusBanner(
-                        text: message,
-                        kind: state == .connected ? .success : .warning)
-                } else {
-                    Label(
-                        AppLocalization.string(
-                            "settings.connections.state.\(state.rawValue)"),
-                        systemImage: self.connectionStateIcon(state))
-                        .font(.caption)
-                        .foregroundStyle(self.connectionStateColor(state))
-                        .accessibilityElement(children: .combine)
-                }
+            if let message = self.store.providerAuthorizationMessages[descriptor.id] {
+                TokeniStatusBanner(
+                    text: message,
+                    kind: state == .connected ? .success : .warning)
+            } else {
+                Label(
+                    AppLocalization.string(
+                        "settings.connections.state.\(state.rawValue)"),
+                    systemImage: self.connectionStateIcon(state))
+                    .font(.caption)
+                    .foregroundStyle(self.connectionStateColor(state))
+                    .accessibilityElement(children: .combine)
             }
         }
         .padding(.vertical, 2)
@@ -811,35 +824,25 @@ struct SettingsView: View {
                 }
             }
 
-            Section(AppLocalization.string("history.title")) {
-                Button(AppLocalization.string("history.open")) {
-                    self.openWindow(id: "usage-history")
-                }
-                Text(AppLocalization.string("history.privacy"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
         .formStyle(.grouped)
     }
 
     private var privacyTab: some View {
-        Form {
-            Section(AppLocalization.string("settings.privacy")) {
-                Text(AppLocalization.string("settings.privacy.description"))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section(AppLocalization.string("diagnostics.title")) {
-                Button(AppLocalization.string("diagnostics.open")) {
-                    self.openWindow(id: "provider-diagnostics")
+        VStack(spacing: 0) {
+            Form {
+                Section(AppLocalization.string("settings.privacy")) {
+                    Text(AppLocalization.string("settings.privacy.description"))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
                 }
-                Text(AppLocalization.string("diagnostics.privacy"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
+            .formStyle(.grouped)
+            .frame(maxHeight: 150)
+
+            Divider()
+
+            DiagnosticsView(store: self.store)
         }
-        .formStyle(.grouped)
     }
 }

@@ -1,16 +1,21 @@
 import Foundation
 
-public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding {
+public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding,
+    UsageCacheInvalidating
+{
     public let descriptor = ProviderDescriptor(
         id: .antigravity,
         displayName: "Antigravity",
         shortName: "Antigravity",
         systemImage: "sparkles.rectangle.stack",
-        capabilities: .init(supportsTokenUsage: true))
+        capabilities: .init(
+            supportsQuotaWindows: true,
+            supportsTokenUsage: true))
 
     private let roots: [URL]
     private let calendar: Calendar
     private let databaseReader: AntigravityDatabaseReader
+    private let cliClient: AntigravityCLIUsageClient
 
     public init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
@@ -31,14 +36,30 @@ public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding {
                 directoryHint: .isDirectory),
         ]
         self.databaseReader = AntigravityDatabaseReader(queryRunner: sqliteQueryRunner)
+        self.cliClient = AntigravityCLIUsageClient(homeDirectory: homeDirectory)
+    }
+
+    init(
+        homeDirectory: URL,
+        calendar: Calendar = .current,
+        roots: [URL],
+        databaseReader: AntigravityDatabaseReader,
+        cliClient: AntigravityCLIUsageClient)
+    {
+        self.calendar = calendar
+        self.roots = roots
+        self.databaseReader = databaseReader
+        self.cliClient = cliClient
     }
 
     public func fetchUsage() async -> ProviderSnapshot {
         let startOfDay = self.calendar.startOfDay(for: .now)
         let databases = self.databaseFiles(modifiedAfter: startOfDay)
         var databaseRows: [AntigravityDatabaseRows] = []
+        var databaseReadFailures = 0
         for database in databases {
             guard let rows = try? await self.databaseReader.readRows(from: database) else {
+                databaseReadFailures += 1
                 continue
             }
             databaseRows.append(AntigravityDatabaseRows(
@@ -49,14 +70,58 @@ public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding {
             databaseRows,
             since: startOfDay)
 
-        guard let usage else {
+        let quotaResult: Result<AntigravityCLIUsageResult, Error>
+        do {
+            quotaResult = .success(try await self.cliClient.fetch())
+        } catch {
+            quotaResult = .failure(error)
+        }
+
+        if case let .success(quota) = quotaResult {
             return .init(
                 descriptor: self.descriptor,
-                availability: .unavailable,
+                availability: .available,
+                source: .cli,
+                quotaWindows: quota.quotaWindows,
+                tokenUsage: usage?.tokenUsage,
+                growthUsageObservation: usage.map {
+                    .daily(
+                        providerID: .antigravity,
+                        dateKey: GrowthLocalDate.key(
+                            for: $0.observedAt,
+                            calendar: self.calendar),
+                        totalTokens: $0.tokenUsage.totalTokens,
+                        observedAt: $0.observedAt)
+                },
+                connectionState: .connected,
+                detail: usage.map {
+                    "Antigravity CLI quotas · today across \($0.sessionCount) local conversations"
+                } ?? "Antigravity CLI quotas · no local token usage today",
+                updatedAt: max(quota.fetchedAt, usage?.observedAt ?? .distantPast))
+        }
+
+        guard let usage else {
+            let hasLocalStore = self.hasLocalConversationStore()
+            let cliError = quotaResult.failure
+            let detail: String
+            if databaseReadFailures > 0 {
+                detail = "Antigravity conversation database could not be read safely"
+            } else if !databases.isEmpty {
+                detail = "No timestamped Antigravity token record was available today"
+            } else if hasLocalStore {
+                detail = "Antigravity is available locally, with no token usage today"
+            } else {
+                detail = (cliError as? LocalizedError)?.errorDescription
+                    ?? "No Antigravity CLI profile or conversation database was found"
+            }
+            return .init(
+                descriptor: self.descriptor,
+                availability: databaseReadFailures > 0
+                    ? .stale
+                    : (hasLocalStore ? .available : .stale),
                 source: .localSessionLog,
-                detail: databases.isEmpty
-                    ? "No Antigravity conversation database was updated today"
-                    : "No timestamped Antigravity token record was available today")
+                connectionState: self.connectionState(for: cliError),
+                detail: detail)
         }
 
         return .init(
@@ -69,8 +134,13 @@ public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding {
                 dateKey: GrowthLocalDate.key(for: usage.observedAt, calendar: self.calendar),
                 totalTokens: usage.tokenUsage.totalTokens,
                 observedAt: usage.observedAt),
-            detail: "Today across \(usage.sessionCount) local Antigravity conversations",
+            connectionState: self.connectionState(for: quotaResult.failure),
+            detail: "Local usage · today across \(usage.sessionCount) Antigravity conversations",
             updatedAt: usage.observedAt)
+    }
+
+    public func invalidateUsageCache() async {
+        await self.cliClient.invalidate()
     }
 
     public func latestActivityDate(since cutoff: Date) -> Date? {
@@ -101,6 +171,35 @@ public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding {
                 .map { URL(fileURLWithPath: String($0.path.dropLast(4))) }
             return databases + databasesWithUpdatedWAL
         }.filter { seen.insert($0.standardizedFileURL).inserted }
+    }
+
+    private func hasLocalConversationStore() -> Bool {
+        self.roots.contains { root in
+            !LocalFiles.newestFiles(
+                below: root,
+                extension: "db",
+                limit: 1).isEmpty
+        }
+    }
+
+    private func connectionState(for error: Error?) -> ProviderConnectionState {
+        guard let error = error as? AntigravityCLIUsageError else {
+            return .localOnly
+        }
+        switch error {
+        case .profileUnavailable, .signInRequired:
+            return .authorizationRequired
+        case .executableUnavailable, .unsupportedVersion, .launchFailed,
+             .timedOut, .commandFailed, .invalidResponse, .usageUnavailable:
+            return .localOnly
+        }
+    }
+}
+
+private extension Result {
+    var failure: Failure? {
+        guard case let .failure(error) = self else { return nil }
+        return error
     }
 }
 

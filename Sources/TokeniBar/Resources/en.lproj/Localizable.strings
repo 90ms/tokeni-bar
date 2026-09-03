@@ -24,6 +24,11 @@
 "menu.summary.providerCount" = "%d provider summaries";
 "menu.summary.remaining" = "Lowest %d%%";
 "menu.summary.companion" = "Level %d · %@";
+"menu.providers.title" = "Provider usage";
+"menu.providers.details" = "Details";
+"menu.provider.remaining" = "%d%% left";
+"menu.provider.resets" = "resets";
+"menu.provider.tokens" = "Today %@ tokens";
 "app.menuName" = "Tokeni";
 "app.menuRemaining" = "Tokeni %d%%";
 "app.menuMonthlyCost" = "Month %@";
@@ -69,6 +74,7 @@
 "usage.details.show" = "Show details";
 "usage.details.hide" = "Hide details";
 "provider.status.available" = "Available";
+"provider.status.loading" = "Refreshing";
 "provider.status.stale" = "Stale";
 "provider.status.unavailable" = "Unavailable";
 "provider.status.failed" = "Error";
@@ -90,10 +96,13 @@
 "settings.connections.state.sessionExpired" = "Session expired · sign in with the CLI again";
 "settings.connections.state.stale" = "Connection status unavailable";
 "settings.tab.general" = "General";
+"settings.tab.providers" = "Providers";
+"settings.tab.display" = "Display";
 "settings.tab.notifications" = "Alerts";
 "settings.tab.companion" = "Tokeni";
 "settings.tab.usage" = "Usage";
 "settings.tab.privacy" = "Privacy";
+"settings.general.startup" = "Startup";
 "settings.language" = "Language";
 "settings.language.system" = "System Setting";
 "settings.language.english" = "English";

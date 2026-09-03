@@ -3,6 +3,68 @@ import Foundation
 import Testing
 
 struct AntigravityProviderTests {
+    @Test("Antigravity parses documented headless CLI quota groups")
+    func parsesHeadlessCLIQuotaGroups() throws {
+        let fixtureURL = try #require(Bundle.module.url(
+            forResource: "antigravity-cli-usage",
+            withExtension: "json",
+            subdirectory: "Fixtures"))
+
+        let fixture = try Data(contentsOf: fixtureURL)
+        var prefixedFixture = Data("startup notice\n".utf8)
+        prefixedFixture.append(fixture)
+        let windows = try AntigravityCLIUsageParser.parse(
+            prefixedFixture)
+
+        #expect(windows.map(\.id) == [
+            "gemini-5h",
+            "3p-weekly",
+            "gemini-weekly",
+        ])
+        #expect(windows.map { Int($0.remainingPercent.rounded()) } == [84, 91, 72])
+        #expect(windows[0].kind == .session)
+        #expect(windows[0].durationMinutes == 300)
+        #expect(windows.allSatisfy { $0.resetsAt != nil })
+    }
+
+    @Test("Antigravity remains locally available on a day without usage")
+    func idleLocalStoreRemainsAvailable() async throws {
+        let home = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: home) }
+        let databaseURL = home.appending(
+            path: ".gemini/antigravity/conversations/previous.db",
+            directoryHint: .notDirectory)
+        try FileManager.default.createDirectory(
+            at: databaseURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try Data().write(to: databaseURL)
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date.now.addingTimeInterval(-2 * 24 * 60 * 60)],
+            ofItemAtPath: databaseURL.path)
+
+        let provider = AntigravityUsageProvider(
+            homeDirectory: home,
+            roots: [databaseURL.deletingLastPathComponent()])
+        let snapshot = await provider.fetchUsage()
+
+        #expect(snapshot.availability == .available)
+        #expect(snapshot.connectionState == .authorizationRequired)
+        #expect(snapshot.tokenUsage == nil)
+    }
+
+    @Test("Antigravity gates quota checks to the safe CLI version")
+    func gatesSafeCLIUsageVersion() {
+        #expect(AntigravityCLIUsageParser.supportsSafeUsageCommand(
+            "agy version 1.1.11"))
+        #expect(AntigravityCLIUsageParser.supportsSafeUsageCommand(
+            "Antigravity CLI 2.0.0"))
+        #expect(!AntigravityCLIUsageParser.supportsSafeUsageCommand(
+            "agy version 1.1.10"))
+        #expect(!AntigravityCLIUsageParser.supportsSafeUsageCommand(
+            "unknown"))
+    }
+
     @Test("Antigravity database reader uses the injected SQLite boundary")
     func databaseReaderUsesInjectedQueryRunner() async throws {
         let databaseURL = try self.temporaryDatabaseURL()
@@ -25,8 +87,8 @@ struct AntigravityProviderTests {
         #expect(request.sql.contains("hex(data) AS data_hex"))
     }
 
-    @Test("Antigravity stays unavailable when the injected SQLite reader fails")
-    func missingSQLiteDataRemainsUnavailable() async throws {
+    @Test("Antigravity reports stale data when the injected SQLite reader fails")
+    func failedSQLiteDataRemainsStale() async throws {
         let home = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: home) }
@@ -47,7 +109,7 @@ struct AntigravityProviderTests {
 
         let snapshot = await provider.fetchUsage()
 
-        #expect(snapshot.availability == .unavailable)
+        #expect(snapshot.availability == .stale)
         #expect(await runner.requestCount() == 1)
     }
 

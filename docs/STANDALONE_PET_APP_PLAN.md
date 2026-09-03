@@ -11,7 +11,7 @@
 | Stage | Status | Result |
 | --- | --- | --- |
 | 0. Lock decisions | Complete | Added the bilingual plan and documentation index |
-| 1. Standalone shell | Complete | Added Home, Pets, Usage, Settings link, summary-focused menu bar, and passed macOS CI |
+| 1. Standalone shell | Complete | Added Home, Usage, Pets, and integrated Settings destinations plus a provider-summary menu bar |
 | 2. Dynamic-content foundation | Complete | Added extensible species/pack IDs, game boundaries, bundled/local asset sources, and passed macOS CI |
 | 3. Codex-compatible import | Complete | Safe validation, installation, rendering, appearance selection, pack management, and macOS CI completed |
 | 4. Multiple-pet home | Complete | Verified primary/growth roles, Home growth-target summary, and roster search and filters in macOS CI |
@@ -72,11 +72,11 @@ The same setting or management action must not be repeated across surfaces.
 
 | Surface | Owns | Does not contain |
 | --- | --- | --- |
-| Menu bar | Current summary, refresh, caffeine, open main window, settings and quit entry points | Collection, egg shop, detailed settings, long usage lists |
-| Home | Primary pet, growth target, today's usage state, and the next useful action | Full collection editing and every provider setting |
+| Menu bar | Per-provider quota/reset summary, pet summary, refresh, caffeine, open main window, settings and quit | Collection, egg shop, detailed settings, long usage history |
+| Home | Compact growth target, today's usage freshness, and the next useful action | Full pet card, collection editing, caffeine settings, and provider settings |
 | Pets | Roster, growth target, primary pet, eggs, collection, cosmetics, and packs | Provider quota settings |
 | Usage | Provider status, cost, history, and data freshness | Pet-management actions |
-| macOS Settings window | Providers, display, notifications, caffeine, login item, and advanced options | Collection and roster management |
+| Settings destination | Providers, display, notifications, caffeine, login item, privacy, and embedded diagnostics | Collection and roster management |
 | Desktop pet | Primary-pet reactions and brief status | Persistent settings and economy actions |
 
 When an action leaves the menu bar, it links to its exact main-window destination.
@@ -89,6 +89,7 @@ The main window uses a macOS `NavigationSplitView`.
 ```text
 Tokeni
 ├── Home
+├── Usage
 ├── Pets
 │   ├── Companion
 │   ├── Roster
@@ -96,8 +97,13 @@ Tokeni
 │   ├── Collection
 │   ├── Cosmetics
 │   └── Pet packs
-├── Usage
-└── Settings → open the macOS Settings window
+└── Settings
+    ├── General
+    ├── Providers
+    ├── Display
+    ├── Alerts
+    ├── Usage preferences
+    └── Privacy and diagnostics
 ```
 
 The first stage safely relocates current screens. Later stages split the long
@@ -217,7 +223,7 @@ Every user-visible change adds a unique bilingual `.changes` fragment.
 
 2. `feat: add standalone application shell`
    - Main `WindowGroup`, stable window ID, and startup lifecycle
-   - Home, Pets, and Usage sidebar plus a macOS Settings-window link
+   - Home, Usage, Pets, and Settings destinations in one Tokeni window
    - Navigation-selection and presentation tests
 3. `refactor: focus menu bar on quick controls`
    - Limit the menu bar to summary, refresh, caffeine, open app, settings, and quit

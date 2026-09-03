@@ -4,11 +4,11 @@
 
 ## Menu popover
 
-The popover briefly summarizes the primary pet's level and stage plus overall
-usage status. Selecting the pet summary opens **Pets** in the standalone Tokeni
-window; selecting usage opens **Usage**, which owns provider cards and 30-day
-local history. Detailed quotas, token totals, API-equivalent reference costs,
-data source, and update time appear only on the Usage screen.
+The popover briefly summarizes the primary pet and every enabled provider.
+Provider rows show the lowest verified remaining quota and reset countdown, or
+today's token total when no quota window is available. Selecting the pet opens
+**Pets** and selecting a provider opens **Usage**, which owns full provider
+cards and 30-day local history.
 
 Refresh remains in the header, while Open Tokeni, caffeine, settings, and quit
 stay available in the footer. The coffee button prevents idle system sleep for
@@ -114,8 +114,11 @@ sprites should be reported with diagnostics and reproduction steps.
 - **Cline:** timestamped `api_req_started` usage records are read from Cline's
   VS Code, VS Code Insiders, VSCodium, Cursor, and standalone local task data.
 - **Antigravity:** timestamped usage metadata is read from current SQLite
-  conversation databases. Antigravity's own Google sign-in is sufficient;
-  Tokeni Bar does not require or store a separate provider credential.
+  conversation databases. With an existing Antigravity CLI profile, `agy`
+  1.1.11 or newer is also queried through its read-only headless `/usage`
+  command for verified Gemini and third-party 5-hour and weekly quotas. The
+  CLI version is checked before the command runs so older clients cannot treat
+  `/usage` as a model prompt. Tokeni Bar never reads or stores Google tokens.
 - **Grok Build:** completed `turn_completed` records are read from the current
   `updates.jsonl` format. Incomplete usage and partial cost are rejected.
 
@@ -155,7 +158,7 @@ tokens.
 ## Claude menu-bar quota
 
 Choose **Selected provider remaining** and **Claude Code** under
-**Settings → General → Menu Bar** to show the **Claude quota** picker:
+**Settings → Display → Menu Bar** to show the **Claude quota** picker:
 
 - **5-hour:** session quota
 - **Weekly:** account weekly quota
@@ -182,7 +185,7 @@ of estimating.
   opening a password or login prompt.
 - Even when launched from Finder, the CLI receives the user's home directory and
   common Homebrew, npm, nvm, fnm, and mise runtime paths used by terminal installs.
-- **Settings → General → Providers → Connect Claude Code** runs the same
+- **Settings → Providers → Connect Claude Code** runs the same
   non-interactive command with a fresh result. It does not start a separate
   authentication flow.
 - If the CLI is missing or not signed in, the app keeps local session usage and

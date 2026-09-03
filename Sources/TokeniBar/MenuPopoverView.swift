@@ -1,11 +1,11 @@
 import AppKit
 import SwiftUI
+import TokeniCore
 
 struct MenuPopoverView: View {
     @ObservedObject var store: UsageStore
     @ObservedObject var caffeineController: CaffeineController
     @ObservedObject var mainNavigation: TokeniMainNavigation
-    @Environment(\.openSettings) private var openSettings
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -22,7 +22,7 @@ struct MenuPopoverView: View {
                         self.companionSummary
                     }
 
-                    self.usageSummary
+                    self.providerSummaries
 
                     if let result = self.store.appUpdateResult,
                        result.isUpdateAvailable
@@ -36,7 +36,7 @@ struct MenuPopoverView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
             }
-            .frame(minHeight: 150, idealHeight: 230, maxHeight: 320)
+            .frame(minHeight: 170, idealHeight: 300, maxHeight: 460)
 
             Divider()
 
@@ -88,52 +88,54 @@ struct MenuPopoverView: View {
         }
     }
 
-    private var usageSummary: some View {
-        Button {
-            self.openMainWindow(destination: .usage)
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "chart.xyaxis.line")
-                    .font(.title3)
-                    .foregroundStyle(Color.accentColor)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(AppLocalization.string("menu.summary.usage"))
-                        .font(.callout.weight(.semibold))
-                    if self.store.snapshots.isEmpty {
-                        Text(AppLocalization.string("empty.description"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    } else {
-                        Text(AppLocalization.format(
-                            "menu.summary.providerCount",
-                            self.store.snapshots.count))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
+    @ViewBuilder
+    private var providerSummaries: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack {
+                Label(
+                    AppLocalization.string("menu.providers.title"),
+                    systemImage: "chart.xyaxis.line")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
                 Spacer()
-
-                if let remaining = self.store.menuBarRemainingPercent {
-                    Text(AppLocalization.format(
-                        "menu.summary.remaining",
-                        Int(remaining.rounded())))
-                        .font(.callout.monospacedDigit().weight(.semibold))
+                Button {
+                    self.openMainWindow(destination: .usage)
+                } label: {
+                    Text(AppLocalization.string("menu.providers.details"))
+                    Image(systemName: "chevron.right")
                 }
-
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                .buttonStyle(.plain)
+                .font(.caption)
             }
-            .padding(10)
-            .contentShape(Rectangle())
-            .background(
-                .quaternary.opacity(0.5),
-                in: RoundedRectangle(cornerRadius: 10))
+
+            if self.store.snapshots.isEmpty {
+                Button {
+                    self.openMainWindow(destination: .settings)
+                } label: {
+                    Label(
+                        AppLocalization.string("empty.description"),
+                        systemImage: "slider.horizontal.3")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                }
+                .buttonStyle(.plain)
+                .background(
+                    .quaternary.opacity(0.5),
+                    in: RoundedRectangle(cornerRadius: 10))
+            } else {
+                ForEach(self.store.snapshots) { snapshot in
+                    Button {
+                        self.openMainWindow(destination: .usage)
+                    } label: {
+                        MenuProviderSummaryRow(
+                            snapshot: snapshot,
+                            isActive: self.store.activityAnimationsEnabled
+                                && self.store.isActive(snapshot.id))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
-        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -234,8 +236,7 @@ struct MenuPopoverView: View {
                     : "caffeine.enable"))
 
             Button {
-                self.openSettings()
-                self.activateApplication()
+                self.openMainWindow(destination: .settings)
             } label: {
                 Image(systemName: "gearshape")
             }
@@ -303,5 +304,106 @@ struct MenuPopoverView: View {
         self.mainNavigation.select(destination)
         self.openWindow(id: "tokeni-main")
         self.activateApplication()
+    }
+}
+
+private struct MenuProviderSummaryRow: View {
+    let snapshot: ProviderSnapshot
+    let isActive: Bool
+
+    private var representativeQuota: QuotaWindow? {
+        self.snapshot.quotaWindows.min {
+            if $0.remainingPercent != $1.remainingPercent {
+                return $0.remainingPercent < $1.remainingPercent
+            }
+            return ($0.resetsAt ?? .distantFuture) < ($1.resetsAt ?? .distantFuture)
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 9) {
+            ProviderIcon(descriptor: self.snapshot.descriptor, dimension: 14)
+                .frame(width: 16)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 5) {
+                    Text(self.snapshot.descriptor.displayName)
+                        .font(.callout.weight(.semibold))
+                    if self.isActive {
+                        Image(systemName: "waveform")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                            .accessibilityLabel(AppLocalization.string(
+                                "activity.active"))
+                    }
+                }
+                self.detail
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            if let quota = self.representativeQuota {
+                Text(AppLocalization.format(
+                    "menu.provider.remaining",
+                    Int(quota.remainingPercent.rounded())))
+                    .font(.callout.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(self.quotaColor(quota.remainingPercent))
+            } else {
+                self.availabilityIcon
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .background(
+            .quaternary.opacity(0.5),
+            in: RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private var detail: some View {
+        if let quota = self.representativeQuota {
+            HStack(spacing: 3) {
+                Text(quota.label)
+                if let reset = quota.resetsAt {
+                    Text("·")
+                    Text(AppLocalization.string("menu.provider.resets"))
+                    Text(reset, style: .relative)
+                }
+            }
+        } else if let tokenUsage = self.snapshot.tokenUsage {
+            Text(AppLocalization.format(
+                "menu.provider.tokens",
+                tokenUsage.totalTokens.formatted(.number.notation(.compactName))))
+        } else {
+            Text(AppLocalization.string(
+                "provider.status.\(self.snapshot.availability.rawValue)"))
+        }
+    }
+
+    @ViewBuilder
+    private var availabilityIcon: some View {
+        switch self.snapshot.availability {
+        case .loading:
+            ProgressView().controlSize(.small)
+        case .available:
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+        case .stale:
+            Image(systemName: "clock.badge.exclamationmark").foregroundStyle(.orange)
+        case .unavailable:
+            Image(systemName: "minus.circle").foregroundStyle(.secondary)
+        case .failed:
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+        }
+    }
+
+    private func quotaColor(_ remaining: Double) -> Color {
+        if remaining <= 10 { return .red }
+        if remaining <= 30 { return .orange }
+        return .primary
     }
 }

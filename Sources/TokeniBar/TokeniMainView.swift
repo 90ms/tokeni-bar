@@ -4,8 +4,9 @@ import TokeniCore
 
 enum TokeniMainDestination: String, CaseIterable, Hashable, Identifiable {
     case home
-    case pets
     case usage
+    case pets
+    case settings
 
     var id: Self { self }
 
@@ -16,8 +17,9 @@ enum TokeniMainDestination: String, CaseIterable, Hashable, Identifiable {
     var systemImage: String {
         switch self {
         case .home: "house.fill"
-        case .pets: "pawprint.fill"
         case .usage: "chart.xyaxis.line"
+        case .pets: "pawprint.fill"
+        case .settings: "gearshape.fill"
         }
     }
 }
@@ -56,13 +58,6 @@ struct TokeniMainView: View {
                     }
                 }
 
-                Section {
-                    SettingsLink {
-                        Label(
-                            AppLocalization.string("main.navigation.settings"),
-                            systemImage: "gearshape.fill")
-                    }
-                }
             }
             .navigationTitle(AppLocalization.string("main.title"))
             .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 240)
@@ -75,6 +70,15 @@ struct TokeniMainView: View {
         .onAppear {
             self.store.start()
         }
+        .onReceive(NotificationCenter.default.publisher(
+            for: .openNotificationSettings))
+        { _ in
+            self.navigation.select(.settings)
+            NSApplication.shared.activate(ignoringOtherApps: true)
+            NSApplication.shared.windows.first(where: {
+                $0.title == AppLocalization.string("main.title")
+            })?.makeKeyAndOrderFront(nil)
+        }
     }
 
     @ViewBuilder
@@ -83,7 +87,6 @@ struct TokeniMainView: View {
         case .home:
             TokeniHomeView(
                 store: self.store,
-                caffeineController: self.caffeineController,
                 navigate: { self.navigation.select($0) })
         case .pets:
             CompanionCollectionView(store: self.store)
@@ -93,13 +96,18 @@ struct TokeniMainView: View {
             TokeniUsageView(store: self.store)
                 .navigationTitle(AppLocalization.string(
                     TokeniMainDestination.usage.localizationKey))
+        case .settings:
+            SettingsView(
+                store: self.store,
+                caffeineController: self.caffeineController)
+                .navigationTitle(AppLocalization.string(
+                    TokeniMainDestination.settings.localizationKey))
         }
     }
 }
 
 private struct TokeniHomeView: View {
     @ObservedObject var store: UsageStore
-    @ObservedObject var caffeineController: CaffeineController
     let navigate: (TokeniMainDestination) -> Void
 
     var body: some View {
@@ -113,11 +121,10 @@ private struct TokeniHomeView: View {
                 }
 
                 if self.store.companionEnabled {
-                    CompanionCard(
-                        store: self.store,
-                        openCollection: { self.navigate(.pets) })
                     if let growthTarget = self.store.companionState.growthTargetPet {
                         self.growthTargetSummary(growthTarget)
+                    } else {
+                        self.eggSummary
                     }
                 } else {
                     ContentUnavailableView(
@@ -128,10 +135,7 @@ private struct TokeniHomeView: View {
                             "settings.companion.disabled.description")))
                 }
 
-                HStack(alignment: .top, spacing: 16) {
-                    self.usageSummary
-                    self.caffeineSummary
-                }
+                self.usageSummary
 
                 HStack(spacing: 12) {
                     Button {
@@ -277,41 +281,47 @@ private struct TokeniHomeView: View {
         }
     }
 
-    private var caffeineSummary: some View {
+    private var eggSummary: some View {
         GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                Label(
-                    AppLocalization.string(
-                        self.caffeineController.isEnabled
-                            ? "main.home.caffeineOn"
-                            : "main.home.caffeineOff"),
-                    systemImage: self.caffeineController.isEnabled
-                        ? "cup.and.saucer.fill"
-                        : "cup.and.saucer")
-                    .foregroundStyle(
-                        self.caffeineController.isEnabled
-                            ? Color.orange
-                            : Color.primary)
+            HStack(spacing: 14) {
+                ByteBotTransitionView(
+                    speciesID: self.store.displayedCompanionAppearanceSpeciesID,
+                    stage: self.store.displayedCompanionStage,
+                    rarity: self.store.displayedCompanionRarity,
+                    variantID: self.store.displayedCompanionVariantID,
+                    behavior: .idle,
+                    mutationID: self.store.displayedCompanionMutationID,
+                    cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
+                    dimension: 56,
+                    animationsEnabled: false,
+                    animationIntensity: 0,
+                    interactionPulse: 0,
+                    growthPulse: 0)
 
-                Text(AppLocalization.string("main.home.caffeineDescription"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(AppLocalization.string("companion.species.mystery.name"))
+                        .font(.headline)
+                    Text(AppLocalization.string(
+                        "companion.stage.\(self.store.displayedCompanionStage.rawValue)"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
-                Button(AppLocalization.string(
-                    self.caffeineController.isEnabled
-                        ? "caffeine.disable"
-                        : "caffeine.enable"))
-                {
-                    self.caffeineController.toggle()
+                Spacer()
+
+                Button(AppLocalization.string("main.home.openPets")) {
+                    self.navigate(.pets)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
-            Text(AppLocalization.string("settings.caffeine.title"))
+            Label(
+                AppLocalization.string("main.home.growthTarget"),
+                systemImage: "pawprint.fill")
                 .font(.headline)
         }
-        .frame(maxWidth: .infinity)
     }
+
 }
 
 private struct TokeniUsageView: View {
