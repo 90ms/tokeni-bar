@@ -246,10 +246,6 @@ final class UsageNotificationController: NSObject, UNUserNotificationCenterDeleg
         completionHandler()
         Task { @MainActor in
             NSApplication.shared.activate(ignoringOtherApps: true)
-            NSApplication.shared.sendAction(
-                Selector(("showSettingsWindow:")),
-                to: nil,
-                from: nil)
             NotificationCenter.default.post(
                 name: .openNotificationSettings,
                 object: nil)

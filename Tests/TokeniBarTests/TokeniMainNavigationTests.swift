@@ -6,12 +6,13 @@ struct TokeniMainNavigationTests {
     func destinationsAreStableAndUnique() {
         #expect(TokeniMainDestination.allCases == [
             .home,
-            .pets,
             .usage,
+            .pets,
+            .settings,
         ])
-        #expect(Set(TokeniMainDestination.allCases.map(\.rawValue)).count == 3)
-        #expect(Set(TokeniMainDestination.allCases.map(\.localizationKey)).count == 3)
-        #expect(Set(TokeniMainDestination.allCases.map(\.systemImage)).count == 3)
+        #expect(Set(TokeniMainDestination.allCases.map(\.rawValue)).count == 4)
+        #expect(Set(TokeniMainDestination.allCases.map(\.localizationKey)).count == 4)
+        #expect(Set(TokeniMainDestination.allCases.map(\.systemImage)).count == 4)
     }
 
     @Test("Main navigation can route menu-bar actions to one destination")

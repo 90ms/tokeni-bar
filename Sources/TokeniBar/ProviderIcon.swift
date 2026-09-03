@@ -6,6 +6,7 @@ struct ProviderIcon: View {
     @MainActor private static var imageCache: [String: NSImage] = [:]
 
     let descriptor: ProviderDescriptor
+    var dimension: CGFloat = 16
 
     var body: some View {
         Group {
@@ -20,7 +21,7 @@ struct ProviderIcon: View {
                 Image(systemName: self.descriptor.systemImage)
             }
         }
-        .frame(width: 16, height: 16)
+        .frame(width: self.dimension, height: self.dimension)
         .accessibilityHidden(true)
     }
 

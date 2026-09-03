@@ -31,6 +31,9 @@ struct TokeniBarApp: App {
         }
         .defaultSize(width: 1_080, height: 760)
         .windowResizability(.contentMinSize)
+        .commands {
+            TokeniAppCommands(navigation: self.mainNavigation)
+        }
 
         MenuBarExtra {
             MenuPopoverView(
@@ -73,22 +76,6 @@ struct TokeniBarApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Settings {
-            SettingsView(
-                store: self.store,
-                caffeineController: self.caffeineController)
-                .background(WindowFocusView())
-        }
-
-        Window(AppLocalization.string("history.title"), id: "usage-history") {
-            HistoryView(store: self.store)
-        }
-        .defaultSize(width: 720, height: 460)
-
-        Window(AppLocalization.string("diagnostics.title"), id: "provider-diagnostics") {
-            DiagnosticsView(store: self.store)
-        }
-        .defaultSize(width: 680, height: 480)
     }
 
     @ViewBuilder
@@ -201,23 +188,18 @@ struct TokeniBarApp: App {
     }
 }
 
-private struct WindowFocusView: NSViewRepresentable {
-    func makeNSView(context: Context) -> WindowFocusNSView {
-        WindowFocusNSView()
-    }
+private struct TokeniAppCommands: Commands {
+    @ObservedObject var navigation: TokeniMainNavigation
+    @Environment(\.openWindow) private var openWindow
 
-    func updateNSView(_ nsView: WindowFocusNSView, context: Context) {}
-}
-
-private final class WindowFocusNSView: NSView {
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        guard let window else { return }
-
-        DispatchQueue.main.async { [weak window] in
-            guard let window else { return }
-            NSApplication.shared.activate(ignoringOtherApps: true)
-            window.makeKeyAndOrderFront(nil)
+    var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button(AppLocalization.string("action.settings")) {
+                self.navigation.select(.settings)
+                self.openWindow(id: "tokeni-main")
+                NSApplication.shared.activate(ignoringOtherApps: true)
+            }
+            .keyboardShortcut(",", modifiers: .command)
         }
     }
 }
@@ -234,7 +216,7 @@ private struct MenuBarStatusIcon: View {
         ZStack(alignment: .topTrailing) {
             Group {
                 if let provider = self.provider {
-                    ProviderIcon(descriptor: provider)
+                    ProviderIcon(descriptor: provider, dimension: 13)
                         .symbolEffect(
                             .pulse,
                             value: self.isActive && !self.reduceMotion
@@ -251,7 +233,7 @@ private struct MenuBarStatusIcon: View {
                     }
                 }
             }
-            .frame(width: 15, height: 15)
+            .frame(width: 14, height: 14)
 
             if self.showsCompanionBadge {
                 Circle()
@@ -265,7 +247,7 @@ private struct MenuBarStatusIcon: View {
                         "companion.action.ready"))
             }
         }
-            .frame(width: 17, height: 17)
+        .frame(width: 16, height: 16)
             .accessibilityLabel(self.accessibilityLabel)
     }
 

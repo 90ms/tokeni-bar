@@ -46,8 +46,8 @@ brew install --formula tokeni-bar
 
 | Area | Information |
 |---|---|
-| Tokeni Home | Primary pet, growth status, usage refresh, and quick caffeine control |
-| Menu bar | Native monochrome status icon, lowest quota, compact selected-provider icon and remaining percentage, monthly cost or pet status, and a growth-ready badge |
+| Tokeni Home | Compact growth-target status, usage freshness, and links to the owning detail screens |
+| Menu bar | Compact native status icon, selected-provider remaining percentage, and per-provider quota/reset summaries in the popover |
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
 | Alerts | Remaining usage, quota reset, monthly budget, connection failures, quiet hours, and grouped delivery |
@@ -127,7 +127,7 @@ not increase resale value, and collection discoveries remain recorded.
 
 Choose **Open Tokeni** from the menu bar, then use **Pets** for the current
 companion, growth status, Collection, and Owned sections. Pet-display and
-on-screen-pet preferences remain only under macOS **Settings → Tokeni**.
+on-screen-pet preferences remain only under **Settings → Display → Tokeni**.
 Collection records discovered species, appearances, lifecycle
 forms, and Mutation variants; Owned lists each hatched pet with its level, name,
 personality, memories, switching, showcasing, and resale actions. In Owned, choose a
@@ -210,18 +210,19 @@ appears when an egg can be opened or a level 30 or 70 evolution is ready. Select
 provider mode shows only the provider brand icon and remaining percentage; the full
 name and status remain available to Help and VoiceOver.
 
-The menu popover provides short primary-pet and usage summaries plus refresh,
-caffeine, Open Tokeni, settings, and quit. Selecting the pet summary opens
-**Pets**; selecting usage opens **Usage**. Provider quota details, tokens,
-reference costs, and sources live only in Usage, while the collection, eggs,
-and roster live only in Pets.
+The menu popover provides a short primary-pet summary and one compact row for
+every enabled provider. Each row shows its most constrained verified quota and
+reset countdown, or today's tokens when that provider has no quota window.
+Selecting a provider opens **Usage**; the gear opens **Settings** inside the
+same Tokeni window. Full provider details live only in Usage, while collection,
+egg, and roster management live only in Pets.
 
 The coffee button in the popover footer prevents idle system sleep for the current
 app session. Under **Settings → General → Caffeine**, choose whether the display
 should stay awake as well. Caffeine starts off after relaunch to avoid unexpected
 battery use.
 
-Enable **Settings → Tokeni → Show pet on screen** to keep a transparent pet
+Enable **Settings → Display → Tokeni → Show pet on screen** to keep a transparent pet
 panel above other apps.
 
 - Choose a Small, Medium, or Large display size.
@@ -242,7 +243,7 @@ panel above other apps.
 | Claude Code | 5-hour, weekly, and model-scoped limits | Local daily tokens; cache-aware reference cost | Confirmed daily total |
 | GitHub Copilot | Not available | Today's tokens from OTel or completed local CLI sessions | Confirmed daily total |
 | Cline | Not available | Today's tokens and recorded cost from local VS Code-family tasks | Confirmed daily total |
-| Antigravity | Not available | Today's tokens from local conversation databases | Confirmed daily total |
+| Antigravity | Gemini and third-party 5-hour/weekly limits through signed-in `agy` 1.1.11+ | Today's tokens from local conversation databases | Confirmed daily total |
 | Grok Build | Local context only | Today's tokens and recorded cost from completed local turns | Confirmed daily total |
 
 Only timestamped local records are included in today's total. Incomplete or
@@ -255,7 +256,7 @@ undated values remain unavailable instead of becoming a guessed zero. See
 |---:|---|
 | 1 | Run and sign in to each CLI you want to use |
 | 2 | Start Tokeni Bar and review Home in the standalone Tokeni window |
-| 3 | Choose providers and the menu-bar display under **Settings → General** |
+| 3 | Choose providers under **Settings → Providers** and menu-bar behavior under **Settings → Display** |
 | 4 | For account quotas, choose **Providers → Connect**; the app reuses each CLI's existing sign-in |
 | 5 | Use an agent; the first growth activity checks in automatically, then grow the pet, try Star Shard cosmetics, and optionally enable the on-screen pet |
 
@@ -307,10 +308,11 @@ analytics or remote game server.
 | Symptom | What to check |
 |---|---|
 | Tokeni window is missing | Open the Tokeni Bar icon on the right side of the menu bar and choose **Open Tokeni** |
-| Cannot move the on-screen pet | Turn off position lock and click-through under **Settings → Tokeni** |
-| Cannot find the on-screen pet | Choose **Settings → Tokeni → Reset pet position** |
+| Cannot move the on-screen pet | Turn off position lock and click-through under **Settings → Display → Tokeni** |
+| Cannot find the on-screen pet | Choose **Settings → Display → Tokeni → Reset pet position** |
 | Provider unavailable | Confirm the CLI is installed and signed in, then run it once |
-| Claude or Codex connection fails | Run the affected CLI once in Terminal to sign in, then check **Settings → General → Providers**. Claude uses `claude auth status`, Codex checks its existing CLI session, and Tokeni Bar never opens a login dialog or reads credentials |
+| Claude or Codex connection fails | Run the affected CLI once in Terminal to sign in, then check **Settings → Providers**. Claude uses `claude auth status`, Codex checks its existing CLI session, and Tokeni Bar never opens a login dialog or reads credentials |
+| Antigravity quota is unavailable | Install `agy` 1.1.11 or newer, run it once in Terminal to sign in, then refresh Tokeni. Local token totals remain available when a current conversation database can be read |
 | Homebrew trust error | Run `brew trust --formula 90ms/tap/tokeni-bar` |
 | Update asks to choose Formula or Cask | Run `brew upgrade --formula 90ms/tap/tokeni-bar`, then `tokeni-bar --install-app`. In-app updates select the Formula automatically starting with 0.25.2 |
 | In-app Homebrew update reports a `$HOME` error | Update to the latest version, then retry. For an older version, run `brew upgrade --formula 90ms/tap/tokeni-bar && tokeni-bar --install-app` in Terminal |
