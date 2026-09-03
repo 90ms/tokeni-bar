@@ -75,7 +75,7 @@ struct ProviderRow: View {
     {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
-                Text(window.label)
+                Text(window.tokeniLocalizedLabel)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -91,7 +91,7 @@ struct ProviderRow: View {
 
             ProgressView(value: window.remainingPercent, total: 100)
                 .tint(self.tint(forRemainingPercent: window.remainingPercent))
-                .accessibilityLabel(window.label)
+                .accessibilityLabel(window.tokeniLocalizedLabel)
                 .accessibilityValue(AppLocalization.format(
                     "settings.notifications.percentLeft",
                     Int(window.remainingPercent.rounded())))
@@ -367,5 +367,36 @@ struct ProviderRow: View {
         self.costCurrency.formatted(
             amountUSD: amountUSD,
             exchangeRate: self.exchangeRate)
+    }
+}
+
+extension QuotaWindow {
+    var tokeniLocalizedLabel: String {
+        let localizedWindow: String?
+        switch (self.kind, self.durationMinutes) {
+        case (.session, 5 * 60):
+            localizedWindow = AppLocalization.string("usage.window.fiveHour")
+        case (.weekly, _):
+            localizedWindow = AppLocalization.string("usage.window.weekly")
+        case (.monthly, _):
+            localizedWindow = AppLocalization.string("usage.window.monthly")
+        default:
+            localizedWindow = nil
+        }
+        guard let localizedWindow else { return self.label }
+
+        let standardLabels = ["5-hour", "Weekly", "Monthly"]
+        if standardLabels.contains(self.label) {
+            return localizedWindow
+        }
+        if let separator = self.label.range(of: " · ", options: .backwards),
+           standardLabels.contains(String(self.label[separator.upperBound...]))
+        {
+            return String(self.label[..<separator.lowerBound]) + " · " + localizedWindow
+        }
+        if self.kind == .weekly, self.label.lowercased().hasSuffix(" weekly") {
+            return String(self.label.dropLast(" weekly".count)) + " · " + localizedWindow
+        }
+        return self.label
     }
 }

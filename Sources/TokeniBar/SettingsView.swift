@@ -3,13 +3,28 @@ import Combine
 import TokeniCore
 import SwiftUI
 
-private enum SettingsTab: Hashable {
+private enum SettingsTab: String, CaseIterable, Hashable, Identifiable {
     case general
     case providers
     case display
     case notifications
     case usage
     case privacy
+
+    var id: Self { self }
+
+    var localizationKey: String { "settings.tab.\(self.rawValue)" }
+
+    var systemImage: String {
+        switch self {
+        case .general: "gearshape"
+        case .providers: "point.3.connected.trianglepath.dotted"
+        case .display: "menubar.rectangle"
+        case .notifications: "bell"
+        case .usage: "chart.xyaxis.line"
+        case .privacy: "hand.raised"
+        }
+    }
 }
 
 struct SettingsView: View {
@@ -19,61 +34,58 @@ struct SettingsView: View {
     @State private var showsNotificationDiagnostics = false
 
     var body: some View {
-        TabView(selection: self.$selectedTab) {
-            self.generalTab
-                .tag(SettingsTab.general)
-                .tabItem {
-                    Label(
-                        AppLocalization.string("settings.tab.general"),
-                        systemImage: "gearshape")
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(SettingsTab.allCases) { tab in
+                    Button {
+                        self.selectedTab = tab
+                    } label: {
+                        Label(
+                            AppLocalization.string(tab.localizationKey),
+                            systemImage: tab.systemImage)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .background(
+                        self.selectedTab == tab
+                            ? Color.accentColor.opacity(0.14)
+                            : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 7))
+                    .foregroundStyle(
+                        self.selectedTab == tab ? Color.accentColor : Color.primary)
                 }
+                Spacer()
+            }
+            .padding(12)
+            .frame(width: 170)
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.45))
 
-            self.providersTab
-                .tag(SettingsTab.providers)
-                .tabItem {
-                    Label(
-                        AppLocalization.string("settings.tab.providers"),
-                        systemImage: "point.3.connected.trianglepath.dotted")
-                }
+            Divider()
 
-            self.displayTab
-                .tag(SettingsTab.display)
-                .tabItem {
-                    Label(
-                        AppLocalization.string("settings.tab.display"),
-                        systemImage: "menubar.rectangle")
-                }
-
-            self.notificationsTab
-                .tag(SettingsTab.notifications)
-                .tabItem {
-                    Label(
-                        AppLocalization.string("settings.tab.notifications"),
-                        systemImage: "bell")
-                }
-
-            self.usageTab
-                .tag(SettingsTab.usage)
-                .tabItem {
-                    Label(
-                        AppLocalization.string("settings.tab.usage"),
-                        systemImage: "chart.xyaxis.line")
-                }
-
-            self.privacyTab
-                .tag(SettingsTab.privacy)
-                .tabItem {
-                    Label(
-                        AppLocalization.string("settings.tab.privacy"),
-                        systemImage: "hand.raised")
-                }
+            self.selectedTabContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(20)
         .onReceive(NotificationCenter.default.publisher(
             for: .openNotificationSettings))
         { _ in
             self.selectedTab = .notifications
+        }
+    }
+
+    @ViewBuilder
+    private var selectedTabContent: some View {
+        switch self.selectedTab {
+        case .general: self.generalTab
+        case .providers: self.providersTab
+        case .display: self.displayTab
+        case .notifications: self.notificationsTab
+        case .usage: self.usageTab
+        case .privacy: self.privacyTab
         }
     }
 
@@ -426,6 +438,7 @@ struct SettingsView: View {
     private func providerSettingsRow(
         _ descriptor: ProviderDescriptor) -> some View
     {
+        let isEnabled = self.store.isEnabled(descriptor.id)
         let requiresAuthorization = self.store.authorizationDescriptors
             .contains { $0.id == descriptor.id }
         let state = self.store.connectionState(for: descriptor.id)
@@ -462,7 +475,13 @@ struct SettingsView: View {
                 }
             }
 
-            if let message = self.store.providerAuthorizationMessages[descriptor.id] {
+            if !isEnabled {
+                Label(
+                    AppLocalization.string("settings.connections.state.disabled"),
+                    systemImage: "pause.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if let message = self.store.providerAuthorizationMessages[descriptor.id] {
                 TokeniStatusBanner(
                     text: message,
                     kind: state == .connected ? .success : .warning)

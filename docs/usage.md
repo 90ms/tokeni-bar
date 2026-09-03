@@ -5,10 +5,10 @@
 ## Menu popover
 
 The popover briefly summarizes the primary pet and every enabled provider.
-Provider rows show the lowest verified remaining quota and reset countdown, or
-today's token total when no quota window is available. Selecting the pet opens
-**Pets** and selecting a provider opens **Usage**, which owns full provider
-cards and 30-day local history.
+Provider rows show up to two constrained quotas across distinct window types
+with reset countdowns, or today's token total when no quota window is available.
+Selecting the pet opens **Pets** and selecting a provider jumps to its card in
+**Usage**, which owns full provider cards and 30-day local history.
 
 Refresh remains in the header, while Open Tokeni, caffeine, settings, and quit
 stay available in the footer. The coffee button prevents idle system sleep for
@@ -119,6 +119,8 @@ sprites should be reported with diagnostics and reproduction steps.
   command for verified Gemini and third-party 5-hour and weekly quotas. The
   CLI version is checked before the command runs so older clients cannot treat
   `/usage` as a model prompt. Tokeni Bar never reads or stores Google tokens.
+  If quota retrieval succeeds while a local conversation database cannot be
+  read safely, the quotas remain visible and the token portion is marked stale.
 - **Grok Build:** completed `turn_completed` records are read from the current
   `updates.jsonl` format. Incomplete usage and partial cost are rejected.
 

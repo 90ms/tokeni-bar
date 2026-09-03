@@ -41,11 +41,12 @@ Canonical repository: https://github.com/90ms/tokeni-bar
   XP interval to 0–100 Growth Energy.
 - The initial maximum is level 100 at 500 cumulative XP. Evolution is manual at
   levels 30 and 70 and does not spend XP.
-- The menu popover shows a compact companion summary plus one quota/reset or
-  token summary for every enabled provider.
+- The menu popover shows a compact companion summary plus up to two distinct
+  quota/reset summaries, or a token summary, for every enabled provider. A
+  provider row deep-links to its Usage card.
 - Companion management, collection, eggs, rewards, and cosmetics live under
   Pets. Provider, display, alert, usage, and privacy settings are integrated as
-  the Settings destination in the same Tokeni window.
+  the Settings destination in the same Tokeni window, using a vertical sub-menu.
 - Levels 5, 10, 20, and 25 grant one-time boosters or cosmetics. Later level
   milestones grant Star Shards, and one timed booster can multiply only newly
   verified base Growth XP.

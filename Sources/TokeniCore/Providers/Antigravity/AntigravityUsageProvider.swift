@@ -78,9 +78,10 @@ public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding,
         }
 
         if case let .success(quota) = quotaResult {
+            let hasDatabaseReadFailure = databaseReadFailures > 0
             return .init(
                 descriptor: self.descriptor,
-                availability: .available,
+                availability: hasDatabaseReadFailure ? .stale : .available,
                 source: .cli,
                 quotaWindows: quota.quotaWindows,
                 tokenUsage: usage?.tokenUsage,
@@ -94,9 +95,11 @@ public struct AntigravityUsageProvider: UsageProviding, UsageActivityProviding,
                         observedAt: $0.observedAt)
                 },
                 connectionState: .connected,
-                detail: usage.map {
-                    "Antigravity CLI quotas · today across \($0.sessionCount) local conversations"
-                } ?? "Antigravity CLI quotas · no local token usage today",
+                detail: hasDatabaseReadFailure
+                    ? "Antigravity CLI quotas · some local token records could not be read safely"
+                    : usage.map {
+                        "Antigravity CLI quotas · today across \($0.sessionCount) local conversations"
+                    } ?? "Antigravity CLI quotas · no local token usage today",
                 updatedAt: max(quota.fetchedAt, usage?.observedAt ?? .distantPast))
         }
 

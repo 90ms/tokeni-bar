@@ -46,7 +46,7 @@ brew install --formula tokeni-bar
 
 | Area | Information |
 |---|---|
-| Tokeni Home | Compact growth-target status, usage freshness, and links to the owning detail screens |
+| Tokeni Home | Lowest remaining quota, providers needing attention, monthly estimate, and ready pet-growth actions |
 | Menu bar | Compact native status icon, selected-provider remaining percentage, and per-provider quota/reset summaries in the popover |
 | Usage | Remaining quota, reset time, tokens, and reference cost per provider |
 | History | Local aggregates for the last 24 hours, 7 days, and 30 days |
@@ -211,11 +211,12 @@ provider mode shows only the provider brand icon and remaining percentage; the f
 name and status remain available to Help and VoiceOver.
 
 The menu popover provides a short primary-pet summary and one compact row for
-every enabled provider. Each row shows its most constrained verified quota and
-reset countdown, or today's tokens when that provider has no quota window.
-Selecting a provider opens **Usage**; the gear opens **Settings** inside the
-same Tokeni window. Full provider details live only in Usage, while collection,
-egg, and roster management live only in Pets.
+every enabled provider. Each row shows up to two constrained quotas across
+session, weekly, and other window types with reset countdowns, or today's tokens
+when no quota window is available. Selecting a provider jumps directly to its
+card in **Usage**; the gear opens **Settings** inside the same Tokeni window.
+Settings uses a vertical sub-menu and distinguishes disabled providers from
+connection failures.
 
 The coffee button in the popover footer prevents idle system sleep for the current
 app session. Under **Settings → General → Caffeine**, choose whether the display
