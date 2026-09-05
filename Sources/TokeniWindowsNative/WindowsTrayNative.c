@@ -1239,7 +1239,8 @@ static int tokeni_add_icon_locked(void)
     tokeni_icon.uID = tokeni_tray_identifier;
     tokeni_icon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     tokeni_icon.uCallbackMessage = tokeni_tray_callback_message;
-    tokeni_icon.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512));
+    tokeni_icon.hIcon = LoadIconW(tokeni_instance, MAKEINTRESOURCEW(101));
+    if (!tokeni_icon.hIcon) { tokeni_icon.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512)); }
     if (!Shell_NotifyIconW(NIM_ADD, &tokeni_icon)) {
         return 0;
     }
@@ -1625,7 +1626,8 @@ static int tokeni_tray_start_on_ui_thread(
     dashboard_class.lpfnWndProc = tokeni_dashboard_window_proc;
     dashboard_class.lpszClassName = tokeni_dashboard_class_name;
     dashboard_class.hCursor = LoadCursorW(NULL, MAKEINTRESOURCEW(32512));
-    dashboard_class.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512));
+    dashboard_class.hIcon = LoadIconW(tokeni_instance, MAKEINTRESOURCEW(101));
+    if (!dashboard_class.hIcon) { dashboard_class.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512)); }
     dashboard_class.hIconSm = dashboard_class.hIcon;
     dashboard_class.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     if (RegisterClassExW(&dashboard_class) == 0) {

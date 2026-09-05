@@ -41,7 +41,7 @@ jobs:
           run_windows=false
           while IFS= read -r path; do
             case "$path" in
-              .gitattributes|Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Tests/TokeniWindowsNativeStateTests/*|packaging/windows/*|Scripts/acquire_windows_sqlite.ps1|Scripts/package_windows.ps1|Scripts/prepare_windows_signing.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|Scripts/verify_windows_signatures.ps1|Scripts/write_windows_package.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
+              .gitattributes|Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Tests/TokeniWindowsNativeStateTests/*|packaging/windows/*|Scripts/acquire_windows_sqlite.ps1|Scripts/package_windows.ps1|Scripts/*windows*.ps1|Scripts/prepare_windows_signing.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|Scripts/verify_windows_signatures.ps1|Scripts/write_windows_package.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
                 run_windows=true
                 break
                 ;;

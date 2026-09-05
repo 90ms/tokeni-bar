@@ -109,6 +109,7 @@ $filesToCopy = Get-ChildItem -LiteralPath $buildPath -File -Force |
 foreach ($file in $filesToCopy) {
     Copy-Item -LiteralPath $file.FullName -Destination $stagingPath -Force
 }
+& (Join-Path $PSScriptRoot 'set_windows_icon.ps1') -Executable (Join-Path $stagingPath 'TokeniWindows.exe') -IconPath (Join-Path $stagingPath 'TokeniBar.ico')
 
 foreach ($runtimePath in $RuntimeDirectory) {
     if (-not (Test-Path -LiteralPath $runtimePath -PathType Container)) {

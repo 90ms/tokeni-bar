@@ -28,6 +28,7 @@ OutputBaseFilename=Tokeni-Bar-Windows-{#AppVersion}-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile={#PackageDirectory}\TokeniBar.ico
 DisableProgramGroupPage=yes
 VersionInfoVersion={#AppVersion}
 SetupLogging=yes
