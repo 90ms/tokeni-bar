@@ -17,6 +17,17 @@ public enum WindowsUpdateCoordinator {
         var checked: AppUpdateCheckResult?
         var lastCheck = Date.distantPast
         var status = WindowsLocalization.text("Version \(version ?? "—") · Check for a new release.", "버전 \(version ?? "—") · 새 버전을 확인할 수 있습니다.")
+        if let local = ProcessInfo.processInfo.environment["LOCALAPPDATA"],
+           let data = try? Data(contentsOf: URL(fileURLWithPath: local).appending(path: "TokeniBarUpdate/status.json")),
+           let result = try? JSONSerialization.jsonObject(with: data) as? [String: String] {
+            if result["state"] == "rolled-back" {
+                status = WindowsLocalization.text("The update failed its checks. Your previous version was restored.", "업데이트 검사에 실패하여 이전 버전으로 복구했습니다.")
+            } else if result["state"] == "recovery-required" {
+                status = WindowsLocalization.text("The last update needs recovery. Close Tokeni Bar and run the official installer again. Your backup was retained.", "이전 업데이트 복구가 필요합니다. 앱을 종료한 뒤 공식 설치 파일을 다시 실행하세요. 백업은 보관되어 있습니다.")
+            }
+        }
+        var publishedStatus: String?
+        var publishedAvailable = false
         while !Task.isCancelled {
             let request = tokeni_windows_update_request()
             let automatic = tokeni_windows_update_automatic() != 0
@@ -41,7 +52,12 @@ public enum WindowsUpdateCoordinator {
                     return
                 } catch { status = WindowsLocalization.text("Update could not be installed. A signed per-user installation and matching signed release are required. Your current installation is unchanged.", "업데이트를 설치하지 못했습니다. 서명된 사용자 설치 버전과 같은 발행자의 서명된 릴리스가 필요합니다. 현재 설치는 유지됩니다.") }
             }
-            status.withCString { tokeni_windows_update_status($0, checked?.isUpdateAvailable == true && checked?.isStale == false ? 1 : 0) }
+            let available = checked?.isUpdateAvailable == true && checked?.isStale == false
+            if status != publishedStatus || available != publishedAvailable || request != 0 {
+                status.withCString { tokeni_windows_update_status($0, available ? 1 : 0) }
+                publishedStatus = status
+                publishedAvailable = available
+            }
             try? await Task.sleep(for: .seconds(1))
         }
     }

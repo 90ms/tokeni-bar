@@ -87,6 +87,14 @@ $null = Assert-SignedPublisher $installer $publisher
 $backup = Join-Path $work 'backup'
 $failed = Join-Path $work 'failed-installation'
 $status = Join-Path (Split-Path $work -Parent) 'status.json'
+$uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{074D1A56-8482-43A1-A3F8-2FA3C4F30B89}_is1'
+$previousRegistration = @{}
+if (Test-Path -LiteralPath $uninstallKey) {
+    $properties = Get-ItemProperty -LiteralPath $uninstallKey
+    foreach ($name in @('DisplayVersion','InstallDate','EstimatedSize','UninstallString','QuietUninstallString')) {
+        if ($properties.PSObject.Properties.Name -contains $name) { $previousRegistration[$name] = $properties.$name }
+    }
+}
 try {
     $parent = Get-Process -Id $ParentProcessId -ErrorAction SilentlyContinue
     if ($parent -and -not $parent.WaitForExit(30000)) { throw 'Application did not exit for update.' }
@@ -106,6 +114,9 @@ try {
     # Never replace files while the installer is still using them.
     if ((-not (Get-Variable process -ErrorAction SilentlyContinue) -or $process.HasExited) -and (Test-Path -LiteralPath (Join-Path $backup 'TokeniWindows.exe'))) {
         Restore-Installation $application $backup $failed
+        foreach ($entry in $previousRegistration.GetEnumerator()) {
+            Set-ItemProperty -LiteralPath $uninstallKey -Name $entry.Key -Value $entry.Value
+        }
         @{state='rolled-back';version=$current.version} | ConvertTo-Json | Set-Content -LiteralPath $status -Encoding utf8
         Start-Process $binary -WindowStyle Hidden
     } else {
