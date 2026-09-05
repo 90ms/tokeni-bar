@@ -24,7 +24,8 @@ struct TokeniWindowsApp {
         let settings = JSONFileSettingsStore(
             fileURL: directories.localApplicationSupportDirectory.appending(
                 path: "settings.json"))
-        let providers = ProviderRegistry.defaultProviders(
+        let desktopSmoke = CommandLine.arguments.contains("--desktop-smoke-test")
+        let providers = desktopSmoke ? [] : ProviderRegistry.defaultProviders(
             sqliteQueryRunner: WindowsSQLiteRuntime.queryRunner(
                 for: executableURL))
         let session = UsageApplicationSession(
@@ -278,7 +279,20 @@ struct TokeniWindowsApp {
         }
 
         let updateTask = Task { await WindowsUpdateCoordinator.run(executableURL: executableURL, tray: tray) }
-        _ = tray.run()
+        let desktopSmokeTask: Task<Bool, Never>? = desktopSmoke ? Task {
+            let deadline = Date.now.addingTimeInterval(15)
+            while Date.now < deadline {
+                if tray.hasPublishedDesktop() {
+                    try? FileHandle.standardOutput.write(contentsOf: Data("TOKENI_WINDOWS_DESKTOP_SMOKE_OK\n".utf8))
+                    tray.stop()
+                    return true
+                }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            tray.stop()
+            return false
+        } : nil
+        _ = await tray.runAsync()
         updateTask.cancel()
         providerToggleTask.cancel()
         await providerToggleTask.value
@@ -308,6 +322,7 @@ struct TokeniWindowsApp {
         }
         tray.stop()
         companionOverlay.stop()
+        if let desktopSmokeTask { ExitProcess(await desktopSmokeTask.value ? 0 : 1) }
     }
 
     private static func tooltip(

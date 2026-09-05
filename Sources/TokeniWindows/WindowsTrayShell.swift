@@ -1,4 +1,5 @@
 import Foundation
+import Dispatch
 import TokeniCore
 import TokeniWindowsNative
 
@@ -237,6 +238,18 @@ public final class WindowsTrayShell: @unchecked Sendable {
         self.stateLock.unlock()
         return result
     }
+
+    /// Waiting for the native thread must not occupy Swift's main actor, where
+    /// the desktop's polling and command tasks are scheduled.
+    public func runAsync() async -> Int32 {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: self.run())
+            }
+        }
+    }
+
+    public func hasPublishedDesktop() -> Bool { tokeni_windows_desktop_ready() != 0 }
 
     public func stop() {
         self.stateLock.lock()

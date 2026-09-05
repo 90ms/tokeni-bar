@@ -174,6 +174,18 @@ static void tokeni_dashboard_sync_services(void)
 }
 static int tokeni_copy_utf8(const char *source, WCHAR *destination, int count);
 
+static void tokeni_desktop_ready_ui(void *context)
+{
+    int *ready=context;WCHAR displayed[8192];GetWindowTextW(tokeni_dashboard_details,displayed,8192);
+    AcquireSRWLockShared(&tokeni_state_lock);
+    *ready=tokeni_home_summary[0] && tokeni_pet_summary[0] && wcsstr(displayed,tokeni_home_summary)!=NULL;
+    ReleaseSRWLockShared(&tokeni_state_lock);
+}
+int tokeni_windows_desktop_ready(void)
+{
+    int ready=0;tokeni_windows_ui_invoke(tokeni_desktop_ready_ui,&ready);return ready;
+}
+
 static void tokeni_dashboard_save_frame(HWND window)
 {
 #ifndef TOKENI_DESKTOP_TEST
@@ -2040,6 +2052,7 @@ void tokeni_windows_tray_stop(void)
 
 #else
 int tokeni_windows_dashboard_is_korean(void) { return 0; }
+int tokeni_windows_desktop_ready(void) {return 0;}
 int tokeni_windows_update_request(void) {return 0;}
 int tokeni_windows_update_automatic(void) {return 0;}
 void tokeni_windows_update_status(const char *t,int a) {(void)t;(void)a;}

@@ -24,6 +24,7 @@ void tokeni_windows_dashboard_commit_pets(const char *summary, int eggs, const c
 int tokeni_windows_dashboard_take_pet_request(char *id, int capacity);
 int tokeni_windows_dashboard_take_hatch_request(void);
 int tokeni_windows_dashboard_is_korean(void);
+int tokeni_windows_desktop_ready(void);
 void tokeni_windows_history_begin(void);
 void tokeni_windows_history_append(double timestamp, double percent, const char *provider, const char *date, const char *quota, const char *tokens, const char *cost);
 void tokeni_windows_history_commit(void);

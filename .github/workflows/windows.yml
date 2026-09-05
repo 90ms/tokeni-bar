@@ -210,6 +210,7 @@ jobs:
         shell: pwsh
         run: |
           & "$env:GITHUB_WORKSPACE\Scripts\test_windows_update.ps1"
+          & "$env:GITHUB_WORKSPACE\Scripts\test_windows_desktop_host.ps1" -Executable "$env:RUNNER_TEMP\TokeniWindowsPackage\Tokeni-Bar-Windows-0.0.0\TokeniWindows.exe"
           & "$env:GITHUB_WORKSPACE\Scripts\build_windows_installer.ps1" -Version '0.0.0' -PackageDirectory "$env:RUNNER_TEMP\TokeniWindowsPackage\Tokeni-Bar-Windows-0.0.0" -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsPackage"
           & "$env:GITHUB_WORKSPACE\Scripts\test_windows_installer.ps1" -Installer "$env:RUNNER_TEMP\TokeniWindowsPackage\Tokeni-Bar-Windows-0.0.0-Setup.exe"
 
