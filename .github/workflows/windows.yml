@@ -214,13 +214,14 @@ jobs:
           & "$env:GITHUB_WORKSPACE\Scripts\test_windows_installer.ps1" -Installer "$env:RUNNER_TEMP\TokeniWindowsPackage\Tokeni-Bar-Windows-0.0.0-Setup.exe"
 
       - name: Upload Windows package
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: tokeni-bar-windows-${{ github.sha }}
           path: |
             ${{ runner.temp }}\TokeniWindowsPackage\*.zip*
             ${{ runner.temp }}\TokeniWindowsPackage\*-Setup.exe*
-          if-no-files-found: error
+          if-no-files-found: ignore
 
   windows-gate:
     name: Windows required gate

@@ -105,7 +105,7 @@ try {
     $null = Assert-SignedPublisher $binary $publisher
     $installed = Get-Content -LiteralPath (Join-Path $application 'version.json') -Raw | ConvertFrom-Json
     if ($installed.version -cne $Version) { throw 'Installed version does not match the requested release.' }
-    $smoke = Start-Process $binary -ArgumentList '--smoke-test' -WindowStyle Hidden -PassThru
+    $smoke = Start-Process $binary -ArgumentList '--smoke-test' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $work 'smoke.stdout.txt') -RedirectStandardError (Join-Path $work 'smoke.stderr.txt')
     if (-not $smoke.WaitForExit(30000)) { Stop-Process -Id $smoke.Id; throw 'Updated application timed out.' }
     if ($smoke.ExitCode -ne 0) { throw 'Updated application failed its runtime check.' }
     @{state='installed';version=$Version} | ConvertTo-Json | Set-Content -LiteralPath $status -Encoding utf8
