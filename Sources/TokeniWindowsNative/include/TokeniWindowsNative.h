@@ -13,6 +13,12 @@ int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8);
 
 int tokeni_windows_tray_update_details(const char *details_utf8);
 
+// One publisher stages a complete usage snapshot before committing it.
+void tokeni_windows_dashboard_begin_usage(void);
+int tokeni_windows_dashboard_append_usage(const char *name, const char *status,
+    const char *remaining, const char *reset, const char *tokens, const char *cost);
+void tokeni_windows_dashboard_commit_usage(const char *summary, const char *status, int refreshing);
+
 // Provider options are staged and become visible atomically on commit. A
 // failed append leaves the currently committed dashboard state unchanged.
 int tokeni_windows_tray_begin_provider_options(void);

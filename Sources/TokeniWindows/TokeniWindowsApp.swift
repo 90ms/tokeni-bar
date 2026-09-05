@@ -209,6 +209,7 @@ struct TokeniWindowsApp {
                 let providerSnapshot = WindowsProviderSelectionFormatter
                     .snapshot(for: presentation)
                 tray.updateTooltip(Self.tooltip(for: presentation))
+                tray.updateDashboard(WindowsDashboardPresentation(presentation))
                 var details = WindowsProviderSelectionFormatter.dashboardMessage(
                     for: presentation,
                     snapshot: providerSnapshot)

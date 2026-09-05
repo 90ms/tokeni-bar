@@ -59,6 +59,7 @@ targets.append(
         publicHeadersPath: "include",
         linkerSettings: [
             .linkedLibrary("advapi32"),
+            .linkedLibrary("comctl32"),
             .linkedLibrary("gdi32"),
             .linkedLibrary("ole32"),
             .linkedLibrary("shell32"),

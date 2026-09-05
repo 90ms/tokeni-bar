@@ -57,6 +57,35 @@ public final class WindowsTrayShell: @unchecked Sendable {
         tokeni_windows_tray_take_refresh_request() != 0
     }
 
+    public func updateDashboard(_ presentation: WindowsDashboardPresentation) {
+        self.stateLock.lock()
+        defer { self.stateLock.unlock() }
+        guard self.started else { return }
+        tokeni_windows_dashboard_begin_usage()
+        for row in presentation.rows {
+            // Bound UI labels without splitting UTF-8 sequences at the C boundary.
+            let cells = row.map { String($0.prefix(100)) }
+            _ = cells[0].withCString { name in
+                cells[1].withCString { status in
+                    cells[2].withCString { remaining in
+                        cells[3].withCString { reset in
+                            cells[4].withCString { tokens in
+                                cells[5].withCString { cost in
+                                    tokeni_windows_dashboard_append_usage(name, status, remaining, reset, tokens, cost)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        presentation.summary.withCString { summary in
+            presentation.status.withCString { status in
+                tokeni_windows_dashboard_commit_usage(summary, status, presentation.refreshing ? 1 : 0)
+            }
+        }
+    }
+
     @discardableResult
     public func updateProviderOptions(
         _ options: [WindowsProviderSelectionOption]) -> Bool

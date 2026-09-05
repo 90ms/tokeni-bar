@@ -6,6 +6,8 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <wchar.h>
+#include <commctrl.h>
+#pragma comment(lib, "comctl32.lib")
 
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "user32.lib")
@@ -75,6 +77,53 @@ static tokeni_windows_provider_state tokeni_provider_toggle_state;
 static int tokeni_staged_provider_option_count;
 static int tokeni_provider_transaction_active;
 static SRWLOCK tokeni_state_lock = SRWLOCK_INIT;
+static HWND tokeni_usage_list;
+typedef struct { WCHAR cells[6][256]; } tokeni_usage_row;
+static tokeni_usage_row tokeni_usage_rows[TOKENI_MAX_PROVIDERS];
+static tokeni_usage_row tokeni_usage_staged[TOKENI_MAX_PROVIDERS];
+static int tokeni_usage_count, tokeni_usage_staged_count;
+static WCHAR tokeni_home_summary[4096];
+static WCHAR tokeni_refresh_status[256];
+static int tokeni_is_refreshing;
+static int tokeni_copy_utf8(const char *source, WCHAR *destination, int count);
+
+static void tokeni_dashboard_sync_usage(void)
+{
+    tokeni_usage_row rows[TOKENI_MAX_PROVIDERS];
+    WCHAR status[256];
+    int count, refreshing;
+    AcquireSRWLockShared(&tokeni_state_lock);
+    CopyMemory(rows, tokeni_usage_rows, sizeof(rows));
+    CopyMemory(status, tokeni_refresh_status, sizeof(status));
+    count = tokeni_usage_count;
+    refreshing = tokeni_is_refreshing;
+    ReleaseSRWLockShared(&tokeni_state_lock);
+    SendMessageW(tokeni_usage_list, WM_SETREDRAW, FALSE, 0);
+    // Update in place so selection, keyboard focus, and scroll position survive refreshes.
+    while (ListView_GetItemCount(tokeni_usage_list) > count) {
+        ListView_DeleteItem(tokeni_usage_list, ListView_GetItemCount(tokeni_usage_list) - 1);
+    }
+    for (int row = 0; row < count; row++) {
+        LVITEMW item = {0};
+        item.mask = LVIF_TEXT;
+        item.iItem = row;
+        item.pszText = rows[row].cells[0];
+        if (row >= ListView_GetItemCount(tokeni_usage_list)) {
+            SendMessageW(tokeni_usage_list, LVM_INSERTITEMW, 0, (LPARAM)&item);
+        }
+        for (int column = 0; column < 6; column++) {
+            item.iSubItem = column;
+            item.pszText = rows[row].cells[column];
+            SendMessageW(tokeni_usage_list, LVM_SETITEMTEXTW, row, (LPARAM)&item);
+        }
+    }
+    SendMessageW(tokeni_usage_list, WM_SETREDRAW, TRUE, 0);
+    InvalidateRect(tokeni_usage_list, NULL, TRUE);
+    EnableWindow(tokeni_dashboard_refresh_button, !refreshing);
+    SetWindowTextW(tokeni_dashboard_refresh_button, refreshing ? L"Refreshing…" : L"Refresh now");
+    SetWindowTextW(tokeni_dashboard_status,
+        status[0] && tokeni_destination < 2 ? status : tokeni_page_subtitles[tokeni_destination]);
+}
 
 static void tokeni_enable_per_monitor_dpi_awareness(void)
 {
@@ -462,6 +511,7 @@ static void tokeni_dashboard_set_fonts(HWND window)
     for (int index = 0; index < 4; index++) {
         SendMessageW(tokeni_navigation[index], WM_SETFONT, (WPARAM)font, TRUE);
     }
+    SendMessageW(tokeni_usage_list, WM_SETFONT, (WPARAM)font, TRUE);
 }
 
 static void tokeni_dashboard_layout(HWND window)
@@ -567,6 +617,19 @@ static void tokeni_dashboard_layout(HWND window)
         button_width,
         button_height,
         TRUE);
+    int list_top = tokeni_destination == 0 ? details_top + tokeni_scale_for_dpi(150, dpi) : details_top;
+    MoveWindow(tokeni_usage_list, content_left, list_top, content_width,
+        max(button_top - gap - list_top, 0), TRUE);
+    ShowWindow(tokeni_usage_list, tokeni_destination < 2 ? SW_SHOW : SW_HIDE);
+    ShowWindow(tokeni_dashboard_details, tokeni_destination == 1 ? SW_HIDE : SW_SHOW);
+    if (tokeni_destination == 0) {
+        MoveWindow(tokeni_dashboard_details, content_left, details_top, content_width,
+            tokeni_scale_for_dpi(135, dpi), TRUE);
+    }
+    const int widths[] = {150, 130, 135, 180, 110, 100};
+    for (int column = 0; column < 6; column++) {
+        ListView_SetColumnWidth(tokeni_usage_list, column, tokeni_scale_for_dpi(widths[column], dpi));
+    }
 }
 
 static void tokeni_dashboard_apply_details(void)
@@ -577,6 +640,12 @@ static void tokeni_dashboard_apply_details(void)
     CopyMemory(details, tokeni_details, sizeof(details));
     details[(sizeof(details) / sizeof(details[0])) - 1] = L'\0';
     ReleaseSRWLockShared(&tokeni_state_lock);
+
+    if (tokeni_destination == 0) {
+        AcquireSRWLockShared(&tokeni_state_lock);
+        lstrcpynW(details, tokeni_home_summary, 4096);
+        ReleaseSRWLockShared(&tokeni_state_lock);
+    }
 
     SetWindowTextW(
         tokeni_dashboard_details,
@@ -592,6 +661,21 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
     LPARAM l_param)
 {
     if (message == WM_CREATE) {
+        INITCOMMONCONTROLSEX common = { sizeof(common), ICC_LISTVIEW_CLASSES };
+        InitCommonControlsEx(&common);
+        tokeni_usage_list = CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTVIEWW, L"Provider usage",
+            WS_CHILD | WS_TABSTOP | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
+            0, 0, 0, 0, window, (HMENU)(INT_PTR)450, tokeni_instance, NULL);
+        if (tokeni_usage_list == NULL) { return -1; }
+        ListView_SetExtendedListViewStyle(tokeni_usage_list, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_LABELTIP);
+        const WCHAR *columns[] = {L"Provider", L"Status", L"Remaining", L"Next reset", L"Tokens", L"Cost (USD)"};
+        for (int column = 0; column < 6; column++) {
+            LVCOLUMNW definition = {0};
+            definition.mask = LVCF_TEXT | LVCF_WIDTH;
+            definition.pszText = (WCHAR *)columns[column];
+            definition.cx = 120;
+            SendMessageW(tokeni_usage_list, LVM_INSERTCOLUMNW, column, (LPARAM)&definition);
+        }
         for (int index = 0; index < 4; index++) {
             tokeni_navigation[index] = CreateWindowExW(0, L"BUTTON", tokeni_page_titles[index],
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_RADIOBUTTON | BS_PUSHLIKE,
@@ -691,6 +775,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
         tokeni_dashboard_set_fonts(window);
         tokeni_dashboard_sync_provider_controls(window);
         tokeni_dashboard_apply_details();
+        tokeni_dashboard_sync_usage();
         return 0;
     }
 
@@ -730,6 +815,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
             SetWindowTextW(tokeni_dashboard_status, tokeni_page_subtitles[tokeni_destination]);
             tokeni_dashboard_layout(window);
             tokeni_dashboard_apply_details();
+            tokeni_dashboard_sync_usage();
             return 0;
         }
         if (identifier == tokeni_refresh_button_identifier) {
@@ -769,7 +855,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
 
     if (message == tokeni_details_updated_message) {
         tokeni_dashboard_apply_details();
-        SetWindowTextW(tokeni_dashboard_status, tokeni_page_subtitles[tokeni_destination]);
+        tokeni_dashboard_sync_usage();
         return 0;
     }
 
@@ -854,6 +940,40 @@ static int tokeni_add_icon_locked(void)
     tokeni_icon.uVersion = NOTIFYICON_VERSION;
     Shell_NotifyIconW(NIM_SETVERSION, &tokeni_icon);
     return 1;
+}
+
+void tokeni_windows_dashboard_begin_usage(void)
+{
+    AcquireSRWLockExclusive(&tokeni_state_lock);
+    tokeni_usage_staged_count = 0;
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+}
+
+int tokeni_windows_dashboard_append_usage(const char *name, const char *status,
+    const char *remaining, const char *reset, const char *tokens, const char *cost)
+{
+    tokeni_usage_row row = {0};
+    const char *values[] = {name, status, remaining, reset, tokens, cost};
+    for (int column = 0; column < 6; column++) {
+        if (!tokeni_copy_utf8(values[column], row.cells[column], 256)) { return 0; }
+    }
+    AcquireSRWLockExclusive(&tokeni_state_lock);
+    int accepted = tokeni_usage_staged_count < TOKENI_MAX_PROVIDERS;
+    if (accepted) { tokeni_usage_staged[tokeni_usage_staged_count++] = row; }
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+    return accepted;
+}
+
+void tokeni_windows_dashboard_commit_usage(const char *summary, const char *status, int refreshing)
+{
+    AcquireSRWLockExclusive(&tokeni_state_lock);
+    CopyMemory(tokeni_usage_rows, tokeni_usage_staged, sizeof(tokeni_usage_rows));
+    tokeni_usage_count = tokeni_usage_staged_count;
+    tokeni_copy_utf8(summary, tokeni_home_summary, 4096);
+    tokeni_copy_utf8(status, tokeni_refresh_status, 256);
+    tokeni_is_refreshing = refreshing != 0;
+    if (tokeni_window != NULL) { PostMessageW(tokeni_window, tokeni_details_updated_message, 0, 0); }
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
 }
 
 static void tokeni_remove_icon_locked(void)
@@ -1490,6 +1610,13 @@ void tokeni_windows_tray_stop(void)
 }
 
 #else
+
+void tokeni_windows_dashboard_begin_usage(void) {}
+int tokeni_windows_dashboard_append_usage(const char *name, const char *status,
+    const char *remaining, const char *reset, const char *tokens, const char *cost)
+{ (void)name; (void)status; (void)remaining; (void)reset; (void)tokens; (void)cost; return 0; }
+void tokeni_windows_dashboard_commit_usage(const char *summary, const char *status, int refreshing)
+{ (void)summary; (void)status; (void)refreshing; }
 
 int tokeni_windows_tray_start(
     const char *application_name_utf8,
