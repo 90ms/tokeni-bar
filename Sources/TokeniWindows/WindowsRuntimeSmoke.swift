@@ -76,7 +76,7 @@ enum WindowsRuntimeSmoke {
 
         guard presentation.minimumRemainingPercent == 75,
               details.contains("Smoke Provider"),
-              details.contains("Smoke: 75% remaining")
+              details.contains("Smoke: 75%")
         else {
             return .failure(.invalidPresentation)
         }

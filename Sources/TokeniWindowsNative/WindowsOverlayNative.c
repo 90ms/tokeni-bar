@@ -144,6 +144,12 @@ static int tokeni_overlay_load_png(const wchar_t *path)
     }
 
     tokeni_overlay_asset_pixels = pixels;
+    // Reserve pure black for the layered window's transparent color key.
+    for (size_t offset = 0; offset < byte_count; offset += 4) {
+        if (pixels[offset + 3] > 0 && pixels[offset] == 0 && pixels[offset + 1] == 0 && pixels[offset + 2] == 0) {
+            pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = 1;
+        }
+    }
     tokeni_overlay_asset_width = width;
     tokeni_overlay_asset_height = height;
     pixels = NULL;
