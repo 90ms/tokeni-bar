@@ -109,6 +109,7 @@ $filesToCopy = Get-ChildItem -LiteralPath $buildPath -File -Force |
 foreach ($file in $filesToCopy) {
     Copy-Item -LiteralPath $file.FullName -Destination $stagingPath -Force
 }
+& (Join-Path $PSScriptRoot 'set_windows_icon.ps1') -Executable (Join-Path $stagingPath 'TokeniWindows.exe') -IconPath (Join-Path $stagingPath 'TokeniBar.ico')
 
 foreach ($runtimePath in $RuntimeDirectory) {
     if (-not (Test-Path -LiteralPath $runtimePath -PathType Container)) {
@@ -123,6 +124,8 @@ foreach ($runtimePath in $RuntimeDirectory) {
 
 $toolsPath = Join-Path $stagingPath "Tools"
 New-Item -ItemType Directory -Path $toolsPath -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $projectDirectory 'packaging\windows\Update-TokeniBar.ps1') -Destination $toolsPath
+@{ version = $Version; repository = '90ms/tokeni-bar' } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stagingPath 'version.json') -Encoding utf8
 Copy-Item `
     -LiteralPath $sqliteExecutablePath `
     -Destination (Join-Path $toolsPath "sqlite3.exe") `
@@ -169,16 +172,11 @@ Companion sprites are included under Resources\CompanionAssets.
 The pinned SQLite CLI is included under Tools\sqlite3.exe.
 Its immutable acquisition manifest is included under Tools\sqlite-tools.json.
 Third-party provenance is recorded in THIRD-PARTY-NOTICES.txt.
-This artifact is unsigned and does not register an installer or automatic update.
+Release artifacts are signed after staging. Development artifacts may remain unsigned.
+Use the separate Setup.exe for Start menu integration and verified in-app updates.
+Portable installations can check releases and be replaced manually.
 "@ | Set-Content -LiteralPath (Join-Path $stagingPath 'README.txt') -Encoding utf8
 
-Compress-Archive -Path (Join-Path $stagingPath '*') `
-    -DestinationPath $archivePath `
-    -CompressionLevel Optimal
-
-$archiveHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
-$checksumLine = "$archiveHash  $([System.IO.Path]::GetFileName($archivePath))`n"
-$checksumEncoding = [System.Text.UTF8Encoding]::new($false)
-[System.IO.File]::WriteAllText($checksumPath, $checksumLine, $checksumEncoding)
-
-Write-Output $archivePath
+& (Join-Path $PSScriptRoot "write_windows_package.ps1") `
+    -Version $Version `
+    -OutputDirectory $outputPath

@@ -5,6 +5,23 @@ import TokeniWindows
 
 struct WindowsCompanionGrowthCoordinatorTests {
     @Test
+    func failedHatchSavePreservesEggAndSuccessfulRetryPersistsIt() async throws {
+        let harness = GrowthHarness(award: GrowthEnergyAward(dateKey: "2026-09-05", energy: 0, createdAt: .now), failNextSave: true)
+        let coordinator = Self.coordinator(harness: harness)
+        let initial = try await coordinator.load()
+        await #expect(throws: GrowthHarness.Failure.save) {
+            try await coordinator.openNextEgg()
+        }
+        #expect(await coordinator.currentState() == initial)
+        try await coordinator.openNextEgg()
+        let hatched = await coordinator.currentState()
+        #expect(hatched?.eggs.count == initial.eggs.count - 1)
+        #expect(hatched?.stage != .egg)
+        #expect(await harness.saveCount() == 1)
+        #expect(await harness.load() == hatched)
+    }
+
+    @Test
     func savesCompanionBeforeRemovingAwardFromLedger() async throws {
         let award = GrowthEnergyAward(
             id: UUID(uuidString: "F0AFAF1D-3685-46DA-A9C5-7E4494EEFCF1")!,

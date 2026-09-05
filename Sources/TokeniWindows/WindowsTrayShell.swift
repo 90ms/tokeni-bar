@@ -1,4 +1,6 @@
 import Foundation
+import Dispatch
+import TokeniCore
 import TokeniWindowsNative
 
 /// A small Swift boundary around the Win32 notification-area lifecycle.
@@ -48,13 +50,97 @@ public final class WindowsTrayShell: @unchecked Sendable {
         self.stateLock.lock()
         defer { self.stateLock.unlock() }
         guard self.started else { return false }
-        return details.withCString { value in
+        return details.replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\n", with: "\r\n").withCString { value in
             tokeni_windows_tray_update_details(value) != 0
         }
     }
 
     public func takeRefreshRequest() -> Bool {
         tokeni_windows_tray_take_refresh_request() != 0
+    }
+
+    public func takeGrowthTargetRequest() -> UUID? {
+        var buffer = [CChar](repeating: 0, count: 64)
+        return buffer.withUnsafeMutableBufferPointer { pointer in
+            guard tokeni_windows_dashboard_take_pet_request(pointer.baseAddress, 64) != 0,
+                  let address = pointer.baseAddress,
+                  let value = String(validatingCString: address) else { return nil }
+            return UUID(uuidString: value)
+        }
+    }
+
+    public func takeHatchRequest() -> Bool {
+        tokeni_windows_dashboard_take_hatch_request() != 0
+    }
+
+    public func updateCompanions(_ state: CompanionGameState?, feedback: String?) {
+        self.stateLock.lock()
+        defer { self.stateLock.unlock() }
+        guard self.started else { return }
+        tokeni_windows_dashboard_begin_pets()
+        var entries: [(UUID, String)] = []
+        if let state {
+            if state.stage != .egg, let species = state.speciesID {
+                entries.append((state.generationID, "\(state.nickname ?? WindowsCompanionNames.species(species)) · \(WindowsLocalization.text("Level", "레벨")) \(state.level)"))
+            }
+            entries += state.collection.archivedGenerations.map {
+                ($0.generationID, "\($0.nickname ?? WindowsCompanionNames.species($0.speciesID)) · \(WindowsLocalization.text("Level", "레벨")) \(CompanionLevelCurve.standard.level(forXP: $0.growthXP))")
+            }
+        }
+        for (id, label) in entries.prefix(128) {
+            _ = id.uuidString.withCString { identifier in
+                String(label.prefix(100)).withCString { name in
+                    tokeni_windows_dashboard_append_pet(identifier, name,
+                        state?.resolvedGrowthTargetGenerationID == id ? 1 : 0)
+                }
+            }
+        }
+        let summary: String
+        if let state {
+            let target = state.growthTargetPet
+            let progress = target.map { Int(($0.levelProgress * 100).rounded()) } ?? 0
+            summary = WindowsLocalization.text("\(entries.count) companions · \(state.eggs.count) unopened eggs", "보유 펫 \(entries.count)마리 · 미개봉 알 \(state.eggs.count)개") + "\r\n\r\n"
+                + (target.map { WindowsLocalization.text("Growing: \($0.nickname ?? $0.speciesID.rawValue) · Level \($0.level) · \(progress)% to next level", "성장 중: \($0.nickname ?? $0.speciesID.rawValue) · 레벨 \($0.level) · 다음 레벨까지 \(progress)%") }
+                    ?? WindowsLocalization.text("Open an egg to meet your first companion.", "알을 열어 첫 번째 펫을 만나세요."))
+                + WindowsLocalization.text("\r\n\r\nGrowth comes from verified cumulative usage. Hiding the desktop companion does not stop growth.", "\r\n\r\n확인된 누적 사용량으로 성장합니다. 데스크톱 펫을 숨겨도 성장은 계속됩니다.")
+        } else {
+            summary = WindowsLocalization.message("Companion state could not be loaded. Restart Tokeni Bar to retry.")
+        }
+        summary.withCString { text in
+            WindowsLocalization.message(feedback ?? "").withCString { message in
+                tokeni_windows_dashboard_commit_pets(text, Int32(state?.eggs.count ?? 0), message)
+            }
+        }
+    }
+
+    public func updateDashboard(_ presentation: WindowsDashboardPresentation) {
+        self.stateLock.lock()
+        defer { self.stateLock.unlock() }
+        guard self.started else { return }
+        tokeni_windows_dashboard_begin_usage()
+        for row in presentation.rows {
+            // Bound UI labels without splitting UTF-8 sequences at the C boundary.
+            let cells = row.map { String($0.prefix(100)) }
+            _ = cells[0].withCString { name in
+                cells[1].withCString { status in
+                    cells[2].withCString { remaining in
+                        cells[3].withCString { reset in
+                            cells[4].withCString { tokens in
+                                cells[5].withCString { cost in
+                                    tokeni_windows_dashboard_append_usage(name, status, remaining, reset, tokens, cost)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        presentation.summary.replacingOccurrences(of: "\n", with: "\r\n").withCString { summary in
+            presentation.status.withCString { status in
+                tokeni_windows_dashboard_commit_usage(summary, status, presentation.refreshing ? 1 : 0)
+            }
+        }
     }
 
     @discardableResult
@@ -152,6 +238,18 @@ public final class WindowsTrayShell: @unchecked Sendable {
         self.stateLock.unlock()
         return result
     }
+
+    /// Waiting for the native thread must not occupy Swift's main actor, where
+    /// the desktop's polling and command tasks are scheduled.
+    public func runAsync() async -> Int32 {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: self.run())
+            }
+        }
+    }
+
+    public func hasPublishedDesktop() -> Bool { tokeni_windows_desktop_ready() != 0 }
 
     public func stop() {
         self.stateLock.lock()

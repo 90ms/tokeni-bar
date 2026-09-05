@@ -48,7 +48,8 @@ static int tokeni_copy_quoted_path(
     }
 
     size_t path_length = wcslen(path);
-    if (path_length == 0 || path_length + 3 > destination_count) {
+    const WCHAR suffix[] = L"\" --background";
+    if (path_length == 0 || path_length + 1 + (sizeof(suffix) / sizeof(suffix[0])) > destination_count) {
         return 0;
     }
 
@@ -63,8 +64,7 @@ static int tokeni_copy_quoted_path(
         destination + 1,
         path,
         path_length * sizeof(destination[0]));
-    destination[path_length + 1] = L'"';
-    destination[path_length + 2] = L'\0';
+    CopyMemory(destination + path_length + 1, suffix, sizeof(suffix));
     return 1;
 }
 

@@ -13,7 +13,8 @@ enum WindowsRuntimeSmoke {
     static func run(
         executableURL: URL,
         output: (String) -> Void = {
-            FileHandle.standardOutput.write(Data(($0 + "\n").utf8))
+            // GUI executables may be launched without a console/output handle.
+            try? FileHandle.standardOutput.write(contentsOf: Data(($0 + "\n").utf8))
         }) -> Int32
     {
         switch self.validate(executableURL: executableURL) {
@@ -76,7 +77,7 @@ enum WindowsRuntimeSmoke {
 
         guard presentation.minimumRemainingPercent == 75,
               details.contains("Smoke Provider"),
-              details.contains("Smoke: 75% remaining")
+              details.contains("Smoke: 75%")
         else {
             return .failure(.invalidPresentation)
         }

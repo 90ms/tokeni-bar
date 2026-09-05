@@ -59,6 +59,10 @@ targets.append(
         publicHeadersPath: "include",
         linkerSettings: [
             .linkedLibrary("advapi32"),
+            .linkedLibrary("comctl32"),
+            .linkedLibrary("uxtheme"),
+            .linkedLibrary("dwmapi"),
+            .linkedLibrary("msimg32"),
             .linkedLibrary("gdi32"),
             .linkedLibrary("ole32"),
             .linkedLibrary("shell32"),
@@ -74,7 +78,11 @@ targets.append(
             "TokeniApplication",
             "TokeniWindowsNative",
         ],
-        swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]))
+        swiftSettings: [.enableUpcomingFeature("StrictConcurrency")],
+        linkerSettings: [.unsafeFlags([
+            "-Xlinker", "/SUBSYSTEM:WINDOWS",
+            "-Xlinker", "/ENTRY:mainCRTStartup",
+        ])]))
 targets.append(
     .testTarget(
         name: "TokeniWindowsTests",

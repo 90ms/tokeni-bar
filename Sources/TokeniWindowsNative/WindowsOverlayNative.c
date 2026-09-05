@@ -31,6 +31,7 @@ static UINT tokeni_overlay_asset_width;
 static UINT tokeni_overlay_asset_height;
 static int tokeni_overlay_asset_loaded;
 static int tokeni_overlay_com_owned;
+static int tokeni_overlay_reduced_motion;
 
 static void tokeni_overlay_release_asset(void)
 {
@@ -143,6 +144,12 @@ static int tokeni_overlay_load_png(const wchar_t *path)
     }
 
     tokeni_overlay_asset_pixels = pixels;
+    // Reserve pure black for the layered window's transparent color key.
+    for (size_t offset = 0; offset < byte_count; offset += 4) {
+        if (pixels[offset + 3] > 0 && pixels[offset] == 0 && pixels[offset + 1] == 0 && pixels[offset + 2] == 0) {
+            pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = 1;
+        }
+    }
     tokeni_overlay_asset_width = width;
     tokeni_overlay_asset_height = height;
     pixels = NULL;
@@ -315,13 +322,17 @@ static int tokeni_overlay_paint_asset(
     bitmap_info.bmiHeader.biBitCount = 32;
     bitmap_info.bmiHeader.biCompression = BI_RGB;
     SetStretchBltMode(device_context, COLORONCOLOR);
-    int frame = (int)((GetTickCount() / 250U) % 4U);
+    int frame = tokeni_overlay_reduced_motion ? 0 : (int)((GetTickCount() / 250U) % 4U);
     int destination_x = (width - dimension) / 2;
     int destination_y = (height - dimension) / 2;
+    HDC sprite = CreateCompatibleDC(device_context);
+    HBITMAP sprite_bitmap = CreateCompatibleBitmap(device_context, dimension, dimension);
+    HGDIOBJ previous_bitmap = SelectObject(sprite, sprite_bitmap);
+    SetStretchBltMode(sprite, COLORONCOLOR);
     int copied_scan_lines = StretchDIBits(
-        device_context,
-        destination_x,
-        destination_y,
+        sprite,
+        0,
+        0,
         dimension,
         dimension,
         frame * frame_width,
@@ -332,6 +343,11 @@ static int tokeni_overlay_paint_asset(
         &bitmap_info,
         DIB_RGB_COLORS,
         SRCCOPY);
+    if (copied_scan_lines != GDI_ERROR && copied_scan_lines > 0) {
+        TransparentBlt(device_context, destination_x, destination_y, dimension, dimension,
+            sprite, 0, 0, dimension, dimension, RGB(0,0,0));
+    }
+    SelectObject(sprite, previous_bitmap); DeleteObject(sprite_bitmap); DeleteDC(sprite);
     return copied_scan_lines != GDI_ERROR && copied_scan_lines > 0;
 }
 
@@ -503,6 +519,9 @@ static void tokeni_overlay_unregister_class(void)
     }
 }
 
+#include "WindowsCompanionDecorations.inc"
+#include "WindowsOverlayPreferences.inc"
+
 static LRESULT CALLBACK tokeni_overlay_window_proc(
     HWND window,
     UINT message,
@@ -512,9 +531,10 @@ static LRESULT CALLBACK tokeni_overlay_window_proc(
     (void)w_param;
     (void)l_param;
 
-    if (message == WM_NCHITTEST && tokeni_overlay_click_through) {
-        return HTTRANSPARENT;
+    if (message == WM_NCHITTEST) {
+        return tokeni_overlay_click_through ? HTTRANSPARENT : HTCAPTION;
     }
+    if (message == WM_EXITSIZEMOVE) { tokeni_overlay_save_preferences();return 0; }
 
     if (message == WM_MOUSEACTIVATE) {
         return MA_NOACTIVATE;
@@ -525,7 +545,7 @@ static LRESULT CALLBACK tokeni_overlay_window_proc(
     }
 
     if (message == WM_TIMER) {
-        InvalidateRect(window, NULL, FALSE);
+        if (!tokeni_overlay_reduced_motion) { InvalidateRect(window, NULL, FALSE); }
         return 0;
     }
 
@@ -537,9 +557,11 @@ static LRESULT CALLBACK tokeni_overlay_window_proc(
             GetClientRect(window, &bounds);
             HBRUSH transparent_brush = (HBRUSH)GetStockObject(BLACK_BRUSH);
             FillRect(device_context, &bounds, transparent_brush);
+            tokeni_overlay_decorations(device_context, &bounds, 0);
             if (!tokeni_overlay_paint_asset(device_context, &bounds)) {
                 tokeni_overlay_paint_fallback(device_context, &bounds);
             }
+            tokeni_overlay_decorations(device_context, &bounds, 1);
             EndPaint(window, &paint);
         }
         return 0;
@@ -590,7 +612,7 @@ static int tokeni_overlay_register_class(void)
     return 1;
 }
 
-int tokeni_windows_overlay_start(
+static int tokeni_overlay_start_on_ui_thread(
     int x,
     int y,
     int width,
@@ -654,7 +676,21 @@ int tokeni_windows_overlay_start(
     return 1;
 }
 
-int tokeni_windows_overlay_show(void)
+typedef struct { int x, y, width, height, result; } tokeni_overlay_start_request;
+static void tokeni_overlay_start_operation(void *context)
+{
+    tokeni_overlay_start_request *request = (tokeni_overlay_start_request *)context;
+    request->result = tokeni_overlay_start_on_ui_thread(request->x, request->y, request->width, request->height);
+}
+
+int tokeni_windows_overlay_start(int x, int y, int width, int height)
+{
+    tokeni_overlay_start_request request = {x, y, width, height, 0};
+    if (!tokeni_windows_ui_invoke(tokeni_overlay_start_operation, &request)) { return 0; }
+    return request.result;
+}
+
+static int tokeni_overlay_show_impl(void)
 {
     if (tokeni_overlay_window == NULL) {
         return 0;
@@ -681,7 +717,7 @@ int tokeni_windows_overlay_show(void)
     return 1;
 }
 
-int tokeni_windows_overlay_hide(void)
+static int tokeni_overlay_hide_impl(void)
 {
     if (tokeni_overlay_window == NULL) {
         return 0;
@@ -692,7 +728,7 @@ int tokeni_windows_overlay_hide(void)
     return 1;
 }
 
-int tokeni_windows_overlay_set_frame(
+static int tokeni_overlay_set_frame_impl(
     int x,
     int y,
     int width,
@@ -717,7 +753,7 @@ int tokeni_windows_overlay_set_frame(
         SWP_NOACTIVATE | SWP_NOOWNERZORDER) ? 1 : 0;
 }
 
-int tokeni_windows_overlay_set_click_through(int enabled)
+static int tokeni_overlay_set_click_through_impl(int enabled)
 {
     tokeni_overlay_click_through = enabled != 0 ? 1 : 0;
     if (tokeni_overlay_window == NULL) {
@@ -727,7 +763,7 @@ int tokeni_windows_overlay_set_click_through(int enabled)
     return tokeni_overlay_update_click_through(tokeni_overlay_window);
 }
 
-int tokeni_windows_overlay_set_asset_root(const char *path_utf8)
+static int tokeni_overlay_set_asset_root_impl(const char *path_utf8)
 {
     tokeni_overlay_asset_root[0] = L'\0';
     tokeni_overlay_release_asset();
@@ -760,7 +796,7 @@ int tokeni_windows_overlay_set_asset_root(const char *path_utf8)
             / sizeof(tokeni_overlay_asset_root[0]))) > 0 ? 1 : 0;
 }
 
-int tokeni_windows_overlay_set_state(
+static int tokeni_overlay_set_state_impl(
     int stage,
     int level,
     int species_index,
@@ -779,7 +815,7 @@ int tokeni_windows_overlay_set_state(
     return 1;
 }
 
-void tokeni_windows_overlay_stop(void)
+static void tokeni_overlay_stop_impl(void)
 {
     HWND window = tokeni_overlay_window;
     if (window != NULL) {
@@ -799,14 +835,50 @@ void tokeni_windows_overlay_stop(void)
     }
 }
 
-int tokeni_windows_overlay_is_visible(void)
+static int tokeni_overlay_is_visible_impl(void)
 {
     return tokeni_overlay_window != NULL
         && tokeni_overlay_visible
         && IsWindowVisible(tokeni_overlay_window) ? 1 : 0;
 }
 
+// All renderer state and COM resources belong to the desktop message thread.
+typedef struct { int operation; int values[4]; const char *path; int result; } tokeni_overlay_request;
+static void tokeni_overlay_dispatch(void *context)
+{
+    tokeni_overlay_request *request = (tokeni_overlay_request *)context;
+    switch (request->operation) {
+    case 0: request->result = tokeni_overlay_show_impl(); break;
+    case 1: request->result = tokeni_overlay_hide_impl(); break;
+    case 2: request->result = tokeni_overlay_set_frame_impl(request->values[0], request->values[1], request->values[2], request->values[3]); break;
+    case 3: request->result = tokeni_overlay_set_click_through_impl(request->values[0]); break;
+    case 4: request->result = tokeni_overlay_set_asset_root_impl(request->path); break;
+    case 5: request->result = tokeni_overlay_set_state_impl(request->values[0], request->values[1], request->values[2], request->values[3]); break;
+    case 6: tokeni_overlay_stop_impl(); request->result = 1; break;
+    case 7: request->result = tokeni_overlay_is_visible_impl(); break;
+    }
+}
+static int tokeni_overlay_call(int operation, int a, int b, int c, int d, const char *path)
+{
+    tokeni_overlay_request request = {operation, {a, b, c, d}, path, 0};
+    tokeni_windows_ui_invoke(tokeni_overlay_dispatch, &request);
+    return request.result;
+}
+int tokeni_windows_overlay_show(void) { return tokeni_overlay_call(0, 0, 0, 0, 0, NULL); }
+int tokeni_windows_overlay_hide(void) { return tokeni_overlay_call(1, 0, 0, 0, 0, NULL); }
+int tokeni_windows_overlay_set_frame(int x, int y, int width, int height) { return tokeni_overlay_call(2, x, y, width, height, NULL); }
+int tokeni_windows_overlay_set_click_through(int enabled) { return tokeni_overlay_call(3, enabled, 0, 0, 0, NULL); }
+int tokeni_windows_overlay_set_asset_root(const char *path) { return tokeni_overlay_call(4, 0, 0, 0, 0, path); }
+int tokeni_windows_overlay_set_state(int stage, int level, int species, int rarity) { return tokeni_overlay_call(5, stage, level, species, rarity, NULL); }
+void tokeni_windows_overlay_stop(void) { (void)tokeni_overlay_call(6, 0, 0, 0, 0, NULL); }
+int tokeni_windows_overlay_is_visible(void) { return tokeni_overlay_call(7, 0, 0, 0, 0, NULL); }
+
 #else
+void tokeni_windows_overlay_set_cosmetics(unsigned int mask) {(void)mask;}
+void tokeni_windows_overlay_draw_preview(void *c,int w,int h) {(void)c;(void)w;(void)h;}
+void tokeni_windows_overlay_configure(int m,int r,int s) {(void)m;(void)r;(void)s;}
+void tokeni_windows_overlay_restore_preferences(void) {}
+int tokeni_windows_overlay_preferences(void) {return 4;}
 
 int tokeni_windows_overlay_start(
     int x,
