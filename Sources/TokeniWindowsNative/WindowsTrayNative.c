@@ -1320,7 +1320,10 @@ static void tokeni_show_details(void)
     }
 
     tokeni_dashboard_apply_details();
-    ShowWindow(tokeni_dashboard_window, IsIconic(tokeni_dashboard_window) ? SW_RESTORE : SW_SHOW);
+    if (IsIconic(tokeni_dashboard_window)) { ShowWindow(tokeni_dashboard_window, SW_RESTORE); }
+    // Explicit app activation must also work when its launcher supplied SW_HIDE.
+    SetWindowPos(tokeni_dashboard_window, NULL, 0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
     SetForegroundWindow(tokeni_dashboard_window);
     BringWindowToTop(tokeni_dashboard_window);
     SetFocus(tokeni_navigation[tokeni_destination]);
