@@ -62,6 +62,7 @@ targets.append(
             .linkedLibrary("comctl32"),
             .linkedLibrary("uxtheme"),
             .linkedLibrary("dwmapi"),
+            .linkedLibrary("msimg32"),
             .linkedLibrary("gdi32"),
             .linkedLibrary("ole32"),
             .linkedLibrary("shell32"),

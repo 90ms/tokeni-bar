@@ -43,6 +43,13 @@ public struct WindowsCompanionOverlayState: Equatable, Sendable {
             self.init(stage: 0, level: 0)
             return
         }
+        if let pet = state.showcasedGeneration {
+            let stage: Int = switch pet.stage { case .egg: 0; case .hatchling: 1; case .junior: 2; case .adult: 3 }
+            self.init(stage: stage, level: CompanionLevelCurve.standard.level(forXP: pet.growthXP),
+                speciesIndex: CompanionSpeciesRegistry.gameSpeciesIDs.firstIndex(of: pet.speciesID) ?? 0,
+                rarityRank: CompanionVariantRegistry.definition(for: pet.variantID ?? CompanionVariantRegistry.migrated(from: pet.finalRarity)).assetRarity.rank)
+            return
+        }
 
         let stage: Int
         let renderedStage = if state.level
@@ -81,6 +88,7 @@ public final class WindowsCompanionOverlay: @unchecked Sendable {
     private var started = false
 
     public init() {}
+    public func restorePreferences() { tokeni_windows_overlay_restore_preferences() }
 
     /// Creates the overlay window at the supplied virtual-screen frame.
     /// Calling `start` more than once is idempotent while this wrapper is

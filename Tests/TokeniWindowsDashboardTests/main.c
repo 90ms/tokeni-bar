@@ -71,6 +71,18 @@ static void exercise_controls(void *context)
     assert(strcmp(id, "00000000-0000-0000-0000-000000000001") == 0);
     SendMessageW(tokeni_dashboard_window, WM_COMMAND, 512, 0);
     assert(tokeni_windows_dashboard_take_hatch_request());
+    SetWindowTextW(tokeni_pet_extra[1],L"Friendly pet");
+    SendMessageW(tokeni_dashboard_window,WM_COMMAND,552,0);
+    char action_id[128],action_text[256];
+    assert(tokeni_windows_take_action(action_id,128,action_text,256)==552);
+    assert(!strcmp(action_text,"Friendly pet"));
+    assert(!strcmp(action_id,"00000000-0000-0000-0000-000000000001"));
+    tokeni_windows_overlay_configure(1,1,0);
+    assert(tokeni_windows_overlay_preferences()==3);
+    SendMessageW(tokeni_pet_extra[0],CB_SETCURSEL,2,0);
+    SendMessageW(tokeni_dashboard_window,WM_COMMAND,MAKEWPARAM(550,CBN_SELCHANGE),(LPARAM)tokeni_pet_extra[0]);
+    assert(IsWindowVisible(tokeni_pet_extra[7]));
+    assert(!IsWindowVisible(tokeni_pet_picker));
     SendMessageW(tokeni_dashboard_window, WM_COMMAND, 401, 0);
     assert(ListView_GetItemCount(tokeni_usage_list) == 1);
     SendMessageW(tokeni_history_mode, BM_SETCHECK, BST_CHECKED, 0);
@@ -118,6 +130,9 @@ int main(void)
     tokeni_windows_history_append((double)time(NULL), 75, "Example provider", "Today", "Session: 75%", "1234", "—");
     tokeni_windows_history_append((double)time(NULL)-40*86400, 20, "Example provider", "Old", "Session: 20%", "1200", "—");
     tokeni_windows_history_commit();
+    tokeni_windows_inventory_begin();
+    tokeni_windows_inventory_append(2,"nightRing","Night ring · 50");
+    tokeni_windows_inventory_commit("Star shards: 300");
     assert(tokeni_windows_ui_invoke(exercise_controls, NULL));
     tokeni_windows_tray_stop();
     tokeni_windows_tray_run();

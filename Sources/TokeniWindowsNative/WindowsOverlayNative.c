@@ -31,6 +31,7 @@ static UINT tokeni_overlay_asset_width;
 static UINT tokeni_overlay_asset_height;
 static int tokeni_overlay_asset_loaded;
 static int tokeni_overlay_com_owned;
+static int tokeni_overlay_reduced_motion;
 
 static void tokeni_overlay_release_asset(void)
 {
@@ -315,7 +316,7 @@ static int tokeni_overlay_paint_asset(
     bitmap_info.bmiHeader.biBitCount = 32;
     bitmap_info.bmiHeader.biCompression = BI_RGB;
     SetStretchBltMode(device_context, COLORONCOLOR);
-    int frame = (int)((GetTickCount() / 250U) % 4U);
+    int frame = tokeni_overlay_reduced_motion ? 0 : (int)((GetTickCount() / 250U) % 4U);
     int destination_x = (width - dimension) / 2;
     int destination_y = (height - dimension) / 2;
     int copied_scan_lines = StretchDIBits(
@@ -503,6 +504,9 @@ static void tokeni_overlay_unregister_class(void)
     }
 }
 
+#include "WindowsCompanionDecorations.inc"
+#include "WindowsOverlayPreferences.inc"
+
 static LRESULT CALLBACK tokeni_overlay_window_proc(
     HWND window,
     UINT message,
@@ -512,9 +516,10 @@ static LRESULT CALLBACK tokeni_overlay_window_proc(
     (void)w_param;
     (void)l_param;
 
-    if (message == WM_NCHITTEST && tokeni_overlay_click_through) {
-        return HTTRANSPARENT;
+    if (message == WM_NCHITTEST) {
+        return tokeni_overlay_click_through ? HTTRANSPARENT : HTCAPTION;
     }
+    if (message == WM_EXITSIZEMOVE) { tokeni_overlay_save_preferences();return 0; }
 
     if (message == WM_MOUSEACTIVATE) {
         return MA_NOACTIVATE;
@@ -525,7 +530,7 @@ static LRESULT CALLBACK tokeni_overlay_window_proc(
     }
 
     if (message == WM_TIMER) {
-        InvalidateRect(window, NULL, FALSE);
+        if (!tokeni_overlay_reduced_motion) { InvalidateRect(window, NULL, FALSE); }
         return 0;
     }
 
@@ -537,9 +542,11 @@ static LRESULT CALLBACK tokeni_overlay_window_proc(
             GetClientRect(window, &bounds);
             HBRUSH transparent_brush = (HBRUSH)GetStockObject(BLACK_BRUSH);
             FillRect(device_context, &bounds, transparent_brush);
+            tokeni_overlay_decorations(device_context, &bounds, 0);
             if (!tokeni_overlay_paint_asset(device_context, &bounds)) {
                 tokeni_overlay_paint_fallback(device_context, &bounds);
             }
+            tokeni_overlay_decorations(device_context, &bounds, 1);
             EndPaint(window, &paint);
         }
         return 0;
@@ -852,6 +859,11 @@ void tokeni_windows_overlay_stop(void) { (void)tokeni_overlay_call(6, 0, 0, 0, 0
 int tokeni_windows_overlay_is_visible(void) { return tokeni_overlay_call(7, 0, 0, 0, 0, NULL); }
 
 #else
+void tokeni_windows_overlay_set_cosmetics(unsigned int mask) {(void)mask;}
+void tokeni_windows_overlay_draw_preview(void *c,int w,int h) {(void)c;(void)w;(void)h;}
+void tokeni_windows_overlay_configure(int m,int r,int s) {(void)m;(void)r;(void)s;}
+void tokeni_windows_overlay_restore_preferences(void) {}
+int tokeni_windows_overlay_preferences(void) {return 4;}
 
 int tokeni_windows_overlay_start(
     int x,

@@ -27,6 +27,15 @@ int tokeni_windows_dashboard_is_korean(void);
 void tokeni_windows_history_begin(void);
 void tokeni_windows_history_append(double timestamp, double percent, const char *provider, const char *date, const char *quota, const char *tokens, const char *cost);
 void tokeni_windows_history_commit(void);
+void tokeni_windows_inventory_begin(void);
+void tokeni_windows_inventory_append(int group,const char *id,const char *label);
+void tokeni_windows_inventory_commit(const char *summary);
+int tokeni_windows_take_action(char *id,int capacity,char *text,int text_capacity);
+void tokeni_windows_overlay_draw_preview(void *context,int width,int height);
+void tokeni_windows_overlay_configure(int movable,int reduced_motion,int size);
+void tokeni_windows_overlay_restore_preferences(void);
+int tokeni_windows_overlay_preferences(void);
+void tokeni_windows_overlay_set_cosmetics(unsigned int mask);
 
 // Provider options are staged and become visible atomically on commit. A
 // failed append leaves the currently committed dashboard state unchanged.

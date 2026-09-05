@@ -60,6 +60,7 @@ struct TokeniWindowsApp {
                 y: 0,
                 width: 240,
                 height: 220))
+        companionOverlay.restorePreferences()
         let initialCompanionVisible = companionOverlayStarted
             && settings.bool(forKey: WindowsTrayServiceCoordinator.companionEnabledKey)
         if initialCompanionVisible {
@@ -155,6 +156,7 @@ struct TokeniWindowsApp {
             var didPublishCompanion = false
             var lastLanguage = WindowsLocalization.isKorean
             var lastHistory: [UsageHistoryRecord]?
+            var lastRewards: CompanionRewardState?
             while !Task.isCancelled {
                 if lastLanguage != WindowsLocalization.isKorean {
                     lastLanguage = WindowsLocalization.isKorean
@@ -166,6 +168,12 @@ struct TokeniWindowsApp {
                         try await companionGrowth.selectGrowthTarget(target)
                         serviceMessage = "Growth target saved."
                     } catch { serviceMessage = "Growth target could not be saved." }
+                }
+                if let action = WindowsCompanionInventory.takeAction() {
+                    do {
+                        try await companionGrowth.perform(action)
+                        serviceMessage = WindowsLocalization.text("Saved.", "저장했습니다.")
+                    } catch { serviceMessage = WindowsCompanionInventory.errorMessage(error) }
                 }
                 if tray.takeHatchRequest() {
                     do {
@@ -255,8 +263,11 @@ struct TokeniWindowsApp {
                     lastDetails = details
                 }
                 let currentCompanion = await companionGrowth.currentState()
-                if !didPublishCompanion || currentCompanion != lastCompanion || serviceMessage != lastFeedback {
+                let currentRewards = await companionGrowth.currentRewards()
+                if !didPublishCompanion || currentCompanion != lastCompanion || serviceMessage != lastFeedback || currentRewards != lastRewards {
                     tray.updateCompanions(currentCompanion, feedback: serviceMessage)
+                    WindowsCompanionInventory.publish(state: currentCompanion, rewards: currentRewards)
+                    lastRewards = currentRewards
                     lastCompanion = currentCompanion
                     lastFeedback = serviceMessage
                     didPublishCompanion = true
