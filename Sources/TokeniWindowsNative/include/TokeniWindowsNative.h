@@ -23,6 +23,10 @@ int tokeni_windows_dashboard_append_pet(const char *id, const char *label, int s
 void tokeni_windows_dashboard_commit_pets(const char *summary, int eggs, const char *feedback);
 int tokeni_windows_dashboard_take_pet_request(char *id, int capacity);
 int tokeni_windows_dashboard_take_hatch_request(void);
+int tokeni_windows_dashboard_is_korean(void);
+void tokeni_windows_history_begin(void);
+void tokeni_windows_history_append(double timestamp, double percent, const char *provider, const char *date, const char *quota, const char *tokens, const char *cost);
+void tokeni_windows_history_commit(void);
 
 // Provider options are staged and become visible atomically on commit. A
 // failed append leaves the currently committed dashboard state unchanged.

@@ -153,7 +153,14 @@ struct TokeniWindowsApp {
             var lastCompanion: CompanionGameState?
             var lastFeedback: String?
             var didPublishCompanion = false
+            var lastLanguage = WindowsLocalization.isKorean
+            var lastHistory: [UsageHistoryRecord]?
             while !Task.isCancelled {
+                if lastLanguage != WindowsLocalization.isKorean {
+                    lastLanguage = WindowsLocalization.isKorean
+                    didPublishCompanion = false
+                    lastHistory = nil
+                }
                 if let target = tray.takeGrowthTargetRequest() {
                     do {
                         try await companionGrowth.selectGrowthTarget(target)
@@ -223,6 +230,11 @@ struct TokeniWindowsApp {
                 }
                 let presentation = UsageApplicationPresentation(
                     sessionState: await session.state())
+                let history = await session.state().applicationState.historyRecords
+                if history != lastHistory {
+                    WindowsHistoryPresentation.publish(history)
+                    lastHistory = history
+                }
                 let providerSnapshot = WindowsProviderSelectionFormatter
                     .snapshot(for: presentation)
                 tray.updateTooltip(Self.tooltip(for: presentation))
@@ -236,7 +248,7 @@ struct TokeniWindowsApp {
                     snapshot: providerSnapshot)
                     ?? WindowsUsageDetailFormatter.text(for: presentation)
                 if let serviceMessage {
-                    details += "\n\n\(serviceMessage)"
+                    details += "\n\n\(WindowsLocalization.message(serviceMessage))"
                 }
                 if details != lastDetails {
                     tray.updateDetails(details)

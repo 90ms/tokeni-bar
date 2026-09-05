@@ -99,15 +99,15 @@ public final class WindowsTrayShell: @unchecked Sendable {
         if let state {
             let target = state.growthTargetPet
             let progress = target.map { Int(($0.levelProgress * 100).rounded()) } ?? 0
-            summary = "\(entries.count) companions · \(state.eggs.count) unopened eggs\r\n\r\n"
-                + (target.map { "Growing: \($0.nickname ?? $0.speciesID.rawValue) · Level \($0.level) · \(progress)% to next level" }
-                    ?? "Open an egg to meet your first companion.")
-                + "\r\n\r\nGrowth comes from verified cumulative usage. Hiding the desktop companion does not stop growth."
+            summary = WindowsLocalization.text("\(entries.count) companions · \(state.eggs.count) unopened eggs", "보유 펫 \(entries.count)마리 · 미개봉 알 \(state.eggs.count)개") + "\r\n\r\n"
+                + (target.map { WindowsLocalization.text("Growing: \($0.nickname ?? $0.speciesID.rawValue) · Level \($0.level) · \(progress)% to next level", "성장 중: \($0.nickname ?? $0.speciesID.rawValue) · 레벨 \($0.level) · 다음 레벨까지 \(progress)%") }
+                    ?? WindowsLocalization.text("Open an egg to meet your first companion.", "알을 열어 첫 번째 펫을 만나세요."))
+                + WindowsLocalization.text("\r\n\r\nGrowth comes from verified cumulative usage. Hiding the desktop companion does not stop growth.", "\r\n\r\n확인된 누적 사용량으로 성장합니다. 데스크톱 펫을 숨겨도 성장은 계속됩니다.")
         } else {
-            summary = "Companion state could not be loaded. Restart Tokeni Bar to retry."
+            summary = WindowsLocalization.message("Companion state could not be loaded. Restart Tokeni Bar to retry.")
         }
         summary.withCString { text in
-            (feedback ?? "").withCString { message in
+            WindowsLocalization.message(feedback ?? "").withCString { message in
                 tokeni_windows_dashboard_commit_pets(text, Int32(state?.eggs.count ?? 0), message)
             }
         }

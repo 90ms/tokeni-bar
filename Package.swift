@@ -60,6 +60,8 @@ targets.append(
         linkerSettings: [
             .linkedLibrary("advapi32"),
             .linkedLibrary("comctl32"),
+            .linkedLibrary("uxtheme"),
+            .linkedLibrary("dwmapi"),
             .linkedLibrary("gdi32"),
             .linkedLibrary("ole32"),
             .linkedLibrary("shell32"),

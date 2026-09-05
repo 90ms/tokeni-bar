@@ -110,6 +110,9 @@ static unsigned int tokeni_pet_revision, tokeni_displayed_pet_revision;
 static tokeni_pet_option tokeni_displayed_pets[128];
 static int tokeni_displayed_pet_count;
 
+#include "WindowsDesktopStyle.inc"
+#include "WindowsHistory.inc"
+
 static void tokeni_dashboard_sync_services(void)
 {
     SetWindowTextW(tokeni_service_buttons[0], InterlockedCompareExchange(&tokeni_launch_at_login_enabled, 0, 0)
@@ -751,9 +754,14 @@ static void tokeni_dashboard_layout(HWND window)
             content_width / 2 - gap, button_height, TRUE);
     }
     if (tokeni_destination == 3) {
-        int top = details_top + tokeni_scale_for_dpi(96, dpi);
+        int pref_top = details_top + tokeni_scale_for_dpi(96, dpi);
+        MoveWindow(tokeni_language_picker, content_left, pref_top, content_width / 2 - gap, tokeni_scale_for_dpi(180, dpi), TRUE);
+        MoveWindow(tokeni_theme_picker, content_left + content_width / 2, pref_top, content_width / 2 - gap, tokeni_scale_for_dpi(180, dpi), TRUE);
+        int top = pref_top + tokeni_scale_for_dpi(46, dpi);
         MoveWindow(tokeni_dashboard_details, content_left, top, content_width, max(button_top - top - gap, 0), TRUE);
     }
+    ShowWindow(tokeni_language_picker, tokeni_destination == 3 ? SW_SHOW : SW_HIDE);
+    ShowWindow(tokeni_theme_picker, tokeni_destination == 3 ? SW_SHOW : SW_HIDE);
     ShowWindow(tokeni_pet_picker, tokeni_destination == 2 ? SW_SHOW : SW_HIDE);
     ShowWindow(tokeni_pet_select, tokeni_destination == 2 ? SW_SHOW : SW_HIDE);
     ShowWindow(tokeni_pet_hatch, tokeni_destination == 2 ? SW_SHOW : SW_HIDE);
@@ -766,6 +774,7 @@ static void tokeni_dashboard_layout(HWND window)
         int top = details_top + tokeni_scale_for_dpi(96, dpi);
         MoveWindow(tokeni_dashboard_details, content_left, top, content_width, max(button_top - top - gap, 0), TRUE);
     }
+    tokeni_history_layout(content_left, details_top, content_width, button_top-gap, gap, dpi);
 }
 
 static void tokeni_dashboard_apply_details(void)
@@ -813,6 +822,19 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
     LPARAM l_param)
 {
     if (message == WM_CREATE) {
+        tokeni_history_create(window);
+        tokeni_language_picker = CreateWindowExW(0, L"COMBOBOX", L"Language", WS_CHILD | WS_TABSTOP | CBS_DROPDOWNLIST,
+            0,0,0,0,window,(HMENU)(INT_PTR)530,tokeni_instance,NULL);
+        tokeni_theme_picker = CreateWindowExW(0, L"COMBOBOX", L"Appearance", WS_CHILD | WS_TABSTOP | CBS_DROPDOWNLIST,
+            0,0,0,0,window,(HMENU)(INT_PTR)531,tokeni_instance,NULL);
+        const WCHAR *languages[] = {L"System language", L"English", L"한국어"};
+        const WCHAR *themes[] = {L"System theme", L"Light", L"Dark"};
+        for (int i = 0; i < 3; i++) {
+            SendMessageW(tokeni_language_picker, CB_ADDSTRING, 0, (LPARAM)tokeni_text(languages[i]));
+            SendMessageW(tokeni_theme_picker, CB_ADDSTRING, 0, (LPARAM)tokeni_text(themes[i]));
+        }
+        SendMessageW(tokeni_language_picker, CB_SETCURSEL, tokeni_language, 0);
+        SendMessageW(tokeni_theme_picker, CB_SETCURSEL, tokeni_appearance, 0);
         const WCHAR *services[] = {L"Start with Windows", L"Send test notification", L"Desktop companion", L"Quit Tokeni Bar"};
         for (int index = 0; index < 4; index++) {
             tokeni_service_buttons[index] = CreateWindowExW(0, L"BUTTON", services[index],
@@ -845,7 +867,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
         }
         for (int index = 0; index < 4; index++) {
             tokeni_navigation[index] = CreateWindowExW(0, L"BUTTON", tokeni_page_titles[index],
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_RADIOBUTTON | BS_PUSHLIKE,
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
                 0, 0, 0, 0, window, (HMENU)(INT_PTR)(400 + index), tokeni_instance, NULL);
             if (tokeni_navigation[index] == NULL) { return -1; }
         }
@@ -944,6 +966,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
         tokeni_dashboard_apply_details();
         tokeni_dashboard_sync_usage();
         tokeni_dashboard_sync_services();
+        tokeni_apply_style(window);
         return 0;
     }
 
@@ -956,12 +979,21 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
         tokeni_dashboard_save_frame(window);
         return 0;
     }
-    if (message == WM_CTLCOLORSTATIC) {
-        HDC context = (HDC)w_param;
-        SetTextColor(context, GetSysColor(COLOR_WINDOWTEXT));
-        SetBkColor(context, GetSysColor(COLOR_WINDOW));
-        return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+    if (message == WM_ERASEBKGND && tokeni_background_brush) {
+        RECT rect; GetClientRect(window, &rect); FillRect((HDC)w_param, &rect, tokeni_background_brush); return 1;
     }
+    if (message == WM_DRAWITEM && ((DRAWITEMSTRUCT *)l_param)->CtlID == 543) { return tokeni_history_draw((DRAWITEMSTRUCT *)l_param); }
+    if (message == WM_DRAWITEM && ((DRAWITEMSTRUCT *)l_param)->CtlType == ODT_BUTTON) {
+        return tokeni_draw_button((DRAWITEMSTRUCT *)l_param);
+    }
+    if (message == WM_CTLCOLORSTATIC || message == WM_CTLCOLOREDIT || message == WM_CTLCOLORBTN || message == WM_CTLCOLORLISTBOX) {
+        HDC context = (HDC)w_param;
+        int is_label = (HWND)l_param == tokeni_dashboard_header || (HWND)l_param == tokeni_dashboard_status || (HWND)l_param == tokeni_dashboard_provider_label;
+        SetTextColor(context, (HWND)l_param == tokeni_dashboard_status ? tokeni_muted : tokeni_foreground);
+        SetBkColor(context, is_label ? tokeni_background : tokeni_surface);
+        return (LRESULT)(is_label ? tokeni_background_brush : tokeni_surface_brush);
+    }
+    if (message == WM_SETTINGCHANGE || message == WM_THEMECHANGED) { tokeni_apply_style(window); return 0; }
     if (message == WM_NOTIFY && ((NMHDR *)l_param)->hwndFrom == tokeni_usage_list
         && ((NMHDR *)l_param)->code == LVN_ITEMACTIVATE && tokeni_destination == 0) {
         SendMessageW(window, WM_COMMAND, 401, 0);
@@ -993,6 +1025,20 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
 
     if (message == WM_COMMAND) {
         int identifier = LOWORD(w_param);
+        if (identifier == 540) {
+            tokeni_history_visible = SendMessageW(tokeni_history_mode, BM_GETCHECK, 0, 0) == BST_CHECKED;
+            tokeni_history_sync(); tokeni_dashboard_layout(window); return 0;
+        }
+        if ((identifier == 541 || identifier == 542) && HIWORD(w_param) == CBN_SELCHANGE) { tokeni_history_sync(); return 0; }
+        if ((identifier == 530 || identifier == 531) && HIWORD(w_param) == CBN_SELCHANGE) {
+            int selection = (int)SendMessageW((HWND)l_param, CB_GETCURSEL, 0, 0);
+            if (selection >= 0 && selection <= 2) {
+                InterlockedExchange(identifier == 530 ? &tokeni_language : &tokeni_appearance, selection);
+                tokeni_save_preferences(); tokeni_apply_style(window); tokeni_dashboard_apply_details();
+                tokeni_dashboard_sync_services();
+            }
+            return 0;
+        }
         if (identifier >= 500 && identifier <= 503) {
             if (identifier == 500) { InterlockedExchange(&tokeni_launch_at_login_requested, 1); }
             if (identifier == 501) { InterlockedExchange(&tokeni_test_notification_requested, 1); }
@@ -1076,6 +1122,8 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
     }
 
     if (message == WM_DESTROY) {
+        if (tokeni_background_brush) { DeleteObject(tokeni_background_brush); tokeni_background_brush = NULL; }
+        if (tokeni_surface_brush) { DeleteObject(tokeni_surface_brush); tokeni_surface_brush = NULL; }
         tokeni_dashboard_destroy_provider_controls();
         tokeni_dashboard_window = NULL;
         tokeni_dashboard_header = NULL;
@@ -1498,6 +1546,7 @@ static int tokeni_tray_start_on_ui_thread(
     }
 
     tokeni_enable_per_monitor_dpi_awareness();
+    tokeni_load_preferences();
     tokeni_instance = GetModuleHandleW(NULL);
     if (tokeni_instance == NULL) {
         return 0;
@@ -1934,6 +1983,10 @@ void tokeni_windows_tray_stop(void)
 }
 
 #else
+int tokeni_windows_dashboard_is_korean(void) { return 0; }
+void tokeni_windows_history_begin(void) {}
+void tokeni_windows_history_append(double t, double p, const char *a, const char *b, const char *c, const char *d, const char *e) { (void)t;(void)p;(void)a;(void)b;(void)c;(void)d;(void)e; }
+void tokeni_windows_history_commit(void) {}
 void tokeni_windows_dashboard_begin_pets(void) {}
 int tokeni_windows_dashboard_append_pet(const char *id, const char *label, int selected)
 { (void)id; (void)label; (void)selected; return 0; }
