@@ -5,6 +5,7 @@
 #pragma comment(lib, "dwmapi.lib")
 
 static LONG tokeni_language; // 0 system, 1 English, 2 Korean
+static LONG tokeni_localization_started;
 static LONG tokeni_appearance; // 0 system, 1 light, 2 dark
 static HWND tokeni_language_picker, tokeni_theme_picker;
 static COLORREF tokeni_background, tokeni_surface, tokeni_foreground, tokeni_muted, tokeni_accent;
@@ -53,6 +54,9 @@ static const tokeni_translation tokeni_translations[] = {
 
 int tokeni_windows_dashboard_is_korean(void)
 {
+    // Headless formatters/tests have a deterministic default. The desktop
+    // opts into the user's preference before it creates any controls.
+    if (!InterlockedCompareExchange(&tokeni_localization_started, 0, 0)) { return 0; }
     LONG preference = InterlockedCompareExchange(&tokeni_language, 0, 0);
     return preference == 2 || (preference == 0 && PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_KOREAN);
 }
@@ -96,6 +100,7 @@ static void tokeni_save_preferences(void)
 }
 static void tokeni_load_preferences(void)
 {
+    InterlockedExchange(&tokeni_localization_started, 1);
 #ifndef TOKENI_DESKTOP_TEST
     DWORD value = 0, size = sizeof(value);
     if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\TokeniBar\\Desktop", L"Language", RRF_RT_REG_DWORD,
