@@ -160,6 +160,7 @@ public actor WindowsCompanionGrowthCoordinator {
             if current.appliedGrowthAwardIDs.contains(award.id) {
                 // Presence in a state loaded from disk, or retained after a
                 // successful save, proves the state side of the transaction.
+                try await self.settleRewards(energy: award.energy, at: award.createdAt, companion: current)
                 try await self.markAwardApplied(award.id)
                 continue
             }
@@ -176,11 +177,25 @@ public actor WindowsCompanionGrowthCoordinator {
 
             current = updated
             self.state = updated
+            try await self.settleRewards(energy: award.energy, at: award.createdAt, companion: updated)
             try await self.markAwardApplied(award.id)
         }
 
         self.state = current
+        try await self.settleRewards(energy: 0, at: .now, companion: current)
         return current
+    }
+
+    private func settleRewards(energy: Int, at date: Date, companion: CompanionGameState) async throws {
+        guard var updated = self.rewards, let rewardStore else { return }
+        _ = self.rewardEngine.rewardVerifiedGrowth(energy: energy, at: date, in: &updated)
+        _ = self.rewardEngine.reconcile(collection: companion.collection, at: date, in: &updated)
+        guard updated != self.rewards else { return }
+        guard updated.isValid() else { throw WindowsCompanionGrowthError.invalidState }
+        // Keep the award in the growth ledger until both saves have succeeded.
+        // Reward date/discovery receipts make recovery idempotent after either save.
+        try await rewardStore.save(updated)
+        self.rewards = updated
     }
 
     public func currentRewards() -> CompanionRewardState? { self.rewards }

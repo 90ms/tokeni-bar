@@ -4,6 +4,22 @@ import TokeniCore
 import TokeniWindows
 
 struct WindowsCompanionEconomyTests {
+    @Test func persistedGrowthAwardRecoversItsRewardWithoutPayingTwice() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let rewards = CompanionRewardStateStore(fileURL: directory.appending(path: "reward.json"))
+        let award = GrowthEnergyAward(dateKey: "2026-09-05", energy: 7, createdAt: .now)
+        let persisted = CompanionGameState(growthEnergy: 7, appliedGrowthAwardIDs: [award.id])
+        let coordinator = WindowsCompanionGrowthCoordinator(loadState: { persisted }, saveState: { _, _ in },
+            processGrowth: { _ in }, loadLedger: { TokenGrowthLedgerState(pendingAwards: [award]) }, markAwardApplied: { _ in }, rewardStore: rewards)
+        _ = try await coordinator.load()
+        _ = try await coordinator.applyPendingAwards()
+        #expect(await coordinator.currentRewards()?.starShards == CompanionRewardRules.standard.dailyVerifiedGrowth)
+        _ = try await coordinator.applyPendingAwards()
+        #expect(await coordinator.currentRewards()?.starShards == CompanionRewardRules.standard.dailyVerifiedGrowth)
+        #expect(await coordinator.currentState()?.growthEnergy == 7)
+    }
+
     @Test func purchaseRecoveryChargesOnceAndRestoresTheSameEgg() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
