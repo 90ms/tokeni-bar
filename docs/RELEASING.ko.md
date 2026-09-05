@@ -69,7 +69,8 @@ git push origin v<version>
 `Release` 워크플로가 다음 작업을 모두 성공했는지 확인합니다.
 
 - Windows 릴리스 전용 테스트 실행
-- 게시 전에 Windows portable ZIP 빌드 및 검증
+- 기존에 서명되지 않은 모든 Windows 앱 binary를 Microsoft Artifact Signing으로 서명
+- 패키지의 Windows executable과 DLL 서명을 모두 확인한 뒤 portable ZIP 재생성 및 게시 전 검증
 - 태그 버전 확인 및 구조화된 한영 릴리스 노트 렌더링
 - macOS 앱 빌드와 ad-hoc 서명
 - 사용자 데이터에 접근하지 않는 패키징된 macOS 실행 파일 스모크 테스트

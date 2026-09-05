@@ -36,6 +36,10 @@ void tokeni_windows_overlay_configure(int movable,int reduced_motion,int size);
 void tokeni_windows_overlay_restore_preferences(void);
 int tokeni_windows_overlay_preferences(void);
 void tokeni_windows_overlay_set_cosmetics(unsigned int mask);
+int tokeni_windows_update_request(void);
+int tokeni_windows_update_automatic(void);
+void tokeni_windows_update_status(const char *text,int available);
+int tokeni_windows_update_prepare(const char *version,const char *tag);
 
 // Provider options are staged and become visible atomically on commit. A
 // failed append leaves the currently committed dashboard state unchanged.

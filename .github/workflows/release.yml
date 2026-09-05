@@ -19,7 +19,8 @@ permissions:
 jobs:
   windows-package:
     name: Build and validate Windows release
-    runs-on: windows-latest
+    runs-on: windows-2022
+    environment: release
     timeout-minutes: 30
 
     steps:
@@ -120,6 +121,70 @@ jobs:
             -SQLiteExecutable "$env:TOKENI_WINDOWS_SQLITE_EXECUTABLE" `
             -RuntimeDirectory $runtimeDirectories
 
+      - name: Prepare Windows release signing catalog
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          $releaseDirectory = "$env:RUNNER_TEMP\TokeniWindowsRelease"
+          $packageDirectory = Join-Path `
+            $releaseDirectory `
+            "Tokeni-Bar-Windows-$env:VERSION"
+          $catalogPath = Join-Path $releaseDirectory "signing-catalog.txt"
+          & "$env:GITHUB_WORKSPACE\Scripts\prepare_windows_signing.ps1" `
+            -PackageDirectory $packageDirectory `
+            -CatalogPath $catalogPath
+          "TOKENI_WINDOWS_PACKAGE_DIRECTORY=$packageDirectory" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+          "TOKENI_WINDOWS_SIGNING_CATALOG=$catalogPath" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+      - name: Sign in to Azure with release identity
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign Windows release binaries
+        uses: azure/trusted-signing-action@1d365fec12862c4aa68fcac418143d73f0cea293 # v0.5.11
+        with:
+          endpoint: ${{ vars.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ vars.AZURE_ARTIFACT_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.AZURE_ARTIFACT_SIGNING_PROFILE }}
+          files-catalog: ${{ env.TOKENI_WINDOWS_SIGNING_CATALOG }}
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-cli-credential: false
+          exclude-azure-powershell-credential: true
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
+
+      - name: Verify signatures and rewrite Windows package
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          & "$env:GITHUB_WORKSPACE\Scripts\verify_windows_signatures.ps1" `
+            -PackageDirectory "$env:TOKENI_WINDOWS_PACKAGE_DIRECTORY"
+          Remove-Item `
+            -LiteralPath "$env:TOKENI_WINDOWS_SIGNING_CATALOG" `
+            -Force
+          & "$env:GITHUB_WORKSPACE\Scripts\write_windows_package.ps1" `
+            -Version $env:VERSION `
+            -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsRelease"
+
       - name: Validate Windows release assets
         shell: pwsh
         env:
@@ -167,10 +232,54 @@ jobs:
           & "$env:GITHUB_WORKSPACE\Scripts\smoke_windows_package.ps1" `
             -ArchivePath $archive
 
+      - name: Build Windows installer
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          & "$env:GITHUB_WORKSPACE\Scripts\build_windows_installer.ps1" -Version $env:VERSION -PackageDirectory "$env:TOKENI_WINDOWS_PACKAGE_DIRECTORY" -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsRelease"
+
+      - name: Sign Windows installer
+        uses: azure/trusted-signing-action@1d365fec12862c4aa68fcac418143d73f0cea293 # v0.5.11
+        with:
+          endpoint: ${{ vars.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ vars.AZURE_ARTIFACT_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.AZURE_ARTIFACT_SIGNING_PROFILE }}
+          files-folder: ${{ runner.temp }}\TokeniWindowsRelease
+          files-folder-filter: exe
+          files-folder-recurse: false
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-cli-credential: false
+          exclude-azure-powershell-credential: true
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
+
+      - name: Verify and test signed installer
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          $installer = "$env:RUNNER_TEMP\TokeniWindowsRelease\Tokeni-Bar-Windows-$env:VERSION-Setup.exe"
+          if ((Get-AuthenticodeSignature -LiteralPath $installer).Status -ne 'Valid') { throw 'Installer signature is invalid.' }
+          $hash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          [IO.File]::WriteAllText("$installer.sha256", "$hash  $([IO.Path]::GetFileName($installer))`n", [Text.UTF8Encoding]::new($false))
+          & "$env:GITHUB_WORKSPACE\Scripts\test_windows_update.ps1"
+          & "$env:GITHUB_WORKSPACE\Scripts\test_windows_installer.ps1" -Installer $installer
+
       - name: Generate Windows artifact attestation
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
         with:
-          subject-path: ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip
+          subject-path: |
+            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip
+            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}-Setup.exe
 
       - name: Upload validated Windows release assets
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -179,6 +288,8 @@ jobs:
           path: |
             ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip
             ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip.sha256
+            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}-Setup.exe
+            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}-Setup.exe.sha256
           if-no-files-found: error
 
   release:
@@ -284,6 +395,8 @@ jobs:
             "dist/TokeniBar-$VERSION.zip.sha256"
             "dist/windows/Tokeni-Bar-Windows-$VERSION.zip"
             "dist/windows/Tokeni-Bar-Windows-$VERSION.zip.sha256"
+            "dist/windows/Tokeni-Bar-Windows-$VERSION-Setup.exe"
+            "dist/windows/Tokeni-Bar-Windows-$VERSION-Setup.exe.sha256"
           )
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber

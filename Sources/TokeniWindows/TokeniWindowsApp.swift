@@ -276,7 +276,9 @@ struct TokeniWindowsApp {
             }
         }
 
+        let updateTask = Task { await WindowsUpdateCoordinator.run(executableURL: executableURL, tray: tray) }
         _ = tray.run()
+        updateTask.cancel()
         providerToggleTask.cancel()
         await providerToggleTask.value
 

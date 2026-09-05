@@ -113,6 +113,7 @@ static int tokeni_displayed_pet_count;
 #include "WindowsDesktopStyle.inc"
 #include "WindowsHistory.inc"
 #include "WindowsCompanionControls.inc"
+#include "WindowsUpdates.inc"
 
 static void tokeni_dashboard_sync_services(void)
 {
@@ -781,6 +782,7 @@ static void tokeni_dashboard_layout(HWND window)
     }
     tokeni_history_layout(content_left, details_top, content_width, button_top-gap, gap, dpi);
     tokeni_pet_extra_layout(content_left, details_top, content_width, button_top-gap, gap, dpi);
+    tokeni_update_layout(content_left, details_top, content_width, button_top-gap, gap, dpi);
 }
 
 static void tokeni_dashboard_apply_details(void)
@@ -833,6 +835,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
     if (message == WM_CREATE) {
         tokeni_history_create(window);
         tokeni_pet_extra_create(window);
+        tokeni_update_create(window);
         tokeni_language_picker = CreateWindowExW(0, L"COMBOBOX", L"Language", WS_CHILD | WS_TABSTOP | CBS_DROPDOWNLIST,
             0,0,0,0,window,(HMENU)(INT_PTR)530,tokeni_instance,NULL);
         tokeni_theme_picker = CreateWindowExW(0, L"COMBOBOX", L"Appearance", WS_CHILD | WS_TABSTOP | CBS_DROPDOWNLIST,
@@ -1041,6 +1044,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
 
     if (message == WM_COMMAND) {
         int identifier = LOWORD(w_param);
+        if(identifier>=580&&identifier<=582) {tokeni_update_command(identifier);return 0;}
         if(identifier==550 && HIWORD(w_param)==CBN_SELCHANGE) {
             tokeni_pet_mode=(int)SendMessageW(tokeni_pet_extra[0],CB_GETCURSEL,0,0);
             tokeni_inventory_sync();tokeni_dashboard_layout(window);tokeni_dashboard_apply_details();return 0;
@@ -2010,6 +2014,10 @@ void tokeni_windows_tray_stop(void)
 
 #else
 int tokeni_windows_dashboard_is_korean(void) { return 0; }
+int tokeni_windows_update_request(void) {return 0;}
+int tokeni_windows_update_automatic(void) {return 0;}
+void tokeni_windows_update_status(const char *t,int a) {(void)t;(void)a;}
+int tokeni_windows_update_prepare(const char *v,const char *t) {(void)v;(void)t;return 0;}
 void tokeni_windows_inventory_begin(void) {}
 void tokeni_windows_inventory_append(int g,const char *i,const char *l) {(void)g;(void)i;(void)l;}
 void tokeni_windows_inventory_commit(const char *s) {(void)s;}
