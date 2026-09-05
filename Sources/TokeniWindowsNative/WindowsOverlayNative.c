@@ -590,7 +590,7 @@ static int tokeni_overlay_register_class(void)
     return 1;
 }
 
-int tokeni_windows_overlay_start(
+static int tokeni_overlay_start_on_ui_thread(
     int x,
     int y,
     int width,
@@ -652,6 +652,20 @@ int tokeni_windows_overlay_start(
     }
 
     return 1;
+}
+
+typedef struct { int x, y, width, height, result; } tokeni_overlay_start_request;
+static void tokeni_overlay_start_operation(void *context)
+{
+    tokeni_overlay_start_request *request = (tokeni_overlay_start_request *)context;
+    request->result = tokeni_overlay_start_on_ui_thread(request->x, request->y, request->width, request->height);
+}
+
+int tokeni_windows_overlay_start(int x, int y, int width, int height)
+{
+    tokeni_overlay_start_request request = {x, y, width, height, 0};
+    if (!tokeni_windows_ui_invoke(tokeni_overlay_start_operation, &request)) { return 0; }
+    return request.result;
 }
 
 int tokeni_windows_overlay_show(void)

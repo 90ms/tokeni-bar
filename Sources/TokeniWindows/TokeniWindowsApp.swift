@@ -149,6 +149,18 @@ struct TokeniWindowsApp {
             var companionVisible = initialCompanionVisible
             var serviceMessage: String?
             while !Task.isCancelled {
+                if let target = tray.takeGrowthTargetRequest() {
+                    do {
+                        try await companionGrowth.selectGrowthTarget(target)
+                        serviceMessage = "Growth target saved."
+                    } catch { serviceMessage = "Growth target could not be saved." }
+                }
+                if tray.takeHatchRequest() {
+                    do {
+                        try await companionGrowth.openNextEgg()
+                        serviceMessage = "Your new companion is ready."
+                    } catch { serviceMessage = "The egg could not be opened. Your saved state is unchanged." }
+                }
                 if tray.takeLaunchAtLoginRequest() {
                     do {
                         let enabled = try await services.toggleLaunchAtLogin()
@@ -218,7 +230,8 @@ struct TokeniWindowsApp {
                     details += "\n\n\(serviceMessage)"
                 }
                 tray.updateDetails(details)
-                try? await Task.sleep(for: .seconds(5))
+                tray.updateCompanions(await companionGrowth.currentState(), feedback: serviceMessage)
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
 

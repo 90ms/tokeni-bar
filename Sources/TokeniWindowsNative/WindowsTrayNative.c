@@ -12,13 +12,20 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "user32.lib")
 
-static const wchar_t tokeni_window_class_name[] = L"TokeniBarTrayWindow";
-static const wchar_t tokeni_dashboard_class_name[] = L"TokeniBarDashboardWindow";
+#ifndef TOKENI_DESKTOP_NAMESPACE
+#define TOKENI_DESKTOP_NAMESPACE L"TokeniBar"
+#endif
+static const wchar_t tokeni_window_class_name[] = TOKENI_DESKTOP_NAMESPACE L"TrayWindow";
+static const wchar_t tokeni_dashboard_class_name[] = TOKENI_DESKTOP_NAMESPACE L"DashboardWindow";
 static const UINT tokeni_tray_callback_message = WM_APP + 37;
 static const UINT tokeni_details_updated_message = WM_APP + 38;
 static const UINT tokeni_provider_options_updated_message = WM_APP + 39;
 static const UINT tokeni_open_window_message = WM_APP + 40;
 static HANDLE tokeni_instance_mutex;
+static HANDLE tokeni_ui_thread;
+static DWORD tokeni_ui_thread_id;
+static const UINT tokeni_invoke_message = WM_APP + 41;
+typedef struct { void (*operation)(void *); void *context; } tokeni_ui_invocation;
 static HWND tokeni_navigation[4];
 static int tokeni_destination;
 static const WCHAR *tokeni_page_titles[] = { L"Home", L"Usage", L"Companions", L"Settings" };
@@ -85,6 +92,54 @@ static int tokeni_usage_count, tokeni_usage_staged_count;
 static WCHAR tokeni_home_summary[4096];
 static WCHAR tokeni_refresh_status[256];
 static int tokeni_is_refreshing;
+static HWND tokeni_service_buttons[4];
+static HWND tokeni_pet_picker;
+static HWND tokeni_pet_select;
+static HWND tokeni_pet_hatch;
+static LONG tokeni_hatch_requested;
+static WCHAR tokeni_pet_summary[4096];
+static WCHAR tokeni_service_feedback[512];
+typedef struct { char id[64]; WCHAR label[256]; int selected; } tokeni_pet_option;
+static tokeni_pet_option tokeni_pets[128], tokeni_staged_pets[128];
+static int tokeni_pet_count, tokeni_staged_pet_count;
+static int tokeni_egg_count;
+static char tokeni_selected_pet_request[64];
+static unsigned int tokeni_pet_revision, tokeni_displayed_pet_revision;
+static tokeni_pet_option tokeni_displayed_pets[128];
+static int tokeni_displayed_pet_count;
+
+static void tokeni_dashboard_sync_services(void)
+{
+    SetWindowTextW(tokeni_service_buttons[0], InterlockedCompareExchange(&tokeni_launch_at_login_enabled, 0, 0)
+        ? L"Start with Windows: On" : L"Start with Windows: Off");
+    SetWindowTextW(tokeni_service_buttons[2], InterlockedCompareExchange(&tokeni_companion_enabled, 0, 0)
+        ? L"Desktop companion: On" : L"Desktop companion: Off");
+    AcquireSRWLockShared(&tokeni_state_lock);
+    if (tokeni_displayed_pet_revision != tokeni_pet_revision) {
+        // Do not rebuild the dropdown while the user is choosing an item.
+        if (!SendMessageW(tokeni_pet_picker, CB_GETDROPPEDSTATE, 0, 0)) {
+            char selected_id[64] = {0};
+            int previous = (int)SendMessageW(tokeni_pet_picker, CB_GETCURSEL, 0, 0);
+            if (previous >= 0 && previous < tokeni_displayed_pet_count) {
+                lstrcpynA(selected_id, tokeni_displayed_pets[previous].id, 64);
+            }
+            SendMessageW(tokeni_pet_picker, CB_RESETCONTENT, 0, 0);
+            tokeni_displayed_pet_count = tokeni_pet_count;
+            CopyMemory(tokeni_displayed_pets, tokeni_pets, sizeof(tokeni_pets));
+            int selection = 0;
+            for (int index = 0; index < tokeni_pet_count; index++) {
+                SendMessageW(tokeni_pet_picker, CB_ADDSTRING, 0, (LPARAM)tokeni_pets[index].label);
+                if ((selected_id[0] && lstrcmpA(selected_id, tokeni_pets[index].id) == 0)
+                    || (!selected_id[0] && tokeni_pets[index].selected)) { selection = index; }
+            }
+            SendMessageW(tokeni_pet_picker, CB_SETCURSEL, selection, 0);
+            tokeni_displayed_pet_revision = tokeni_pet_revision;
+        }
+    }
+    EnableWindow(tokeni_pet_select, tokeni_pet_count > 0);
+    EnableWindow(tokeni_pet_hatch, tokeni_egg_count > 0);
+    ReleaseSRWLockShared(&tokeni_state_lock);
+}
 static int tokeni_copy_utf8(const char *source, WCHAR *destination, int count);
 
 static void tokeni_dashboard_sync_usage(void)
@@ -512,6 +567,12 @@ static void tokeni_dashboard_set_fonts(HWND window)
         SendMessageW(tokeni_navigation[index], WM_SETFONT, (WPARAM)font, TRUE);
     }
     SendMessageW(tokeni_usage_list, WM_SETFONT, (WPARAM)font, TRUE);
+    for (int index = 0; index < 4; index++) {
+        SendMessageW(tokeni_service_buttons[index], WM_SETFONT, (WPARAM)font, TRUE);
+    }
+    SendMessageW(tokeni_pet_picker, WM_SETFONT, (WPARAM)font, TRUE);
+    SendMessageW(tokeni_pet_select, WM_SETFONT, (WPARAM)font, TRUE);
+    SendMessageW(tokeni_pet_hatch, WM_SETFONT, (WPARAM)font, TRUE);
 }
 
 static void tokeni_dashboard_layout(HWND window)
@@ -630,6 +691,29 @@ static void tokeni_dashboard_layout(HWND window)
     for (int column = 0; column < 6; column++) {
         ListView_SetColumnWidth(tokeni_usage_list, column, tokeni_scale_for_dpi(widths[column], dpi));
     }
+    for (int index = 0; index < 4; index++) {
+        int visible = tokeni_destination == 3 || (tokeni_destination == 2 && index == 2);
+        ShowWindow(tokeni_service_buttons[index], visible ? SW_SHOW : SW_HIDE);
+        MoveWindow(tokeni_service_buttons[index], content_left + (index % 2) * (content_width / 2),
+            details_top + (index / 2) * tokeni_scale_for_dpi(42, dpi),
+            content_width / 2 - gap, button_height, TRUE);
+    }
+    if (tokeni_destination == 3) {
+        int top = details_top + tokeni_scale_for_dpi(96, dpi);
+        MoveWindow(tokeni_dashboard_details, content_left, top, content_width, max(button_top - top - gap, 0), TRUE);
+    }
+    ShowWindow(tokeni_pet_picker, tokeni_destination == 2 ? SW_SHOW : SW_HIDE);
+    ShowWindow(tokeni_pet_select, tokeni_destination == 2 ? SW_SHOW : SW_HIDE);
+    ShowWindow(tokeni_pet_hatch, tokeni_destination == 2 ? SW_SHOW : SW_HIDE);
+    if (tokeni_destination == 2) {
+        MoveWindow(tokeni_pet_picker, content_left, details_top, content_width / 2 - gap, tokeni_scale_for_dpi(240, dpi), TRUE);
+        MoveWindow(tokeni_pet_select, content_left + content_width / 2, details_top,
+            content_width / 2 - gap, button_height, TRUE);
+        MoveWindow(tokeni_pet_hatch, content_left + content_width / 2, details_top + tokeni_scale_for_dpi(42, dpi),
+            content_width / 2 - gap, button_height, TRUE);
+        int top = details_top + tokeni_scale_for_dpi(96, dpi);
+        MoveWindow(tokeni_dashboard_details, content_left, top, content_width, max(button_top - top - gap, 0), TRUE);
+    }
 }
 
 static void tokeni_dashboard_apply_details(void)
@@ -644,6 +728,18 @@ static void tokeni_dashboard_apply_details(void)
     if (tokeni_destination == 0) {
         AcquireSRWLockShared(&tokeni_state_lock);
         lstrcpynW(details, tokeni_home_summary, 4096);
+        ReleaseSRWLockShared(&tokeni_state_lock);
+    }
+    if (tokeni_destination >= 2) {
+        AcquireSRWLockShared(&tokeni_state_lock);
+        if (tokeni_destination == 2) { lstrcpynW(details, tokeni_pet_summary, 4096); }
+        else {
+            lstrcpynW(details, L"Provider connections\r\n\r\nEnable the providers you use above. Sign in through each provider's own CLI or application, then refresh Tokeni Bar.\r\n\r\nClosing this window keeps Tokeni Bar in the tray. Use Quit Tokeni Bar to stop it.\r\n\r\n", 8192);
+        }
+        if (tokeni_service_feedback[0]) {
+            lstrcatW(details, L"\r\n\r\n");
+            lstrcatW(details, tokeni_service_feedback);
+        }
         ReleaseSRWLockShared(&tokeni_state_lock);
     }
 
@@ -661,6 +757,21 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
     LPARAM l_param)
 {
     if (message == WM_CREATE) {
+        const WCHAR *services[] = {L"Start with Windows", L"Send test notification", L"Desktop companion", L"Quit Tokeni Bar"};
+        for (int index = 0; index < 4; index++) {
+            tokeni_service_buttons[index] = CreateWindowExW(0, L"BUTTON", services[index],
+                WS_CHILD | WS_TABSTOP | BS_PUSHBUTTON, 0, 0, 0, 0, window,
+                (HMENU)(INT_PTR)(500 + index), tokeni_instance, NULL);
+            if (tokeni_service_buttons[index] == NULL) { return -1; }
+        }
+        tokeni_pet_picker = CreateWindowExW(0, L"COMBOBOX", L"Owned companions",
+            WS_CHILD | WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST,
+            0, 0, 0, 0, window, (HMENU)(INT_PTR)510, tokeni_instance, NULL);
+        tokeni_pet_select = CreateWindowExW(0, L"BUTTON", L"Set growth target", WS_CHILD | WS_TABSTOP,
+            0, 0, 0, 0, window, (HMENU)(INT_PTR)511, tokeni_instance, NULL);
+        tokeni_pet_hatch = CreateWindowExW(0, L"BUTTON", L"Open an egg", WS_CHILD | WS_TABSTOP,
+            0, 0, 0, 0, window, (HMENU)(INT_PTR)512, tokeni_instance, NULL);
+        if (!tokeni_pet_picker || !tokeni_pet_select || !tokeni_pet_hatch) { return -1; }
         INITCOMMONCONTROLSEX common = { sizeof(common), ICC_LISTVIEW_CLASSES };
         InitCommonControlsEx(&common);
         tokeni_usage_list = CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTVIEWW, L"Provider usage",
@@ -776,6 +887,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
         tokeni_dashboard_sync_provider_controls(window);
         tokeni_dashboard_apply_details();
         tokeni_dashboard_sync_usage();
+        tokeni_dashboard_sync_services();
         return 0;
     }
 
@@ -809,6 +921,23 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
 
     if (message == WM_COMMAND) {
         int identifier = LOWORD(w_param);
+        if (identifier >= 500 && identifier <= 503) {
+            if (identifier == 500) { InterlockedExchange(&tokeni_launch_at_login_requested, 1); }
+            if (identifier == 501) { InterlockedExchange(&tokeni_test_notification_requested, 1); }
+            if (identifier == 502) { InterlockedExchange(&tokeni_companion_toggle_requested, 1); }
+            if (identifier == 503) { PostMessageW(tokeni_window, WM_CLOSE, 0, 0); }
+            return 0;
+        }
+        if (identifier == 511) {
+            int selected = (int)SendMessageW(tokeni_pet_picker, CB_GETCURSEL, 0, 0);
+            if (selected >= 0 && selected < tokeni_displayed_pet_count) {
+                AcquireSRWLockExclusive(&tokeni_state_lock);
+                lstrcpynA(tokeni_selected_pet_request, tokeni_displayed_pets[selected].id, 64);
+                ReleaseSRWLockExclusive(&tokeni_state_lock);
+            }
+            return 0;
+        }
+        if (identifier == 512) { InterlockedExchange(&tokeni_hatch_requested, 1); return 0; }
         if (identifier >= 400 && identifier < 404) {
             tokeni_destination = identifier - 400;
             SetWindowTextW(tokeni_dashboard_header, tokeni_page_titles[tokeni_destination]);
@@ -816,6 +945,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
             tokeni_dashboard_layout(window);
             tokeni_dashboard_apply_details();
             tokeni_dashboard_sync_usage();
+            tokeni_dashboard_sync_services();
             return 0;
         }
         if (identifier == tokeni_refresh_button_identifier) {
@@ -856,6 +986,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
     if (message == tokeni_details_updated_message) {
         tokeni_dashboard_apply_details();
         tokeni_dashboard_sync_usage();
+        tokeni_dashboard_sync_services();
         return 0;
     }
 
@@ -948,6 +1079,57 @@ void tokeni_windows_dashboard_begin_usage(void)
     tokeni_usage_staged_count = 0;
     ReleaseSRWLockExclusive(&tokeni_state_lock);
 }
+
+void tokeni_windows_dashboard_begin_pets(void)
+{
+    AcquireSRWLockExclusive(&tokeni_state_lock);
+    tokeni_staged_pet_count = 0;
+    ZeroMemory(tokeni_staged_pets, sizeof(tokeni_staged_pets));
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+}
+
+int tokeni_windows_dashboard_append_pet(const char *id, const char *label, int selected)
+{
+    if (id == NULL || strlen(id) >= 64) { return 0; }
+    tokeni_pet_option pet = {0};
+    lstrcpynA(pet.id, id, 64);
+    if (!tokeni_copy_utf8(label, pet.label, 256)) { return 0; }
+    pet.selected = selected;
+    AcquireSRWLockExclusive(&tokeni_state_lock);
+    int accepted = tokeni_staged_pet_count < 128;
+    if (accepted) { tokeni_staged_pets[tokeni_staged_pet_count++] = pet; }
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+    return accepted;
+}
+
+void tokeni_windows_dashboard_commit_pets(const char *summary, int eggs, const char *feedback)
+{
+    AcquireSRWLockExclusive(&tokeni_state_lock);
+    if (tokeni_pet_count != tokeni_staged_pet_count || memcmp(tokeni_pets, tokeni_staged_pets, sizeof(tokeni_pets))) {
+        CopyMemory(tokeni_pets, tokeni_staged_pets, sizeof(tokeni_pets));
+        tokeni_pet_count = tokeni_staged_pet_count;
+        tokeni_pet_revision++;
+    }
+    tokeni_copy_utf8(summary, tokeni_pet_summary, 4096);
+    tokeni_copy_utf8(feedback, tokeni_service_feedback, 512);
+    tokeni_egg_count = eggs;
+    if (tokeni_window != NULL) { PostMessageW(tokeni_window, tokeni_details_updated_message, 0, 0); }
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+}
+
+int tokeni_windows_dashboard_take_pet_request(char *id, int capacity)
+{
+    if (id == NULL || capacity < 64) { return 0; }
+    AcquireSRWLockExclusive(&tokeni_state_lock);
+    int available = tokeni_selected_pet_request[0] != '\0';
+    lstrcpynA(id, tokeni_selected_pet_request, capacity);
+    tokeni_selected_pet_request[0] = '\0';
+    ReleaseSRWLockExclusive(&tokeni_state_lock);
+    return available;
+}
+
+int tokeni_windows_dashboard_take_hatch_request(void)
+{ return InterlockedExchange(&tokeni_hatch_requested, 0); }
 
 int tokeni_windows_dashboard_append_usage(const char *name, const char *status,
     const char *remaining, const char *reset, const char *tokens, const char *cost)
@@ -1076,6 +1258,11 @@ static LRESULT CALLBACK tokeni_window_proc(
     LPARAM l_param)
 {
     (void)w_param;
+    if (message == tokeni_invoke_message) {
+        tokeni_ui_invocation *invocation = (tokeni_ui_invocation *)l_param;
+        invocation->operation(invocation->context);
+        return 0;
+    }
     if (message == tokeni_open_window_message) {
         tokeni_show_details();
         return 0;
@@ -1201,7 +1388,7 @@ static LRESULT CALLBACK tokeni_window_proc(
     return DefWindowProcW(window, message, w_param, l_param);
 }
 
-int tokeni_windows_tray_start(
+static int tokeni_tray_start_on_ui_thread(
     const char *application_name_utf8,
     const char *tooltip_utf8)
 {
@@ -1210,7 +1397,7 @@ int tokeni_windows_tray_start(
         return 1;
     }
 
-    tokeni_instance_mutex = CreateMutexW(NULL, FALSE, L"Local\\TokeniBarDesktopInstance");
+    tokeni_instance_mutex = CreateMutexW(NULL, FALSE, L"Local\\" TOKENI_DESKTOP_NAMESPACE L"DesktopInstance");
     if (tokeni_instance_mutex == NULL) { return 0; }
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         // The first process may still be registering its tray window.
@@ -1569,7 +1756,7 @@ int tokeni_windows_tray_notify(
     return result;
 }
 
-int tokeni_windows_tray_run(void)
+static int tokeni_tray_run_on_ui_thread(void)
 {
     int argument_count = 0;
     WCHAR **arguments = CommandLineToArgvW(GetCommandLineW(), &argument_count);
@@ -1598,6 +1785,63 @@ int tokeni_windows_tray_run(void)
     return 0;
 }
 
+typedef struct {
+    const char *name;
+    const char *tooltip;
+    HANDLE ready;
+    int result;
+} tokeni_ui_start;
+
+static DWORD WINAPI tokeni_ui_main(void *context)
+{
+    tokeni_ui_start *start = (tokeni_ui_start *)context;
+    int result = tokeni_tray_start_on_ui_thread(start->name, start->tooltip);
+    start->result = result;
+    SetEvent(start->ready);
+    // The caller owns start and may release it as soon as the event is signaled.
+    if (result) { tokeni_tray_run_on_ui_thread(); }
+    return 0;
+}
+
+int tokeni_windows_tray_start(const char *name, const char *tooltip)
+{
+    if (tokeni_ui_thread != NULL) { return tokeni_windows_tray_is_started(); }
+    tokeni_ui_start start = {name, tooltip, CreateEventW(NULL, TRUE, FALSE, NULL), 0};
+    if (start.ready == NULL) { return 0; }
+    tokeni_ui_thread = CreateThread(NULL, 0, tokeni_ui_main, &start, 0, &tokeni_ui_thread_id);
+    if (tokeni_ui_thread != NULL) { WaitForSingleObject(start.ready, INFINITE); }
+    CloseHandle(start.ready);
+    if (!start.result && tokeni_ui_thread != NULL) {
+        WaitForSingleObject(tokeni_ui_thread, INFINITE);
+        CloseHandle(tokeni_ui_thread);
+        tokeni_ui_thread = NULL;
+    }
+    return start.result;
+}
+
+int tokeni_windows_tray_run(void)
+{
+    if (tokeni_ui_thread != NULL) {
+        WaitForSingleObject(tokeni_ui_thread, INFINITE);
+        CloseHandle(tokeni_ui_thread);
+        tokeni_ui_thread = NULL;
+    }
+    return 0;
+}
+
+int tokeni_windows_ui_invoke(void (*operation)(void *), void *context)
+{
+    if (GetCurrentThreadId() == tokeni_ui_thread_id) { operation(context); return 1; }
+    HWND window;
+    AcquireSRWLockShared(&tokeni_state_lock);
+    window = tokeni_window;
+    ReleaseSRWLockShared(&tokeni_state_lock);
+    if (window == NULL) { return 0; }
+    tokeni_ui_invocation invocation = {operation, context};
+    SendMessageW(window, tokeni_invoke_message, 0, (LPARAM)&invocation);
+    return 1;
+}
+
 void tokeni_windows_tray_stop(void)
 {
     HWND window;
@@ -1610,6 +1854,16 @@ void tokeni_windows_tray_stop(void)
 }
 
 #else
+void tokeni_windows_dashboard_begin_pets(void) {}
+int tokeni_windows_dashboard_append_pet(const char *id, const char *label, int selected)
+{ (void)id; (void)label; (void)selected; return 0; }
+void tokeni_windows_dashboard_commit_pets(const char *summary, int eggs, const char *feedback)
+{ (void)summary; (void)eggs; (void)feedback; }
+int tokeni_windows_dashboard_take_pet_request(char *id, int capacity)
+{ (void)id; (void)capacity; return 0; }
+int tokeni_windows_dashboard_take_hatch_request(void) { return 0; }
+int tokeni_windows_ui_invoke(void (*operation)(void *), void *context)
+{ (void)operation; (void)context; return 0; }
 
 void tokeni_windows_dashboard_begin_usage(void) {}
 int tokeni_windows_dashboard_append_usage(const char *name, const char *status,

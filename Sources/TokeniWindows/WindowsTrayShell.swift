@@ -1,4 +1,5 @@
 import Foundation
+import TokeniCore
 import TokeniWindowsNative
 
 /// A small Swift boundary around the Win32 notification-area lifecycle.
@@ -55,6 +56,60 @@ public final class WindowsTrayShell: @unchecked Sendable {
 
     public func takeRefreshRequest() -> Bool {
         tokeni_windows_tray_take_refresh_request() != 0
+    }
+
+    public func takeGrowthTargetRequest() -> UUID? {
+        var buffer = [CChar](repeating: 0, count: 64)
+        return buffer.withUnsafeMutableBufferPointer { pointer in
+            guard tokeni_windows_dashboard_take_pet_request(pointer.baseAddress, 64) != 0,
+                  let address = pointer.baseAddress,
+                  let value = String(validatingCString: address) else { return nil }
+            return UUID(uuidString: value)
+        }
+    }
+
+    public func takeHatchRequest() -> Bool {
+        tokeni_windows_dashboard_take_hatch_request() != 0
+    }
+
+    public func updateCompanions(_ state: CompanionGameState?, feedback: String?) {
+        self.stateLock.lock()
+        defer { self.stateLock.unlock() }
+        guard self.started else { return }
+        tokeni_windows_dashboard_begin_pets()
+        var entries: [(UUID, String)] = []
+        if let state {
+            if state.stage != .egg, let species = state.speciesID {
+                entries.append((state.generationID, "\(state.nickname ?? species.rawValue) · Level \(state.level)"))
+            }
+            entries += state.collection.archivedGenerations.map {
+                ($0.generationID, "\($0.nickname ?? $0.speciesID.rawValue) · Level \(CompanionLevelCurve.standard.level(forXP: $0.growthXP))")
+            }
+        }
+        for (id, label) in entries.prefix(128) {
+            _ = id.uuidString.withCString { identifier in
+                String(label.prefix(100)).withCString { name in
+                    tokeni_windows_dashboard_append_pet(identifier, name,
+                        state?.resolvedGrowthTargetGenerationID == id ? 1 : 0)
+                }
+            }
+        }
+        let summary: String
+        if let state {
+            let target = state.growthTargetPet
+            let progress = target.map { Int(($0.levelProgress * 100).rounded()) } ?? 0
+            summary = "\(entries.count) companions · \(state.eggs.count) unopened eggs\r\n\r\n"
+                + (target.map { "Growing: \($0.nickname ?? $0.speciesID.rawValue) · Level \($0.level) · \(progress)% to next level" }
+                    ?? "Open an egg to meet your first companion.")
+                + "\r\n\r\nGrowth comes from verified cumulative usage. Hiding the desktop companion does not stop growth."
+        } else {
+            summary = "Companion state could not be loaded. Restart Tokeni Bar to retry."
+        }
+        summary.withCString { text in
+            (feedback ?? "").withCString { message in
+                tokeni_windows_dashboard_commit_pets(text, Int32(state?.eggs.count ?? 0), message)
+            }
+        }
     }
 
     public func updateDashboard(_ presentation: WindowsDashboardPresentation) {

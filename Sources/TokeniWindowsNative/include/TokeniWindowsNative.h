@@ -18,6 +18,11 @@ void tokeni_windows_dashboard_begin_usage(void);
 int tokeni_windows_dashboard_append_usage(const char *name, const char *status,
     const char *remaining, const char *reset, const char *tokens, const char *cost);
 void tokeni_windows_dashboard_commit_usage(const char *summary, const char *status, int refreshing);
+void tokeni_windows_dashboard_begin_pets(void);
+int tokeni_windows_dashboard_append_pet(const char *id, const char *label, int selected);
+void tokeni_windows_dashboard_commit_pets(const char *summary, int eggs, const char *feedback);
+int tokeni_windows_dashboard_take_pet_request(char *id, int capacity);
+int tokeni_windows_dashboard_take_hatch_request(void);
 
 // Provider options are staged and become visible atomically on commit. A
 // failed append leaves the currently committed dashboard state unchanged.
@@ -56,6 +61,8 @@ int tokeni_windows_tray_notify(
     const char *body_utf8);
 
 int tokeni_windows_tray_run(void);
+// Synchronously create dependent native windows on the message-loop thread.
+int tokeni_windows_ui_invoke(void (*operation)(void *), void *context);
 
 void tokeni_windows_tray_stop(void);
 

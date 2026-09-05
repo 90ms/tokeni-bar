@@ -76,6 +76,30 @@ public actor WindowsCompanionGrowthCoordinator {
         self.state
     }
 
+    public func selectGrowthTarget(_ id: UUID) async throws {
+        guard var updated = self.state else { throw WindowsCompanionGrowthError.stateNotLoaded }
+        try self.gameEngine.selectGrowthTarget(id, in: &updated)
+        try await self.persistUserChange(updated)
+    }
+
+    public func openNextEgg() async throws {
+        guard var updated = self.state else { throw WindowsCompanionGrowthError.stateNotLoaded }
+        guard let egg = updated.eggs.first else { throw CompanionEggError.eggNotFound }
+        try self.gameEngine.openEgg(egg.id, in: &updated)
+        try await self.persistUserChange(updated)
+    }
+
+    private func persistUserChange(_ updated: CompanionGameState) async throws {
+        self.saveRevision &+= 1
+        do {
+            try await self.saveState(updated, self.saveRevision)
+            self.state = updated
+        } catch {
+            self.saveRevision &-= 1
+            throw error
+        }
+    }
+
     /// Processes each completed provider refresh once. Overlay visibility is
     /// intentionally not an input: hiding the window must not drop usage.
     @discardableResult
