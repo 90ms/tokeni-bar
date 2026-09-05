@@ -199,7 +199,7 @@ public actor WindowsCompanionGrowthCoordinator {
             if id == state.generationID {
                 self.gameEngine.rename(clean, in: &state)
             } else if let index = state.collection.archivedGenerations.firstIndex(where: { $0.generationID == id }) {
-                state.collection.archivedGenerations[index].nickname = clean.isEmpty ? nil : clean
+                state.collection.recentCompletedGenerations[index].nickname = clean.isEmpty ? nil : clean
                 state.updatedAt = .now
             } else { throw CompanionGameError.archivedGenerationNotFound }
             try await self.persistUserChange(state)
