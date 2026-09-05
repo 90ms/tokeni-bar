@@ -6,11 +6,13 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <wchar.h>
+#include <string.h>
 #include <commctrl.h>
 #pragma comment(lib, "comctl32.lib")
 
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "user32.lib")
+#pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #ifndef TOKENI_DESKTOP_NAMESPACE
 #define TOKENI_DESKTOP_NAMESPACE L"TokeniBar"
@@ -141,6 +143,48 @@ static void tokeni_dashboard_sync_services(void)
     ReleaseSRWLockShared(&tokeni_state_lock);
 }
 static int tokeni_copy_utf8(const char *source, WCHAR *destination, int count);
+
+static void tokeni_dashboard_save_frame(HWND window)
+{
+#ifndef TOKENI_DESKTOP_TEST
+    if (IsIconic(window) || IsZoomed(window)) { return; }
+    RECT frame;
+    if (!GetWindowRect(window, &frame)) { return; }
+    HKEY key;
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\TokeniBar\\Desktop", 0,
+            NULL, 0, KEY_SET_VALUE, NULL, &key, NULL) == ERROR_SUCCESS) {
+        RegSetValueExW(key, L"Frame", 0, REG_BINARY, (const BYTE *)&frame, sizeof(frame));
+        RegCloseKey(key);
+    }
+#else
+    (void)window;
+#endif
+}
+
+static void tokeni_dashboard_restore_frame(HWND window)
+{
+#ifndef TOKENI_DESKTOP_TEST
+    RECT frame;
+    DWORD size = sizeof(frame);
+    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\TokeniBar\\Desktop", L"Frame",
+            RRF_RT_REG_BINARY, NULL, &frame, &size) != ERROR_SUCCESS || size != sizeof(frame)) { return; }
+    if (frame.right <= frame.left || frame.bottom <= frame.top) { return; }
+    MONITORINFO monitor = {sizeof(monitor)};
+    if (!GetMonitorInfoW(MonitorFromRect(&frame, MONITOR_DEFAULTTONEAREST), &monitor)) { return; }
+    // Clamp all persisted values before doing arithmetic or moving a window.
+    int work_width = monitor.rcWork.right - monitor.rcWork.left;
+    int work_height = monitor.rcWork.bottom - monitor.rcWork.top;
+    LONG64 saved_width = (LONG64)frame.right - frame.left;
+    LONG64 saved_height = (LONG64)frame.bottom - frame.top;
+    int width = (int)min(max(saved_width, 720), work_width);
+    int height = (int)min(max(saved_height, 520), work_height);
+    int x = max(monitor.rcWork.left, min(frame.left, monitor.rcWork.right - width));
+    int y = max(monitor.rcWork.top, min(frame.top, monitor.rcWork.bottom - height));
+    SetWindowPos(window, NULL, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
+#else
+    (void)window;
+#endif
+}
 
 static void tokeni_dashboard_sync_usage(void)
 {
@@ -682,14 +726,22 @@ static void tokeni_dashboard_layout(HWND window)
     MoveWindow(tokeni_usage_list, content_left, list_top, content_width,
         max(button_top - gap - list_top, 0), TRUE);
     ShowWindow(tokeni_usage_list, tokeni_destination < 2 ? SW_SHOW : SW_HIDE);
-    ShowWindow(tokeni_dashboard_details, tokeni_destination == 1 ? SW_HIDE : SW_SHOW);
+    ShowWindow(tokeni_dashboard_details, SW_SHOW);
     if (tokeni_destination == 0) {
         MoveWindow(tokeni_dashboard_details, content_left, details_top, content_width,
             tokeni_scale_for_dpi(135, dpi), TRUE);
     }
-    const int widths[] = {150, 130, 135, 180, 110, 100};
+    if (tokeni_destination == 1) {
+        int available = max(button_top - gap - details_top, 0);
+        int table_height = available * 3 / 5;
+        MoveWindow(tokeni_usage_list, content_left, details_top, content_width, table_height, TRUE);
+        MoveWindow(tokeni_dashboard_details, content_left, details_top + table_height + gap,
+            content_width, max(available - table_height - gap, 0), TRUE);
+    }
+    const int widths[] = {150, 130, 110, 150, 100, 100};
     for (int column = 0; column < 6; column++) {
-        ListView_SetColumnWidth(tokeni_usage_list, column, tokeni_scale_for_dpi(widths[column], dpi));
+        ListView_SetColumnWidth(tokeni_usage_list, column,
+            max(tokeni_scale_for_dpi(75, dpi), (content_width - tokeni_scale_for_dpi(20, dpi)) * widths[column] / 740));
     }
     for (int index = 0; index < 4; index++) {
         int visible = tokeni_destination == 3 || (tokeni_destination == 2 && index == 2);
@@ -896,6 +948,22 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
         return 0;
     }
 
+    if (message == WM_EXITSIZEMOVE) {
+        tokeni_dashboard_save_frame(window);
+        return 0;
+    }
+    if (message == WM_CTLCOLORSTATIC) {
+        HDC context = (HDC)w_param;
+        SetTextColor(context, GetSysColor(COLOR_WINDOWTEXT));
+        SetBkColor(context, GetSysColor(COLOR_WINDOW));
+        return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+    }
+    if (message == WM_NOTIFY && ((NMHDR *)l_param)->hwndFrom == tokeni_usage_list
+        && ((NMHDR *)l_param)->code == LVN_ITEMACTIVATE && tokeni_destination == 0) {
+        SendMessageW(window, WM_COMMAND, 401, 0);
+        return 0;
+    }
+
     if (message == WM_DPICHANGED) {
         RECT *suggested = (RECT *)l_param;
         SetWindowPos(
@@ -953,7 +1021,8 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
             SetWindowTextW(tokeni_dashboard_status, L"Refreshing provider usage…");
             return 0;
         }
-        if (identifier == tokeni_hide_button_identifier) {
+        if (identifier == tokeni_hide_button_identifier || identifier == IDCANCEL) {
+            tokeni_dashboard_save_frame(window);
             ShowWindow(window, SW_HIDE);
             return 0;
         }
@@ -997,6 +1066,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
     }
 
     if (message == WM_CLOSE) {
+        tokeni_dashboard_save_frame(window);
         ShowWindow(window, SW_HIDE);
         return 0;
     }
@@ -1242,6 +1312,7 @@ static void tokeni_show_details(void)
         tokeni_dashboard_set_initial_frame(
             tokeni_dashboard_window,
             &monitor);
+        tokeni_dashboard_restore_frame(tokeni_dashboard_window);
     }
 
     tokeni_dashboard_apply_details();

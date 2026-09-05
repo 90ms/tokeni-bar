@@ -1,6 +1,7 @@
 // This harness exercises real Win32 controls on the app's UI thread. It uses
 // an isolated namespace and never reads provider data or user preferences.
 #define TOKENI_DESKTOP_NAMESPACE L"TokeniBarDashboardTests"
+#define TOKENI_DESKTOP_TEST 1
 #include "../../Sources/TokeniWindowsNative/WindowsTrayNative.c"
 #include <assert.h>
 #include <stdio.h>

@@ -75,7 +75,11 @@ targets.append(
             "TokeniApplication",
             "TokeniWindowsNative",
         ],
-        swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]))
+        swiftSettings: [.enableUpcomingFeature("StrictConcurrency")],
+        linkerSettings: [.unsafeFlags([
+            "-Xlinker", "/SUBSYSTEM:WINDOWS",
+            "-Xlinker", "/ENTRY:mainCRTStartup",
+        ])]))
 targets.append(
     .testTarget(
         name: "TokeniWindowsTests",

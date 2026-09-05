@@ -6,7 +6,7 @@ import TokeniWindows
 struct WindowsCompanionGrowthCoordinatorTests {
     @Test
     func failedHatchSavePreservesEggAndSuccessfulRetryPersistsIt() async throws {
-        let harness = GrowthHarness(award: GrowthEnergyAward(dateKey: "2026-09-05", energy: 0), failNextSave: true)
+        let harness = GrowthHarness(award: GrowthEnergyAward(dateKey: "2026-09-05", energy: 0, createdAt: .now), failNextSave: true)
         let coordinator = Self.coordinator(harness: harness)
         let initial = try await coordinator.load()
         await #expect(throws: GrowthHarness.Failure.save) {

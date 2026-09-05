@@ -49,7 +49,8 @@ public final class WindowsTrayShell: @unchecked Sendable {
         self.stateLock.lock()
         defer { self.stateLock.unlock() }
         guard self.started else { return false }
-        return details.withCString { value in
+        return details.replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\n", with: "\r\n").withCString { value in
             tokeni_windows_tray_update_details(value) != 0
         }
     }
@@ -134,7 +135,7 @@ public final class WindowsTrayShell: @unchecked Sendable {
                 }
             }
         }
-        presentation.summary.withCString { summary in
+        presentation.summary.replacingOccurrences(of: "\n", with: "\r\n").withCString { summary in
             presentation.status.withCString { status in
                 tokeni_windows_dashboard_commit_usage(summary, status, presentation.refreshing ? 1 : 0)
             }

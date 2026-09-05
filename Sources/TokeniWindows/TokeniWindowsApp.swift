@@ -148,6 +148,11 @@ struct TokeniWindowsApp {
              initialCompanionVisible] in
             var companionVisible = initialCompanionVisible
             var serviceMessage: String?
+            var lastDashboard: WindowsDashboardPresentation?
+            var lastDetails: String?
+            var lastCompanion: CompanionGameState?
+            var lastFeedback: String?
+            var didPublishCompanion = false
             while !Task.isCancelled {
                 if let target = tray.takeGrowthTargetRequest() {
                     do {
@@ -221,7 +226,11 @@ struct TokeniWindowsApp {
                 let providerSnapshot = WindowsProviderSelectionFormatter
                     .snapshot(for: presentation)
                 tray.updateTooltip(Self.tooltip(for: presentation))
-                tray.updateDashboard(WindowsDashboardPresentation(presentation))
+                let dashboard = WindowsDashboardPresentation(presentation)
+                if dashboard != lastDashboard {
+                    tray.updateDashboard(dashboard)
+                    lastDashboard = dashboard
+                }
                 var details = WindowsProviderSelectionFormatter.dashboardMessage(
                     for: presentation,
                     snapshot: providerSnapshot)
@@ -229,8 +238,17 @@ struct TokeniWindowsApp {
                 if let serviceMessage {
                     details += "\n\n\(serviceMessage)"
                 }
-                tray.updateDetails(details)
-                tray.updateCompanions(await companionGrowth.currentState(), feedback: serviceMessage)
+                if details != lastDetails {
+                    tray.updateDetails(details)
+                    lastDetails = details
+                }
+                let currentCompanion = await companionGrowth.currentState()
+                if !didPublishCompanion || currentCompanion != lastCompanion || serviceMessage != lastFeedback {
+                    tray.updateCompanions(currentCompanion, feedback: serviceMessage)
+                    lastCompanion = currentCompanion
+                    lastFeedback = serviceMessage
+                    didPublishCompanion = true
+                }
                 try? await Task.sleep(for: .milliseconds(500))
             }
         }
