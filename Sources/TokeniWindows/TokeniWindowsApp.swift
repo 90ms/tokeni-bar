@@ -15,6 +15,10 @@ struct TokeniWindowsApp {
             return
         }
 
+        // Claim the desktop instance before loading state or starting providers.
+        let tray = WindowsTrayShell()
+        guard tray.start() else { return }
+
         let executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
         let directories = DefaultApplicationDirectoriesProvider().directories
         let settings = JSONFileSettingsStore(
@@ -30,10 +34,6 @@ struct TokeniWindowsApp {
 
         _ = try? await session.bootstrap()
 
-        let tray = WindowsTrayShell()
-        guard tray.start() else {
-            return
-        }
         await session.start()
 
         let services = WindowsTrayServiceCoordinator(

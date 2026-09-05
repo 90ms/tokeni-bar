@@ -5,6 +5,7 @@
 
 #include <windows.h>
 #include <shellapi.h>
+#include <wchar.h>
 
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "user32.lib")
@@ -14,6 +15,17 @@ static const wchar_t tokeni_dashboard_class_name[] = L"TokeniBarDashboardWindow"
 static const UINT tokeni_tray_callback_message = WM_APP + 37;
 static const UINT tokeni_details_updated_message = WM_APP + 38;
 static const UINT tokeni_provider_options_updated_message = WM_APP + 39;
+static const UINT tokeni_open_window_message = WM_APP + 40;
+static HANDLE tokeni_instance_mutex;
+static HWND tokeni_navigation[4];
+static int tokeni_destination;
+static const WCHAR *tokeni_page_titles[] = { L"Home", L"Usage", L"Companions", L"Settings" };
+static const WCHAR *tokeni_page_subtitles[] = {
+    L"Your usage and companion at a glance",
+    L"Verified usage from your connected providers",
+    L"Grow together with your everyday work",
+    L"Make Tokeni Bar work your way"
+};
 static const UINT tokeni_tray_identifier = 1;
 static UINT tokeni_taskbar_created_message;
 static const int tokeni_refresh_button_identifier = 101;
@@ -215,8 +227,8 @@ static void tokeni_dashboard_set_initial_frame(
     RECT frame = {
         0,
         0,
-        tokeni_scale_for_dpi(600, dpi),
-        tokeni_scale_for_dpi(460, dpi),
+        tokeni_scale_for_dpi(960, dpi),
+        tokeni_scale_for_dpi(640, dpi),
     };
 
     adjust_window_rect_for_dpi_fn adjust_for_dpi = NULL;
@@ -447,6 +459,9 @@ static void tokeni_dashboard_set_fonts(HWND window)
     }
     tokeni_dashboard_font = font;
     tokeni_dashboard_header_font = header_font;
+    for (int index = 0; index < 4; index++) {
+        SendMessageW(tokeni_navigation[index], WM_SETFONT, (WPARAM)font, TRUE);
+    }
 }
 
 static void tokeni_dashboard_layout(HWND window)
@@ -463,7 +478,14 @@ static void tokeni_dashboard_layout(HWND window)
     int provider_row_height = tokeni_scale_for_dpi(27, dpi);
     int button_width = tokeni_scale_for_dpi(112, dpi);
     int button_height = tokeni_scale_for_dpi(34, dpi);
-    int content_width = max(client.right - (margin * 2), 0);
+    int content_left = tokeni_scale_for_dpi(190, dpi);
+    int content_width = max(client.right - content_left - margin, 0);
+    for (int index = 0; index < 4; index++) {
+        MoveWindow(tokeni_navigation[index], margin, margin + index * tokeni_scale_for_dpi(48, dpi),
+            tokeni_scale_for_dpi(150, dpi), tokeni_scale_for_dpi(40, dpi), TRUE);
+        SendMessageW(tokeni_navigation[index], BM_SETCHECK,
+            tokeni_destination == index ? BST_CHECKED : BST_UNCHECKED, 0);
+    }
     int provider_columns = content_width >= tokeni_scale_for_dpi(360, dpi)
         ? 2
         : 1;
@@ -472,7 +494,7 @@ static void tokeni_dashboard_layout(HWND window)
         : (tokeni_dashboard_provider_count + provider_columns - 1)
             / provider_columns;
     int provider_top = margin + header_height + status_height + gap;
-    int provider_height = tokeni_dashboard_provider_count == 0
+    int provider_height = tokeni_destination != 3 || tokeni_dashboard_provider_count == 0
         ? 0
         : provider_label_height + (provider_rows * provider_row_height) + gap;
     int details_top = provider_top + provider_height;
@@ -483,21 +505,21 @@ static void tokeni_dashboard_layout(HWND window)
 
     MoveWindow(
         tokeni_dashboard_header,
-        margin,
+        content_left,
         margin,
         content_width,
         header_height,
         TRUE);
     MoveWindow(
         tokeni_dashboard_status,
-        margin,
+        content_left,
         margin + header_height,
         content_width,
         status_height,
         TRUE);
     MoveWindow(
         tokeni_dashboard_provider_label,
-        margin,
+        content_left,
         provider_top,
         content_width,
         provider_label_height,
@@ -515,15 +537,18 @@ static void tokeni_dashboard_layout(HWND window)
         int row = index / provider_columns;
         MoveWindow(
             tokeni_dashboard_provider_buttons[index],
-            margin + (column * (provider_column_width + gap)),
+            content_left + (column * (provider_column_width + gap)),
             provider_content_top + (row * provider_row_height),
             provider_column_width,
             provider_row_height,
             TRUE);
+        ShowWindow(tokeni_dashboard_provider_buttons[index], tokeni_destination == 3 ? SW_SHOW : SW_HIDE);
     }
+    ShowWindow(tokeni_dashboard_provider_label,
+        tokeni_destination == 3 && tokeni_dashboard_provider_count > 0 ? SW_SHOW : SW_HIDE);
     MoveWindow(
         tokeni_dashboard_details,
-        margin,
+        content_left,
         details_top,
         content_width,
         details_height,
@@ -567,10 +592,16 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
     LPARAM l_param)
 {
     if (message == WM_CREATE) {
+        for (int index = 0; index < 4; index++) {
+            tokeni_navigation[index] = CreateWindowExW(0, L"BUTTON", tokeni_page_titles[index],
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_RADIOBUTTON | BS_PUSHLIKE,
+                0, 0, 0, 0, window, (HMENU)(INT_PTR)(400 + index), tokeni_instance, NULL);
+            if (tokeni_navigation[index] == NULL) { return -1; }
+        }
         tokeni_dashboard_header = CreateWindowExW(
             0,
             L"STATIC",
-            L"Tokeni Bar",
+            tokeni_page_titles[tokeni_destination],
             WS_CHILD | WS_VISIBLE | SS_LEFT,
             0,
             0,
@@ -583,7 +614,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
         tokeni_dashboard_status = CreateWindowExW(
             0,
             L"STATIC",
-            L"Provider usage",
+            tokeni_page_subtitles[tokeni_destination],
             WS_CHILD | WS_VISIBLE | SS_LEFT,
             0,
             0,
@@ -636,7 +667,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
         tokeni_dashboard_hide_button = CreateWindowExW(
             0,
             L"BUTTON",
-            L"Hide",
+            L"Hide to tray",
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
             0,
             0,
@@ -686,13 +717,21 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
     if (message == WM_GETMINMAXINFO) {
         MINMAXINFO *minimums = (MINMAXINFO *)l_param;
         UINT dpi = tokeni_dashboard_dpi(window);
-        minimums->ptMinTrackSize.x = tokeni_scale_for_dpi(420, dpi);
-        minimums->ptMinTrackSize.y = tokeni_scale_for_dpi(440, dpi);
+        minimums->ptMinTrackSize.x = tokeni_scale_for_dpi(720, dpi);
+        minimums->ptMinTrackSize.y = tokeni_scale_for_dpi(520, dpi);
         return 0;
     }
 
     if (message == WM_COMMAND) {
         int identifier = LOWORD(w_param);
+        if (identifier >= 400 && identifier < 404) {
+            tokeni_destination = identifier - 400;
+            SetWindowTextW(tokeni_dashboard_header, tokeni_page_titles[tokeni_destination]);
+            SetWindowTextW(tokeni_dashboard_status, tokeni_page_subtitles[tokeni_destination]);
+            tokeni_dashboard_layout(window);
+            tokeni_dashboard_apply_details();
+            return 0;
+        }
         if (identifier == tokeni_refresh_button_identifier) {
             InterlockedExchange(&tokeni_refresh_requested, 1);
             SetWindowTextW(tokeni_dashboard_status, L"Refreshing provider usage…");
@@ -730,7 +769,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
 
     if (message == tokeni_details_updated_message) {
         tokeni_dashboard_apply_details();
-        SetWindowTextW(tokeni_dashboard_status, L"Provider usage");
+        SetWindowTextW(tokeni_dashboard_status, tokeni_page_subtitles[tokeni_destination]);
         return 0;
     }
 
@@ -907,7 +946,7 @@ static void tokeni_show_details(void)
     ShowWindow(tokeni_dashboard_window, SW_RESTORE);
     SetForegroundWindow(tokeni_dashboard_window);
     BringWindowToTop(tokeni_dashboard_window);
-    SetFocus(tokeni_dashboard_details);
+    SetFocus(tokeni_navigation[tokeni_destination]);
 }
 
 static LRESULT CALLBACK tokeni_window_proc(
@@ -917,6 +956,10 @@ static LRESULT CALLBACK tokeni_window_proc(
     LPARAM l_param)
 {
     (void)w_param;
+    if (message == tokeni_open_window_message) {
+        tokeni_show_details();
+        return 0;
+    }
 
     if (tokeni_taskbar_created_message != 0
         && message == tokeni_taskbar_created_message)
@@ -1045,6 +1088,26 @@ int tokeni_windows_tray_start(
     (void)application_name_utf8;
     if (tokeni_window != NULL) {
         return 1;
+    }
+
+    tokeni_instance_mutex = CreateMutexW(NULL, FALSE, L"Local\\TokeniBarDesktopInstance");
+    if (tokeni_instance_mutex == NULL) { return 0; }
+    if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        // The first process may still be registering its tray window.
+        for (int attempt = 0; attempt < 40; attempt++) {
+            HWND existing = FindWindowW(tokeni_window_class_name, tokeni_window_class_name);
+            if (existing != NULL) {
+                DWORD process_id;
+                GetWindowThreadProcessId(existing, &process_id);
+                AllowSetForegroundWindow(process_id);
+                PostMessageW(existing, tokeni_open_window_message, 0, 0);
+                break;
+            }
+            Sleep(50);
+        }
+        CloseHandle(tokeni_instance_mutex);
+        tokeni_instance_mutex = NULL;
+        return 0;
     }
 
     tokeni_enable_per_monitor_dpi_awareness();
@@ -1388,6 +1451,14 @@ int tokeni_windows_tray_notify(
 
 int tokeni_windows_tray_run(void)
 {
+    int argument_count = 0;
+    WCHAR **arguments = CommandLineToArgvW(GetCommandLineW(), &argument_count);
+    int background = 0;
+    for (int index = 1; arguments != NULL && index < argument_count; index++) {
+        if (wcscmp(arguments[index], L"--background") == 0) { background = 1; }
+    }
+    if (arguments != NULL) { LocalFree(arguments); }
+    if (!background) { tokeni_show_details(); }
     MSG message;
     while (GetMessageW(&message, NULL, 0, 0) > 0) {
         if (tokeni_dashboard_window == NULL
@@ -1400,6 +1471,10 @@ int tokeni_windows_tray_run(void)
     }
 
     tokeni_destroy_window();
+    if (tokeni_instance_mutex != NULL) {
+        CloseHandle(tokeni_instance_mutex);
+        tokeni_instance_mutex = NULL;
+    }
     return 0;
 }
 
