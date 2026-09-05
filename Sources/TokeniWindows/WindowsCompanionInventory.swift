@@ -59,6 +59,10 @@ public enum WindowsCompanionInventory {
 
     public static func errorMessage(_ error: any Error) -> String {
         if error as? CompanionRewardError == .insufficientStarShards { return WindowsLocalization.text("Not enough star shards.", "별 조각이 부족합니다.") }
+        if error as? CompanionRewardError == .alreadyClaimed { return WindowsLocalization.text("Today's attendance reward has already been claimed.", "오늘 출석 보상은 이미 받았습니다.") }
+        if error as? CompanionRewardError == .cosmeticAlreadyOwned { return WindowsLocalization.text("Already owned. Use Equip to select this cosmetic.", "이미 보유한 꾸미기입니다. 장착 버튼으로 선택하세요.") }
+        if error as? CompanionRewardError == .cosmeticNotOwned { return WindowsLocalization.text("Purchase this cosmetic before equipping it.", "구매한 뒤 장착할 수 있습니다.") }
+        if error as? CompanionEggError == .activePetCannotBeSold || error as? CompanionEggError == .lastPetCannotBeSold { return WindowsLocalization.text("The active or last remaining companion cannot be sold.", "활동 중이거나 마지막 남은 펫은 판매할 수 없습니다.") }
         if error as? CompanionEggError == .eggLocked { return WindowsLocalization.text("This egg is locked. Reach its level or collection requirement first.", "아직 잠긴 알입니다. 레벨 또는 수집 조건을 먼저 충족해 주세요.") }
         return WindowsLocalization.text("The action could not be completed. Check ownership, balance and eligibility. Restart if saving failed.", "작업을 완료하지 못했습니다. 보유 상태·잔액·조건을 확인하세요. 저장에 실패했다면 앱을 다시 실행해 주세요.")
     }

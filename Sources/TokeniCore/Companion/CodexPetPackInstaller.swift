@@ -210,9 +210,9 @@ public struct CodexPetPackInstaller: Sendable {
             throw CodexPetPackInstallationError.unsafeExtractedContents(issue)
         }
         let manifestURL = stagingURL.appending(path: archive.manifestPath)
-        guard let manifestData = try? Data(
-            contentsOf: manifestURL,
-            options: [.mappedIfSafe]),
+        // This small, bounded manifest lives inside the directory we publish.
+        // Copy it so no mapped-file lifetime can keep that directory open.
+        guard let manifestData = try? Data(contentsOf: manifestURL),
             manifestData.count <= CodexPetPackValidator.maximumManifestBytes
         else { throw CodexPetPackInstallationError.manifestUnavailable }
         let decodedManifest = try? JSONDecoder().decode(
@@ -372,7 +372,7 @@ public struct CodexPetPackInstaller: Sendable {
         from sourceURL: URL,
         to destinationURL: URL) throws
     {
-        for attempt in 0..<4 {
+        for attempt in 0..<8 {
             let moved = sourceURL.path.withCString(encodedAs: UTF16.self) {
                 sourcePath in
                 destinationURL.path.withCString(encodedAs: UTF16.self) {
@@ -389,10 +389,12 @@ public struct CodexPetPackInstaller: Sendable {
             let canRetry = code == ERROR_SHARING_VIOLATION
                 || code == ERROR_LOCK_VIOLATION
                 || code == ERROR_ACCESS_DENIED
-            guard canRetry, attempt < 3 else {
+            guard canRetry, attempt < 7 else {
                 throw CodexPetPackWindowsMoveError.failed(code: Int64(code))
             }
-            Sleep(DWORD(25 * (attempt + 1)))
+            // Indexing/antivirus can retain a new file longer than 150 ms.
+            // Only transient sharing/access errors are retried, for at most 1.4 s.
+            Sleep(DWORD(50 * (attempt + 1)))
         }
     }
     #endif

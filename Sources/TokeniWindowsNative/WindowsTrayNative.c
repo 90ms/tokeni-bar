@@ -675,7 +675,7 @@ static void tokeni_dashboard_layout(HWND window)
     int status_height = tokeni_scale_for_dpi(22, dpi);
     int provider_label_height = tokeni_scale_for_dpi(22, dpi);
     int provider_row_height = tokeni_scale_for_dpi(27, dpi);
-    int button_width = tokeni_scale_for_dpi(112, dpi);
+    int button_width = tokeni_scale_for_dpi(150, dpi);
     int button_height = tokeni_scale_for_dpi(34, dpi);
     int content_left = tokeni_scale_for_dpi(190, dpi);
     int content_width = max(client.right - content_left - margin, 0);
