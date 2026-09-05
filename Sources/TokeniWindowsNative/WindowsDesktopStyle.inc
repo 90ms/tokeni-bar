@@ -15,6 +15,7 @@ typedef struct { const WCHAR *en; const WCHAR *ko; } tokeni_translation;
 static const tokeni_translation tokeni_translations[] = {
     {L"Eggs", L"알 보관함"}, {L"Sell selected item",L"선택한 알 판매"}, {L"Sell the selected egg?",L"선택한 알을 판매할까요?"},
     {L"Check automatically",L"업데이트 자동 확인"},
+    {L"Sell companion",L"선택한 펫 판매"}, {L"Sell this companion? Active and last companions cannot be sold.",L"이 펫을 판매할까요? 활동 중이거나 마지막 남은 펫은 판매할 수 없습니다."},
     {L"Home", L"홈"}, {L"Usage", L"사용량"}, {L"Companions", L"펫"}, {L"Settings", L"설정"},
     {L"Your usage and companion at a glance", L"사용량과 펫의 성장을 한눈에 확인하세요"},
     {L"Verified usage from your connected providers", L"연결된 제공자의 확인된 사용량"},

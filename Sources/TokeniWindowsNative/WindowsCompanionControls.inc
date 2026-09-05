@@ -1,7 +1,7 @@
 typedef struct { char id[128]; WCHAR label[256]; int group; } tokeni_inventory_option;
 static tokeni_inventory_option tokeni_inventory[512], tokeni_inventory_staged[512];
 static int tokeni_inventory_count, tokeni_inventory_staged_count;
-static HWND tokeni_pet_extra[12]; // mode, name, rename, primary, inventory, open/buy, sell/equip, checkin, preview, move, motion, size
+static HWND tokeni_pet_extra[13]; // mode, name, rename, primary, inventory, open/buy, sell/equip, checkin, preview, move, motion, size, sell pet
 static int tokeni_pet_mode;
 static char tokeni_displayed_inventory_ids[512][128];
 static int tokeni_action_code;
@@ -60,8 +60,8 @@ static void tokeni_inventory_sync(void)
 }
 static void tokeni_pet_extra_create(HWND window)
 {
-    const WCHAR *labels[]={L"Collection",L"",L"Save nickname",L"Set as desktop pet",L"",L"Open an egg",L"Sell selected item",L"Daily check-in",L"Desktop companion",L"Move desktop pet",L"Reduce motion",L""};
-    for(int i=0;i<12;i++) {
+    const WCHAR *labels[]={L"Collection",L"",L"Save nickname",L"Set as desktop pet",L"",L"Open an egg",L"Sell selected item",L"Daily check-in",L"Desktop companion",L"Move desktop pet",L"Reduce motion",L"",L"Sell companion"};
+    for(int i=0;i<13;i++) {
         const WCHAR *cls=i==0||i==4||i==11?L"COMBOBOX":i==1?L"EDIT":i==8?L"STATIC":L"BUTTON";
         DWORD style=WS_CHILD|WS_TABSTOP;
         if(i==0||i==4||i==11)style|=CBS_DROPDOWNLIST;
@@ -79,7 +79,7 @@ static void tokeni_pet_extra_create(HWND window)
 }
 static void tokeni_pet_extra_layout(int left,int top,int width,int bottom,int gap,UINT dpi)
 {
-    for(int i=0;i<12;i++)ShowWindow(tokeni_pet_extra[i],tokeni_destination==2?SW_SHOW:SW_HIDE);
+    for(int i=0;i<13;i++)ShowWindow(tokeni_pet_extra[i],tokeni_destination==2?SW_SHOW:SW_HIDE);
     if(tokeni_destination!=2)return;
     int row=MulDiv(40,dpi,96),preview=MulDiv(170,dpi,96),right=left+preview+gap,rest=max(0,width-preview-gap);
     MoveWindow(tokeni_pet_extra[8],left,top,preview,preview,TRUE);
@@ -101,7 +101,9 @@ static void tokeni_pet_extra_layout(int left,int top,int width,int bottom,int ga
     ShowWindow(tokeni_pet_extra[6],tokeni_pet_mode!=0?SW_SHOW:SW_HIDE);
     MoveWindow(tokeni_pet_extra[7],right,top+row*3,rest,row-6,TRUE);
     ShowWindow(tokeni_pet_extra[7],tokeni_pet_mode==2?SW_SHOW:SW_HIDE);
-    int prefs=top+preview+gap;
+    MoveWindow(tokeni_pet_extra[12],right,top+row*4,rest,row-6,TRUE);
+    ShowWindow(tokeni_pet_extra[12],tokeni_pet_mode==0?SW_SHOW:SW_HIDE);
+    int prefs=top+max(preview,row*5)+gap;
     MoveWindow(tokeni_service_buttons[2],left,prefs,width/2-gap,row-6,TRUE);
     MoveWindow(tokeni_pet_extra[11],left+width/2,prefs,width/2,200,TRUE);
     MoveWindow(tokeni_pet_extra[9],left,prefs+row,width/2-gap,row-6,TRUE);
@@ -113,12 +115,13 @@ static void tokeni_pet_extra_action(int id)
 {
     char identifier[128]="",text[256]="";
     int code=id;
-    if(id==552||id==553) {
+    if(id==552||id==553||id==562) {
         int selected=(int)SendMessageW(tokeni_pet_picker,CB_GETCURSEL,0,0);
         if(selected<0||selected>=tokeni_displayed_pet_count)return;
         lstrcpynA(identifier,tokeni_displayed_pets[selected].id,128);
         WCHAR name[64];GetWindowTextW(tokeni_pet_extra[1],name,64);
         WideCharToMultiByte(CP_UTF8,0,name,-1,text,256,NULL,NULL);
+        if(id==562&&MessageBoxW(tokeni_dashboard_window,tokeni_text(L"Sell this companion? Active and last companions cannot be sold."),L"Tokeni Bar",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2)!=IDYES)return;
     } else if(id==555||id==556) {
         int selected=(int)SendMessageW(tokeni_pet_extra[4],CB_GETCURSEL,0,0);
         if(selected<0)return;

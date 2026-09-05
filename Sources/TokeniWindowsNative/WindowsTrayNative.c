@@ -115,6 +115,27 @@ static int tokeni_displayed_pet_count;
 #include "WindowsCompanionControls.inc"
 #include "WindowsUpdates.inc"
 
+static void tokeni_localize_picker(HWND picker,const WCHAR **labels,int count)
+{
+    LRESULT selected=SendMessageW(picker,CB_GETCURSEL,0,0);
+    SendMessageW(picker,CB_RESETCONTENT,0,0);
+    for(int i=0;i<count;i++)SendMessageW(picker,CB_ADDSTRING,0,(LPARAM)tokeni_text(labels[i]));
+    SendMessageW(picker,CB_SETCURSEL,selected,0);
+}
+static void tokeni_localize_controls(void)
+{
+    const WCHAR *languages[]={L"System language",L"English",L"한국어"};
+    const WCHAR *themes[]={L"System theme",L"Light",L"Dark"};
+    const WCHAR *ranges[]={L"Last 24 hours",L"Last 7 days",L"Last 30 days"};
+    const WCHAR *modes[]={L"Collection",L"Eggs",L"Shop & rewards"};
+    const WCHAR *sizes[]={L"Small",L"Medium",L"Large"};
+    tokeni_localize_picker(tokeni_language_picker,languages,3);tokeni_localize_picker(tokeni_theme_picker,themes,3);
+    tokeni_localize_picker(tokeni_history_range,ranges,3);tokeni_localize_picker(tokeni_pet_extra[0],modes,3);tokeni_localize_picker(tokeni_pet_extra[11],sizes,3);
+    const WCHAR *columns[]={L"Collected at",L"Provider",L"Quota remaining (%)",L"Tokens",L"Cost (USD)"};
+    for(int i=0;i<5;i++) {LVCOLUMNW col={0};col.mask=LVCF_TEXT;col.pszText=(WCHAR *)tokeni_text(columns[i]);SendMessageW(tokeni_history_table,LVM_SETCOLUMNW,i,(LPARAM)&col);}
+    tokeni_history_sync();
+}
+
 static void tokeni_dashboard_sync_services(void)
 {
     int preferences=tokeni_windows_overlay_preferences();
@@ -626,6 +647,8 @@ static void tokeni_dashboard_set_fonts(HWND window)
     SendMessageW(tokeni_pet_picker, WM_SETFONT, (WPARAM)font, TRUE);
     SendMessageW(tokeni_pet_select, WM_SETFONT, (WPARAM)font, TRUE);
     SendMessageW(tokeni_pet_hatch, WM_SETFONT, (WPARAM)font, TRUE);
+    EnumChildWindows(window, tokeni_style_child, 0);
+    SendMessageW(tokeni_dashboard_header, WM_SETFONT, (WPARAM)header_font, TRUE);
 }
 
 static void tokeni_dashboard_layout(HWND window)
@@ -649,6 +672,7 @@ static void tokeni_dashboard_layout(HWND window)
             tokeni_scale_for_dpi(150, dpi), tokeni_scale_for_dpi(40, dpi), TRUE);
         SendMessageW(tokeni_navigation[index], BM_SETCHECK,
             tokeni_destination == index ? BST_CHECKED : BST_UNCHECKED, 0);
+        InvalidateRect(tokeni_navigation[index], NULL, TRUE);
     }
     int provider_columns = content_width >= tokeni_scale_for_dpi(360, dpi)
         ? 2
@@ -807,7 +831,7 @@ static void tokeni_dashboard_apply_details(void)
         AcquireSRWLockShared(&tokeni_state_lock);
         if (tokeni_destination == 2) { lstrcpynW(details, tokeni_pet_summary, 4096); }
         else {
-            lstrcpynW(details, L"Provider connections\r\n\r\nEnable the providers you use above. Sign in through each provider's own CLI or application, then refresh Tokeni Bar.\r\n\r\nClosing this window keeps Tokeni Bar in the tray. Use Quit Tokeni Bar to stop it.\r\n\r\n", 8192);
+            lstrcpynW(details, tokeni_text(L"Provider connections\r\n\r\nEnable the providers you use above. Sign in through each provider's own CLI or application, then refresh Tokeni Bar.\r\n\r\nClosing this window keeps Tokeni Bar in the tray. Use Quit Tokeni Bar to stop it.\r\n\r\n"), 8192);
         }
         if (tokeni_service_feedback[0]) {
             lstrcatW(details, L"\r\n\r\n");
@@ -1049,7 +1073,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
             tokeni_pet_mode=(int)SendMessageW(tokeni_pet_extra[0],CB_GETCURSEL,0,0);
             tokeni_inventory_sync();tokeni_dashboard_layout(window);tokeni_dashboard_apply_details();return 0;
         }
-        if(identifier==552||identifier==553||identifier==555||identifier==556||identifier==557) { tokeni_pet_extra_action(identifier);return 0; }
+        if(identifier==552||identifier==553||identifier==555||identifier==556||identifier==557||identifier==562) { tokeni_pet_extra_action(identifier);return 0; }
         if(identifier==559||identifier==560||(identifier==561&&HIWORD(w_param)==CBN_SELCHANGE)) {
             tokeni_windows_overlay_configure(SendMessageW(tokeni_pet_extra[9],BM_GETCHECK,0,0)==BST_CHECKED,
                 SendMessageW(tokeni_pet_extra[10],BM_GETCHECK,0,0)==BST_CHECKED,
@@ -1064,7 +1088,7 @@ static LRESULT CALLBACK tokeni_dashboard_window_proc(
             int selection = (int)SendMessageW((HWND)l_param, CB_GETCURSEL, 0, 0);
             if (selection >= 0 && selection <= 2) {
                 InterlockedExchange(identifier == 530 ? &tokeni_language : &tokeni_appearance, selection);
-                tokeni_save_preferences(); tokeni_apply_style(window); tokeni_dashboard_apply_details();
+                tokeni_save_preferences(); tokeni_apply_style(window); tokeni_localize_controls(); tokeni_dashboard_apply_details();
                 tokeni_dashboard_sync_services();
             }
             return 0;

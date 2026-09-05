@@ -255,6 +255,7 @@ struct TokeniWindowsApp {
                     for: presentation,
                     snapshot: providerSnapshot)
                     ?? WindowsUsageDetailFormatter.text(for: presentation)
+                details = WindowsLocalization.message(details)
                 if let serviceMessage {
                     details += "\n\n\(WindowsLocalization.message(serviceMessage))"
                 }

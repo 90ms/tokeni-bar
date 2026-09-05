@@ -12,6 +12,7 @@ public enum WindowsCompanionInventory {
         case 552: return UUID(uuidString: identifier).map { .rename($0, name) }
         case 553: return UUID(uuidString: identifier).map { .showcase($0) }
         case 557: return .checkIn
+        case 562: return UUID(uuidString: identifier).map { .sellPet($0) }
         case 570: return UUID(uuidString: identifier).map { .openEgg($0) }
         case 571: return UUID(uuidString: identifier).map { .sellEgg($0) }
         case 572:
@@ -28,21 +29,21 @@ public enum WindowsCompanionInventory {
             id.withCString { id in String(label.prefix(120)).withCString { label in tokeni_windows_inventory_append(group, id, label) } }
         }
         if let state {
-            for egg in state.eggs {
-                append(1, egg.id.uuidString, "\(egg.definitionID.rawValue) · \(egg.id.uuidString.prefix(8))")
+            for (index, egg) in state.eggs.enumerated() {
+                append(1, egg.id.uuidString, "\(WindowsCompanionNames.egg(egg.definitionID)) · #\(index + 1)")
             }
             for definition in CompanionEggRegistry.definitions {
                 guard let price = definition.price else { continue }
                 let unlocked = CompanionEggRegistry.isUnlocked(definition, highestPetLevel: state.highestPetLevel,
                     discoveredSpeciesCount: state.collection.discoveredSpeciesIDs.count)
-                append(2, "egg:\(definition.id.rawValue)", WindowsLocalization.text("Egg", "알") + " · \(definition.id.rawValue) · ★ \(price)"
+                append(2, "egg:\(definition.id.rawValue)", "\(WindowsCompanionNames.egg(definition.id)) · ★ \(price)"
                     + (unlocked ? "" : WindowsLocalization.text(" · Locked", " · 잠김")))
             }
         }
         for cosmetic in CompanionRewardEngine().cosmetics {
             let owned = rewards?.unlockedCosmeticIDs.contains(cosmetic.id) == true
             let equipped = rewards?.selectedCosmeticIDs.contains(cosmetic.id) == true
-            append(2, cosmetic.id.rawValue, "\(cosmetic.id.rawValue) · ★ \(cosmetic.cost)"
+            append(2, cosmetic.id.rawValue, "\(WindowsCompanionNames.cosmetic(cosmetic.id)) · ★ \(cosmetic.cost)"
                 + (equipped ? WindowsLocalization.text(" · Equipped", " · 장착 중") : owned ? WindowsLocalization.text(" · Owned", " · 보유") : ""))
         }
         let summary = rewards.map { WindowsLocalization.text("Star shards: \($0.starShards)\nCheck in daily to receive rewards. Select a cosmetic to buy or equip it; select it again to unequip.",

@@ -81,10 +81,10 @@ public final class WindowsTrayShell: @unchecked Sendable {
         var entries: [(UUID, String)] = []
         if let state {
             if state.stage != .egg, let species = state.speciesID {
-                entries.append((state.generationID, "\(state.nickname ?? species.rawValue) · Level \(state.level)"))
+                entries.append((state.generationID, "\(state.nickname ?? WindowsCompanionNames.species(species)) · \(WindowsLocalization.text("Level", "레벨")) \(state.level)"))
             }
             entries += state.collection.archivedGenerations.map {
-                ($0.generationID, "\($0.nickname ?? $0.speciesID.rawValue) · Level \(CompanionLevelCurve.standard.level(forXP: $0.growthXP))")
+                ($0.generationID, "\($0.nickname ?? WindowsCompanionNames.species($0.speciesID)) · \(WindowsLocalization.text("Level", "레벨")) \(CompanionLevelCurve.standard.level(forXP: $0.growthXP))")
             }
         }
         for (id, label) in entries.prefix(128) {

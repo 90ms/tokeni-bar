@@ -25,6 +25,8 @@ public enum WindowsLocalization {
             "No provider usage is available yet.": "아직 사용량 데이터가 없습니다.",
             "All providers are disabled. Enable a provider above to start tracking usage.": "설정에서 제공자를 켜면 사용량을 확인할 수 있습니다.",
             "No history in this period": "이 기간에는 기록이 없습니다",
+            "All providers are disabled. Select a provider above to view usage.": "설정에서 제공자를 켜면 사용량을 확인할 수 있습니다.",
+            "Provider selection is unavailable in this Windows build.": "이 Windows 버전에서는 제공자를 선택할 수 없습니다.",
         ][english] ?? english
     }
 }

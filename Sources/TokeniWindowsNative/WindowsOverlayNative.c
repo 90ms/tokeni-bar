@@ -319,10 +319,14 @@ static int tokeni_overlay_paint_asset(
     int frame = tokeni_overlay_reduced_motion ? 0 : (int)((GetTickCount() / 250U) % 4U);
     int destination_x = (width - dimension) / 2;
     int destination_y = (height - dimension) / 2;
+    HDC sprite = CreateCompatibleDC(device_context);
+    HBITMAP sprite_bitmap = CreateCompatibleBitmap(device_context, dimension, dimension);
+    HGDIOBJ previous_bitmap = SelectObject(sprite, sprite_bitmap);
+    SetStretchBltMode(sprite, COLORONCOLOR);
     int copied_scan_lines = StretchDIBits(
-        device_context,
-        destination_x,
-        destination_y,
+        sprite,
+        0,
+        0,
         dimension,
         dimension,
         frame * frame_width,
@@ -333,6 +337,11 @@ static int tokeni_overlay_paint_asset(
         &bitmap_info,
         DIB_RGB_COLORS,
         SRCCOPY);
+    if (copied_scan_lines != GDI_ERROR && copied_scan_lines > 0) {
+        TransparentBlt(device_context, destination_x, destination_y, dimension, dimension,
+            sprite, 0, 0, dimension, dimension, RGB(0,0,0));
+    }
+    SelectObject(sprite, previous_bitmap); DeleteObject(sprite_bitmap); DeleteDC(sprite);
     return copied_scan_lines != GDI_ERROR && copied_scan_lines > 0;
 }
 

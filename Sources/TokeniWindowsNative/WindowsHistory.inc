@@ -32,7 +32,7 @@ static double tokeni_history_cutoff(void)
     return (double)time(NULL) - (range == 0 ? 1 : range == 1 ? 7 : 30) * 86400.0;
 }
 static int tokeni_history_matches(tokeni_history_row *row, double cutoff, const WCHAR *provider, int all)
-{ return row->timestamp >= cutoff && (all || !wcscmp(provider, row->provider)); }
+{ return row->timestamp >= cutoff && row->timestamp <= (double)time(NULL) && (all || !wcscmp(provider, row->provider)); }
 static void tokeni_history_sync(void)
 {
     if (!tokeni_history_table) { return; }
