@@ -668,7 +668,7 @@ int tokeni_windows_overlay_start(int x, int y, int width, int height)
     return request.result;
 }
 
-int tokeni_windows_overlay_show(void)
+static int tokeni_overlay_show_impl(void)
 {
     if (tokeni_overlay_window == NULL) {
         return 0;
@@ -695,7 +695,7 @@ int tokeni_windows_overlay_show(void)
     return 1;
 }
 
-int tokeni_windows_overlay_hide(void)
+static int tokeni_overlay_hide_impl(void)
 {
     if (tokeni_overlay_window == NULL) {
         return 0;
@@ -706,7 +706,7 @@ int tokeni_windows_overlay_hide(void)
     return 1;
 }
 
-int tokeni_windows_overlay_set_frame(
+static int tokeni_overlay_set_frame_impl(
     int x,
     int y,
     int width,
@@ -731,7 +731,7 @@ int tokeni_windows_overlay_set_frame(
         SWP_NOACTIVATE | SWP_NOOWNERZORDER) ? 1 : 0;
 }
 
-int tokeni_windows_overlay_set_click_through(int enabled)
+static int tokeni_overlay_set_click_through_impl(int enabled)
 {
     tokeni_overlay_click_through = enabled != 0 ? 1 : 0;
     if (tokeni_overlay_window == NULL) {
@@ -741,7 +741,7 @@ int tokeni_windows_overlay_set_click_through(int enabled)
     return tokeni_overlay_update_click_through(tokeni_overlay_window);
 }
 
-int tokeni_windows_overlay_set_asset_root(const char *path_utf8)
+static int tokeni_overlay_set_asset_root_impl(const char *path_utf8)
 {
     tokeni_overlay_asset_root[0] = L'\0';
     tokeni_overlay_release_asset();
@@ -774,7 +774,7 @@ int tokeni_windows_overlay_set_asset_root(const char *path_utf8)
             / sizeof(tokeni_overlay_asset_root[0]))) > 0 ? 1 : 0;
 }
 
-int tokeni_windows_overlay_set_state(
+static int tokeni_overlay_set_state_impl(
     int stage,
     int level,
     int species_index,
@@ -793,7 +793,7 @@ int tokeni_windows_overlay_set_state(
     return 1;
 }
 
-void tokeni_windows_overlay_stop(void)
+static void tokeni_overlay_stop_impl(void)
 {
     HWND window = tokeni_overlay_window;
     if (window != NULL) {
@@ -813,12 +813,43 @@ void tokeni_windows_overlay_stop(void)
     }
 }
 
-int tokeni_windows_overlay_is_visible(void)
+static int tokeni_overlay_is_visible_impl(void)
 {
     return tokeni_overlay_window != NULL
         && tokeni_overlay_visible
         && IsWindowVisible(tokeni_overlay_window) ? 1 : 0;
 }
+
+// All renderer state and COM resources belong to the desktop message thread.
+typedef struct { int operation; int values[4]; const char *path; int result; } tokeni_overlay_request;
+static void tokeni_overlay_dispatch(void *context)
+{
+    tokeni_overlay_request *request = (tokeni_overlay_request *)context;
+    switch (request->operation) {
+    case 0: request->result = tokeni_overlay_show_impl(); break;
+    case 1: request->result = tokeni_overlay_hide_impl(); break;
+    case 2: request->result = tokeni_overlay_set_frame_impl(request->values[0], request->values[1], request->values[2], request->values[3]); break;
+    case 3: request->result = tokeni_overlay_set_click_through_impl(request->values[0]); break;
+    case 4: request->result = tokeni_overlay_set_asset_root_impl(request->path); break;
+    case 5: request->result = tokeni_overlay_set_state_impl(request->values[0], request->values[1], request->values[2], request->values[3]); break;
+    case 6: tokeni_overlay_stop_impl(); request->result = 1; break;
+    case 7: request->result = tokeni_overlay_is_visible_impl(); break;
+    }
+}
+static int tokeni_overlay_call(int operation, int a, int b, int c, int d, const char *path)
+{
+    tokeni_overlay_request request = {operation, {a, b, c, d}, path, 0};
+    tokeni_windows_ui_invoke(tokeni_overlay_dispatch, &request);
+    return request.result;
+}
+int tokeni_windows_overlay_show(void) { return tokeni_overlay_call(0, 0, 0, 0, 0, NULL); }
+int tokeni_windows_overlay_hide(void) { return tokeni_overlay_call(1, 0, 0, 0, 0, NULL); }
+int tokeni_windows_overlay_set_frame(int x, int y, int width, int height) { return tokeni_overlay_call(2, x, y, width, height, NULL); }
+int tokeni_windows_overlay_set_click_through(int enabled) { return tokeni_overlay_call(3, enabled, 0, 0, 0, NULL); }
+int tokeni_windows_overlay_set_asset_root(const char *path) { return tokeni_overlay_call(4, 0, 0, 0, 0, path); }
+int tokeni_windows_overlay_set_state(int stage, int level, int species, int rarity) { return tokeni_overlay_call(5, stage, level, species, rarity, NULL); }
+void tokeni_windows_overlay_stop(void) { (void)tokeni_overlay_call(6, 0, 0, 0, 0, NULL); }
+int tokeni_windows_overlay_is_visible(void) { return tokeni_overlay_call(7, 0, 0, 0, 0, NULL); }
 
 #else
 

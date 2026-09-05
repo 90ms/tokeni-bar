@@ -88,6 +88,12 @@ static void exercise_controls(void *context)
 int main(void)
 {
     assert(tokeni_windows_tray_start("Tokeni test", "Offline UI test"));
+    assert(tokeni_windows_overlay_set_asset_root(""));
+    assert(tokeni_windows_overlay_set_state(1, 3, 0, 0));
+    assert(tokeni_windows_overlay_start(0, 0, 120, 120));
+    assert(tokeni_windows_overlay_show());
+    assert(tokeni_windows_overlay_is_visible());
+    assert(tokeni_windows_overlay_hide());
     tokeni_windows_dashboard_begin_usage();
     assert(tokeni_windows_dashboard_append_usage("Example provider", "Connected", "75%", "in 2h", "1234", "—"));
     tokeni_windows_dashboard_commit_usage("1 of 1 providers available\r\n\r\nSanitized offline UI fixture.", "Last refresh: just now", 0);
@@ -98,6 +104,7 @@ int main(void)
     tokeni_windows_tray_stop();
     tokeni_windows_tray_run();
     assert(!tokeni_windows_tray_is_started());
+    assert(!tokeni_windows_overlay_is_visible());
     puts("Tokeni Windows dashboard tests passed.");
     return 0;
 }

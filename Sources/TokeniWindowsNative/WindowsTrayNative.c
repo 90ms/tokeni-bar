@@ -780,6 +780,10 @@ static void tokeni_dashboard_apply_details(void)
     if (tokeni_destination == 0) {
         AcquireSRWLockShared(&tokeni_state_lock);
         lstrcpynW(details, tokeni_home_summary, 4096);
+        if (tokeni_pet_summary[0] && lstrlenW(details) + lstrlenW(tokeni_pet_summary) + 5 < 8192) {
+            lstrcatW(details, L"\r\n\r\n");
+            lstrcatW(details, tokeni_pet_summary);
+        }
         ReleaseSRWLockShared(&tokeni_state_lock);
     }
     if (tokeni_destination >= 2) {
@@ -1316,7 +1320,7 @@ static void tokeni_show_details(void)
     }
 
     tokeni_dashboard_apply_details();
-    ShowWindow(tokeni_dashboard_window, SW_RESTORE);
+    ShowWindow(tokeni_dashboard_window, IsIconic(tokeni_dashboard_window) ? SW_RESTORE : SW_SHOW);
     SetForegroundWindow(tokeni_dashboard_window);
     BringWindowToTop(tokeni_dashboard_window);
     SetFocus(tokeni_navigation[tokeni_destination]);
@@ -1444,8 +1448,10 @@ static LRESULT CALLBACK tokeni_window_proc(
 
     if (message == WM_CLOSE) {
         if (tokeni_dashboard_window != NULL) {
+            tokeni_dashboard_save_frame(tokeni_dashboard_window);
             DestroyWindow(tokeni_dashboard_window);
         }
+        tokeni_windows_overlay_stop();
         DestroyWindow(window);
         return 0;
     }

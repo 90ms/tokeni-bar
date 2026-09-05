@@ -39,7 +39,7 @@ jobs:
           New-Item -ItemType Directory -Force $output | Out-Null
           Push-Location $output
           try {
-            & cl.exe /nologo /std:c11 /W3 /utf-8 "/I$env:GITHUB_WORKSPACE\Sources\TokeniWindowsNative\include" "$env:GITHUB_WORKSPACE\Tests\TokeniWindowsDashboardTests\main.c" "$env:GITHUB_WORKSPACE\Sources\TokeniWindowsNative\WindowsProviderState.c" /Fe:desktop-tests.exe /link gdi32.lib advapi32.lib
+            & cl.exe /nologo /std:c11 /W3 /utf-8 "/I$env:GITHUB_WORKSPACE\Sources\TokeniWindowsNative\include" "$env:GITHUB_WORKSPACE\Tests\TokeniWindowsDashboardTests\main.c" "$env:GITHUB_WORKSPACE\Sources\TokeniWindowsNative\WindowsProviderState.c" "$env:GITHUB_WORKSPACE\Sources\TokeniWindowsNative\WindowsOverlayNative.c" /Fe:desktop-tests.exe /link gdi32.lib advapi32.lib ole32.lib uuid.lib windowscodecs.lib
             if ($LASTEXITCODE -ne 0) { throw "Desktop harness compilation failed." }
             $test = Start-Process './desktop-tests.exe' -ArgumentList '--background' -WindowStyle Hidden -PassThru -RedirectStandardOutput 'stdout.txt' -RedirectStandardError 'stderr.txt'
             if (-not $test.WaitForExit(30000)) {
