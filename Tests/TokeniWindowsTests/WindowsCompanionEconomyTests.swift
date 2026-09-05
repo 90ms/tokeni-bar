@@ -43,7 +43,12 @@ struct WindowsCompanionEconomyTests {
         let balance = await coordinator.currentRewards()?.starShards
         await #expect(throws: CompanionRewardError.alreadyClaimed) { try await coordinator.perform(.checkIn) }
         #expect(await coordinator.currentRewards()?.starShards == balance)
-        try await coordinator.perform(.rename(initial.generationID, "  작은 친구  "))
+        await #expect(throws: WindowsCompanionGrowthError.invalidState) {
+            try await coordinator.perform(.rename(initial.generationID, "Eggs cannot have nicknames"))
+        }
+        try await coordinator.openNextEgg()
+        let hatched = try #require(await coordinator.currentState())
+        try await coordinator.perform(.rename(hatched.generationID, "  작은 친구  "))
         #expect(try await store.load().nickname == "작은 친구")
     }
 }

@@ -120,6 +120,7 @@ public actor WindowsCompanionGrowthCoordinator {
     }
 
     private func persistUserChange(_ updated: CompanionGameState) async throws {
+        guard updated.isValid() else { throw WindowsCompanionGrowthError.invalidState }
         self.saveRevision &+= 1
         do {
             try await self.saveState(updated, self.saveRevision)
@@ -197,6 +198,7 @@ public actor WindowsCompanionGrowthCoordinator {
         case let .rename(id, name):
             let clean = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(24))
             if id == state.generationID {
+                guard state.stage != .egg else { throw WindowsCompanionGrowthError.invalidState }
                 self.gameEngine.rename(clean, in: &state)
             } else if let index = state.collection.archivedGenerations.firstIndex(where: { $0.generationID == id }) {
                 state.collection.recentCompletedGenerations[index].nickname = clean.isEmpty ? nil : clean
@@ -231,6 +233,7 @@ public actor WindowsCompanionGrowthCoordinator {
             default: break
             }
             _ = self.rewardEngine.reconcile(collection: state.collection, in: &rewards)
+            guard rewards.isValid() else { throw WindowsCompanionGrowthError.invalidState }
             try await rewardStore.save(rewards)
             self.rewards = rewards
         }
@@ -249,6 +252,7 @@ public actor WindowsCompanionGrowthCoordinator {
             _ = try self.gameEngine.sellArchivedGeneration(id, transactionID: transaction.id, at: transaction.createdAt, in: &companion)
             self.rewardEngine.grantStarShards(value, transactionID: transaction.id, at: transaction.createdAt, in: &rewards)
         }
+        guard companion.isValid(), rewards.isValid() else { throw WindowsCompanionGrowthError.invalidState }
         if begin { try await journalStore.begin(transaction) }
         do {
             self.saveRevision &+= 1
@@ -274,4 +278,5 @@ public enum WindowsCompanionAction: Sendable {
 public enum WindowsCompanionGrowthError: Error, Equatable {
     case stateNotLoaded
     case busy
+    case invalidState
 }
