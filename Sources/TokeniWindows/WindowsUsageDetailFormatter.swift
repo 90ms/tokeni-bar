@@ -12,7 +12,7 @@ public enum WindowsUsageDetailFormatter {
         var lines: [String] = []
 
         if presentation.providers.isEmpty {
-            lines.append("No provider usage is available yet.")
+            lines.append(WindowsLocalization.message("No provider usage is available yet."))
         } else {
             for provider in presentation.providers {
                 if !lines.isEmpty {
@@ -23,28 +23,28 @@ public enum WindowsUsageDetailFormatter {
                 switch provider.availability {
                 case .available:
                     if provider.quotaWindows.isEmpty {
-                        lines.append("  Usage available")
+                        lines.append(WindowsLocalization.text("  Usage available", "  사용량 확인 가능"))
                     } else {
                         for window in provider.quotaWindows {
                             var line = "  \(window.label): "
-                                + "\(Int(window.remainingPercent.rounded()))% remaining"
+                                + WindowsLocalization.text("\(Int(window.remainingPercent.rounded()))% remaining", "\(Int(window.remainingPercent.rounded()))% 남음")
                             if let reset = window.resetsAt {
-                                line += " · resets \(Self.relativeReset(reset, now: now))"
+                                line += WindowsLocalization.text(" · resets \(Self.relativeReset(reset, now: now))", " · 초기화 \(Self.relativeReset(reset, now: now))")
                             }
                             lines.append(line)
                         }
                     }
                     if let tokenTotal = provider.tokenTotal {
-                        lines.append("  Tokens: \(tokenTotal)")
+                        lines.append(WindowsLocalization.text("  Tokens: \(tokenTotal)", "  토큰: \(tokenTotal)"))
                     }
                 case .loading:
-                    lines.append("  Refreshing usage…")
+                    lines.append(WindowsLocalization.text("  Refreshing usage…", "  사용량 갱신 중…"))
                 case .stale:
-                    lines.append("  Usage is stale")
+                    lines.append(WindowsLocalization.text("  Usage is stale", "  오래된 사용량 · 갱신 필요"))
                 case .unavailable:
-                    lines.append("  Usage unavailable")
+                    lines.append(WindowsLocalization.text("  Usage unavailable", "  사용량 확인 불가"))
                 case .failed:
-                    lines.append("  Usage refresh failed")
+                    lines.append(WindowsLocalization.text("  Usage refresh failed", "  사용량 갱신 실패"))
                 }
             }
         }
@@ -53,10 +53,10 @@ public enum WindowsUsageDetailFormatter {
             if !lines.isEmpty {
                 lines.append("")
             }
-            lines.append("Updated \(Self.relativeAge(lastRefresh, now: now))")
+            lines.append(WindowsLocalization.text("Updated \(Self.relativeAge(lastRefresh, now: now))", "갱신: \(Self.relativeAge(lastRefresh, now: now))"))
         }
         if presentation.isRefreshing {
-            lines.append("Refreshing…")
+            lines.append(WindowsLocalization.text("Refreshing…", "갱신 중…"))
         }
         return lines.joined(separator: "\n")
     }
@@ -64,7 +64,7 @@ public enum WindowsUsageDetailFormatter {
     static func relativeReset(_ date: Date, now: Date) -> String {
         let seconds = date.timeIntervalSince(now)
         if seconds <= 0 {
-            return "now"
+            return WindowsLocalization.text("now", "지금")
         }
 
         let minutes = max(Int(ceil(seconds / 60)), 1)
@@ -72,10 +72,10 @@ public enum WindowsUsageDetailFormatter {
         let remainingMinutes = minutes % 60
         if hours > 0 {
             return remainingMinutes == 0
-                ? "in \(hours)h"
-                : "in \(hours)h \(remainingMinutes)m"
+                ? WindowsLocalization.text("in \(hours)h", "\(hours)시간 후")
+                : WindowsLocalization.text("in \(hours)h \(remainingMinutes)m", "\(hours)시간 \(remainingMinutes)분 후")
         }
-        return "in \(minutes)m"
+        return WindowsLocalization.text("in \(minutes)m", "\(minutes)분 후")
     }
 
     private static func relativeAge(_ date: Date, now: Date) -> String {
@@ -85,9 +85,9 @@ public enum WindowsUsageDetailFormatter {
         let remainingMinutes = minutes % 60
         if hours > 0 {
             return remainingMinutes == 0
-                ? "\(hours)h ago"
-                : "\(hours)h \(remainingMinutes)m ago"
+                ? WindowsLocalization.text("\(hours)h ago", "\(hours)시간 전")
+                : WindowsLocalization.text("\(hours)h \(remainingMinutes)m ago", "\(hours)시간 \(remainingMinutes)분 전")
         }
-        return minutes == 0 ? "just now" : "\(minutes)m ago"
+        return minutes == 0 ? WindowsLocalization.text("just now", "방금") : WindowsLocalization.text("\(minutes)m ago", "\(minutes)분 전")
     }
 }

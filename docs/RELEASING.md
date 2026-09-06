@@ -72,7 +72,9 @@ notes, as described in `.changes/README.md`.
 Confirm that every `Release` workflow step succeeds:
 
 - run the focused Windows release tests;
-- build and validate the portable Windows ZIP before publishing anything;
+- sign every previously unsigned Windows app binary with Microsoft Artifact Signing;
+- verify all packaged Windows executable and DLL signatures, then rebuild and validate
+  the portable Windows ZIP before publishing anything;
 - resolve the tag version and render structured bilingual notes;
 - build and ad-hoc sign the macOS application;
 - smoke-test the packaged macOS executable without accessing user data;

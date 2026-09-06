@@ -41,7 +41,7 @@ jobs:
           run_windows=false
           while IFS= read -r path; do
             case "$path" in
-              .gitattributes|Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Tests/TokeniWindowsNativeStateTests/*|packaging/windows/*|Scripts/acquire_windows_sqlite.ps1|Scripts/package_windows.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
+              .gitattributes|Package.swift|Sources/TokeniCore/*|Sources/TokeniApplication/*|Sources/TokeniWindows/*|Sources/TokeniWindowsNative/*|Sources/TokeniBar/CompanionAssets/*|Tests/TokeniCoreTests/*|Tests/TokeniApplicationTests/*|Tests/TokeniWindowsTests/*|Tests/TokeniWindowsNativeStateTests/*|packaging/windows/*|Scripts/acquire_windows_sqlite.ps1|Scripts/package_windows.ps1|Scripts/*windows*.ps1|Scripts/prepare_windows_signing.ps1|Scripts/smoke_windows_package.ps1|Scripts/validate_windows_companion_assets.ps1|Scripts/verify_windows_signatures.ps1|Scripts/write_windows_package.ps1|.github/actions/setup-windows-swift/*|.github/workflows/windows.yml|.github/workflows/release.yml)
                 run_windows=true
                 break
                 ;;
@@ -206,12 +206,23 @@ jobs:
           & "$env:GITHUB_WORKSPACE\Scripts\smoke_windows_package.ps1" `
             -ArchivePath $archive.FullName
 
+      - name: Build and test per-user installer and update safeguards
+        shell: pwsh
+        run: |
+          & "$env:GITHUB_WORKSPACE\Scripts\test_windows_update.ps1"
+          & "$env:GITHUB_WORKSPACE\Scripts\test_windows_desktop_host.ps1" -Executable "$env:RUNNER_TEMP\TokeniWindowsPackage\Tokeni-Bar-Windows-0.0.0\TokeniWindows.exe"
+          & "$env:GITHUB_WORKSPACE\Scripts\build_windows_installer.ps1" -Version '0.0.0' -PackageDirectory "$env:RUNNER_TEMP\TokeniWindowsPackage\Tokeni-Bar-Windows-0.0.0" -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsPackage"
+          & "$env:GITHUB_WORKSPACE\Scripts\test_windows_installer.ps1" -Installer "$env:RUNNER_TEMP\TokeniWindowsPackage\Tokeni-Bar-Windows-0.0.0-Setup.exe"
+
       - name: Upload Windows package
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: tokeni-bar-windows-${{ github.sha }}
-          path: ${{ runner.temp }}\TokeniWindowsPackage\*.zip*
-          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}\TokeniWindowsPackage\*.zip*
+            ${{ runner.temp }}\TokeniWindowsPackage\*-Setup.exe*
+          if-no-files-found: ignore
 
   windows-gate:
     name: Windows required gate

@@ -1,15 +1,16 @@
 import TokeniCore
+import TokeniWindowsNative
 
-/// The Windows deployment contract is intentionally kept separate from the
-/// update-checking contract. Until PR20 defines a signed package and its
-/// installation mechanism, the default installer must not download or execute
-/// anything.
+/// Deployment remains separate from update discovery. The desktop explicitly
+/// selects signedInstallation(); the parameterless initializer stays inert for
+/// callers that have not chosen an installation strategy.
 public enum WindowsAppUpdateInstallerError: Error, Equatable, Sendable {
     /// No signed package and installation strategy have been supplied yet.
     case installationStrategyUnavailable
 
     /// The supplied release is not newer than the running application.
     case noUpdateAvailable
+    case signatureOrInstallationFailed
 }
 
 /// Installs a release through an explicitly supplied Windows deployment
@@ -21,6 +22,16 @@ public enum WindowsAppUpdateInstallerError: Error, Equatable, Sendable {
 /// it never receives network response content, credentials, or application
 /// state.
 public struct WindowsAppUpdateInstaller: AppUpdateInstalling, Sendable {
+    public static func signedInstallation() -> Self {
+        Self { release in
+            let prepared = await Task.detached {
+                release.version.description.withCString { version in
+                    release.tagName.withCString { tag in tokeni_windows_update_prepare(version, tag) != 0 }
+                }
+            }.value
+            guard prepared else { throw WindowsAppUpdateInstallerError.signatureOrInstallationFailed }
+        }
+    }
     public typealias InstallHandler = @Sendable (StableAppRelease) async throws -> Void
 
     private let installHandler: InstallHandler?

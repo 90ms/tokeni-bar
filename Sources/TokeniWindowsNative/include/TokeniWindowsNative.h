@@ -13,6 +13,35 @@ int tokeni_windows_tray_update_tooltip(const char *tooltip_utf8);
 
 int tokeni_windows_tray_update_details(const char *details_utf8);
 
+// One publisher stages a complete usage snapshot before committing it.
+void tokeni_windows_dashboard_begin_usage(void);
+int tokeni_windows_dashboard_append_usage(const char *name, const char *status,
+    const char *remaining, const char *reset, const char *tokens, const char *cost);
+void tokeni_windows_dashboard_commit_usage(const char *summary, const char *status, int refreshing);
+void tokeni_windows_dashboard_begin_pets(void);
+int tokeni_windows_dashboard_append_pet(const char *id, const char *label, int selected);
+void tokeni_windows_dashboard_commit_pets(const char *summary, int eggs, const char *feedback);
+int tokeni_windows_dashboard_take_pet_request(char *id, int capacity);
+int tokeni_windows_dashboard_take_hatch_request(void);
+int tokeni_windows_dashboard_is_korean(void);
+int tokeni_windows_desktop_ready(void);
+void tokeni_windows_history_begin(void);
+void tokeni_windows_history_append(double timestamp, double percent, const char *provider, const char *date, const char *quota, const char *tokens, const char *cost);
+void tokeni_windows_history_commit(void);
+void tokeni_windows_inventory_begin(void);
+void tokeni_windows_inventory_append(int group,const char *id,const char *label);
+void tokeni_windows_inventory_commit(const char *summary);
+int tokeni_windows_take_action(char *id,int capacity,char *text,int text_capacity);
+void tokeni_windows_overlay_draw_preview(void *context,int width,int height);
+void tokeni_windows_overlay_configure(int movable,int reduced_motion,int size);
+void tokeni_windows_overlay_restore_preferences(void);
+int tokeni_windows_overlay_preferences(void);
+void tokeni_windows_overlay_set_cosmetics(unsigned int mask);
+int tokeni_windows_update_request(void);
+int tokeni_windows_update_automatic(void);
+void tokeni_windows_update_status(const char *text,int available);
+int tokeni_windows_update_prepare(const char *version,const char *tag);
+
 // Provider options are staged and become visible atomically on commit. A
 // failed append leaves the currently committed dashboard state unchanged.
 int tokeni_windows_tray_begin_provider_options(void);
@@ -50,6 +79,8 @@ int tokeni_windows_tray_notify(
     const char *body_utf8);
 
 int tokeni_windows_tray_run(void);
+// Synchronously create dependent native windows on the message-loop thread.
+int tokeni_windows_ui_invoke(void (*operation)(void *), void *context);
 
 void tokeni_windows_tray_stop(void);
 

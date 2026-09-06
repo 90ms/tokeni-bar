@@ -15,12 +15,17 @@ struct TokeniWindowsApp {
             return
         }
 
+        // Claim the desktop instance before loading state or starting providers.
+        let tray = WindowsTrayShell()
+        guard tray.start() else { return }
+
         let executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
         let directories = DefaultApplicationDirectoriesProvider().directories
         let settings = JSONFileSettingsStore(
             fileURL: directories.localApplicationSupportDirectory.appending(
                 path: "settings.json"))
-        let providers = ProviderRegistry.defaultProviders(
+        let desktopSmoke = CommandLine.arguments.contains("--desktop-smoke-test")
+        let providers = desktopSmoke ? [] : ProviderRegistry.defaultProviders(
             sqliteQueryRunner: WindowsSQLiteRuntime.queryRunner(
                 for: executableURL))
         let session = UsageApplicationSession(
@@ -30,10 +35,6 @@ struct TokeniWindowsApp {
 
         _ = try? await session.bootstrap()
 
-        let tray = WindowsTrayShell()
-        guard tray.start() else {
-            return
-        }
         await session.start()
 
         let services = WindowsTrayServiceCoordinator(
@@ -60,6 +61,7 @@ struct TokeniWindowsApp {
                 y: 0,
                 width: 240,
                 height: 220))
+        companionOverlay.restorePreferences()
         let initialCompanionVisible = companionOverlayStarted
             && settings.bool(forKey: WindowsTrayServiceCoordinator.companionEnabledKey)
         if initialCompanionVisible {
@@ -148,7 +150,38 @@ struct TokeniWindowsApp {
              initialCompanionVisible] in
             var companionVisible = initialCompanionVisible
             var serviceMessage: String?
+            var lastDashboard: WindowsDashboardPresentation?
+            var lastDetails: String?
+            var lastCompanion: CompanionGameState?
+            var lastFeedback: String?
+            var didPublishCompanion = false
+            var lastLanguage = WindowsLocalization.isKorean
+            var lastHistory: [UsageHistoryRecord]?
+            var lastRewards: CompanionRewardState?
             while !Task.isCancelled {
+                if lastLanguage != WindowsLocalization.isKorean {
+                    lastLanguage = WindowsLocalization.isKorean
+                    didPublishCompanion = false
+                    lastHistory = nil
+                }
+                if let target = tray.takeGrowthTargetRequest() {
+                    do {
+                        try await companionGrowth.selectGrowthTarget(target)
+                        serviceMessage = "Growth target saved."
+                    } catch { serviceMessage = "Growth target could not be saved." }
+                }
+                if let action = WindowsCompanionInventory.takeAction() {
+                    do {
+                        try await companionGrowth.perform(action)
+                        serviceMessage = WindowsLocalization.text("Saved.", "저장했습니다.")
+                    } catch { serviceMessage = WindowsCompanionInventory.errorMessage(error) }
+                }
+                if tray.takeHatchRequest() {
+                    do {
+                        try await companionGrowth.openNextEgg()
+                        serviceMessage = "Your new companion is ready."
+                    } catch { serviceMessage = "The egg could not be opened. Your saved state is unchanged." }
+                }
                 if tray.takeLaunchAtLoginRequest() {
                     do {
                         let enabled = try await services.toggleLaunchAtLogin()
@@ -206,22 +239,61 @@ struct TokeniWindowsApp {
                 }
                 let presentation = UsageApplicationPresentation(
                     sessionState: await session.state())
+                let history = await session.state().applicationState.historyRecords
+                if history != lastHistory {
+                    WindowsHistoryPresentation.publish(history)
+                    lastHistory = history
+                }
                 let providerSnapshot = WindowsProviderSelectionFormatter
                     .snapshot(for: presentation)
                 tray.updateTooltip(Self.tooltip(for: presentation))
+                let dashboard = WindowsDashboardPresentation(presentation)
+                if dashboard != lastDashboard {
+                    tray.updateDashboard(dashboard)
+                    lastDashboard = dashboard
+                }
                 var details = WindowsProviderSelectionFormatter.dashboardMessage(
                     for: presentation,
                     snapshot: providerSnapshot)
                     ?? WindowsUsageDetailFormatter.text(for: presentation)
+                details = WindowsLocalization.message(details)
                 if let serviceMessage {
-                    details += "\n\n\(serviceMessage)"
+                    details += "\n\n\(WindowsLocalization.message(serviceMessage))"
                 }
-                tray.updateDetails(details)
-                try? await Task.sleep(for: .seconds(5))
+                if details != lastDetails {
+                    tray.updateDetails(details)
+                    lastDetails = details
+                }
+                let currentCompanion = await companionGrowth.currentState()
+                let currentRewards = await companionGrowth.currentRewards()
+                if !didPublishCompanion || currentCompanion != lastCompanion || serviceMessage != lastFeedback || currentRewards != lastRewards {
+                    tray.updateCompanions(currentCompanion, feedback: serviceMessage)
+                    WindowsCompanionInventory.publish(state: currentCompanion, rewards: currentRewards)
+                    lastRewards = currentRewards
+                    lastCompanion = currentCompanion
+                    lastFeedback = serviceMessage
+                    didPublishCompanion = true
+                }
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
 
-        _ = tray.run()
+        let updateTask = Task { await WindowsUpdateCoordinator.run(executableURL: executableURL, tray: tray) }
+        let desktopSmokeTask: Task<Bool, Never>? = desktopSmoke ? Task {
+            let deadline = Date.now.addingTimeInterval(15)
+            while Date.now < deadline {
+                if tray.hasPublishedDesktop() {
+                    try? FileHandle.standardOutput.write(contentsOf: Data("TOKENI_WINDOWS_DESKTOP_SMOKE_OK\n".utf8))
+                    tray.stop()
+                    return true
+                }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            tray.stop()
+            return false
+        } : nil
+        _ = await tray.runAsync()
+        updateTask.cancel()
         providerToggleTask.cancel()
         await providerToggleTask.value
 
@@ -250,6 +322,7 @@ struct TokeniWindowsApp {
         }
         tray.stop()
         companionOverlay.stop()
+        if let desktopSmokeTask { ExitProcess(await desktopSmokeTask.value ? 0 : 1) }
     }
 
     private static func tooltip(

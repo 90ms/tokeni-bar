@@ -119,7 +119,16 @@ try {
         ConvertFrom-Json
     $sqliteFileHash = Get-FileHash -LiteralPath $sqlite -Algorithm SHA256
     $sqliteHash = $sqliteFileHash.Hash.ToLowerInvariant()
-    if ($sqliteHash -ne $sqliteMetadata.executable_sha256) {
+    $expectedPackagedSQLiteHash = if (
+        $null -ne $sqliteMetadata.packaged_executable_sha256)
+    {
+        $sqliteMetadata.packaged_executable_sha256
+    } else {
+        $sqliteMetadata.executable_sha256
+    }
+    if ($expectedPackagedSQLiteHash -notmatch '^[0-9a-f]{64}$' -or
+        $sqliteHash -ne $expectedPackagedSQLiteHash)
+    {
         throw "Packaged SQLite executable does not match its pinned manifest."
     }
 
