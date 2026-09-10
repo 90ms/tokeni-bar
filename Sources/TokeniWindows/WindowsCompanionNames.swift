@@ -34,6 +34,7 @@ public enum WindowsCompanionNames {
         "companion.cosmetic.meadowPatch": ("Flower Meadow Mat", "꽃밭 매트"),
         "companion.cosmetic.miniDrone": ("Tiny Drone", "꼬마 드론"),
         "companion.cosmetic.missing": ("Need %d more", "%d개 더 필요"),
+        "companion.cosmetic.neuralSynapse": ("Neural Synapse", "시냅스 네트워크"),
         "companion.cosmetic.orbitAura": ("Orbit Aura", "궤도 오라"),
         "companion.cosmetic.owned": ("Owned", "보유 중"),
         "companion.cosmetic.pixelChick": ("Pixel Chick", "픽셀 병아리"),
@@ -47,6 +48,7 @@ public enum WindowsCompanionNames {
         "companion.cosmetic.sparkleAura": ("Sparkle Aura", "반짝임 오라"),
         "companion.cosmetic.starSprite": ("Starlight Sprite", "별빛 요정"),
         "companion.cosmetic.sunsetGrid": ("Sunset Grid", "노을 그리드"),
+        "companion.cosmetic.tensorCube": ("Floating Tensor Cube", "플로팅 텐서 큐브"),
         "companion.cosmetic.terminalNight": ("Terminal Night", "터미널 나이트"),
         "companion.cosmetic.violetPalette": ("Legacy Violet Color", "레거시 바이올렛 컬러"),
         "companion.egg.discovery": ("Starlight Egg", "별빛 알"),
@@ -54,8 +56,10 @@ public enum WindowsCompanionNames {
         "companion.egg.mystery": ("Mystery Egg", "수수께끼 알"),
         "companion.egg.prismatic": ("Prismatic Egg", "프리즘 알"),
         "companion.egg.starter": ("Starter Egg", "스타터 알"),
+        "companion.species.agentolotl.name": ("AgentAxolotl", "AgentAxolotl"),
         "companion.species.bytebot.name": ("ByteBot", "ByteBot"),
         "companion.species.cachecat.name": ("CacheCat", "CacheCat"),
+        "companion.species.gitgecko.name": ("GitGecko", "GitGecko"),
         "companion.species.kernelcrab.name": ("KernelCrab", "KernelCrab"),
         "companion.species.loophare.name": ("LoopHare", "LoopHare"),
         "companion.species.mystery.name": ("Mystery Egg", "수수께끼 알"),
@@ -65,6 +69,9 @@ public enum WindowsCompanionNames {
         "companion.species.queryowl.name": ("QueryOwl", "QueryOwl"),
         "companion.species.relayray.name": ("RelayRay", "RelayRay"),
         "companion.species.stackfox.name": ("StackFox", "StackFox"),
+        "companion.species.synapsesloth.name": ("SynapseSloth", "SynapseSloth"),
+        "companion.species.tensorchilla.name": ("TensorChilla", "TensorChilla"),
+        "companion.species.vectordragon.name": ("VectorDrake", "VectorDrake"),
     ]
 }
 

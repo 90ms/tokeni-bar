@@ -6,12 +6,14 @@ asset_root="$root/Sources/TokeniBar/CompanionAssets"
 expected_species=(
     bytebot cachecat stackfox promptpup nullslime
     queryowl patchpanda loophare relayray kernelcrab
+    agentolotl vectordragon tensorchilla synapsesloth gitgecko
 )
 signature_ids=(
     bytebot.reassemble cachecat.data-chase stackfox.afterimage
     promptpup.command-trail nullslime.reform queryowl.signal-scan
     patchpanda.pixel-mend loophare.recursive-dash relayray.packet-wave
-    kernelcrab.core-open
+    kernelcrab.core-open agentolotl.self-heal vectordragon.dimension-leap
+    tensorchilla.matrix-spin synapsesloth.sync-pulse gitgecko.branch-split
 )
 localizations=(
     "$root/Sources/TokeniBar/Resources/en.lproj/Localizable.strings"

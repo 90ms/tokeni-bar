@@ -70,7 +70,9 @@ struct CompanionEggTests {
             CompanionEggInstance.self,
             from: legacyData)
 
-        #expect(current.speciesPoolGeneration == 2)
+        #expect(
+            current.speciesPoolGeneration
+                == CompanionSpeciesID.latestContentGeneration)
         #expect(current.availableSpecies == CompanionSpeciesID.allCases)
         #expect(legacy.speciesPoolGeneration == 1)
         #expect(legacy.availableSpecies == CompanionSpeciesID.species(
@@ -228,11 +230,12 @@ struct CompanionEggTests {
         _ = engine.reconcileEggMilestones(at: now, in: &state)
         _ = engine.reconcileEggMilestones(at: now, in: &state)
 
-        #expect(state.eggs.count == 4)
+        #expect(state.eggs.count == 5)
         #expect(state.eggs.map(\.definitionID).contains(.discovery))
         #expect(state.eggs.map(\.definitionID).contains(.prismatic))
         #expect(state.claimedEggMilestoneIDs == [
             "species-10",
+            "species-15",
             "species-5",
             "variants-10",
             "variants-5",
@@ -243,6 +246,39 @@ struct CompanionEggTests {
             eggs: [])
         _ = engine.reconcileEggMilestones(at: now, in: &secondState)
         #expect(secondState.eggs.map(\.seed) == seeds)
+
+        // Verify full collection milestones including variants-40 and variants-45
+        var allForms: [CompanionFormRecord] = []
+        for speciesID in CompanionSpeciesID.allCases {
+            for variantID in CompanionVariantRegistry.collectibleIDs {
+                allForms.append(CompanionFormRecord(
+                    formID: "\(speciesID.rawValue).adult.\(variantID.rawValue)",
+                    speciesID: speciesID,
+                    stage: .adult,
+                    rarity: variantID == .standard ? .normal : .rare,
+                    variantID: variantID,
+                    unlockKind: .encountered,
+                    firstUnlockedAt: now,
+                    lastEncounteredAt: now,
+                    encounterCount: 1))
+            }
+        }
+        var maxState = CompanionGameState(
+            collection: CompanionCollection(forms: allForms),
+            eggs: [])
+        _ = engine.reconcileEggMilestones(at: now, in: &maxState)
+        #expect(maxState.eggs.count == 9)
+        #expect(maxState.claimedEggMilestoneIDs == [
+            "species-10",
+            "species-15",
+            "species-5",
+            "variants-10",
+            "variants-20",
+            "variants-30",
+            "variants-40",
+            "variants-45",
+            "variants-5",
+        ])
     }
 
     @Test("Economy journal persists and completes pending transactions")

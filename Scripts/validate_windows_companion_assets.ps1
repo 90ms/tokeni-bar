@@ -18,7 +18,12 @@ $expectedSpecies = @(
     "patchpanda",
     "loophare",
     "relayray",
-    "kernelcrab"
+    "kernelcrab",
+    "agentolotl",
+    "vectordragon",
+    "tensorchilla",
+    "synapsesloth",
+    "gitgecko"
 )
 $expectedBehaviors = @(
     "idle",

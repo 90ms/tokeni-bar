@@ -29,9 +29,9 @@ struct CompanionSpeciesIDTests {
         #expect(!CompanionSpeciesID.allCases.contains(decoded))
     }
 
-    @Test("The bundled registry preserves the two existing generations")
+    @Test("The bundled registry preserves all registered generations")
     func bundledRegistryCompatibility() {
-        #expect(CompanionSpeciesRegistry.definitions.count == 10)
+        #expect(CompanionSpeciesRegistry.definitions.count == 15)
         #expect(CompanionSpeciesRegistry.speciesIDs == [
             .bytebot,
             .cachecat,
@@ -43,10 +43,18 @@ struct CompanionSpeciesIDTests {
             .loophare,
             .relayray,
             .kernelcrab,
+            .agentolotl,
+            .vectordragon,
+            .tensorchilla,
+            .synapsesloth,
+            .gitgecko,
         ])
         #expect(
             CompanionSpeciesRegistry.definition(for: .queryowl)?
                 .contentGeneration == 2)
+        #expect(
+            CompanionSpeciesRegistry.definition(for: .agentolotl)?
+                .contentGeneration == 3)
         #expect(
             CompanionSpeciesRegistry.definition(for: .bytebot)?
                 .assetPackID == .tokeniBundled)

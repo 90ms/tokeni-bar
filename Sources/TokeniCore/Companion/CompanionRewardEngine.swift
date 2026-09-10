@@ -10,7 +10,7 @@ public struct CompanionRewardRules: Sendable {
         mutationDiscovery: 30,
         variantDiscovery: [.mutated: 30, .prismatic: 50],
         journeyCompletion: 25,
-        collectionVariants: [5: 20, 10: 100, 20: 250, 30: 500],
+        collectionVariants: [5: 20, 10: 100, 20: 250, 30: 500, 40: 750, 45: 1_000],
         dailyVerifiedGrowth: 5,
         releaseGift: 300)
 
@@ -87,6 +87,8 @@ public struct CompanionRewardEngine: Sendable {
             CompanionCosmetic(id: .fallingPetals, cost: 850),
             CompanionCosmetic(id: .orbitAura, cost: 900),
             CompanionCosmetic(id: .miniDrone, cost: 950),
+            CompanionCosmetic(id: .neuralSynapse, cost: 750),
+            CompanionCosmetic(id: .tensorCube, cost: 1_000),
             CompanionCosmetic(id: .cloudGarden, cost: 1_100),
             CompanionCosmetic(id: .sunsetGrid, cost: 1_200),
             CompanionCosmetic(id: .pixelForest, cost: 1_300),
@@ -229,6 +231,17 @@ public struct CompanionRewardEngine: Sendable {
         }
         if discoveredGenerationTwo == generationTwoSpecies {
             state.unlockedCosmeticIDs.insert(.miniDrone)
+        }
+
+        let generationThreeSpecies = Set(
+            CompanionSpeciesID.species(inContentGeneration: 3))
+        let discoveredGenerationThree = collection.discoveredSpeciesIDs
+            .intersection(generationThreeSpecies)
+        if discoveredGenerationThree.count >= 3 {
+            state.unlockedCosmeticIDs.insert(.neuralSynapse)
+        }
+        if discoveredGenerationThree == generationThreeSpecies {
+            state.unlockedCosmeticIDs.insert(.tensorCube)
         }
 
         self.apply(grants, at: date, to: &state)

@@ -1923,6 +1923,8 @@ struct CompanionCollectionView: View {
 
             if generation == 2 {
                 self.generationTwoBanner
+            } else if generation == 3 {
+                self.generationThreeBanner
             }
 
             LazyVGrid(
@@ -1968,6 +1970,40 @@ struct CompanionCollectionView: View {
                     "companion.collection.generation2.progress",
                     discoveredCount,
                     generationTwoSpecies.count))
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(
+            Color.accentColor.opacity(0.08),
+            in: RoundedRectangle(cornerRadius: 9))
+    }
+
+    private var generationThreeBanner: some View {
+        let generationThreeSpecies = Set(
+            CompanionSpeciesID.species(inContentGeneration: 3))
+        let discoveredCount = self.store.companionState.collection
+            .discoveredSpeciesIDs
+            .intersection(generationThreeSpecies)
+            .count
+        return HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "cpu")
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(AppLocalization.string(
+                    "companion.collection.generation3.title"))
+                    .font(.caption.weight(.bold))
+                Text(AppLocalization.string(
+                    "companion.collection.generation3.description"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(AppLocalization.format(
+                    "companion.collection.generation3.progress",
+                    discoveredCount,
+                    generationThreeSpecies.count))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(Color.accentColor)
             }

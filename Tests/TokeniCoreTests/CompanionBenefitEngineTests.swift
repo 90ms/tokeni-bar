@@ -27,8 +27,8 @@ struct CompanionBenefitEngineTests {
                     .luckyCheer,
                     .rewardAbsorption,
                 ]))
-        #expect(CompanionSpeciesID.totalRegisteredFormCount == 90)
-        #expect(CompanionSpeciesID.totalCollectibleVariantCount == 30)
+        #expect(CompanionSpeciesID.totalRegisteredFormCount == 135)
+        #expect(CompanionSpeciesID.totalCollectibleVariantCount == 45)
     }
 
     @Test("Generation two reuses balanced benefits without stacking copies")

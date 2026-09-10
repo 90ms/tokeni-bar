@@ -130,6 +130,7 @@ final class CompanionAssetCatalog {
                 palette: asset.palette,
                 mutatedSpeciesID: asset.supportsMutation
                     && variantID == .mutated && stage != .egg
+                    && !sheetName.contains("mutated")
                     ? speciesID
                     : nil)
         else { return nil }
@@ -233,14 +234,35 @@ final class CompanionAssetCatalog {
         case .queryowl: (0.5, 0.38)
         case .relayray: (0.5, 0.52)
         case .stackfox: (0.66, 0.56)
+        case .agentolotl: (0.5, 0.4)
+        case .vectordragon: (0.54, 0.42)
+        case .tensorchilla: (0.48, 0.52)
+        case .synapsesloth: (0.5, 0.46)
+        case .gitgecko: (0.52, 0.44)
         default: (0.5, 0.5)
         }
         let targetX = opaqueBounds.minX
             + opaqueBounds.width * normalizedTarget.x
         let targetY = opaqueBounds.minY
             + opaqueBounds.height * normalizedTarget.y
-        let candidates = (0..<(width * height))
-            .filter { standardOpaquePixels[$0] }
+        let candidateIndices = (0..<(width * height))
+            .filter { index in
+                guard standardOpaquePixels[index] else { return false }
+                let x = index % width
+                let y = index / width
+                let offset = y * context.bytesPerRow + x * 4
+                let alpha = UInt16(bytes[offset + 3])
+                let targetR = UInt8(UInt16(accent.red) * alpha / 255)
+                let targetG = UInt8(UInt16(accent.green) * alpha / 255)
+                let targetB = UInt8(UInt16(accent.blue) * alpha / 255)
+                return bytes[offset] != targetR
+                    || bytes[offset + 1] != targetG
+                    || bytes[offset + 2] != targetB
+            }
+        let availableCandidates = candidateIndices.isEmpty
+            ? (0..<(width * height)).filter { standardOpaquePixels[$0] }
+            : candidateIndices
+        let candidates = availableCandidates
             .sorted { lhs, rhs in
                 let lhsX = CGFloat(lhs % width)
                 let lhsY = CGFloat(lhs / width)
@@ -249,7 +271,7 @@ final class CompanionAssetCatalog {
                 return hypot(lhsX - targetX, lhsY - targetY)
                     < hypot(rhsX - targetX, rhsY - targetY)
             }
-            .prefix(2)
+            .prefix(4)
         for index in candidates {
             let x = index % width
             let y = index / width

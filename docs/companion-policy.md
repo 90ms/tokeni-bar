@@ -70,8 +70,8 @@ appearance creates an owned pet with its own UUID.
 An egg also stores the latest content generation available at acquisition as
 its species-pool ceiling. Older saved eggs without this field resolve to the
 generation-one pool. Content additions therefore cannot change a saved seed's
-result; newly acquired eggs include generation two at equal per-species base
-odds.
+result; newly acquired eggs include the latest generation three at equal
+per-species base odds.
 
 A duplicate is the same `species + appearance`; name, personality, and growth
 stage do not affect identity. A repeat hatch does not create another pet. It
@@ -90,13 +90,13 @@ removed. A normal egg has a 1% seeded chance to hatch the selected species'
 mutation appearance. Mutation has no synthesis pity counter.
 
 A mutation is a species-specific intrinsic body variation instead of an
-equipable aura. The current app derives a restrained trait by recoloring only
-pixels that are already opaque in the Standard animation with an existing
-palette color. It creates no new pixel or detached particle, preserving the
-original silhouette and alpha exactly. Reviewed dedicated Mutation sheets may
-replace these derived frames later. Mutation never
-changes XP, benefits, resale value, or other odds. The existing Prismatic
-appearance and its guarantee rules remain a separate appearance.
+equipable aura. Every stage ships dedicated Mutation sprite sheets
+(`*-mutated.png`) that express morphological traits directly on the silhouette
+(such as quad servo arms, layered tails, winged ears, hypertrophied claws, or
+void cores). External packs without dedicated mutation sheets safely fall back
+to the derived frame pipeline. Mutation never changes XP, benefits, resale value,
+or other odds. The existing Prismatic appearance and its guarantee rules remain
+a separate appearance.
 
 Schema v11 discards legacy synthesis records, counts, and inactive synthesized
 mutation pets. An active legacy mutation decoration is cleared while the pet
@@ -137,19 +137,29 @@ mutation appearance adds one signature action:
 - LoopHare: Recursive Dash
 - RelayRay: Packet Wave
 - KernelCrab: Core Open
+- AgentAxolotl: Self-Heal
+- VectorDrake: Dimension Leap
+- TensorChilla: Matrix Spin
+- SynapseSloth: Sync Pulse
+- GitGecko: Branch Split
 
 The initial signature slot points at a bundled species animation row and can be
 replaced with independent frames later while preserving its stable action ID.
 Reduce Motion, disabled animations, and Low Power Mode remain respected.
 
 Generation 2, the **Signal Expedition**, contains QueryOwl, PatchPanda,
-LoopHare, RelayRay, and KernelCrab. Every growth stage has an independent
-Standard and Prismatic sprite, while its Mutation appearance uses a trait
-integrated into the original body. Reviewed dedicated Mutation sheets may
-replace it later. A persistent signal core and behavior-specific wing, ear,
-fin, and shell mode shifts distinguish it from generation 1. Its benefit
+LoopHare, RelayRay, and KernelCrab. Every growth stage ships independent
+Standard, Prismatic, and Mutation sprites. A persistent signal core and
+behavior-specific mode shifts distinguish it from generation 1. Its benefit
 mappings reuse the five generation-one active and passive values and add no
 higher tier.
+
+Generation 3, the **Neural Agents**, contains AgentAxolotl, VectorDrake,
+TensorChilla, SynapseSloth, and GitGecko. Themed after deep neural networks
+and autonomous agent ecosystems, every stage provides independent Standard,
+Prismatic, and Mutation sprites. Its benefits map 1:1 across token optimization,
+starlight cache, stack optimization, reward absorption, and lucky cheer, maintaining
+strict cross-generation progression parity.
 
 ## 8. Rewards and benefits
 

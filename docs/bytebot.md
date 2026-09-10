@@ -70,12 +70,11 @@ appearance odds are:
 | Mutation | 1% | Equal |
 
 Mutation is a species-specific intrinsic body variation rather than an
-equipable decoration. The current app derives a restrained trait by recoloring
-only existing body pixels with the sprite palette. It adds no detached
-decoration or particle and preserves the Standard silhouette and alpha exactly.
-Reviewed dedicated Mutation sheets may replace it later.
-It enters the collection on hatch without changing power and provides a
-signature action:
+equipable decoration. Every stage provides dedicated Mutation sprite sheets
+(`*-mutated.png`) showcasing distinct morphological traits (such as quad servo
+arms, layered tails, winged ears, hypertrophied claws, or hollow void cores).
+Mutation does not affect game performance, registers into the collection
+immediately on hatch, and carries a species-specific signature action:
 
 - ByteBot: Reassemble
 - CacheCat: Data Chase

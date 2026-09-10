@@ -170,6 +170,20 @@ struct CompanionCosmeticDecoration: View {
                             .rotationEffect(.degrees(time * 12 + Double(index) * 31))
                     }
                 }
+            case .neuralSynapse:
+                ZStack {
+                    ForEach(0..<6, id: \.self) { index in
+                        CompanionRasterSymbol(
+                            name: "brain.head.profile",
+                            size: self.canvasDimension * 0.08)
+                            .foregroundStyle(Color.cyan.opacity(0.65))
+                            .offset(
+                                x: (CGFloat(index % 3) - 1.0) * self.canvasDimension * 0.3,
+                                y: (CGFloat(index / 3) * 2 - 1) * self.canvasDimension * 0.28
+                                    + slowWave * CGFloat(index.isMultiple(of: 2) ? 3 : -3))
+                            .opacity(0.4 + abs(slowWave) * 0.4)
+                    }
+                }
             case .miniDrone:
                 ZStack {
                     HStack(spacing: self.canvasDimension * 0.17) {
@@ -277,6 +291,28 @@ struct CompanionCosmeticDecoration: View {
                     x: -self.canvasDimension * 0.39,
                     y: self.canvasDimension * 0.24
                         + abs(slowWave) * self.canvasDimension * 0.018)
+            case .tensorCube:
+                ZStack {
+                    RoundedRectangle(cornerRadius: self.canvasDimension * 0.035)
+                        .fill(LinearGradient(
+                            colors: [.orange, .yellow],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing))
+                        .frame(
+                            width: self.canvasDimension * 0.18,
+                            height: self.canvasDimension * 0.18)
+                        .overlay {
+                            CompanionRasterSymbol(
+                                name: "cube.transparent",
+                                size: self.canvasDimension * 0.12)
+                                .foregroundStyle(.white.opacity(0.9))
+                        }
+                }
+                .rotationEffect(.degrees(time * 45))
+                .offset(
+                    x: self.canvasDimension * 0.36,
+                    y: -self.canvasDimension * 0.18
+                        + slowWave * self.canvasDimension * 0.03)
             case .terminalNight:
                 ZStack {
                     RoundedRectangle(cornerRadius: self.canvasDimension * 0.12)
