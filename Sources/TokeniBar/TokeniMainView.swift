@@ -382,10 +382,16 @@ private struct TokeniHomeView: View {
                             }
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(self.store.companionState.nickname
-                                ?? AppLocalization.string(
-                                    "companion.species.\(speciesID.rawValue).name"))
-                                .font(.headline)
+                            if let speciesID {
+                                Text(self.store.companionState.nickname
+                                    ?? AppLocalization.string(
+                                        "companion.species.\(speciesID.rawValue).name"))
+                                    .font(.headline)
+                            } else {
+                                Text(AppLocalization.string(
+                                    "companion.species.mystery.name"))
+                                    .font(.headline)
+                            }
 
                             HStack(spacing: 6) {
                                 Text(AppLocalization.format(
