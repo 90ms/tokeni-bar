@@ -6,12 +6,14 @@ asset_root="$root/Sources/TokeniBar/CompanionAssets"
 expected_species=(
     bytebot cachecat stackfox promptpup nullslime
     queryowl patchpanda loophare relayray kernelcrab
+    agentolotl vectordragon tensorchilla synapsesloth gitgecko
 )
 signature_ids=(
     bytebot.reassemble cachecat.data-chase stackfox.afterimage
     promptpup.command-trail nullslime.reform queryowl.signal-scan
     patchpanda.pixel-mend loophare.recursive-dash relayray.packet-wave
-    kernelcrab.core-open
+    kernelcrab.core-open agentolotl.self-heal vectordragon.dimension-leap
+    tensorchilla.matrix-spin synapsesloth.sync-pulse gitgecko.branch-split
 )
 localizations=(
     "$root/Sources/TokeniBar/Resources/en.lproj/Localizable.strings"
@@ -49,8 +51,8 @@ for index in "${!expected_species[@]}"; do
     [[ -s "$referenced_files" ]] \
         || fail "$species manifest references no sprite sheets"
     reference_count="$(wc -l < "$referenced_files" | tr -d ' ')"
-    expected_reference_count=6
-    [[ "$species" == bytebot ]] && expected_reference_count=7
+    expected_reference_count=9
+    [[ "$species" == bytebot ]] && expected_reference_count=10
     [[ "$reference_count" == "$expected_reference_count" ]] \
         || fail "$species references $reference_count sprite sheets; expected $expected_reference_count"
     while IFS= read -r file_name; do

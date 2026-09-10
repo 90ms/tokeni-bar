@@ -169,5 +169,7 @@ write_manifest promptpup "PromptPup" '"#073B42", "#218C78", "#7CDBA7", "#F4F3C1"
 write_manifest nullslime "NullSlime" '"#171347", "#6331B5", "#A468FF", "#54E5F2"'
 
 "$root/Scripts/generate_generation_two_assets.sh"
+python3 "$root/Scripts/generate_generation_three_assets.py"
+python3 "$root/Scripts/generate_mutated_assets.py"
 
 echo "Generated all companion sprite sheets in $asset_root"

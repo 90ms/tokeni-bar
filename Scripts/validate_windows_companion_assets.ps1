@@ -18,7 +18,12 @@ $expectedSpecies = @(
     "patchpanda",
     "loophare",
     "relayray",
-    "kernelcrab"
+    "kernelcrab",
+    "agentolotl",
+    "vectordragon",
+    "tensorchilla",
+    "synapsesloth",
+    "gitgecko"
 )
 $expectedBehaviors = @(
     "idle",
@@ -87,7 +92,7 @@ foreach ($species in $expectedSpecies) {
     if ($referencedFiles.Count -eq 0) {
         Fail-Validation "$species manifest references no sprite sheets"
     }
-    $expectedReferenceCount = if ($species -eq "bytebot") { 7 } else { 6 }
+    $expectedReferenceCount = if ($species -eq "bytebot") { 10 } else { 9 }
     if ($referencedFiles.Count -ne $expectedReferenceCount) {
         Fail-Validation "$species references $($referencedFiles.Count) sheets; expected $expectedReferenceCount"
     }

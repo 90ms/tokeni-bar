@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 2,
+  "id": "agentolotl",
+  "displayName": "AgentAxolotl",
+  "logicalFrameSize": 32,
+  "columns": 8,
+  "rows": 6,
+  "palette": [
+    "#071426", "#FF94B8", "#E63980", "#FFE6EE", "#57F2E3"
+  ],
+  "forms": {
+    "hatchling.normal": "hatchling-normal.png",
+    "hatchling.legendary": "hatchling-legendary.png",
+    "hatchling.mutated": "hatchling-mutated.png",
+    "junior.normal": "junior-normal.png",
+    "junior.legendary": "junior-legendary.png",
+    "junior.mutated": "junior-mutated.png",
+    "adult.normal": "adult-normal.png",
+    "adult.legendary": "adult-legendary.png",
+    "adult.mutated": "adult-mutated.png"
+  },
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frameCount": 4,
+      "framesPerSecond": 2,
+      "loops": true
+    },
+    "working": {
+      "row": 1,
+      "frameCount": 6,
+      "framesPerSecond": 6,
+      "loops": true
+    },
+    "waiting": {
+      "row": 2,
+      "frameCount": 4,
+      "framesPerSecond": 2,
+      "loops": true
+    },
+    "warning": {
+      "row": 3,
+      "frameCount": 4,
+      "framesPerSecond": 8,
+      "loops": true
+    },
+    "celebrate": {
+      "row": 4,
+      "frameCount": 6,
+      "framesPerSecond": 8,
+      "loops": true
+    },
+    "signature": {
+      "row": 4,
+      "frameCount": 6,
+      "framesPerSecond": 8,
+      "loops": true
+    },
+    "sleep": {
+      "row": 5,
+      "frameCount": 4,
+      "framesPerSecond": 1,
+      "loops": true
+    }
+  }
+}

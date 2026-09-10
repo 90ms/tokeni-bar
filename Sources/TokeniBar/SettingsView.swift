@@ -21,7 +21,7 @@ private enum SettingsTab: String, CaseIterable, Hashable, Identifiable {
         case .providers: "point.3.connected.trianglepath.dotted"
         case .display: "menubar.rectangle"
         case .notifications: "bell"
-        case .usage: "chart.xyaxis.line"
+        case .usage: "creditcard"
         case .privacy: "hand.raised"
         }
     }
@@ -34,34 +34,39 @@ struct SettingsView: View {
     @State private var showsNotificationDiagnostics = false
 
     var body: some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 0) {
+            HStack(spacing: 4) {
                 ForEach(SettingsTab.allCases) { tab in
                     Button {
                         self.selectedTab = tab
                     } label: {
-                        Label(
-                            AppLocalization.string(tab.localizationKey),
-                            systemImage: tab.systemImage)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
-                            .contentShape(Rectangle())
+                        VStack(spacing: 4) {
+                            Image(systemName: tab.systemImage)
+                                .font(.system(size: 15, weight: .medium))
+                            Text(AppLocalization.string(tab.localizationKey))
+                                .font(.system(
+                                    size: 11,
+                                    weight: self.selectedTab == tab ? .semibold : .regular))
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 4)
+                        .contentShape(RoundedRectangle(cornerRadius: 8))
                     }
                     .buttonStyle(.plain)
+                    .foregroundStyle(
+                        self.selectedTab == tab ? Color.accentColor : Color.secondary)
                     .background(
                         self.selectedTab == tab
-                            ? Color.accentColor.opacity(0.14)
+                            ? Color.accentColor.opacity(0.12)
                             : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 7))
-                    .foregroundStyle(
-                        self.selectedTab == tab ? Color.accentColor : Color.primary)
+                        in: RoundedRectangle(cornerRadius: 8))
                 }
-                Spacer()
             }
-            .padding(12)
-            .frame(width: 170)
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.45))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.35))
 
             Divider()
 

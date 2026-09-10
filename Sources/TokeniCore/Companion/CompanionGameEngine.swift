@@ -1095,6 +1095,8 @@ public struct CompanionGameEngine: Sendable {
              state.collection.discoveredSpeciesIDs.count >= 5),
             ("species-10", .discovery,
              state.collection.discoveredSpeciesIDs.count >= 10),
+            ("species-15", .discovery,
+             state.collection.discoveredSpeciesIDs.count >= 15),
             ("variants-5", .prismatic,
              state.collection.discoveredCollectibleVariantCount >= 5),
             ("variants-10", .prismatic,
@@ -1103,6 +1105,10 @@ public struct CompanionGameEngine: Sendable {
              state.collection.discoveredCollectibleVariantCount >= 20),
             ("variants-30", .prismatic,
              state.collection.discoveredCollectibleVariantCount >= 30),
+            ("variants-40", .prismatic,
+             state.collection.discoveredCollectibleVariantCount >= 40),
+            ("variants-45", .prismatic,
+             state.collection.discoveredCollectibleVariantCount >= 45),
         ]
         var events: [CompanionGameEvent] = []
         for (milestoneID, definitionID, reached) in candidates

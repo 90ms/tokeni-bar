@@ -130,6 +130,7 @@ final class CompanionAssetCatalog {
                 palette: asset.palette,
                 mutatedSpeciesID: asset.supportsMutation
                     && variantID == .mutated && stage != .egg
+                    && !sheetName.contains("mutated")
                     ? speciesID
                     : nil)
         else { return nil }

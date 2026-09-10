@@ -20,9 +20,11 @@ public enum CompanionCosmeticID: String, Codable, CaseIterable, Hashable, Sendab
     case driftingClouds
     case hologramScanlines
     case fallingPetals
+    case neuralSynapse
     case miniDrone
     case starSprite
     case pixelChick
+    case tensorCube
 
     public var slot: CompanionCosmeticSlot {
         switch self {
@@ -36,9 +38,9 @@ public enum CompanionCosmeticID: String, Codable, CaseIterable, Hashable, Sendab
             .ground
         case .constellationFrame, .pixelPortalFrame:
             .frame
-        case .driftingClouds, .hologramScanlines, .fallingPetals:
+        case .driftingClouds, .hologramScanlines, .fallingPetals, .neuralSynapse:
             .scene
-        case .miniDrone, .starSprite, .pixelChick:
+        case .miniDrone, .starSprite, .pixelChick, .tensorCube:
             .sidekick
         }
     }

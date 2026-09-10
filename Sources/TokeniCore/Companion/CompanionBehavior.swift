@@ -54,6 +54,11 @@ public enum CompanionSpecialActionRegistry {
         Self.mutationAction("loophare.recursive-dash", speciesID: .loophare),
         Self.mutationAction("relayray.packet-wave", speciesID: .relayray),
         Self.mutationAction("kernelcrab.core-open", speciesID: .kernelcrab),
+        Self.mutationAction("agentolotl.self-heal", speciesID: .agentolotl),
+        Self.mutationAction("vectordragon.dimension-leap", speciesID: .vectordragon),
+        Self.mutationAction("tensorchilla.matrix-spin", speciesID: .tensorchilla),
+        Self.mutationAction("synapsesloth.sync-pulse", speciesID: .synapsesloth),
+        Self.mutationAction("gitgecko.branch-split", speciesID: .gitgecko),
     ]
 
     public static func action(

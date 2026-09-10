@@ -34,6 +34,11 @@ public struct CompanionSpeciesID:
     public static let loophare = Self(rawValue: "loophare")
     public static let relayray = Self(rawValue: "relayray")
     public static let kernelcrab = Self(rawValue: "kernelcrab")
+    public static let agentolotl = Self(rawValue: "agentolotl")
+    public static let vectordragon = Self(rawValue: "vectordragon")
+    public static let tensorchilla = Self(rawValue: "tensorchilla")
+    public static let synapsesloth = Self(rawValue: "synapsesloth")
+    public static let gitgecko = Self(rawValue: "gitgecko")
 
     /// Bundled species only. Imported pack species are supplied by their
     /// content source and never enter the default game pool implicitly.
@@ -156,6 +161,11 @@ public enum CompanionSpeciesRegistry {
         Self.bundled(.loophare, generation: 2),
         Self.bundled(.relayray, generation: 2),
         Self.bundled(.kernelcrab, generation: 2),
+        Self.bundled(.agentolotl, generation: 3),
+        Self.bundled(.vectordragon, generation: 3),
+        Self.bundled(.tensorchilla, generation: 3),
+        Self.bundled(.synapsesloth, generation: 3),
+        Self.bundled(.gitgecko, generation: 3),
     ]
 
     public static let speciesIDs = Self.definitions.map(\.id)

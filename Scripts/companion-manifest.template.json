@@ -11,10 +11,13 @@
   "forms": {
     "hatchling.normal": "hatchling-normal.png",
     "hatchling.legendary": "hatchling-legendary.png",
+    "hatchling.mutated": "hatchling-mutated.png",
     "junior.normal": "junior-normal.png",
     "junior.legendary": "junior-legendary.png",
+    "junior.mutated": "junior-mutated.png",
     "adult.normal": "adult-normal.png",
-    "adult.legendary": "adult-legendary.png"
+    "adult.legendary": "adult-legendary.png",
+    "adult.mutated": "adult-mutated.png"
   },
   "animations": {
     "idle": {
