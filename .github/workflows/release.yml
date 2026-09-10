@@ -122,6 +122,7 @@ jobs:
             -RuntimeDirectory $runtimeDirectories
 
       - name: Prepare Windows release signing catalog
+        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.value }}
@@ -144,6 +145,7 @@ jobs:
             -Append
 
       - name: Sign in to Azure with release identity
+        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -151,6 +153,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Sign Windows release binaries
+        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
         uses: azure/trusted-signing-action@1d365fec12862c4aa68fcac418143d73f0cea293 # v0.5.11
         with:
           endpoint: ${{ vars.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
@@ -172,6 +175,7 @@ jobs:
           exclude-interactive-browser-credential: true
 
       - name: Verify signatures and rewrite Windows package
+        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.value }}
@@ -233,6 +237,7 @@ jobs:
             -ArchivePath $archive
 
       - name: Build Windows installer
+        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.value }}
@@ -240,6 +245,7 @@ jobs:
           & "$env:GITHUB_WORKSPACE\Scripts\build_windows_installer.ps1" -Version $env:VERSION -PackageDirectory "$env:TOKENI_WINDOWS_PACKAGE_DIRECTORY" -OutputDirectory "$env:RUNNER_TEMP\TokeniWindowsRelease"
 
       - name: Sign Windows installer
+        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
         uses: azure/trusted-signing-action@1d365fec12862c4aa68fcac418143d73f0cea293 # v0.5.11
         with:
           endpoint: ${{ vars.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
@@ -263,6 +269,7 @@ jobs:
           exclude-interactive-browser-credential: true
 
       - name: Verify and test signed installer
+        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.value }}
@@ -274,12 +281,16 @@ jobs:
           & "$env:GITHUB_WORKSPACE\Scripts\test_windows_update.ps1"
           & "$env:GITHUB_WORKSPACE\Scripts\test_windows_installer.ps1" -Installer $installer
 
-      - name: Generate Windows artifact attestation
+      - name: Generate Windows package attestation
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
         with:
-          subject-path: |
-            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip
-            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}-Setup.exe
+          subject-path: ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip
+
+      - name: Generate Windows installer attestation
+        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}-Setup.exe
 
       - name: Upload validated Windows release assets
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -288,9 +299,8 @@ jobs:
           path: |
             ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip
             ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}.zip.sha256
-            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}-Setup.exe
-            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}-Setup.exe.sha256
-          if-no-files-found: error
+            ${{ runner.temp }}\TokeniWindowsRelease\Tokeni-Bar-Windows-${{ steps.version.outputs.value }}-Setup.exe*
+          if-no-files-found: ignore
 
   release:
     name: Build and publish cross-platform release
@@ -395,9 +405,13 @@ jobs:
             "dist/TokeniBar-$VERSION.zip.sha256"
             "dist/windows/Tokeni-Bar-Windows-$VERSION.zip"
             "dist/windows/Tokeni-Bar-Windows-$VERSION.zip.sha256"
-            "dist/windows/Tokeni-Bar-Windows-$VERSION-Setup.exe"
-            "dist/windows/Tokeni-Bar-Windows-$VERSION-Setup.exe.sha256"
           )
+          if [[ -f "dist/windows/Tokeni-Bar-Windows-$VERSION-Setup.exe" ]]; then
+            assets+=(
+              "dist/windows/Tokeni-Bar-Windows-$VERSION-Setup.exe"
+              "dist/windows/Tokeni-Bar-Windows-$VERSION-Setup.exe.sha256"
+            )
+          fi
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
             gh release edit "$RELEASE_TAG" \
