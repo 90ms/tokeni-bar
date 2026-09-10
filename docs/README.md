@@ -21,6 +21,11 @@
 - [Windows 멀티에이전트 개발 운영](WINDOWS_DEVELOPMENT_WORKFLOW.ko.md) · [English](WINDOWS_DEVELOPMENT_WORKFLOW.md)
 - [Windows 실기기 검증 runbook](WINDOWS_DEVICE_VALIDATION.ko.md) · [English](WINDOWS_DEVICE_VALIDATION.md)
 
+## 개발 및 기여 가이드
+
+- [AI 에이전트 스킬 및 작업 워크플로](AGENT_SKILLS.ko.md) · [English](AGENT_SKILLS.md)
+
+
 ## 아카이브
 
 - [펫 시스템 초기 기획안 v0.1](archive/planning-v0.1/README.md)

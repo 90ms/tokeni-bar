@@ -31,6 +31,11 @@ Canonical repository: https://github.com/90ms/tokeni-bar
   Formula installation and Cask-to-Formula migration.
 - [Homebrew installation, English](https://github.com/90ms/tokeni-bar/blob/main/docs/HOMEBREW.md):
   English Homebrew guide.
+- [Agent skills guide, Korean](https://github.com/90ms/tokeni-bar/blob/main/docs/AGENT_SKILLS.ko.md):
+  Cross-agent (Claude Code, Codex, Antigravity) skills and runbook specification.
+- [Agent skills guide, English](https://github.com/90ms/tokeni-bar/blob/main/docs/AGENT_SKILLS.md):
+  English agent skills guide.
+
 
 ## Current companion facts
 

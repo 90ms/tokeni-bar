@@ -39,3 +39,21 @@ Run `swift test` and `swift build` before handing off changes.
   languages. Do not tag or deploy without a successful main-branch CI run.
 - The release workflow must publish the validated rendered file with
   `--notes-file`; do not switch back to unstructured generated notes.
+
+## Agent skills and workflows
+
+This repository provides standardized agent skills under `.agents/skills/`, shared across Claude Code, Codex CLI, and Antigravity CLI:
+
+- `.agents/skills/release-fragment/SKILL.md`: Create and validate bilingual `.changes/` release note fragments.
+- `.agents/skills/project-verify/SKILL.md`: Run test suites, localization parity, companion asset validation, and release note linter.
+- `.agents/skills/add-provider/SKILL.md`: Implement, register, and test new AI provider adapters in `TokeniCore`.
+- `.agents/skills/package-macos/SKILL.md`: Build, package, and smoke-test macOS app bundles and Homebrew formulas.
+- `.agents/skills/companion-assets/SKILL.md`: Generate and validate companion pet sprite assets, palettes, and manifests.
+- `.agents/skills/localization/SKILL.md`: Add and update bilingual UI strings and verify Korean/English parity.
+
+For CLI inter-compatibility:
+- Claude Code discovers guidelines via `CLAUDE.md` (symlinked to `AGENTS.md`) and `.claude/skills` (symlinked to `.agents/skills`).
+- Codex CLI natively discovers `AGENTS.md` and `.agents/skills/`.
+- Antigravity CLI natively discovers `AGENTS.md` and `.agents/skills/` with progressive disclosure.
+- Refer to `docs/AGENT_SKILLS.md` (`docs/AGENT_SKILLS.ko.md`) for detailed workflow guides.
+
