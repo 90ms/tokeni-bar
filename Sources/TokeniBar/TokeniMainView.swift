@@ -338,7 +338,8 @@ private struct TokeniHomeView: View {
                         .foregroundStyle(isLow ? .orange : .secondary)
                         .frame(width: 44, alignment: .trailing)
                 } else {
-                    Text(snapshot.availability.localizedName)
+                    Text(AppLocalization.string(
+                        "provider.status.\(snapshot.availability.rawValue)"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -360,9 +361,11 @@ private struct TokeniHomeView: View {
         GroupBox {
             VStack(spacing: 12) {
                 if self.store.companionEnabled {
+                    let speciesID = self.store.displayedCompanionAppearanceSpeciesID
+                        ?? self.store.companionState.speciesID
                     HStack(spacing: 14) {
                         ByteBotTransitionView(
-                            speciesID: self.store.displayedCompanionAppearanceSpeciesID,
+                            speciesID: speciesID,
                             stage: self.store.displayedCompanionStage,
                             rarity: self.store.displayedCompanionRarity,
                             variantID: self.store.displayedCompanionVariantID,
@@ -381,7 +384,7 @@ private struct TokeniHomeView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(self.store.companionState.nickname
                                 ?? AppLocalization.string(
-                                    "companion.species.\(self.store.displayedCompanionAppearanceSpeciesID.rawValue).name"))
+                                    "companion.species.\(speciesID.rawValue).name"))
                                 .font(.headline)
 
                             HStack(spacing: 6) {
