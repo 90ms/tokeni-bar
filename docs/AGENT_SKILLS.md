@@ -100,7 +100,28 @@ tokeni-bar/
   ./Tests/Scripts/LocalizationCatalogTests.sh
   ```
 
+### 7. `prepare-pr`
+- **Path**: `.agents/skills/prepare-pr/SKILL.md`
+- **Purpose**: Branch isolation checks, release fragment validation, pre-PR gate verification, and structured PR generation via GitHub CLI (`gh pr create`).
+- **Key Commands**:
+  ```bash
+  ./Scripts/validate_release_notes.sh changed origin/main HEAD
+  gh pr create --title "<type>: <description>" --body "<structured body>"
+  ```
+
+### 8. `release-deploy`
+- **Path**: `.agents/skills/release-deploy/SKILL.md`
+- **Purpose**: Complete release lifecycle: annotated git tagging on main, release notes rendering, GitHub Release monitoring, and Homebrew tap PR merge.
+- **Key Commands**:
+  ```bash
+  ./Scripts/render_release_notes.sh <version> dist/release-notes.md
+  ./Scripts/validate_release_notes.sh release <version> dist/release-notes.md
+  git tag -a v<version> -m "Tokeni Bar <version>" HEAD
+  git push origin v<version>
+  ```
+
 ---
+
 
 ## 3. Adding New Skills
 

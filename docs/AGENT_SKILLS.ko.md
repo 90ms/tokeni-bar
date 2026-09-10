@@ -100,7 +100,28 @@ tokeni-bar/
   ./Tests/Scripts/LocalizationCatalogTests.sh
   ```
 
+### 7. `prepare-pr`
+- **경로**: `.agents/skills/prepare-pr/SKILL.md`
+- **목적**: 브랜치 명명 규칙 검사, 변경 단편(.changes/) 검사, 사전 검증 게이트 확인 및 GitHub CLI(`gh pr create`)를 통한 PR 생성
+- **주요 검증 명령**:
+  ```bash
+  ./Scripts/validate_release_notes.sh changed origin/main HEAD
+  gh pr create --title "<타입>: <설명>" --body "<템플릿 본문>"
+  ```
+
+### 8. `release-deploy`
+- **경로**: `.agents/skills/release-deploy/SKILL.md`
+- **목적**: 검증된 main 브랜치 커밋 태깅, 한/영 릴리스 노트 렌더링, GitHub Release 게시 및 Homebrew tap 자동 PR 머지 완료
+- **주요 실행 명령**:
+  ```bash
+  ./Scripts/render_release_notes.sh <버전> dist/release-notes.md
+  ./Scripts/validate_release_notes.sh release <버전> dist/release-notes.md
+  git tag -a v<버전> -m "Tokeni Bar <버전>" HEAD
+  git push origin v<버전>
+  ```
+
 ---
+
 
 ## 3. 새로운 스킬 추가 가이드
 
