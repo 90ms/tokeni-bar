@@ -2,14 +2,24 @@
 
 ## Project shape
 
-- `Sources/TokeniCore`: provider-neutral models, scanners, and provider adapters.
-- `Sources/TokeniBar`: macOS menu-bar UI and app state.
-- `Tests/TokeniCoreTests`: parser tests backed by sanitized fixtures.
-- `packaging`: app-bundle and Homebrew templates.
+- `Sources/TokeniCore`: provider-neutral models, parsers, token observation ledger, companion progression, and asset pack stores.
+- `Sources/TokeniApplication`: platform-neutral application session, refresh coordination, growth ledger, and preferences.
+- `Sources/TokeniBar`: macOS menu-bar popover, standalone window UI, and thin bridge state.
+- `Sources/TokeniWindows` & `Sources/TokeniWindowsNative`: Windows tray shell, overlay, notifications, and native Win32/C bridges.
+- `Tests/TokeniCoreTests`: parser and model tests backed by sanitized fixtures.
+- `Tests/TokeniApplicationTests`: application session and coordinator tests.
+- `Tests/TokeniBarTests`: macOS UI component and state tests.
+- `Tests/TokeniWindowsTests`: Windows tray and runtime tests.
+- `packaging`: macOS app-bundle, Homebrew templates, and Windows packaging scripts.
 
 ## Conventions
 
-- Keep provider-specific authentication and parsing inside its provider directory.
+- Architecture layering:
+  - Keep domain models, parsers, and game logic in `Sources/TokeniCore`.
+  - Keep state management, refresh coordination, and preferences in `Sources/TokeniApplication`.
+  - UI layers (`TokeniBar`, `TokeniWindows`) must remain thin bridges over `TokeniApplication`; never duplicate business logic across platforms.
+  - Do not scatter `#if os(...)` conditionals across Core and Application; use protocol abstractions from `PlatformContracts.swift`.
+- Keep provider-specific authentication and parsing inside its provider directory (`Sources/TokeniCore/Providers/<Name>`).
 - Add providers through `ProviderRegistry`; do not add provider switches to shared UI.
 - Keep Tokeni growth provider-neutral and derive it only from verified cumulative
   token observations. Active minutes may drive animations, but never growth.
@@ -17,10 +27,12 @@
 - Never log or persist access tokens, refresh tokens, cookies, prompts, or response content.
 - Treat local CLI formats and remote endpoints as unstable. Every parser change needs a sanitized fixture test.
 - Prefer an unavailable or stale state over fabricated quota or cost values.
+- Shared files (`Package.swift`, `UsageStore.swift`, `ProviderRegistry.swift`) must not be modified concurrently by multiple agents or branches. Follow `docs/WINDOWS_DEVELOPMENT_WORKFLOW.ko.md` for role-based write sets.
 
 ## Verification
 
-Run `swift test` and `swift build` before handing off changes.
+- When working in an environment with the Swift toolchain: run `swift test` and `swift build` before handing off changes.
+- When working in containerized or script-only environments without Swift: run the fast script verification suite (`./Tests/Scripts/*.sh`, `./Scripts/validate_localizations.sh`, `./Scripts/validate_companion_assets.sh`, `./Scripts/validate_release_notes.sh all`).
 
 ## Release notes
 

@@ -64,9 +64,10 @@ Canonical repository: https://github.com/90ms/tokeni-bar
 
 ## Source layout
 
-- `Sources/TokeniCore`: provider-neutral models, scanners, adapters, and
-  companion engines.
-- `Sources/TokeniBar`: macOS menu-bar UI and app state.
-- `Tests/TokeniCoreTests`: parser and core behavior tests with sanitized
-  fixtures.
-- `packaging`: app-bundle and Homebrew templates.
+- `Sources/TokeniCore`: provider-neutral models, parsers, token ledger, companion engines, and asset stores.
+- `Sources/TokeniApplication`: platform-neutral application session, refresh coordination, growth ledger, and preferences.
+- `Sources/TokeniBar`: macOS menu-bar UI, standalone window, and thin bridge state.
+- `Sources/TokeniWindows` & `Sources/TokeniWindowsNative`: Windows tray shell, overlay, notifications, and native Win32/C bridges.
+- `Tests/TokeniCoreTests`: parser and core behavior tests with sanitized fixtures.
+- `Tests/TokeniApplicationTests`: application session and coordinator tests.
+- `packaging`: macOS app-bundle, Homebrew templates, and Windows packaging scripts.
