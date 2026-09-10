@@ -104,14 +104,16 @@ struct CompanionRewardEngineTests {
             at: now,
             in: &state)
 
-        #expect(first.reduce(0) { $0 + $1.amount } == 420)
-        #expect(state.starShards == 420)
+        #expect(first.reduce(0) { $0 + $1.amount } == 520)
+        #expect(state.starShards == 520)
         #expect(state.rewardedSpeciesIDs == Set(CompanionSpeciesID.allCases))
         #expect(state.rewardedVariantIDs == [.prismatic])
         #expect(state.rewardedJourneyCount == 2)
         #expect(state.rewardedFormMilestones == [5, 10])
         #expect(state.unlockedCosmeticIDs.contains(.hologramScanlines))
         #expect(state.unlockedCosmeticIDs.contains(.miniDrone))
+        #expect(state.unlockedCosmeticIDs.contains(.neuralSynapse))
+        #expect(state.unlockedCosmeticIDs.contains(.tensorCube))
         #expect(repeated.isEmpty)
     }
 

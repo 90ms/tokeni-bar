@@ -6,11 +6,7 @@
   "columns": 8,
   "rows": 6,
   "palette": [
-    "#071426",
-    "#F1E7D2",
-    "#34435B",
-    "#FF829F",
-    "#57F2E3"
+    "#071426", "#F1E7D2", "#34435B", "#FF829F", "#57F2E3"
   ],
   "forms": {
     "hatchling.normal": "hatchling-normal.png",
@@ -18,10 +14,7 @@
     "junior.normal": "junior-normal.png",
     "junior.legendary": "junior-legendary.png",
     "adult.normal": "adult-normal.png",
-    "adult.legendary": "adult-legendary.png",
-    "hatchling.mutated": "hatchling-mutated.png",
-    "junior.mutated": "junior-mutated.png",
-    "adult.mutated": "adult-mutated.png"
+    "adult.legendary": "adult-legendary.png"
   },
   "animations": {
     "idle": {

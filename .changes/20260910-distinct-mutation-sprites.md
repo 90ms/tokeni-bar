@@ -1,5 +1,5 @@
 category: improvement
 scope: companion
 breaking: false
-ko: 모든 펫의 성장 단계에 종별 신체 변이가 반영된 전용 변이 스프라이트 시트를 추가했습니다.
-en: Added dedicated mutation sprite sheets with species-specific morphological traits across all companion stages.
+ko: 모든 펫의 성장 단계에 종별 고유 특징을 극대화한 신체 변이 표식과 팔레트 하이라이트를 적용했습니다.
+en: Applied species-specific intrinsic mutation markings and palette highlights across all companion stages.

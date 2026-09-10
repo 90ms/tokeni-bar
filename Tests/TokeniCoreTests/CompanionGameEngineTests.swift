@@ -101,18 +101,23 @@ struct CompanionGameEngineTests {
     func equalSpeciesIntervals() {
         let engine = CompanionGameEngine(calendar: self.calendar)
 
-        #expect(engine.rollSpecies(unitValue: 0.05) == .bytebot)
-        #expect(engine.rollSpecies(unitValue: 0.15) == .cachecat)
-        #expect(engine.rollSpecies(unitValue: 0.25) == .stackfox)
-        #expect(engine.rollSpecies(unitValue: 0.35) == .promptpup)
-        #expect(engine.rollSpecies(unitValue: 0.45) == .nullslime)
-        #expect(engine.rollSpecies(unitValue: 0.55) == .queryowl)
-        #expect(engine.rollSpecies(unitValue: 0.65) == .patchpanda)
-        #expect(engine.rollSpecies(unitValue: 0.75) == .loophare)
-        #expect(engine.rollSpecies(unitValue: 0.85) == .relayray)
-        #expect(engine.rollSpecies(unitValue: 0.95) == .kernelcrab)
+        #expect(engine.rollSpecies(unitValue: 0.03) == .bytebot)
+        #expect(engine.rollSpecies(unitValue: 0.10) == .cachecat)
+        #expect(engine.rollSpecies(unitValue: 0.17) == .stackfox)
+        #expect(engine.rollSpecies(unitValue: 0.23) == .promptpup)
+        #expect(engine.rollSpecies(unitValue: 0.30) == .nullslime)
+        #expect(engine.rollSpecies(unitValue: 0.37) == .queryowl)
+        #expect(engine.rollSpecies(unitValue: 0.43) == .patchpanda)
+        #expect(engine.rollSpecies(unitValue: 0.50) == .loophare)
+        #expect(engine.rollSpecies(unitValue: 0.57) == .relayray)
+        #expect(engine.rollSpecies(unitValue: 0.63) == .kernelcrab)
+        #expect(engine.rollSpecies(unitValue: 0.70) == .agentolotl)
+        #expect(engine.rollSpecies(unitValue: 0.77) == .vectordragon)
+        #expect(engine.rollSpecies(unitValue: 0.83) == .tensorchilla)
+        #expect(engine.rollSpecies(unitValue: 0.90) == .synapsesloth)
+        #expect(engine.rollSpecies(unitValue: 0.97) == .gitgecko)
         #expect(engine.rollSpecies(unitValue: 0) == .bytebot)
-        #expect(engine.rollSpecies(unitValue: 1) == .kernelcrab)
+        #expect(engine.rollSpecies(unitValue: 1) == .gitgecko)
     }
 
     @Test("Five duplicate hatches guarantee a missing species next")
@@ -332,7 +337,7 @@ struct CompanionGameEngineTests {
             in: &state)
 
         #expect(state.stage == .hatchling)
-        #expect(state.speciesID == .stackfox)
+        #expect(state.speciesID == .promptpup)
         #expect(state.rarity == .normal)
         #expect(state.variantID == .standard)
         #expect(state.generationNumber == 2)
@@ -345,7 +350,7 @@ struct CompanionGameEngineTests {
         #expect(events.contains(.energySpent(800)))
         #expect(events.contains {
             if case .hatched(
-                speciesID: .stackfox,
+                speciesID: .promptpup,
                 rarity: .normal,
                 isNewSpecies: true,
                 unlockedFormIDs: _) = $0
@@ -407,7 +412,7 @@ struct CompanionGameEngineTests {
         }
     }
 
-    @Test("Bundled pets are divided into two complete content generations")
+    @Test("Bundled pets are divided into three complete content generations")
     func currentSpeciesGenerations() {
         #expect(CompanionSpeciesID.species(inContentGeneration: 1) == [
             .bytebot,
@@ -423,7 +428,14 @@ struct CompanionGameEngineTests {
             .relayray,
             .kernelcrab,
         ])
-        #expect(CompanionSpeciesID.latestContentGeneration == 2)
+        #expect(CompanionSpeciesID.species(inContentGeneration: 3) == [
+            .agentolotl,
+            .vectordragon,
+            .tensorchilla,
+            .synapsesloth,
+            .gitgecko,
+        ])
+        #expect(CompanionSpeciesID.latestContentGeneration == 3)
     }
 
     @Test("Restarting spends energy but preserves collection and variant pity")

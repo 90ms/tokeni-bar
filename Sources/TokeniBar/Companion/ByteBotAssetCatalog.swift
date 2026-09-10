@@ -234,6 +234,11 @@ final class CompanionAssetCatalog {
         case .queryowl: (0.5, 0.38)
         case .relayray: (0.5, 0.52)
         case .stackfox: (0.66, 0.56)
+        case .agentolotl: (0.5, 0.4)
+        case .vectordragon: (0.54, 0.42)
+        case .tensorchilla: (0.48, 0.52)
+        case .synapsesloth: (0.5, 0.46)
+        case .gitgecko: (0.52, 0.44)
         default: (0.5, 0.5)
         }
         let targetX = opaqueBounds.minX
@@ -250,7 +255,7 @@ final class CompanionAssetCatalog {
                 return hypot(lhsX - targetX, lhsY - targetY)
                     < hypot(rhsX - targetX, rhsY - targetY)
             }
-            .prefix(2)
+            .prefix(4)
         for index in candidates {
             let x = index % width
             let y = index / width
