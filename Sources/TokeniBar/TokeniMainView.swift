@@ -279,49 +279,7 @@ private struct TokeniHomeView: View {
                 } else {
                     VStack(spacing: 8) {
                         ForEach(self.store.snapshots.prefix(5)) { snapshot in
-                            Button {
-                                self.navigation.selectUsage(providerID: snapshot.id)
-                            } label: {
-                                HStack(spacing: 10) {
-                                    ProviderIcon(descriptor: snapshot.descriptor)
-                                        .frame(width: 18, height: 18)
-
-                                    Text(snapshot.descriptor.displayName)
-                                        .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(.primary)
-
-                                    Spacer()
-
-                                    if let primaryQuota = snapshot.quotaWindows.first {
-                                        ProgressView(
-                                            value: primaryQuota.remainingPercent,
-                                            total: 100)
-                                            .frame(width: 80)
-                                            .tint(primaryQuota.remainingPercent < 20 ? .orange : .accentColor)
-
-                                        Text(AppLocalization.format(
-                                            "menu.provider.remaining",
-                                            Int(primaryQuota.remainingPercent.rounded())))
-                                            .font(.caption.monospacedDigit().weight(.semibold))
-                                            .foregroundStyle(primaryQuota.remainingPercent < 20 ? .orange : .secondary)
-                                            .frame(width: 44, alignment: .trailing)
-                                    } else {
-                                        Text(snapshot.availability.localizedName)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 7)
-                                .background(
-                                    Color(nsColor: .controlBackgroundColor).opacity(0.5),
-                                    in: RoundedRectangle(cornerRadius: 8))
-                            }
-                            .buttonStyle(.plain)
+                            self.providerQuotaRow(snapshot)
                         }
                     }
 
@@ -351,6 +309,53 @@ private struct TokeniHomeView: View {
         }
     }
 
+    @ViewBuilder
+    private func providerQuotaRow(_ snapshot: ProviderSnapshot) -> some View {
+        Button {
+            self.navigation.selectUsage(providerID: snapshot.id)
+        } label: {
+            HStack(spacing: 10) {
+                ProviderIcon(descriptor: snapshot.descriptor)
+                    .frame(width: 18, height: 18)
+
+                Text(snapshot.descriptor.displayName)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                if let primaryQuota = snapshot.quotaWindows.first {
+                    let percent = primaryQuota.remainingPercent
+                    let isLow = percent < 20
+                    ProgressView(value: percent, total: 100)
+                        .frame(width: 80)
+                        .tint(isLow ? .orange : .accentColor)
+
+                    Text(AppLocalization.format(
+                        "menu.provider.remaining",
+                        Int(percent.rounded())))
+                        .font(.caption.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(isLow ? .orange : .secondary)
+                        .frame(width: 44, alignment: .trailing)
+                } else {
+                    Text(snapshot.availability.localizedName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                Color(nsColor: .controlBackgroundColor).opacity(0.5),
+                in: RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var companionDeskGlanceCard: some View {
         GroupBox {
             VStack(spacing: 12) {
@@ -366,7 +371,7 @@ private struct TokeniHomeView: View {
                             cosmeticIDs: self.store.companionRewardState.selectedCosmeticIDs,
                             dimension: 64,
                             animationsEnabled: self.store.companionAnimationsEnabled,
-                            animationIntensity: self.store.companionAnimationIntensity.scale,
+                            animationIntensity: self.store.companionAnimationIntensity.motionScale,
                             interactionPulse: self.store.companionInteractionPulse,
                             growthPulse: self.store.companionGrowthPulse)
                             .onTapGesture {
