@@ -252,10 +252,13 @@ public struct HomebrewUpdateService: Sendable {
     private static func failureMessage(_ result: CommandResult) -> String {
         let error = result.standardError.trimmingCharacters(in: .whitespacesAndNewlines)
         let output = result.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)
-        let message = error.isEmpty ? output : error
-        if message.isEmpty {
+        let messages = [output, error].filter { !$0.isEmpty }
+        guard !messages.isEmpty else {
             return "Homebrew command failed."
         }
-        return String(message.prefix(1_000))
+        // Homebrew may send progress to stderr and build failures to stdout.
+        // Preserve the end of each stream so progress cannot hide the failure.
+        let limit = (1_000 - (messages.count - 1)) / messages.count
+        return messages.map { String($0.suffix(limit)) }.joined(separator: "\n")
     }
 }
