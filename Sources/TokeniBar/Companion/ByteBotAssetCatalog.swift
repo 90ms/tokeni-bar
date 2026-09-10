@@ -245,8 +245,24 @@ final class CompanionAssetCatalog {
             + opaqueBounds.width * normalizedTarget.x
         let targetY = opaqueBounds.minY
             + opaqueBounds.height * normalizedTarget.y
-        let candidates = (0..<(width * height))
-            .filter { standardOpaquePixels[$0] }
+        let candidateIndices = (0..<(width * height))
+            .filter { index in
+                guard standardOpaquePixels[index] else { return false }
+                let x = index % width
+                let y = index / width
+                let offset = y * context.bytesPerRow + x * 4
+                let alpha = UInt16(bytes[offset + 3])
+                let targetR = UInt8(UInt16(accent.red) * alpha / 255)
+                let targetG = UInt8(UInt16(accent.green) * alpha / 255)
+                let targetB = UInt8(UInt16(accent.blue) * alpha / 255)
+                return bytes[offset] != targetR
+                    || bytes[offset + 1] != targetG
+                    || bytes[offset + 2] != targetB
+            }
+        let availableCandidates = candidateIndices.isEmpty
+            ? (0..<(width * height)).filter { standardOpaquePixels[$0] }
+            : candidateIndices
+        let candidates = availableCandidates
             .sorted { lhs, rhs in
                 let lhsX = CGFloat(lhs % width)
                 let lhsY = CGFloat(lhs / width)
