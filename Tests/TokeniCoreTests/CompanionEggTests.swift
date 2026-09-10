@@ -250,7 +250,7 @@ struct CompanionEggTests {
         // Verify full collection milestones including variants-40 and variants-45
         var allForms: [CompanionFormRecord] = []
         for speciesID in CompanionSpeciesID.allCases {
-            for variantID in CompanionVariantID.allCases {
+            for variantID in CompanionVariantRegistry.collectibleIDs {
                 allForms.append(CompanionFormRecord(
                     formID: "\(speciesID.rawValue).adult.\(variantID.rawValue)",
                     speciesID: speciesID,
