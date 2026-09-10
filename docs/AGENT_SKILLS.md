@@ -120,7 +120,22 @@ tokeni-bar/
   git push origin v<version>
   ```
 
+### 9. `package-windows`
+- **Path**: `.agents/skills/package-windows/SKILL.md`
+- **Purpose**: Build native Windows binaries, verify bundled SQLite and companion assets, package portable ZIP, and execute headless smoke tests.
+- **Key Commands**:
+  ```powershell
+  pwsh ./Scripts/package_windows.ps1 -Version <version> -BuildDirectory .build/release -OutputDirectory dist -SQLiteExecutable <sqlite3.exe>
+  pwsh ./Scripts/smoke_windows_package.ps1 -ArchivePath dist/Tokeni-Bar-Windows-<version>.zip
+  ```
+
+### 10. `diagnostic-report`
+- **Path**: `.agents/skills/diagnostic-report/SKILL.md`
+- **Purpose**: Generate and validate sanitized provider diagnostic reports for troubleshooting without leaking credentials or prompts.
+- **Core Model**: `Sources/TokeniCore/Diagnostics/ProviderDiagnosticReport.swift`
+
 ---
+
 
 
 ## 3. Adding New Skills

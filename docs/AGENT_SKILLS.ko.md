@@ -120,7 +120,22 @@ tokeni-bar/
   git push origin v<버전>
   ```
 
+### 9. `package-windows`
+- **경로**: `.agents/skills/package-windows/SKILL.md`
+- **목적**: Windows 네이티브 바이너리 빌드, 번들된 SQLite 및 펫 자산 검증, 포터블 ZIP 패키징 및 무두형(headless) 스모크 테스트 실행
+- **주요 실행 명령**:
+  ```powershell
+  pwsh ./Scripts/package_windows.ps1 -Version <버전> -BuildDirectory .build/release -OutputDirectory dist -SQLiteExecutable <sqlite3.exe 경로>
+  pwsh ./Scripts/smoke_windows_package.ps1 -ArchivePath dist/Tokeni-Bar-Windows-<버전>.zip
+  ```
+
+### 10. `diagnostic-report`
+- **경로**: `.agents/skills/diagnostic-report/SKILL.md`
+- **목적**: 공급자 연결 상태, CLI 감지 여부, 에러 코드 진단 보고서 생성 및 민감 정보(토큰/프롬프트) 누출 방지 검증
+- **참조 모델**: `Sources/TokeniCore/Diagnostics/ProviderDiagnosticReport.swift`
+
 ---
+
 
 
 ## 3. 새로운 스킬 추가 가이드

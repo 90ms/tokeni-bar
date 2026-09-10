@@ -64,6 +64,9 @@ This repository provides standardized agent skills under `.agents/skills/`, shar
 - `.agents/skills/localization/SKILL.md`: Add and update bilingual UI strings and verify Korean/English parity.
 - `.agents/skills/prepare-pr/SKILL.md`: Verify branch scope, pre-PR checks, release fragments, and create GitHub PRs.
 - `.agents/skills/release-deploy/SKILL.md`: Tag semantic releases, monitor GitHub Release workflows, and complete Homebrew distribution.
+- `.agents/skills/package-windows/SKILL.md`: Build, package, and smoke-test Windows portable zip and native binaries.
+- `.agents/skills/diagnostic-report/SKILL.md`: Generate and validate sanitized provider diagnostic reports.
+
 
 
 For CLI inter-compatibility:
