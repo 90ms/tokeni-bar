@@ -127,6 +127,47 @@ struct HomebrewUpdateServiceTests {
     }
 
     @Test
+    func reportsBuildFailureAlongsideDownloadProgress() async {
+        let runner = RecordingProcessRunner(result: CommandResult(
+            exitCode: 1,
+            standardOutput: String(repeating: "Building…\n", count: 200)
+                + "AppIcon.iconset:Invalid Iconset.",
+            standardError: "Fetching downloads for: tokeni-bar\nFormula tokeni-bar (0.30.0)"))
+        let service = HomebrewUpdateService(runner: runner)
+
+        do {
+            try await service.upgradeFormula(brew: "/opt/homebrew/bin/brew")
+            Issue.record("Expected the failed upgrade to throw")
+        } catch let HomebrewUpdateError.commandFailed(operation, message) {
+            #expect(operation == .upgradeFormula)
+            #expect(message.contains("AppIcon.iconset:Invalid Iconset."))
+            #expect(message.contains("Formula tokeni-bar (0.30.0)"))
+            #expect(message.count <= 1_000)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func reportsEndOfLongErrorStream() async {
+        let runner = RecordingProcessRunner(result: CommandResult(
+            exitCode: 1,
+            standardOutput: "",
+            standardError: String(repeating: "Progress\n", count: 200) + "Download failed"))
+        let service = HomebrewUpdateService(runner: runner)
+
+        do {
+            try await service.upgradeFormula(brew: "/opt/homebrew/bin/brew")
+            Issue.record("Expected the failed upgrade to throw")
+        } catch let HomebrewUpdateError.commandFailed(_, message) {
+            #expect(message.hasSuffix("Download failed"))
+            #expect(message.count == 1_000)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
     func reportsOperationOnFailure() async {
         let runner = RecordingProcessRunner(result: CommandResult(
             exitCode: 1,
