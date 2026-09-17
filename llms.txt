@@ -26,7 +26,7 @@ Canonical repository: https://github.com/90ms/tokeni-bar
 - [Companion policy, English](https://github.com/90ms/tokeni-bar/blob/main/docs/companion-policy.md):
   English normative policy.
 - [GitHub Wiki](https://github.com/90ms/tokeni-bar/wiki):
-  Concise Korean user guide.
+  Korean entry page that links to the current documentation in this repository.
 - [Homebrew installation, Korean](https://github.com/90ms/tokeni-bar/blob/main/docs/HOMEBREW.ko.md):
   Formula installation and Cask-to-Formula migration.
 - [Homebrew installation, English](https://github.com/90ms/tokeni-bar/blob/main/docs/HOMEBREW.md):

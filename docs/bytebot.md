@@ -102,9 +102,24 @@ reuse the passive benefits of StackFox, PromptPup, and NullSlime at identical
 values. Finding three generation-two species unlocks Hologram Scanlines; finding
 all five unlocks the Mini Drone sidekick.
 
+## Generation 3: Neural Agents
+
+Generation 3 contains AgentAxolotl, VectorDrake, TensorChilla, SynapseSloth, and
+GitGecko. Themed after deep neural networks and autonomous agent ecosystems, every
+growth stage provides independent Standard, Prismatic, and Mutation sprites. Each
+species' own body features, such as gill fronds, horns and wings, or tails, develop
+structurally from Hatchling to Junior to Adult, and its Mutation is an overgrowth of
+those same features. Sprite size, outline, shading, and behavior props follow the
+same contract as generations 1 and 2.
+
+Benefits add no higher tier and map 1:1 to the existing five benefits: token
+optimization, starlight cache, stack optimization, reward absorption, and lucky
+cheer. Finding three generation-three species unlocks the Synapse Network; finding
+all five unlocks the Tensor Cube decoration.
+
 ## Collection and actions
 
-The collection target is 30 combinations: ten species times Standard,
+The collection target is 45 combinations: fifteen species times Standard,
 Prismatic, and Mutation. Hatchling, Junior, and Adult remain inside each card's
 growth album. Selecting a card previews discovered stages, owned level, and the
 idle, working, waiting, warning, celebrate, and sleep animations. Mutation-only
@@ -114,7 +129,7 @@ no separate max-level talk button.
 **Open Tokeni → Pets** combines the current companion, growth status,
 Collection, and Owned sections. **Settings → Display → Tokeni** contains only pet-display
 and on-screen-pet preferences. Collection shows every species in separate
-Generation 1 and Generation 2 sections without a search or generation filter.
+Generation 1, 2, and 3 sections without a search or generation filter.
 Owned can still be narrowed with **View by pet**.
 
 ## Level rewards and boosters
