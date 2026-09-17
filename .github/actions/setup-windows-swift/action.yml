@@ -14,11 +14,18 @@ runs:
             throw "WinGet is required to install the Swift toolchain."
           }
 
+          # Pin the toolchain. Swift 6.4.0 fails to link TokeniWindowsTests
+          # (lld-link: undefined symbol: main) because that test target depends
+          # on the TokeniWindows executable target; 6.3.3 is the last release
+          # that passed the Windows gate. Bump deliberately, not by drift.
+          $swiftToolchainVersion = "6.3.3"
+
           # WinGet can return a non-zero code after successfully installing a
           # dependency. Finding swift.exe and swiftCore.dll is authoritative.
           $PSNativeCommandUseErrorActionPreference = $false
           & $winget.Source install `
             --id Swift.Toolchain `
+            --version $swiftToolchainVersion `
             --exact `
             --source winget `
             --accept-source-agreements `
@@ -63,9 +70,13 @@ runs:
             -Append
         }
 
-        swift --version
+        $swiftVersionOutput = swift --version 2>&1 | Out-String
         if ($LASTEXITCODE -ne 0) {
           throw "Swift toolchain was found but could not execute (exit $LASTEXITCODE)."
+        }
+        Write-Host $swiftVersionOutput
+        if ($swiftVersionOutput -notmatch 'Swift version 6\.3\.3') {
+          throw "Expected Swift 6.3.3 on PATH but found: $($swiftVersionOutput.Trim())"
         }
 
     - name: Configure Windows SDK and MSVC
