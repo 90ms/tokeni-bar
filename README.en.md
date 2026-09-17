@@ -14,7 +14,7 @@
 </p>
 
 A macOS companion app for tracking AI coding-agent **tokens and quotas** while
-discovering and raising ten pixel-pet species across two generations with real
+discovering and raising fifteen pixel-pet species across three generations with real
 token usage. Manage pets and usage in the standalone Tokeni window, with status
 summaries and quick controls in the menu bar.
 
@@ -115,7 +115,7 @@ milestone; discovering 5, 10, 20, and 30 species/variant combinations grants a
 Prismatic Egg at each milestone.
 
 Unopened eggs acquired before the update retain the generation-one species
-pool. Eggs acquired after the update include all ten species at equal base
+pool. Eggs acquired after the update include all fifteen species at equal base
 odds, so adding content cannot change an outcome already fixed by a saved seed.
 
 Opening another egg never removes the current pet. The hatchling joins the
@@ -133,16 +133,18 @@ forms, and Mutation variants; Owned lists each hatched pet with its level, name,
 personality, memories, switching, showcasing, and resale actions. In Owned, choose a
 species from **View by pet** to show only that species.
 
-Collection shows every species in separate Generation 1 and Generation 2 sections
+Collection shows every species in separate Generation 1, 2, and 3 sections
 instead of a search or generation filter. Select a collection card to inspect details,
 discovered growth stages, common actions, and a mutation-only signature action with
 animated previews.
 
-### 4. Discover ten species across two generations
+### 4. Discover fifteen species across three generations
 
 Generation 1 contains ByteBot, CacheCat, StackFox, PromptPup, and NullSlime.
 Generation 2, the **Signal Expedition**, contains QueryOwl, PatchPanda, LoopHare,
-RelayRay, and KernelCrab. All ten have equal base odds in newly acquired eggs. While
+RelayRay, and KernelCrab. Generation 3, the **Neural Agents**, contains AgentAxolotl,
+VectorDrake, TensorChilla, SynapseSloth, and GitGecko. All fifteen have equal base
+odds in newly acquired eggs. While
 any species is still missing, the next regular hatch after five duplicates is
 chosen from undiscovered species.
 
@@ -153,6 +155,13 @@ five balanced benefits as generation 1. Finding three generation-two species
 unlocks the Hologram Scanlines scene effect; finding all five unlocks the Mini
 Drone sidekick.
 
+Generation 3 is themed after deep neural networks and autonomous agents. Each
+species' own body features, such as gill fronds, horns and wings, or tails, develop
+structurally from Hatchling to Junior to Adult, and its Mutation appears as an
+overgrowth of those same features. It has no power advantage and maps 1:1 to the
+existing five benefits. Finding three generation-three species unlocks the Synapse
+Network; finding all five unlocks the Tensor Cube decoration.
+
 | Variant | Base odds | Power |
 |---|---:|---|
 | Standard | 91% | Equal |
@@ -160,7 +169,7 @@ Drone sidekick.
 | Mutation | 1% | Equal |
 
 After 11 consecutive Standard hatches, regular hatch 12 is Prismatic. The main
-collection contains 30 combinations—ten species times Standard, Prismatic,
+collection contains 45 combinations—fifteen species times Standard, Prismatic,
 and Mutation—while evolution appearances are recorded in each combination's
 growth album.
 
